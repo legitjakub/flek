@@ -36,6 +36,7 @@ export type SearchParams = {
   min_discount_pct: number;
   max_price_cents: number | null;
   sort: SortKey;
+  daypart: 'morning' | 'afternoon' | 'evening' | null;
   limit?: number;
   offset?: number;
 };
@@ -54,6 +55,7 @@ export async function searchOffers(p: SearchParams): Promise<SearchRow[]> {
       p_sort: p.sort,
       p_limit: p.limit ?? 20,
       p_offset: p.offset ?? 0,
+      p_daypart: p.daypart,
     }),
   );
   return withClock(rows ?? []);

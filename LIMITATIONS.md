@@ -2,31 +2,25 @@
 
 Poctivý seznam. Nic z toho není obejité mockem ani vydávané za hotové.
 
-## 1. Integrační testy a migrace neběžely proti skutečné databázi
+## 1. `npm test` (lokální integrační sada) nespuštěná
 
-Na tomto počítači není Docker, PostgreSQL ani nástroj, kterým by šly nainstalovat (`docker`, `colima`, `podman`, `limactl` ani `brew` nejsou k dispozici). Lokální Supabase proto nešlo spustit.
+Na tomto počítači není Docker ani PostgreSQL (`docker`, `colima`, `podman`, `limactl` ani `brew` nejsou k dispozici), takže lokální Supabase nešlo spustit a sada `tests/integration.test.ts` neběžela.
 
-Důsledek: SQL v `supabase/migrations/` a `supabase/seed.sql` je napsané a typově konzistentní, ale **nikdy nebylo aplikované na běžící PostgreSQL**. Integrační testy v `tests/integration.test.ts` jsou napsané a projdou `tsc`, ale nespouštěly se. Nelze tedy tvrdit, že souběžné rezervace, RLS ani vyhledávání fungují — jen že jsou tak navržené.
+Migrace, seed i chování aplikace ale **jsou** ověřené proti skutečnému hostovanému PostgreSQL 17 s PostGIS — viz `npm run test:acceptance`, 27/27 prošlo, včetně souběžných rezervací a RLS. Obsahově se obě sady překrývají; lokální varianta navíc sahá přímo do databáze (`pg`), což hostovaná cesta neumí.
 
-Co s tím: na počítači s Dockerem stačí
-
-```sh
-npm ci && npm run db:start && npm run db:types && npm test
-```
-
-a případné chyby opravit. Nepomáhejte si mockem backendu.
+Na počítači s Dockerem stačí `npm ci && npm run db:start && npm run db:types && npm test`.
 
 ## 2. `src/types/database.ts` je psaný ručně
 
-Zadání chce typy generované ze schématu. Generátor potřebuje běžící databázi, kterou tady nemáme. Soubor proto zrcadlí migrace ručně a je tak označený. `npm run db:types` ho přepíše skutečně vygenerovanou verzí.
+Zadání chce typy generované ze schématu. Soubor zatím zrcadlí migrace ručně a je tak označený. `npm run db:types` (nebo generátor přes hostovaný projekt) ho přepíše skutečně vygenerovanou verzí.
 
-## 3. End-to-end průchod nebyl proveden
+## 3. Ruční klikací průchod UI neproveden
 
-Akceptační kritéria v sekci 17 zadání popisují průchod dvěma prohlížeči proti skutečnému backendu. Bez databáze ho nešlo projít. V prohlížeči je ověřená jen skořápka aplikace: vykreslení, absence chyb v konzoli a absence vodorovného posunu na 375 px.
+Prohlížeč v tomto prostředí běží na skryté kartě, kde klikání spolehlivě nefunguje. Ověřené je vykreslení všech tras, filtry end-to-end a čtení stromu stránky; sekvence „dva prohlížeče vedle sebe" ze sekce 17 zadání ruční kontrolu ještě potřebuje. Také čas „pod 30 sekund" u zveřejnění nabídky zůstává nezměřený.
 
-## 4. Lighthouse změřený jen na prázdné obrazovce
+## 4. Demo účty v hostované databázi
 
-Objevování na produkčním buildu dává **výkon 90 a přístupnost 100**, tedy nad požadovaným prahem. Měřilo se ale bez běžícího backendu, takže stránka nesla skořápku, ne karty s fotografiemi. Až budou data a obrázky, je potřeba měření zopakovat — obrázky jsou to, co skóre výkonu obvykle srazí. Detail nabídky se bez dat změřit nedá.
+Do hostovaného projektu je nahraný vývojový seed včetně účtů `demo-*@flek.test` se **společným heslem uvedeným v README**. Pro pilot s reálnými lidmi je potřeba seed odstranit a demo hesla neponechat. V nastavení projektu je také vypnutá ochrana proti prolomeným heslům (Supabase Auth → leaked password protection); před ostrým provozem ji zapněte.
 
 ## 5. Fotografie nabídek
 

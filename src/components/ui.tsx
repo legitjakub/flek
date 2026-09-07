@@ -160,9 +160,9 @@ export function Skeleton({ className }: { className?: string }) {
 
 export function LoadingList({ rows = 3 }: { rows?: number }) {
   return (
-    <div className="flex flex-col gap-3" role="status" aria-label="Načítáme nabídky">
+    <div className="flex flex-col gap-3" role="status" aria-label="Načítáme">
       {Array.from({ length: rows }, (_, i) => (
-        <Skeleton key={i} className="h-28 w-full" />
+        <Skeleton key={i} className="h-24 w-full" />
       ))}
     </div>
   );
@@ -314,6 +314,83 @@ export function Tabs<T extends string>({
           {item.label}
         </button>
       ))}
+    </div>
+  );
+}
+
+/**
+ * Segmented control for mutually exclusive choices. Reads as one control rather than a
+ * loose row of buttons, which is what makes a filter panel feel considered.
+ */
+export function Segmented<T extends string | number | null>({
+  value,
+  onChange,
+  options,
+  label,
+  columns,
+}: {
+  value: T;
+  onChange: (next: T) => void;
+  options: { value: T; label: string }[];
+  label: string;
+  columns?: number;
+}) {
+  return (
+    <div
+      role="radiogroup"
+      aria-label={label}
+      className="grid gap-1 rounded-xl bg-line/45 p-1"
+      style={{ gridTemplateColumns: `repeat(${columns ?? options.length}, minmax(0, 1fr))` }}
+    >
+      {options.map((option) => {
+        const active = option.value === value;
+        return (
+          <button
+            key={String(option.value)}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            onClick={() => onChange(option.value)}
+            className={cx(
+              'min-h-10 rounded-lg px-2 text-sm font-semibold transition-colors',
+              active ? 'bg-card text-ink shadow-sm' : 'text-muted hover:text-ink',
+            )}
+          >
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Removable pill for one applied filter. */
+export function FilterPill({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <span className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-full bg-ink pr-1 pl-3 text-sm font-semibold text-surface">
+      {label}
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`Zrušit filtr ${label}`}
+        className="grid size-7 place-items-center rounded-full text-surface/80 hover:bg-surface/15 hover:text-surface"
+      >
+        <span aria-hidden="true">×</span>
+      </button>
+    </span>
+  );
+}
+
+/** Skeleton shaped like an offer card, so loading does not reflow into content. */
+export function CardSkeleton() {
+  return (
+    <div className="flex gap-3 overflow-hidden rounded-2xl border border-line bg-card p-3">
+      <Skeleton className="h-24 w-24 shrink-0 sm:h-28 sm:w-36" />
+      <div className="flex min-w-0 flex-1 flex-col gap-2 py-1">
+        <Skeleton className="h-4 w-2/3" />
+        <Skeleton className="h-3 w-1/2" />
+        <Skeleton className="mt-auto h-5 w-24" />
+      </div>
     </div>
   );
 }

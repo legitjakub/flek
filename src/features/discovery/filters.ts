@@ -2,9 +2,11 @@ import type { SortKey } from '../../types/database';
 import { dayBounds } from '../../lib/time';
 
 export type When = 'now' | 'today' | 'tomorrow' | 'week';
+export type Daypart = 'morning' | 'afternoon' | 'evening';
 
 export type Filters = {
   when: When;
+  daypart: Daypart | null;
   radius_m: number;
   category: string | null;
   min_discount_pct: number;
@@ -14,6 +16,7 @@ export type Filters = {
 
 export const DEFAULT_FILTERS: Filters = {
   when: 'today',
+  daypart: null,
   radius_m: 5000,
   category: null,
   min_discount_pct: 0,
@@ -32,11 +35,26 @@ export function windowFor(when: When, serverNow: string): { from: string | null;
   return { from: serverNow, until: dayBounds(serverNow, 6).until };
 }
 
+/** Short enough to sit on one line in the segmented control at 375 px. */
 export const WHEN_LABELS: Record<When, string> = {
   now: 'Teď',
   today: 'Dnes',
   tomorrow: 'Zítra',
-  week: 'Tento týden',
+  week: 'Týden',
+};
+
+/** The same choices written so they read inside a sentence. */
+export const WHEN_SENTENCE: Record<When, string> = {
+  now: 'nejbližší hodiny',
+  today: 'dnešek',
+  tomorrow: 'zítřek',
+  week: 'celý týden',
+};
+
+export const DAYPART_LABELS: Record<Daypart, string> = {
+  morning: 'Ráno',
+  afternoon: 'Odpoledne',
+  evening: 'Večer',
 };
 
 export const SORT_LABELS: Record<SortKey, string> = {
@@ -44,8 +62,78 @@ export const SORT_LABELS: Record<SortKey, string> = {
   nearest: 'Nejblíž',
   discount: 'Největší sleva',
   cheapest: 'Nejlevnější',
-  soonest: 'Nejdřív',
+  soonest: 'Nejdřív začíná',
 };
+
+export const RADIUS_LABELS: [number, string][] = [
+  [1000, 'Do 1 km'],
+  [2000, 'Do 2 km'],
+  [5000, 'Do 5 km'],
+  [10000, 'Do 10 km'],
+  [25000, 'Celá Praha'],
+];
+
+export const DISCOUNT_LABELS: [number, string][] = [
+  [0, 'Jakákoli'],
+  [20, '−20 % a víc'],
+  [30, '−30 % a víc'],
+  [40, '−40 % a víc'],
+];
+
+export const PRICE_LABELS: [number | null, string][] = [
+  [null, 'Bez limitu'],
+  [30000, 'Do 300 Kč'],
+  [50000, 'Do 500 Kč'],
+  [100000, 'Do 1 000 Kč'],
+];
+
+/** How many choices differ from the default — the number shown on the Filtry button. */
+export function activeCount(filters: Filters): number {
+  return (
+    (filters.daypart ? 1 : 0) +
+    (filters.category ? 1 : 0) +
+    (filters.min_discount_pct > 0 ? 1 : 0) +
+    (filters.max_price_cents ? 1 : 0) +
+    (filters.radius_m !== DEFAULT_FILTERS.radius_m ? 1 : 0) +
+    (filters.sort !== DEFAULT_FILTERS.sort ? 1 : 0)
+  );
+}
+
+export type ActiveChip = { key: string; label: string; clear: (f: Filters) => Filters };
+
+/** Every applied filter as a removable chip, so nothing is ever silently narrowing results. */
+export function activeChips(filters: Filters, categoryLabel: (slug: string) => string): ActiveChip[] {
+  const chips: ActiveChip[] = [];
+  if (filters.daypart)
+    chips.push({ key: 'daypart', label: DAYPART_LABELS[filters.daypart], clear: (f) => ({ ...f, daypart: null }) });
+  if (filters.category)
+    chips.push({ key: 'category', label: categoryLabel(filters.category), clear: (f) => ({ ...f, category: null }) });
+  if (filters.radius_m !== DEFAULT_FILTERS.radius_m)
+    chips.push({
+      key: 'radius',
+      label: RADIUS_LABELS.find(([m]) => m === filters.radius_m)?.[1] ?? `Do ${filters.radius_m / 1000} km`,
+      clear: (f) => ({ ...f, radius_m: DEFAULT_FILTERS.radius_m }),
+    });
+  if (filters.min_discount_pct > 0)
+    chips.push({
+      key: 'discount',
+      label: `−${filters.min_discount_pct} % a víc`,
+      clear: (f) => ({ ...f, min_discount_pct: 0 }),
+    });
+  if (filters.max_price_cents)
+    chips.push({
+      key: 'price',
+      label: PRICE_LABELS.find(([c]) => c === filters.max_price_cents)?.[1] ?? 'Cenový strop',
+      clear: (f) => ({ ...f, max_price_cents: null }),
+    });
+  if (filters.sort !== DEFAULT_FILTERS.sort)
+    chips.push({
+      key: 'sort',
+      label: SORT_LABELS[filters.sort],
+      clear: (f) => ({ ...f, sort: DEFAULT_FILTERS.sort }),
+    });
+  return chips;
+}
 
 /**
  * Cold-start ladder. At pilot launch a district may hold three offers, and a bare empty
@@ -54,8 +142,11 @@ export const SORT_LABELS: Record<SortKey, string> = {
 export type Widening = { radius_m: number; when: When; note: string | null };
 
 export function wideningSteps(filters: Filters): Widening[] {
-  const radii = [filters.radius_m, 5000, 10000, 25000].filter((r, i, all) => all.indexOf(r) === i && r >= filters.radius_m);
-  const whens: When[] = filters.when === 'week' ? ['week'] : [filters.when, filters.when === 'now' ? 'today' : 'tomorrow', 'week'];
+  const radii = [filters.radius_m, 5000, 10000, 25000].filter(
+    (r, i, all) => all.indexOf(r) === i && r >= filters.radius_m,
+  );
+  const whens: When[] =
+    filters.when === 'week' ? ['week'] : [filters.when, filters.when === 'now' ? 'today' : 'tomorrow', 'week'];
   const steps: Widening[] = [];
   for (const when of whens.filter((w, i, all) => all.indexOf(w) === i)) {
     for (const radius of radii) {
@@ -68,10 +159,10 @@ export function wideningSteps(filters: Filters): Widening[] {
           !widerRadius && !widerWhen
             ? null
             : widerRadius && widerWhen
-              ? `Poblíž teď nic není. Ukazujeme nabídky do ${radius / 1000} km a dál než ${WHEN_LABELS[filters.when].toLowerCase()}.`
+              ? `Poblíž teď nic není. Ukazujeme nabídky do ${radius / 1000} km a širší období než ${WHEN_SENTENCE[filters.when]}.`
               : widerRadius
                 ? `Do ${filters.radius_m / 1000} km nic není. Ukazujeme nabídky do ${radius / 1000} km.`
-                : `Na výběr „${WHEN_LABELS[filters.when]}" nic není. Ukazujeme ${WHEN_LABELS[when].toLowerCase()}.`,
+                : `Na ${WHEN_SENTENCE[filters.when]} nic volného není. Ukazujeme ${WHEN_SENTENCE[when]}.`,
       });
     }
   }

@@ -9,7 +9,9 @@
   --color-surface: #f6f8f8;
   --color-card: #ffffff;
   --color-ink: #253130;
-  --color-muted: #63706e;
+  /* Dark enough for WCAG AA on every ground we use it on, including the segmented
+     control track (#ecf0ef), where the previous tone measured 4.48:1. */
+  --color-muted: #5d6a68;
   --color-line: #dfe6e4;
   --color-brand: #17beb2;
   --color-accent: #0a7f76;

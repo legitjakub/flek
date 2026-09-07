@@ -29,7 +29,8 @@ export async function discover(point: Point, filters: Filters): Promise<Discover
       min_discount_pct: filters.min_discount_pct,
       max_price_cents: filters.max_price_cents,
       sort: filters.sort,
-      limit: 20,
+      daypart: filters.daypart,
+      limit: 30,
     });
     if (rows.length > best.rows.length) best = { rows, note: step.note };
     if (rows.length >= MIN_RESULTS) break;
@@ -38,6 +39,7 @@ export async function discover(point: Point, filters: Filters): Promise<Discover
     lat: Number(point.lat.toFixed(3)),
     lng: Number(point.lng.toFixed(3)),
     when: filters.when,
+    daypart: filters.daypart,
     category: filters.category,
     sort: filters.sort,
     results: best.rows.length,
