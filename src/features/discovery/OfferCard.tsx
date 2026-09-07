@@ -30,7 +30,7 @@ export function OfferCard({ offer, now }: { offer: SearchRow; now: string }) {
             height={320}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-muted">VOLNO</div>
+          <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-muted">FLEK</div>
         )}
         <span className="tnum absolute top-2 left-2 rounded-lg bg-ink px-1.5 py-0.5 text-xs font-bold text-surface">
           −{offer.discount_pct} %

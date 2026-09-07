@@ -3,7 +3,7 @@ export type Point = { lat: number; lng: number; label: string };
 /** Prague centre. The city is data everywhere else; this is only the fallback pin. */
 export const DEFAULT_POINT: Point = { lat: 50.0875, lng: 14.4213, label: 'Praha' };
 
-const KEY = 'volno.location';
+const KEY = 'flek.location';
 
 export function storedPoint(): Point | null {
   try {

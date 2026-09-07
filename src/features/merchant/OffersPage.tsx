@@ -70,7 +70,7 @@ function Offers({ businessId, approved }: { businessId: string; approved: boolea
       {query.isError ? <ErrorState error={query.error} onRetry={() => query.refetch()} /> : null}
       {query.isSuccess && rows.length === 0 ? (
         <EmptyState
-          title="Dnes zatím nemáte žádnou volnou nabídku."
+          title="Dnes zatím nemáte žádnou fleku nabídku."
           body="Prázdný termín zveřejníte za půl minuty."
           action={
             approved ? (

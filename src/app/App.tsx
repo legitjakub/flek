@@ -27,8 +27,11 @@ import { Button } from '../components/ui';
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { retry: 1, staleTime: 15_000, refetchOnWindowFocus: true },
-    mutations: { retry: 0 },
+    // networkMode 'always': the default pauses a failed fetch instead of failing it, which
+    // would leave a dropped connection showing a skeleton forever and a confirm button
+    // spinning. We would rather surface an honest error the customer can retry.
+    queries: { retry: 1, staleTime: 15_000, refetchOnWindowFocus: true, networkMode: 'always' },
+    mutations: { retry: 0, networkMode: 'always' },
   },
 });
 

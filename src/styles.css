@@ -4,16 +4,18 @@
 @theme {
   --font-sans: 'Manrope Variable', ui-sans-serif, system-ui, sans-serif;
 
-  /* Warm off-white ground, near-black ink, exactly one saturated accent. */
-  --color-surface: #faf7f2;
+  /* Cool off-white ground, deep slate ink, the FLEK teal. The brand teal draws the mark;
+     the darker accent is reserved for the primary CTA so the two never compete. */
+  --color-surface: #f6f8f8;
   --color-card: #ffffff;
-  --color-ink: #141210;
-  --color-muted: #6b635b;
-  --color-line: #e7e0d6;
-  --color-accent: #d6300f;
+  --color-ink: #253130;
+  --color-muted: #63706e;
+  --color-line: #dfe6e4;
+  --color-brand: #17beb2;
+  --color-accent: #0a7f76;
   --color-accent-ink: #ffffff;
-  --color-accent-soft: #fdeeea;
-  --color-positive: #17624a;
+  --color-accent-soft: #e4f4f2;
+  --color-positive: #0f6b53;
   --color-warning: #8a5a00;
 
   --text-xs: 0.75rem;

@@ -1,5 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="VOLNO">
-  <rect width="64" height="64" rx="16" fill="#141210"/>
-  <path d="M18 20h7.6l6.4 17.4L38.4 20H46L35.6 46h-7.2L18 20Z" fill="#faf7f2"/>
-  <circle cx="46" cy="20" r="4.5" fill="#d6300f"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="FLEK">
+  <rect width="64" height="64" rx="14" fill="#ffffff"/>
+  <path d="M26 9c-9.39 0-17 7.61-17 17 0 11.9 14.36 26.83 16.25 28.74a1.05 1.05 0 0 0 1.5 0C28.64 52.83 43 37.9 43 26c0-9.39-7.61-17-17-17z" fill="#17beb2"/>
+  <circle cx="26" cy="26" r="10.5" fill="#ffffff"/>
+  <path d="M26 19.5V26l4.8 4.4" fill="none" stroke="#2b3a38" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="none" stroke="#17beb2" stroke-width="3.2" stroke-linecap="round">
+    <path d="M50.5 12.5 47 16"/>
+    <path d="M55 20.5 50.5 22.5"/>
+    <path d="M52.5 30h-4.5"/>
+  </g>
 </svg>

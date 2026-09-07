@@ -1,4 +1,4 @@
-# VOLNO — předání rozpracovaného projektu
+# FLEK — předání rozpracovaného projektu
 
 Stav k 7. 9. 2026. Projekt je uložen přímo v této složce; není to hotová aplikace.
 
@@ -25,11 +25,11 @@ Stav k 7. 9. 2026. Projekt je uložen přímo v této složce; není to hotová 
 3. Vygenerovat `src/types/database.ts` ze živé databáze přes `npm run db:types`.
 4. Implementovat P0 obrazovky a první celý tok publikace → rezervace → docházka. Zatím není `index.html`, React vstup ani vykreslitelná aplikace; `npm run dev`/`build` proto nejsou hotovým produktem.
 5. Teprve po P0 pokračovat P1, vizuální úpravou a úplným QA podle zadání.
-6. Dodat logo: v poslední zprávě nebyl dostupný soubor s logem. `public/favicon.svg` je původní soubor ze scaffoldu, nikoli schválené logo VOLNO; před dokončením jej nahradit.
+6. Dodat logo: v poslední zprávě nebyl dostupný soubor s logem. `public/favicon.svg` je původní soubor ze scaffoldu, nikoli schválené logo FLEK; před dokončením jej nahradit.
 
 ## Pokračování na jiném počítači
 
-Rozbalte `volno-handoff.zip`, otevřete složku v editoru a přečtěte `docs/BUILD_BRIEF.md` a `DECISIONS.md`. Nainstalujte Node.js a Docker, poté:
+Rozbalte `flek-handoff.zip`, otevřete složku v editoru a přečtěte `docs/BUILD_BRIEF.md` a `DECISIONS.md`. Nainstalujte Node.js a Docker, poté:
 
 ```sh
 npm ci
@@ -40,6 +40,6 @@ npm test
 
 `npm run db:reset` přestaví lokální databázi a smaže její obsah. Pro produkci nepoužívejte demo seed ani demo hesla.
 
-Na původním Macu je rozpracovaný izolovaný Lima VM v `/private/tmp/volno-lima-state`; není součástí balíčku a není nutný na jiném počítači s Dockerem. Skript `scripts/local.mjs` umí tento lokální socket rozpoznat, jinak používá standardní Docker prostředí.
+Na původním Macu je rozpracovaný izolovaný Lima VM v `/private/tmp/flek-lima-state`; není součástí balíčku a není nutný na jiném počítači s Dockerem. Skript `scripts/local.mjs` umí tento lokální socket rozpoznat, jinak používá standardní Docker prostředí.
 
 Balíček neobsahuje `node_modules`, Git historii, přístupové klíče, lokální `.env` ani databázové/VM soubory. `.env.example` obsahuje pouze veřejné konfigurační položky. V repozitáři není nastavený Git remote, takže nebyl proveden push na vzdálený server.

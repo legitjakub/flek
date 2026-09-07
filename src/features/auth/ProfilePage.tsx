@@ -65,7 +65,7 @@ export function ProfilePage() {
             to="/prihlaseni?role=merchant&mode=signup&returnTo=%2Fpartner"
             className="mt-3 inline-flex min-h-11 items-center rounded-xl border border-line px-4 text-sm font-semibold text-ink"
           >
-            VOLNO Partner
+            FLEK Partner
           </Link>
         </div>
       </main>
@@ -113,7 +113,7 @@ export function ProfilePage() {
           to="/partner"
           className="inline-flex min-h-11 items-center rounded-xl border border-line bg-card px-4 text-sm font-semibold text-ink"
         >
-          VOLNO Partner — správa provozovny
+          FLEK Partner — správa provozovny
         </Link>
         {admin ? (
           <Link

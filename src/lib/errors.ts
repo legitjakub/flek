@@ -6,7 +6,7 @@ const messages:Record<string,string>={
  AUTH_REQUIRED:'Pro pokračování se přihlas.',FORBIDDEN:'K této akci nemáte oprávnění.',NOT_FOUND:'Tento záznam už není dostupný.',
  BOOKING_BLOCKED:'Rezervace je na tvém účtu dočasně pozastavená.',ALREADY_RESOLVED:'Tato rezervace už je vyřízená.',
  TOO_EARLY:'Docházku můžete potvrdit až po začátku termínu.',OFFER_STARTED:'Termín už začal. Nabídku nelze zrušit.',
- BUSINESS_NOT_APPROVED:'Nejdříve musíme schválit vaši provozovnu.',OVERLAP_CONFIRMATION_REQUIRED:'Ve stejnou dobu už máte jinou nabídku. Máte volnou kapacitu?',
+ BUSINESS_NOT_APPROVED:'Nejdříve musíme schválit vaši provozovnu.',OVERLAP_CONFIRMATION_REQUIRED:'Ve stejnou dobu už máte jinou nabídku. Máte fleku kapacitu?',
  OFFER_HAS_BOOKINGS:'Nabídka už má rezervace. Můžete pouze zvýšit kapacitu.',INVALID_CAPACITY:'Kapacitu nelze snížit pod již rezervovaná místa. Nejvýše lze nabídnout 50 míst.',
  INVALID_DISCOUNT:'Sleva musí být aspoň 10 %. Cena nesmí klesnout pod 15 % původní ceny.',INVALID_START:'Vyberte budoucí čas nejvýše 7 dní dopředu.',
  INVALID_CUTOFF:'Uzávěrka rezervací musí být alespoň za 5 minut a nejpozději při začátku termínu.',VALIDATION_ERROR:'Zkontrolujte prosím vyplněné údaje.',

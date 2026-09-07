@@ -5,10 +5,10 @@ export type ClientEvent = (typeof CLIENT_EVENTS)[number];
 
 function sessionId(): string {
   try {
-    let id = sessionStorage.getItem('volno.session');
+    let id = sessionStorage.getItem('flek.session');
     if (!id) {
       id = crypto.randomUUID();
-      sessionStorage.setItem('volno.session', id);
+      sessionStorage.setItem('flek.session', id);
     }
     return id;
   } catch {

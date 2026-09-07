@@ -3,9 +3,9 @@ import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
 export function localEnv() {
  const env={...process.env};
- const socket='/private/tmp/volno-lima-state/volno/sock/docker.sock';
+ const socket='/private/tmp/flek-lima-state/flek/sock/docker.sock';
  if (!env.DOCKER_HOST && existsSync(socket)) env.DOCKER_HOST=`unix://${socket}`;
- if (existsSync('/private/tmp/volno-runtime/docker/docker')) env.PATH=`/private/tmp/volno-runtime/docker:${env.PATH}`;
+ if (existsSync('/private/tmp/flek-runtime/docker/docker')) env.PATH=`/private/tmp/flek-runtime/docker:${env.PATH}`;
  return env;
 }
 export function status() {

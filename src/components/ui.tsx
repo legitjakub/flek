@@ -7,18 +7,39 @@ export function cx(...parts: (string | false | null | undefined)[]) {
 
 /* ------------------------------------------------------------------ wordmark */
 
-/** The single place the VOLNO identity is drawn, so it can be swapped in one edit. */
+/** The FLEK mark: a pin holding a clock. Isolated here so the identity swaps in one edit. */
+export function Mark({ className = 'size-6' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false" className={className}>
+      <path
+        d="M26 9c-9.39 0-17 7.61-17 17 0 11.9 14.36 26.83 16.25 28.74a1.05 1.05 0 0 0 1.5 0C28.64 52.83 43 37.9 43 26c0-9.39-7.61-17-17-17z"
+        fill="currentColor"
+      />
+      <circle cx="26" cy="26" r="10.5" fill="var(--color-card)" />
+      <path
+        d="M26 19.5V26l4.8 4.4"
+        fill="none"
+        stroke="var(--color-ink)"
+        strokeWidth="2.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <g fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round">
+        <path d="M50.5 12.5 47 16" />
+        <path d="M55 20.5 50.5 22.5" />
+        <path d="M52.5 30h-4.5" />
+      </g>
+    </svg>
+  );
+}
+
+/** The single place the FLEK wordmark is drawn, so it can be replaced in one component. */
 export function Wordmark({ tone = 'ink', suffix }: { tone?: 'ink' | 'invert'; suffix?: string }) {
   return (
-    <span className="inline-flex items-baseline gap-1.5">
-      <span
-        className={cx(
-          'text-lg font-extrabold tracking-[-0.06em]',
-          tone === 'invert' ? 'text-surface' : 'text-ink',
-        )}
-      >
-        VOLN
-        <span className="text-accent">O</span>
+    <span className="inline-flex items-center gap-1.5">
+      <Mark className="size-6 text-brand" />
+      <span className={cx('text-lg font-extrabold tracking-[-0.04em]', tone === 'invert' ? 'text-surface' : 'text-ink')}>
+        FLEK
       </span>
       {suffix ? <span className="text-xs font-semibold tracking-wide text-muted uppercase">{suffix}</span> : null}
     </span>
@@ -42,7 +63,7 @@ export function Button({ variant = 'primary', size = 'md', loading, className, c
       className={cx(
         'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-55',
         size === 'lg' ? 'min-h-13 px-5 text-base' : 'text-sm',
-        variant === 'primary' && 'bg-accent text-accent-ink hover:bg-[#b82809]',
+        variant === 'primary' && 'bg-accent text-accent-ink hover:bg-[#08655e]',
         variant === 'secondary' && 'border border-line bg-card text-ink hover:bg-surface',
         variant === 'ghost' && 'text-ink hover:bg-line/50',
         variant === 'danger' && 'border border-line bg-card text-accent hover:bg-accent-soft',

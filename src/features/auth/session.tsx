@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 import { isAdmin, myProfile } from '../../lib/api';
@@ -26,19 +26,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const queryClient = useQueryClient();
 
+  // Only a real identity change invalidates the cache. Clearing on every auth event
+  // (including the initial one and token refreshes) would discard in-flight queries.
+  const knownUser = useRef<string | null | undefined>(undefined);
+
   useEffect(() => {
     let active = true;
-    supabase.auth.getSession().then(({ data }) => {
+    const apply = (next: Session | null) => {
       if (!active) return;
-      setSession(data.session);
-      setReady(true);
-    });
-    const { data } = supabase.auth.onAuthStateChange((_event, next) => {
       setSession(next);
       setReady(true);
-      // Identity changed: every cached row was fetched under the previous JWT.
-      queryClient.clear();
-    });
+      const nextUser = next?.user.id ?? null;
+      if (knownUser.current !== undefined && knownUser.current !== nextUser) queryClient.clear();
+      knownUser.current = nextUser;
+    };
+    supabase.auth.getSession().then(({ data }) => apply(data.session));
+    const { data } = supabase.auth.onAuthStateChange((_event, next) => apply(next));
     return () => {
       active = false;
       data.subscription.unsubscribe();

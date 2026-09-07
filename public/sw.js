@@ -1,6 +1,6 @@
 // Shell-only service worker. Inventory decays by the minute, so anything that touches
 // Supabase (offers, bookings, auth) always goes to the network.
-const CACHE = 'volno-shell-v1';
+const CACHE = 'flek-shell-v1';
 const SHELL = ['/', '/index.html', '/icon.svg', '/manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {

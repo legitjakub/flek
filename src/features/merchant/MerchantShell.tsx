@@ -108,7 +108,7 @@ function MerchantFrame({
     <div className="min-h-dvh bg-ink/3">
       <header className="border-b border-line bg-card">
         <div className="mx-auto flex w-full max-w-4xl items-center justify-between gap-3 px-4 py-3">
-          <Link to="/partner" aria-label="VOLNO Partner">
+          <Link to="/partner" aria-label="FLEK Partner">
             <Wordmark suffix="Partner" />
           </Link>
           <div className="flex items-center gap-3">

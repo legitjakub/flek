@@ -14,7 +14,7 @@ type Client=typeof anon;
 type Account={id:string;client:Client};
 let merchant:Account, other:Account, adminUser:Account, biz:string, otherBiz:string, service:string;
 async function user(phone=true):Promise<Account>{
- const email=`test-${run}-${randomUUID().slice(0,8)}@volno.test`, password='VolnoTest2026!';
+ const email=`test-${run}-${randomUUID().slice(0,8)}@flek.test`, password='FlekTest2026!';
  const {data,error}=await admin.auth.admin.createUser({email,password,email_confirm:true,user_metadata:{first_name:'Jakub',last_name:'Hrncir'}});
  if(error)throw error; const id=data.user!.id; users.push(id);
  const client=createClient(url!,anonKey,{auth:{persistSession:false,autoRefreshToken:false}});
@@ -24,7 +24,7 @@ async function user(phone=true):Promise<Account>{
  return {id,client};
 }
 async function business(owner:Account,status='approved'){
- const {data,error}=await owner.client.rpc('create_business',{p_data:{display_name:`Test ${run}`,category_slug:'test',phone:'+420777123456',public_email:'test@volno.test',address_line:'Testovací 1',city:'Praha',postal_code:'12000',latitude:50.0755,longitude:14.4378}});
+ const {data,error}=await owner.client.rpc('create_business',{p_data:{display_name:`Test ${run}`,category_slug:'test',phone:'+420777123456',public_email:'test@flek.test',address_line:'Testovací 1',city:'Praha',postal_code:'12000',latitude:50.0755,longitude:14.4378}});
  if(error)throw error; businesses.push(data.id);
  await db.query('update public.businesses set status=$1 where id=$2',[status,data.id]);return data.id as string;
 }
@@ -169,11 +169,11 @@ describe('Domain invariants',()=>{
  it('reservation code collision retries transparently without losing capacity',async()=>{
   const a=await user(),b=await user(),existing=await book(a,await offer());
   const original=(await db.query("select pg_get_functiondef('public.generate_reservation_code(integer)'::regprocedure) definition")).rows[0].definition as string;
-  const suffix=existing.data![0].reservation_code.replace('VOLNO-','');
+  const suffix=existing.data![0].reservation_code.replace('FLEK-','');
   try {
    await db.query('create sequence public.test_code_attempt');
    await db.query(`create or replace function public.generate_reservation_code(n integer) returns text language plpgsql volatile set search_path=public as $fn$ begin if nextval('public.test_code_attempt')=1 then return '${suffix}'; end if; return 'ZQXWRT'; end $fn$`);
-   const o=await offer(),r=await book(b,o);expect(r.error).toBeNull();expect(r.data![0].reservation_code).toBe('VOLNO-ZQXWRT');expect((await stored(o.id)).capacity_remaining).toBe(0);
+   const o=await offer(),r=await book(b,o);expect(r.error).toBeNull();expect(r.data![0].reservation_code).toBe('FLEK-ZQXWRT');expect((await stored(o.id)).capacity_remaining).toBe(0);
   } finally {await db.query(original);await db.query('drop sequence if exists public.test_code_attempt');}
  });
  it('client cannot forge authoritative analytics or edit no-show counter',async()=>{

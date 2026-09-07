@@ -1,4 +1,4 @@
-# Ověření VOLNO
+# Ověření FLEK
 
 Průběžný pracovní záznam. Nejde o prohlášení o dokončení.
 

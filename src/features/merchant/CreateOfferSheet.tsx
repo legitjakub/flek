@@ -232,7 +232,7 @@ export function CreateOfferSheet({
 
           {overlap ? (
             <div className="flex flex-col gap-2">
-              <Banner tone="warning">Ve stejnou dobu už máte jinou nabídku. Máte volnou kapacitu?</Banner>
+              <Banner tone="warning">Ve stejnou dobu už máte jinou nabídku. Máte fleku kapacitu?</Banner>
               <Button variant="secondary" loading={publish.isPending} onClick={() => publish.mutate(true)}>
                 Ano, zveřejnit i tak
               </Button>

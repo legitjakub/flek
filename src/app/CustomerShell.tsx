@@ -24,7 +24,7 @@ export function CustomerShell({ children }: { children: ReactNode }) {
       </a>
       <header className="sticky top-0 z-20 border-b border-line bg-surface/95 backdrop-blur">
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between px-4 py-3">
-          <Link to="/" aria-label="VOLNO — domů">
+          <Link to="/" aria-label="FLEK — domů">
             <Wordmark />
           </Link>
           <Link

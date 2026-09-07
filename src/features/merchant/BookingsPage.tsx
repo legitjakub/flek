@@ -69,7 +69,7 @@ function Bookings({ businessId }: { businessId: string }) {
             <Input
               id="lookup"
               className="tnum font-mono uppercase"
-              placeholder="VOLNO-XXXXXX"
+              placeholder="FLEK-XXXXXX"
               value={code}
               onChange={(event) => setCode(event.target.value.toUpperCase())}
             />

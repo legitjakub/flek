@@ -41,4 +41,6 @@ next-env.d.ts
 /test-results/
 /playwright-report/
 *.tsbuildinfo
+/flek-handoff.zip
+# Superseded package from the previous session; kept on disk, never committed.
 /volno-handoff.zip

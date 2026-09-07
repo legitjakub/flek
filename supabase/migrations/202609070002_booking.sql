@@ -56,7 +56,7 @@ begin
  if not found then raise exception 'OFFER_UNAVAILABLE'; end if;
  select * into s from public.services where id=o.service_id;
  for i in 1..5 loop
-  code:='VOLNO-'||public.generate_reservation_code(6);
+  code:='FLEK-'||public.generate_reservation_code(6);
   begin
    insert into public.bookings as bk(offer_id,business_id,customer_id,reservation_code,price_cents,service_name_snapshot,business_name_snapshot,business_address_snapshot,start_at_snapshot,end_at_snapshot,original_price_cents_snapshot)
    values(o.id,o.business_id,u,code,o.deal_price_cents,s.name,b.display_name,b.address_line||', '||b.city,o.start_at,o.end_at,o.original_price_cents)

@@ -1,4 +1,4 @@
-# VOLNO
+# FLEK
 
 **Rozpracovaný projekt, zatím bez uživatelského rozhraní.** Přesný stav a postup pokračování jsou v `HANDOFF.md`; integrační testy zatím nebyly spuštěny.
 
@@ -18,10 +18,10 @@ npm run dev
 
 `db:start` spustí skutečný PostgreSQL, Supabase Auth, REST API a Storage. Zapíše jen veřejnou URL a anon klíč do ignorovaného `.env.local`. Prohlížeč nikdy nedostává service-role klíč. Obrazovky používají uložená data, ne místní simulaci.
 
-Na tomto počítači se lokální Docker spouští v dočasném Lima VM `volno`. `scripts/local.mjs` automaticky rozpozná jeho socket. Po restartu počítače jej lze spustit:
+Na tomto počítači se lokální Docker spouští v dočasném Lima VM `flek`. `scripts/local.mjs` automaticky rozpozná jeho socket. Po restartu počítače jej lze spustit:
 
 ```sh
-LIMA_HOME=/private/tmp/volno-lima-state /private/tmp/volno-runtime/bin/limactl start volno
+LIMA_HOME=/private/tmp/flek-lima-state /private/tmp/flek-runtime/bin/limactl start flek
 npm run db:start
 ```
 
@@ -37,14 +37,14 @@ SQL migrace jsou v `supabase/migrations`, demonstrace v `supabase/seed.sql`. Prv
 
 ## Lokální demo účty
 
-Všechny účty níže mají **pouze pro lokální vývoj** heslo `VolnoDemo2026!`. Demo seed nikdy nenasazujte do produkce.
+Všechny účty níže mají **pouze pro lokální vývoj** heslo `FlekDemo2026!`. Demo seed nikdy nenasazujte do produkce.
 
 | Účet | Účel |
 |---|---|
-| demo-customer@volno.test | Zákazník s historií rezervací |
-| demo-merchant@volno.test | Schválená provozovna Studio Dobrá hodina |
-| demo-merchant2@volno.test | Provozovna čekající na schválení |
-| demo-admin@volno.test | Správa provozoven |
+| demo-customer@flek.test | Zákazník s historií rezervací |
+| demo-merchant@flek.test | Schválená provozovna Studio Dobrá hodina |
+| demo-merchant2@flek.test | Provozovna čekající na schválení |
+| demo-admin@flek.test | Správa provozoven |
 
 Seed obsahuje dalších osm technických demo účtů pro vlastníky a obsazenost. Všech 15 provozoven je fiktivních.
 
