@@ -39,6 +39,7 @@ export function MapPage() {
             className="h-[55vh] w-full overflow-hidden rounded-2xl border border-line"
             center={point}
             markers={markers}
+            eager
             onSelect={setSelected}
             ariaLabel="Mapa volných termínů. Klepnutím na značku zobrazíš nabídku."
           />

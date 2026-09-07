@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { getOfferDetail } from '../../lib/api';
 import { track } from '../../lib/analytics';
-import { useServerNow } from '../../lib/clock';
+import { relativeTime, useServerNow } from '../../lib/clock';
 import { money, distance as formatDistance } from '../../lib/format';
 import { clockTime, dayLabel, duration } from '../../lib/time';
 import { DEFAULT_POINT, storedPoint } from '../../lib/geo';
@@ -68,49 +68,73 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
 
   const image = offer.image_url ?? offer.cover_url;
   const savings = offer.original_price_cents - offer.deal_price_cents;
+  const minutesAway = Math.round((Date.parse(offer.start_at) - Date.parse(now)) / 60000);
+  const lastSeat = offer.capacity_remaining === 1 && offer.capacity_total > 1;
 
   return (
-    <main className="mx-auto w-full max-w-2xl pb-32">
-      <div className="relative aspect-[16/10] w-full bg-line/60">
-        {image ? <img src={image} alt="" className="h-full w-full object-cover" /> : null}
-        <span className="tnum absolute top-3 left-3 rounded-lg bg-ink px-2 py-1 text-sm font-bold text-surface">
+    <main className="mx-auto w-full max-w-2xl pb-36">
+      <div className="relative aspect-[16/10] w-full bg-line/50">
+        {image ? (
+          <img src={image} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <div className="grid h-full w-full place-items-center bg-[linear-gradient(135deg,var(--color-line),var(--color-surface))]">
+            <span className="text-sm font-bold tracking-wide text-muted">FLEK</span>
+          </div>
+        )}
+        <Link
+          to="/"
+          aria-label="Zpět na nabídky"
+          className="absolute top-3 left-3 grid size-10 place-items-center rounded-full bg-card/90 text-lg font-bold text-ink backdrop-blur"
+        >
+          <span aria-hidden="true">←</span>
+        </Link>
+        <span className="tnum absolute right-3 bottom-3 rounded-lg bg-ink/90 px-2 py-1 text-sm font-bold text-surface backdrop-blur">
           −{offer.discount_pct} %
         </span>
       </div>
 
       <div className="px-4 pt-4">
-        <h1 className="text-2xl font-extrabold tracking-tight text-ink">{offer.service_name}</h1>
+        <div className="flex flex-wrap items-center gap-2">
+          {minutesAway > 0 && minutesAway <= 120 ? (
+            <span className="tnum rounded-md bg-accent-soft px-2 py-0.5 text-xs font-bold text-accent">
+              Začíná {relativeTime(offer.start_at, now)}
+            </span>
+          ) : null}
+          {lastSeat ? (
+            <span className="rounded-md bg-surface px-2 py-0.5 text-xs font-bold text-ink">Poslední místo</span>
+          ) : null}
+        </div>
+
+        <h1 className="mt-2 text-2xl leading-tight font-extrabold tracking-tight text-ink">{offer.service_name}</h1>
         <p className="mt-1 text-sm text-muted">
           {offer.business_name}
           {offer.district ? ` · ${offer.district}` : ''}
           {offer.distance_m != null ? ` · ${formatDistance(offer.distance_m)}` : ''}
         </p>
 
-        <p className="tnum mt-3 text-base font-semibold text-ink">
-          {dayLabel(offer.start_at, now)} {clockTime(offer.start_at)}–{clockTime(offer.end_at)}{' '}
-          <span className="font-normal text-muted">({duration(offer.start_at, offer.end_at)} min)</span>
-        </p>
-        <p className="tnum mt-1 text-sm font-semibold text-positive">Ušetříš {money(savings)}</p>
-
         {!offer.bookable ? (
           <div className="mt-4">
             <Banner tone="warning">Tento termín už bohužel není volný.</Banner>
           </div>
-        ) : offer.capacity_remaining === 1 && offer.capacity_total > 1 ? (
-          <div className="mt-4">
-            <Banner tone="warning">Poslední místo</Banner>
-          </div>
         ) : null}
+
+        <dl className="mt-5 divide-y divide-line rounded-2xl border border-line bg-card px-4">
+          <Fact
+            label="Kdy"
+            value={`${dayLabel(offer.start_at, now)} ${clockTime(offer.start_at)}–${clockTime(offer.end_at)}`}
+            note={`${duration(offer.start_at, offer.end_at)} min`}
+          />
+          <Fact label="Kde" value={offer.address_line} note={offer.city} />
+          <Fact label="Cena na místě" value={money(offer.deal_price_cents)} note={`běžně ${money(offer.original_price_cents)}`} />
+          <Fact label="Ušetříš" value={money(savings)} highlight />
+        </dl>
 
         {offer.description ? <p className="mt-5 text-sm leading-relaxed text-ink">{offer.description}</p> : null}
         {offer.business_description ? (
           <p className="mt-3 text-sm leading-relaxed text-muted">{offer.business_description}</p>
         ) : null}
 
-        <h2 className="mt-6 text-base font-bold text-ink">Kde to je</h2>
-        <p className="text-sm text-muted">
-          {offer.address_line}, {offer.city}
-        </p>
+        <h2 className="mt-7 text-base font-bold text-ink">Kde to je</h2>
         <LazyMap
           className="mt-3 h-48 w-full overflow-hidden rounded-2xl border border-line"
           center={{ lat: offer.latitude, lng: offer.longitude }}
@@ -128,8 +152,8 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           Navigovat
         </a>
 
-        <h2 className="mt-6 text-base font-bold text-ink">Zrušení</h2>
-        <p className="text-sm text-muted">
+        <h2 className="mt-7 text-base font-bold text-ink">Zrušení</h2>
+        <p className="mt-1 text-sm text-muted">
           Zrušit můžeš zdarma do {clockTime(cancellationDeadline(offer.start_at))}. Když rezervuješ později, máš na
           zrušení 10 minut od rezervace.
         </p>
@@ -137,12 +161,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-card/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
         <div className="mx-auto flex max-w-2xl flex-col gap-1">
-          <Button
-            size="lg"
-            className="w-full"
-            disabled={!offer.bookable}
-            onClick={() => setSheetOpen(true)}
-          >
+          <Button size="lg" className="w-full" disabled={!offer.bookable} onClick={() => setSheetOpen(true)}>
             {offer.bookable ? `Rezervovat za ${money(offer.deal_price_cents)}` : 'Termín není volný'}
           </Button>
           <p className="text-center text-xs font-semibold text-muted">Platba na místě</p>
@@ -163,6 +182,28 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
         }}
       />
     </main>
+  );
+}
+
+function Fact({
+  label,
+  value,
+  note,
+  highlight,
+}: {
+  label: string;
+  value: string;
+  note?: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-4 py-3">
+      <dt className="shrink-0 text-sm text-muted">{label}</dt>
+      <dd className="text-right">
+        <span className={`tnum font-bold ${highlight ? 'text-positive' : 'text-ink'}`}>{value}</span>
+        {note ? <span className="tnum block text-xs text-muted">{note}</span> : null}
+      </dd>
+    </div>
   );
 }
 

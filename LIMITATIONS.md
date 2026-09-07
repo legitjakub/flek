@@ -12,7 +12,7 @@ Na počítači s Dockerem stačí `npm ci && npm run db:start && npm run db:type
 
 ## 2. `src/types/database.ts` je psaný ručně
 
-Zadání chce typy generované ze schématu. Soubor zatím zrcadlí migrace ručně a je tak označený. `npm run db:types` (nebo generátor přes hostovaný projekt) ho přepíše skutečně vygenerovanou verzí.
+Zadání chce typy generované ze schématu. Soubor je zatím ruční, ale byl **porovnán položku po položce s výstupem generátoru ze živého schématu** — názvy, typy i nullabilita sedí, u `cover_url` a spol. je ruční verze přísnější (`string | null`) než generátor. `npm run db:types` ho kdykoli přepíše skutečně vygenerovanou verzí.
 
 ## 3. Ruční klikací průchod UI neproveden
 

@@ -35,10 +35,10 @@ Ověřeno navíc přímo v databázi: seed nahrán (15 provozoven, 30 služeb, 3
 | `npm run test:unit` | **6/6 prošlo** — Praha přes půlnoc, nezávislost na UTC dni, neexistující březnová 02:30, dvojí říjnová 02:30, 23‑ a 25hodinový den, celočíselné peníze |
 | `npx tsc --noEmit` | bez chyb |
 | `npm run build` | projde; MapLibre je vydělený a načítá se až na obrazovkách s mapou |
-| **Lighthouse** (produkční build, stránka **se skutečnými daty**) | **výkon 93, přístupnost 100.** LCP 2,6 s, TBT 0 ms, CLS 0 |
+| **Lighthouse** (produkční build, stránky **se skutečnými daty**) | Objevování **výkon 92, přístupnost 100**; detail nabídky **výkon 88, přístupnost 100**. TBT 0 ms, CLS 0. Obojí nad prahem ze zadání (≥ 80 / ≥ 90). |
 | Service-role klíč v balíčku | jediná shoda `service_role` je naše vlastní pojistka, která takový klíč odmítne |
 | Vodorovný posun | žádný na 375, 768 ani 1280 px |
-| Trasy v prohlížeči | `/`, `/prihlaseni`, `/rezervace`, `/partner`, `/admin` i neznámá cesta bez chyb v konzoli |
+| Trasy v prohlížeči | `/`, `/prihlaseni`, `/rezervace`, `/partner`, `/admin`, detail nabídky i neznámá cesta bez chyb v konzoli |
 | Filtry end-to-end v aplikaci | volba „Odpoledne" zúžila 30 → 8 nabídek, všechny 12:00–16:59, s odebratelnou pilulkou |
 
 ## Chyby nalezené a opravené při ověřování
@@ -46,7 +46,9 @@ Ověřeno navíc přímo v databázi: seed nahrán (15 provozoven, 30 služeb, 3
 1. Cache dotazů se mazala při každé události přihlášení včetně úvodní — zahazovalo to probíhající dotazy a obrazovka zůstala navždy v načítání.
 2. TanStack Query ve výchozím režimu výpadek sítě jen pozastaví; zákazník by při ztrátě spojení viděl nekonečný skeleton a zaseknuté „Potvrdit rezervaci". Nastaveno `networkMode: 'always'`.
 3. `server_clock` byla jediná funkce bez pevného `search_path` — odhalil databázový linter po nasazení. Opraveno migrací `202609080007`.
-4. Neaktivní položky segmentovaného ovladače měly kontrast 4,48:1, těsně pod AA. Tlumená barva ztmavena na `#5d6a68`; přístupnost se vrátila na 100.
+4. Neaktivní položky segmentovaného ovladače měly kontrast 4,48:1, těsně pod AA. Tlumená barva ztmavena na `#5d6a68`.
+5. Odznak „Začíná za…" měl na světlém tyrkysovém podkladu 4,29:1. Akcentní barva ztmavena na `#0a6a62`; obě stránky mají přístupnost 100.
+6. Detail nabídky platil při načtení za celý balík MapLibre, přestože mapa je pod ohybem stránky. Mapa se teď načte, až se doroluje do zorného pole — výkon 80 → 88.
 
 ## Akceptační kritéria ze sekce 17
 

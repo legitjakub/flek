@@ -27,4 +27,7 @@ Jeden řádek na rozhodnutí, chronologicky. Kde bylo zadání nejednoznačné, 
 - Cache dotazů se maže jen při skutečné změně identity, ne při každé události přihlášení. Mazání při úvodní události zahazovalo probíhající dotazy.
 - Service worker cachuje jen skořápku aplikace. Odpovědi o nabídkách a rezervacích se nikdy neukládají — kapacita se mění po minutách.
 - Aplikace se jmenuje **FLEK**. Přejmenování proběhlo přímo v migracích včetně prefixu rezervačních kódů a názvů Storage politik, protože migrace do té doby nikde neběžely a rename migrace by byla jen technický dluh.
+- Denní doba je serverový parametr `search_offers`, ne klientský filtr. Řeže se podle pražských hodin; kdyby to dělal prohlížeč, uživatel v jiné zóně by dostal jiný „večer" a stránkování by přestalo dávat smysl.
+- Použité filtry zůstávají viditelné jako odebratelné pilulky. Tichý filtr, který uživatel nevidí, je nejrychlejší způsob, jak vypadat prázdně.
+- Objevování má rytmus: co začíná do tří hodin jde do vodorovného pásu nahoře, nejhlubší slevy do druhého, zbytek je seznam. Žádná nabídka není ve dvou sekcích zároveň.
 - Barevnost je odvozená z loga: značková tyrkysová kreslí znak, tmavší odstín je vyhrazený pro hlavní CTA. Slevový odznak je tmavý, aby s CTA nesoutěžil.
