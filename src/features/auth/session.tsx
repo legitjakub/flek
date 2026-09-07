@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
-import { isAdmin, myProfile } from '../../lib/api';
+import { isAdmin, myProfile, serverClock } from '../../lib/api';
 import type { Profile } from '../../types/database';
 
 type SessionValue = {
@@ -47,6 +47,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       data.subscription.unsubscribe();
     };
   }, [queryClient]);
+
+  // Establish the server clock offset once at start-up, so day windows are right even on
+  // a device whose clock is hours off. Eligibility is decided by the database regardless.
+  useQuery({ queryKey: ['server-clock'], queryFn: serverClock, staleTime: 300_000, gcTime: Infinity });
 
   const userId = session?.user.id ?? null;
 

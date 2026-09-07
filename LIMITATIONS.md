@@ -32,7 +32,11 @@ Objevování na produkčním buildu dává **výkon 90 a přístupnost 100**, te
 
 Karty i detail počítají s `image_url` a `cover_url`, ale repozitář žádné fotografie neobsahuje a seed je nemá vyplněné. Bez nich se vykreslí neutrální plocha se značkou. Pro pilot je potřeba doplnit skutečné fotky provozoven.
 
-## 6. Vědomě mimo V1
+## 6. Jeden účet = jedna provozovna
+
+Partnerská část pracuje s první provozovnou účtu. Datový model víc provozoven na účet unese (`business_members`), ale přepínač mezi nimi v rozhraní není. Pro pilot s ručním onboardingem to stačí; jakmile bude mít někdo dvě pobočky, je potřeba ho doplnit.
+
+## 7. Vědomě mimo V1
 
 Platby, zálohy, výplaty · předplatné · věrnostní programy a kupony · recenze · chat · push a SMS · dynamické ceny · integrace na rezervační systémy · vícejazyčné rozhraní · nativní aplikace · fakturace · QR skenování.
 

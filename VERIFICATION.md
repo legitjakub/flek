@@ -13,7 +13,7 @@ Stav k 7. 9. 2026. Každý řádek říká, čím je doložený. Kde důkaz chyb
 | `npx vite build` | Projde. MapLibre je vydělený a načítá se až na obrazovkách s mapou. |
 | Service-role klíč v balíčku | `grep -ril service_role dist/` najde **jedinou** shodu: naši vlastní pojistku v `src/lib/supabase.ts`, která takový klíč odmítne. Žádný klíč v balíčku není. |
 | Vykreslení tras v prohlížeči | `/`, `/prihlaseni`, `/rezervace`, `/partner`, `/admin` a neznámá cesta se vykreslí bez chyby v konzoli. Jediné chyby jsou očekávané `ERR_CONNECTION_REFUSED` na neběžící Supabase. |
-| Vodorovný posun na 375 px | `document.body.scrollWidth === window.innerWidth === 375`. Žádný posun. |
+| Vodorovný posun na 375 / 768 / 1280 px | Na všech třech šířkách `document.body.scrollWidth === window.innerWidth`. Žádný posun. |
 | Lighthouse (produkční build, `vite preview`, headless Chrome) | Objevování: **výkon 90, přístupnost 100.** FCP 2,6 s, LCP 3,1 s, TBT 0 ms, CLS 0. Obě čísla nad požadovaným prahem (≥ 80 / ≥ 90). |
 | Odlišnost partnerské části | Partner i administrace mají vlastní rám, navigaci a značku; zákaznická část má spodní navigaci o čtyřech položkách. |
 
@@ -58,7 +58,7 @@ Průchod 1–12 vyžaduje běžící backend a dva prohlížeče. **Neproveden.*
 
 | Kritérium | Stav |
 | --- | --- |
-| Použitelnost jednou rukou na 375 px, bez vodorovného posunu | **Ověřeno** pro vykreslené obrazovky. |
+| Použitelnost jednou rukou na 375 px, bez vodorovného posunu | **Ověřeno** pro vykreslené obrazovky na 375, 768 i 1280 px. |
 | Žádná mrtvá navigace, žádný zástupný text, žádné lorem ipsum | **Ověřeno** čtením kódu; každá trasa v `ROUTES` má obrazovku, neznámá cesta má vlastní stav. |
 | Každý seznam má navržený prázdný, načítací a chybový stav | **Ověřeno** v kódu: `LoadingList`, `EmptyState`, `ErrorState` na objevování, mapě, rezervacích, nabídkách partnera, službách i administraci. |
 | Žádný anglický řetězec na uživatelské ploše | **Ověřeno** čtením; anglicky jsou jen komentáře v kódu. |

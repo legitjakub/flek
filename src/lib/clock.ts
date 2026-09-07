@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 // Device clocks are never authoritative. Every server payload carries `server_now`;
 // we keep the offset and derive all countdowns and day labels from it.
 let offsetMs = 0;
+let epoch = 0;
 const listeners = new Set<() => void>();
 
 export function noteServerNow(iso: string | null | undefined) {
@@ -10,8 +11,26 @@ export function noteServerNow(iso: string | null | undefined) {
   const next = Date.parse(iso) - Date.now();
   if (!Number.isFinite(next)) return;
   if (Math.abs(next - offsetMs) < 1000) return;
+  // A shift of more than a minute can move a Prague day boundary, so anything derived
+  // from the clock (the „Dnes" window above all) has to be recomputed.
+  const material = Math.abs(next - offsetMs) >= 60_000;
   offsetMs = next;
+  if (material) epoch += 1;
   listeners.forEach((l) => l());
+}
+
+/** Bumps whenever the correction is large enough to change a day window. */
+export function useClockEpoch(): number {
+  const [value, setValue] = useState(epoch);
+  useEffect(() => {
+    const tick = () => setValue(epoch);
+    listeners.add(tick);
+    tick();
+    return () => {
+      listeners.delete(tick);
+    };
+  }, []);
+  return value;
 }
 
 export function serverNow(): string {

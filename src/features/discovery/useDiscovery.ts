@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { searchOffers } from '../../lib/api';
 import { track } from '../../lib/analytics';
-import { serverNow } from '../../lib/clock';
+import { serverNow, useClockEpoch } from '../../lib/clock';
 import type { Point } from '../../lib/geo';
 import type { SearchRow } from '../../types/database';
 import { windowFor, wideningSteps, type Filters } from './filters';
@@ -46,8 +46,11 @@ export async function discover(point: Point, filters: Filters): Promise<Discover
 }
 
 export function useDiscovery(point: Point, filters: Filters) {
+  // The epoch is part of the key so a late clock correction re-runs the search with the
+  // right Prague day window instead of leaving a wrong „Dnes" on screen.
+  const epoch = useClockEpoch();
   return useQuery({
-    queryKey: ['discovery', point.lat.toFixed(4), point.lng.toFixed(4), filters],
+    queryKey: ['discovery', point.lat.toFixed(4), point.lng.toFixed(4), filters, epoch],
     queryFn: () => discover(point, filters),
     // Inventory decays by the minute: never show a card that stopped being bookable.
     staleTime: 30_000,
