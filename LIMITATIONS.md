@@ -24,9 +24,9 @@ Zadání chce typy generované ze schématu. Generátor potřebuje běžící da
 
 Akceptační kritéria v sekci 17 zadání popisují průchod dvěma prohlížeči proti skutečnému backendu. Bez databáze ho nešlo projít. V prohlížeči je ověřená jen skořápka aplikace: vykreslení, absence chyb v konzoli a absence vodorovného posunu na 375 px.
 
-## 4. Lighthouse nebyl změřen
+## 4. Lighthouse změřený jen na prázdné obrazovce
 
-Skóre výkonu ≥ 80 a přístupnosti ≥ 90 je nezměřené, protože měřit se má na stránce s daty. Přístupnost je řešená v kódu (kontrast, viditelný focus, klávesnicí ovladatelné dialogy, popsané vstupy, cíle ≥ 44 px, `prefers-reduced-motion`), ale číslo zatím nemáme.
+Objevování na produkčním buildu dává **výkon 90 a přístupnost 100**, tedy nad požadovaným prahem. Měřilo se ale bez běžícího backendu, takže stránka nesla skořápku, ne karty s fotografiemi. Až budou data a obrázky, je potřeba měření zopakovat — obrázky jsou to, co skóre výkonu obvykle srazí. Detail nabídky se bez dat změřit nedá.
 
 ## 5. Fotografie nabídek
 

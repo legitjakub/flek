@@ -14,6 +14,7 @@ Stav k 7. 9. 2026. Každý řádek říká, čím je doložený. Kde důkaz chyb
 | Service-role klíč v balíčku | `grep -ril service_role dist/` najde **jedinou** shodu: naši vlastní pojistku v `src/lib/supabase.ts`, která takový klíč odmítne. Žádný klíč v balíčku není. |
 | Vykreslení tras v prohlížeči | `/`, `/prihlaseni`, `/rezervace`, `/partner`, `/admin` a neznámá cesta se vykreslí bez chyby v konzoli. Jediné chyby jsou očekávané `ERR_CONNECTION_REFUSED` na neběžící Supabase. |
 | Vodorovný posun na 375 px | `document.body.scrollWidth === window.innerWidth === 375`. Žádný posun. |
+| Lighthouse (produkční build, `vite preview`, headless Chrome) | Objevování: **výkon 90, přístupnost 100.** FCP 2,6 s, LCP 3,1 s, TBT 0 ms, CLS 0. Obě čísla nad požadovaným prahem (≥ 80 / ≥ 90). |
 | Odlišnost partnerské části | Partner i administrace mají vlastní rám, navigaci a značku; zákaznická část má spodní navigaci o čtyřech položkách. |
 
 Během tohoto ověření se našly a opravily dvě skutečné chyby:
@@ -51,7 +52,7 @@ Průchod 1–12 vyžaduje běžící backend a dva prohlížeče. **Neproveden.*
 | Všechny automatické testy projdou | Jednotkové **ano**; integrační **nespuštěné** (chybí databáze). |
 | RLS zapnuté na každé tabulce | Politiky napsané; test `every application table has RLS enabled` je napsaný, ale **nespuštěný**. |
 | Žádný service key v balíčku | **Ověřeno** grepem. |
-| Lighthouse výkon ≥ 80, přístupnost ≥ 90 | **Nezměřeno.** |
+| Lighthouse výkon ≥ 80, přístupnost ≥ 90 | **Splněno na objevování: 90 / 100.** Měřeno na produkčním buildu bez běžícího backendu, takže obrazovka nesla skořápku, ne karty s daty; s obrázky nabídek je potřeba měření zopakovat. Detail nabídky nešlo změřit bez dat. |
 
 ### Produktová kritéria
 
