@@ -1,0 +1,16 @@
+{
+  "name": "VOLNO — volné termíny se slevou",
+  "short_name": "VOLNO",
+  "description": "Poslední volné termíny v okolí se slevou. Rezervuj dnes, plať na místě.",
+  "lang": "cs",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#faf7f2",
+  "theme_color": "#faf7f2",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
