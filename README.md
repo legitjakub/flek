@@ -17,7 +17,9 @@ React 19 + TypeScript + Vite · Tailwind v4 · TanStack Query · React Hook Form
 
 ## Nastavení
 
-Potřebujete Node.js ≥ 22.12 a Docker (kvůli lokálnímu Supabase).
+Potřebujete Node.js ≥ 22.12.
+
+**S Dockerem — lokální Supabase:**
 
 ```sh
 npm ci
@@ -27,6 +29,13 @@ npm run dev
 ```
 
 `npm run db:reset` přestaví lokální databázi a znovu ji naplní seedem. Skripty jsou v `scripts/local.mjs`.
+
+**Bez Dockeru — hostovaný projekt Supabase:** aplikujte migrace ze `supabase/migrations/` v pořadí názvů, nahrajte `supabase/seed.sql` (jen pro vývoj) a do `.env.local` zapište URL projektu a jeho **publishable/anon** klíč:
+
+```sh
+VITE_SUPABASE_URL=https://<projekt>.supabase.co
+VITE_SUPABASE_ANON_KEY=<anon klíč>
+```
 
 `.env.example` obsahuje jen veřejné položky. Service-role klíč nikdy nepatří do prohlížeče — klient v `src/lib/supabase.ts` ho aktivně odmítá.
 
@@ -60,7 +69,14 @@ Všechny mají **pouze pro lokální vývoj** heslo `FlekDemo2026!`. Seed ani he
 
 ```sh
 npm run test:unit         # čas, letní čas, peníze — bez databáze
-npm test                  # integrační testy proti běžícímu lokálnímu Supabase
+npm test                  # integrační testy proti běžícímu lokálnímu Supabase (Docker)
+npm run test:acceptance   # akceptační průchod proti libovolné instanci, jen s anon klíčem
+```
+
+`npm run test:acceptance` potřebuje `SUPABASE_URL` a `SUPABASE_ANON_KEY` a nasazený demo seed. Přihlašuje se jako demo účty přes veřejné API, takže prochází skutečnou RLS. Sám si zveřejní nabídky a na konci je zruší, takže se dá pouštět opakovaně:
+
+```sh
+SUPABASE_URL=... SUPABASE_ANON_KEY=... npm run test:acceptance
 ```
 
 Integrační testy se přihlašují **skutečnými JWT**, ne service-role klíčem, takže ověřují i RLS. Pokrývají souběžné rezervace (10 zákazníků na jedno místo), oversell, dvojité klepnutí, autorizaci mezi podniky, kapacitu, storna, nedostavení, kolize kódů a determinismus vyhledávání.
