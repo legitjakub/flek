@@ -15,7 +15,8 @@
     "test:integration": "node scripts/test.mjs",
     "db:start": "node scripts/local.mjs start",
     "db:reset": "node scripts/local.mjs reset",
-    "db:types": "node scripts/local.mjs types"
+    "db:types": "node scripts/local.mjs types",
+    "test:acceptance": "node scripts/acceptance.mjs"
   },
   "dependencies": {
     "react": "19.2.8",
