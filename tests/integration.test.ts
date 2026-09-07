@@ -192,3 +192,37 @@ describe('Domain invariants',()=>{
   await adminUser.client.rpc('admin_set_booking_block',{p_user_id:a.id,p_blocked:true});code((await book(a,await offer())).error,'BOOKING_BLOCKED');
  });
 });
+
+describe('Read models for merchant and admin screens',()=>{
+ it('merchant read models are membership scoped',async()=>{
+  code((await other.client.rpc('merchant_offers',{p_business_id:biz})).error,'FORBIDDEN');
+  code((await other.client.rpc('merchant_metrics',{p_business_id:biz})).error,'FORBIDDEN');
+  code((await anon.rpc('merchant_offers',{p_business_id:biz})).error,'permission denied');
+  expect((await merchant.client.rpc('merchant_metrics',{p_business_id:biz})).error).toBeNull();
+ });
+ it('merchant offer rows count confirmed bookings and follow bookability',async()=>{
+  const o=await offer(2);const a=await user();expect((await book(a,o)).error).toBeNull();
+  const rows=(await merchant.client.rpc('merchant_offers',{p_business_id:biz})).data as {id:string;booked:number;capacity_remaining:number;bookable:boolean}[];
+  const row=rows.find(r=>r.id===o.id)!;
+  expect(row.booked).toBe(1);expect(row.capacity_remaining).toBe(1);expect(row.bookable).toBe(true);
+ });
+ it('recovered revenue counts only completed bookings',async()=>{
+  const before=(await merchant.client.rpc('merchant_metrics',{p_business_id:biz})).data as {recovered_cents:number};
+  const o=await offer(1,{start:1,cutoff:0});const a=await user();expect((await book(a,o)).error).toBeNull();
+  const after=(await merchant.client.rpc('merchant_metrics',{p_business_id:biz})).data as {recovered_cents:number};
+  expect(after.recovered_cents).toBe(before.recovered_cents); // confirmed, not yet completed
+  const k=(await db.query('select id from public.bookings where offer_id=$1',[o.id])).rows[0].id;
+  await db.query("update public.offers set start_at=now()-interval '10 minutes' where id=$1",[o.id]);
+  await db.query("update public.bookings set start_at_snapshot=now()-interval '10 minutes' where id=$1",[k]);
+  expect((await merchant.client.rpc('merchant_resolve_booking',{p_booking_id:k,p_outcome:'completed'})).error).toBeNull();
+  const done=(await merchant.client.rpc('merchant_metrics',{p_business_id:biz})).data as {recovered_cents:number};
+  expect(done.recovered_cents).toBe(before.recovered_cents+39000);
+ });
+ it('admin read models refuse non-admins and answer for admins',async()=>{
+  for(const fn of ['admin_metrics','admin_businesses','admin_offers','admin_bookings'])
+   code((await merchant.client.rpc(fn,fn==='admin_metrics'?{}:fn==='admin_businesses'?{p_status:null}:{p_query:null})).error,'FORBIDDEN');
+  const metrics=(await adminUser.client.rpc('admin_metrics')).data as {published_capacity:number;funnel:Record<string,number>};
+  expect(metrics.published_capacity).toBeGreaterThan(0);expect(metrics.funnel).toHaveProperty('booking_created');
+  expect(((await adminUser.client.rpc('admin_businesses',{p_status:'pending'})).data as unknown[]).length).toBeGreaterThan(0);
+ });
+});

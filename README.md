@@ -1,70 +1,90 @@
 # FLEK
 
-**Rozpracovaný projekt, zatím bez uživatelského rozhraní.** Přesný stav a postup pokračování jsou v `HANDOFF.md`; integrační testy zatím nebyly spuštěny.
+FLEK je český marketplace pro **volnou kapacitu služeb na poslední chvíli**. Termín za 650 Kč v 18:30 má v 18:31 hodnotu nula. FLEK dovolí podniku proměnit tuhle mizející kapacitu na tržbu — se slevou, ale zaplacenou.
 
-České tržiště zlevněných termínů služeb na poslední chvíli. Pilot ověřuje, zda provozovny opakovaně zveřejňují nevyužitou kapacitu a zákazníci skutečně přicházejí. Platba probíhá na místě; aplikace neobsahuje platební bránu.
+Pilot běží v Praze, jazyk je čeština, měna CZK, časová zóna Europe/Prague. Město je ale vždy jen data, nikde není zadrátované v kódu ani ve schématu.
 
-## Lokální spuštění
+Aplikace ověřuje jedinou hypotézu: **budou podniky opakovaně zveřejňovat zlevněné termíny na poslední chvíli a budou si je zákazníci rezervovat a doopravdy dorazí?**
 
-Požadavky: Node.js 22.12+ a běžící Docker. Přesné ověřené verze knihoven jsou v `package.json`, původ verzí v `DEPENDENCIES.md`.
+## Dva hlavní toky
+
+- **Zákazník:** otevře aplikaci → uvidí výhodný termín poblíž, který brzy začíná → rezervuje do minuty → dostane kód.
+- **Podnik:** „mám prázdnou 18:30" → zveřejněno do 30 sekund na telefonu, pěti klepnutími a jedním zadáním ceny.
+
+## Stack
+
+React 19 + TypeScript + Vite · Tailwind v4 · TanStack Query · React Hook Form + Zod · MapLibre GL nad OpenStreetMap · Supabase (PostgreSQL, Auth, Storage, RLS, PostGIS) · Temporal polyfill pro práci s časem · instalovatelná PWA.
+
+## Nastavení
+
+Potřebujete Node.js ≥ 22.12 a Docker (kvůli lokálnímu Supabase).
 
 ```sh
 npm ci
-npm run db:start
-npm run db:types
-npm test
+npm run db:start   # spustí lokální Supabase a zapíše veřejné klíče do .env.local
+npm run db:types   # vygeneruje src/types/database.ts ze živé databáze
 npm run dev
 ```
 
-`db:start` spustí skutečný PostgreSQL, Supabase Auth, REST API a Storage. Zapíše jen veřejnou URL a anon klíč do ignorovaného `.env.local`. Prohlížeč nikdy nedostává service-role klíč. Obrazovky používají uložená data, ne místní simulaci.
+`npm run db:reset` přestaví lokální databázi a znovu ji naplní seedem. Skripty jsou v `scripts/local.mjs`.
 
-Na tomto počítači se lokální Docker spouští v dočasném Lima VM `flek`. `scripts/local.mjs` automaticky rozpozná jeho socket. Po restartu počítače jej lze spustit:
+`.env.example` obsahuje jen veřejné položky. Service-role klíč nikdy nepatří do prohlížeče — klient v `src/lib/supabase.ts` ho aktivně odmítá.
+
+## Migrace a seed
+
+Migrace v `supabase/migrations/` se aplikují v pořadí názvů:
+
+| Soubor | Obsah |
+| --- | --- |
+| `…0001_schema.sql` | tabulky, omezení, indexy, RLS a bezpečnostní pomocné funkce |
+| `…0002_booking.sql` | `create_booking`, `cancel_booking`, obchodnická a admin rozhodnutí |
+| `…0003_merchant.sql` | provozovny, služby, zveřejnění a úprava nabídky |
+| `…0004_queries.sql` | PostGIS vyhledávání, detail nabídky, čtecí modely |
+| `…0005_storage.sql` | Storage buckety a pravidla přístupu |
+| `…0006_metrics.sql` | čtecí modely a metriky pro partnera a administraci |
+
+`supabase/seed.sql` je **jen pro lokální vývoj**: 15 fiktivních pražských provozoven, 30 služeb a 38 termínů generovaných relativně k `now()`, takže demo je živé i příští týden. Rezervace pokrývají všechny stavy včetně dokončené i nedostavené.
+
+### Demo účty
+
+Všechny mají **pouze pro lokální vývoj** heslo `FlekDemo2026!`. Seed ani hesla nikdy nenasazujte do produkce.
+
+| E-mail | Role |
+| --- | --- |
+| `demo-customer@flek.test` | zákazník s historií rezervací |
+| `demo-merchant@flek.test` | partner se schválenou provozovnou |
+| `demo-merchant2@flek.test` | partner s provozovnou čekající na schválení |
+| `demo-admin@flek.test` | administrace |
+
+## Testy
 
 ```sh
-LIMA_HOME=/private/tmp/flek-lima-state /private/tmp/flek-runtime/bin/limactl start flek
-npm run db:start
+npm run test:unit         # čas, letní čas, peníze — bez databáze
+npm test                  # integrační testy proti běžícímu lokálnímu Supabase
 ```
 
-Adresář `/private/tmp` může operační systém vyčistit. Pro trvalé vývojové prostředí použijte běžnou instalaci Docker Desktop nebo Lima a znovu `npm run db:start`. Zdrojové soubory i migrace jsou v tomto repozitáři.
+Integrační testy se přihlašují **skutečnými JWT**, ne service-role klíčem, takže ověřují i RLS. Pokrývají souběžné rezervace (10 zákazníků na jedno místo), oversell, dvojité klepnutí, autorizaci mezi podniky, kapacitu, storna, nedostavení, kolize kódů a determinismus vyhledávání.
 
-## Databáze, migrace a testy
+## Hlavní obrazovky
 
-SQL migrace jsou v `supabase/migrations`, demonstrace v `supabase/seed.sql`. První start aplikuje migrace a seed. `npm run db:reset` smaže **lokální** databázi tohoto projektu a vytvoří ji znovu; nepoužívejte jej pro uchovávání pilotních dat. Všechny demo termíny vycházejí z databázového `now()`.
+**Zákazník** — Objevit (`/`), Mapa (`/mapa`), detail nabídky (`/nabidka/:id`), Rezervace (`/rezervace`), Profil (`/profil`).
 
-`npm test` vyžaduje běžící skutečný lokální Supabase. Chybějící backend testy nepřeskakuje. Service role vytváří pouze izolovaná testovací data; ověření oprávnění a rezervace používají přihlášení přes Auth a skutečné JWT. Testy odstraňují jen vlastní účty a provozovny. Časové testy samostatně: `npm run test:unit`.
+**FLEK Partner** (`/partner`) — přehled, zveřejnění termínu, nabídky, rezervace s vyhledáním podle kódu, služby, provozovna, metriky.
 
-`src/types/database.ts` se generuje ze živého schématu příkazem `npm run db:types`. Po změně migrací aktualizujte typy.
+**Administrace** (`/admin`) — fronta ke schválení, nabídky, rezervace, uživatelé, metriky pilotu.
 
-## Lokální demo účty
+## Jak se rozhoduje o dostupnosti
 
-Všechny účty níže mají **pouze pro lokální vývoj** heslo `FlekDemo2026!`. Demo seed nikdy nenasazujte do produkce.
+`sold_out` ani `expired` nejsou uložené stavy. `offer_status` nese jen administrativní záměr; dostupnost se **vždy odvozuje v dotazu** funkcí `offer_is_bookable(...)`, kterou používá vyhledávání, detail i rezervační RPC. Neexistuje druhá definice v TypeScriptu. Žádný cron není potřeba ke správnosti.
 
-| Účet | Účel |
-|---|---|
-| demo-customer@flek.test | Zákazník s historií rezervací |
-| demo-merchant@flek.test | Schválená provozovna Studio Dobrá hodina |
-| demo-merchant2@flek.test | Provozovna čekající na schválení |
-| demo-admin@flek.test | Správa provozoven |
+Kapacitu mění výhradně `security definer` funkce jediným podmíněným `UPDATE`. Klient nemá právo zapisovat do `offers.capacity_remaining`. Částečný unikátní index `bookings_one_active_per_customer_offer` dělá z dvojitého klepnutí, obnovení stránky i dvou panelů neškodnou operaci.
 
-Seed obsahuje dalších osm technických demo účtů pro vlastníky a obsazenost. Všech 15 provozoven je fiktivních.
+Peníze jsou celočíselné haléře od databáze až po formátování. Čas je vždy `timestamptz` a všechna rozhodnutí o způsobilosti používají `now()` v PostgreSQL — hodiny v zařízení nejsou nikdy autoritativní.
 
-## Bezpečnostní model
+## Omezení V1 a další kroky
 
-- PostgreSQL je jedinou autoritou pro cenu, čas, kapacitu a oprávnění.
-- RLS chrání každou aplikační tabulku; přímé zápisy do rezervací a kapacity jsou zakázané všem klientským rolím.
-- Rezervace ubírá místo jedním podmíněným `UPDATE`; unikátní částečný index a zámek zákazníka chrání před dvojklikem a souběhem limitů.
-- Zámek provozovny koordinuje schválení a pozastavení s rezervacemi. Zrušení rezervace obnovuje kapacitu ve stejné transakci.
-- Veřejné nabídky jsou veřejné i pro ostatní obchodníky. Soukromé nabídky, zákaznické profily a cizí rezervace přístupné nejsou.
-- Účast lze potvrdit pouze po začátku termínu a pouze členem jeho provozovny.
-- Peníze jsou celá čísla v haléřích; vstup i zobrazení jsou celé Kč. Den a čas používají Europe/Prague.
-- Bucket logos/covers povoluje pouze JPEG, PNG a WebP do 5 MB; zápis je omezen na složku vlastní provozovny.
+Aktuální stav ověření a to, co ještě není hotové, je v [VERIFICATION.md](VERIFICATION.md) a [LIMITATIONS.md](LIMITATIONS.md). Rozhodnutí učiněná při stavbě jsou v [DECISIONS.md](DECISIONS.md).
 
-## Produkční Supabase
+V1 vědomě neobsahuje platby, předplatné, věrnostní programy, recenze, chat, notifikace push a SMS, dynamické ceny ani integrace na rezervační systémy.
 
-V novém projektu aplikujte pouze migrace, nikoli demo seed. Nastavte veřejné připojení podle `.env.example`, správné Auth Site URL a redirect URLs pro nasazenou doménu. Admin roli přidělí správce databáze v `user_roles`, nikdy registrační formulář. Lokální zvýšený limit přihlášení v `config.toml` slouží souběžným testům; produkce má používat odpovídající limity Auth a ověřování e-mailů.
-
-Aktuální stav dokončení a konkrétní důkazy jsou v `VERIFICATION.md`. Zbývající omezení jsou v `LIMITATIONS.md`; konflikty zadání a jejich řešení v `DECISIONS.md`.
-
-## Další verze
-
-Až pilot prokáže opakované publikování a docházku: nejlepší úsilí při e-mailových oznámeních, oblíbené provozovny a export rezervace do kalendáře. Platby ani jiné funkce mimo zadání nejsou součástí této verze.
+Rozšíření jsou připravená na čtyřech místech: `bookings.price_cents` plus budoucí sloupec s platebním záměrem umožní zálohy; `publish_offer` je místo, kam se zapojí automatické pravidlo („tři hodiny před začátkem stále prázdné → zveřejnit se slevou 25 %"); `analytics_events` jsou vstup pro dynamické ceny; notifikace mají být rozhraní s in-app implementací.

@@ -1,15 +1,30 @@
 # Rozhodnutí
 
-- Availability uses STABLE, because PostgreSQL now() is transaction-stable, not immutable. One SQL predicate is shared by search, detail and atomic claims.
-- A customer profile lock serializes duplicate claims and the max-three rule. Business locks coordinate claims with suspension; lock order is profile → business → offer → booking.
-- All client mutations use RPCs. No client (including an admin JWT) receives direct capacity or booking write privileges.
-- Approved public inventory remains publicly readable, including to other merchants. Cross-merchant read denial applies to private inventory and bookings, resolving the conflict between the policy matrix and the literal test wording.
-- The code alphabet excludes 0/O/1/I/5/S; the sample alphabet included 5 and S, contradicting its own requirement. Rejection sampling avoids modulo bias.
-- March's nonexistent Prague 02:30 is rejected; October's ambiguous 02:30 uses the earlier occurrence and round-trips explicitly.
-- Cancellation grace follows the specified OR rule. Its displayed deadline is the later of start−60 minutes and creation+10 minutes.
-- Admin user lookup is inline in administration, with no separate Users navigation page.
-- The user-required stable React/Vite SPA replaces the Sites scaffold's beta Vinext runtime. Supabase owns auth and persistence; no ChatGPT sign-in is added.
-- Local Supabase runs in an isolated portable Lima VM because this machine did not have Docker. No mocked persistence is used.
-- Database policy and test work precedes visual concepting, as required by the brief.
-- Demonstration data contains only fictional venues and local-only accounts. The demo merchant owns examples of upcoming, completed, cancelled and no-show bookings.
-- Basic scalar form validation is shared with argument construction; eligibility, capacity, discounts and authorization remain database decisions.
+Jeden řádek na rozhodnutí, chronologicky. Kde bylo zadání nejednoznačné, zvolili jsme nejjednodušší variantu, která splní akceptační kritéria.
+
+## Databáze a doména
+
+- Dostupnost je `stable`, ne `immutable`, protože `now()` je v PostgreSQL stabilní v rámci transakce. Jediný SQL predikát sdílí vyhledávání, detail i atomický nárok.
+- `sold_out` a `expired` nejsou uložené stavy. `offer_status` nese jen administrativní záměr; dostupnost se odvozuje v dotazu. Neexistuje druhá definice v TypeScriptu.
+- Zámek profilu zákazníka serializuje duplicitní nárok i pravidlo tří rezervací. Zámky provozovny koordinují nárok s pozastavením. Pořadí zámků: profil → provozovna → nabídka → rezervace.
+- Všechny klientské mutace jdou přes RPC. Žádný klient — ani s admin JWT — nedostane právo zapisovat kapacitu nebo rezervace.
+- Schválená veřejná nabídka zůstává čitelná i konkurenci. Zákaz čtení mezi podniky platí pro neveřejnou nabídku a rezervace; tím se řeší rozpor mezi maticí politik a doslovným zněním testu.
+- Abeceda kódů vynechává 0/O/1/I/5/S; vzorová abeceda v zadání obsahovala 5 a S, což si protiřečilo. Rejection sampling odstraňuje modulo bias.
+- Neexistující pražská 02:30 v březnu se odmítá; nejednoznačná říjnová 02:30 používá dřívější výskyt a explicitně se vrací zpět.
+- Odklad zrušení se řídí zadaným pravidlem OR. Zobrazená lhůta je pozdější z časů začátek−60 minut a vytvoření+10 minut.
+- Základní skalární validace formulářů se sdílí se sestavením argumentů; způsobilost, kapacita, slevy a autorizace zůstávají rozhodnutím databáze.
+- Migrace `…0006_metrics.sql` doplňuje čtecí modely, které obrazovky potřebují (nabídky partnera s počtem obsazení, metriky partnera, seznamy a metriky administrace). Každá funkce si autorizaci odvozuje sama.
+
+## Aplikace
+
+- Místo další závislosti (React Router) je použit vlastní router nad History API, asi 60 řádků. Potřebujeme jen shodu cesty a odkaz, který nepřenačte stránku.
+- `src/types/database.ts` je zatím psaný ručně podle migrací, protože `npm run db:types` potřebuje běžící PostgreSQL. Po prvním spuštění databáze ho generovaný soubor nahradí; viz LIMITATIONS.md.
+- Scaffold `components/ui` ze šablony shadcn zůstal nepoužitý a byl odstraněn. Zadání výslovně varuje před vzhledem výchozího shadcn a vlastní komponenty vyšly kratší než přizpůsobování cizích.
+- MapLibre se načítá až na obrazovkách, které kreslí mapu (`React.lazy`). Balík má skoro megabajt a objevování ho nesmí platit.
+- Serverový čas se bere z každé odpovědi, která ho nese (`server_now`), a drží se jako odchylka. Odpočty a popisky dnů se z něj přepočítávají v intervalu; hodiny zařízení se nepoužívají.
+- Zákaznická část tyká, partnerská vyká. Důsledně, bez míchání.
+- TanStack Query běží v režimu `networkMode: 'always'`. Výchozí režim výpadek sítě jen pozastaví, takže by zákazník viděl nekonečný skeleton a zablokované tlačítko místo čitelné chyby.
+- Cache dotazů se maže jen při skutečné změně identity, ne při každé události přihlášení. Mazání při úvodní události zahazovalo probíhající dotazy.
+- Service worker cachuje jen skořápku aplikace. Odpovědi o nabídkách a rezervacích se nikdy neukládají — kapacita se mění po minutách.
+- Aplikace se jmenuje **FLEK**. Přejmenování proběhlo přímo v migracích včetně prefixu rezervačních kódů a názvů Storage politik, protože migrace do té doby nikde neběžely a rename migrace by byla jen technický dluh.
+- Barevnost je odvozená z loga: značková tyrkysová kreslí znak, tmavší odstín je vyhrazený pro hlavní CTA. Slevový odznak je tmavý, aby s CTA nesoutěžil.

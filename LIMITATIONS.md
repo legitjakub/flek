@@ -1,8 +1,39 @@
-# Zbývající práce
+# Co není hotové
 
-Průběžný pracovní záznam, aktualizovaný během sestavení.
+Poctivý seznam. Nic z toho není obejité mockem ani vydávané za hotové.
 
-- Skutečný lokální Supabase se zatím instaluje; integrační testy ani migrace dosud nebyly spuštěny. Jejich správnost není zatím ověřená.
-- Zákaznické, obchodnické a administrátorské obrazovky zatím nejsou implementované.
-- P1 začne až po funkčním a otestovaném P0. P2 se nebude vydávat za dokončené.
-- Pro nasazení dostupné z jiných zařízení bude potřeba produkční Supabase projekt. Lokální URL a demo účty nejsou produkční backend.
+## 1. Integrační testy a migrace neběžely proti skutečné databázi
+
+Na tomto počítači není Docker, PostgreSQL ani nástroj, kterým by šly nainstalovat (`docker`, `colima`, `podman`, `limactl` ani `brew` nejsou k dispozici). Lokální Supabase proto nešlo spustit.
+
+Důsledek: SQL v `supabase/migrations/` a `supabase/seed.sql` je napsané a typově konzistentní, ale **nikdy nebylo aplikované na běžící PostgreSQL**. Integrační testy v `tests/integration.test.ts` jsou napsané a projdou `tsc`, ale nespouštěly se. Nelze tedy tvrdit, že souběžné rezervace, RLS ani vyhledávání fungují — jen že jsou tak navržené.
+
+Co s tím: na počítači s Dockerem stačí
+
+```sh
+npm ci && npm run db:start && npm run db:types && npm test
+```
+
+a případné chyby opravit. Nepomáhejte si mockem backendu.
+
+## 2. `src/types/database.ts` je psaný ručně
+
+Zadání chce typy generované ze schématu. Generátor potřebuje běžící databázi, kterou tady nemáme. Soubor proto zrcadlí migrace ručně a je tak označený. `npm run db:types` ho přepíše skutečně vygenerovanou verzí.
+
+## 3. End-to-end průchod nebyl proveden
+
+Akceptační kritéria v sekci 17 zadání popisují průchod dvěma prohlížeči proti skutečnému backendu. Bez databáze ho nešlo projít. V prohlížeči je ověřená jen skořápka aplikace: vykreslení, absence chyb v konzoli a absence vodorovného posunu na 375 px.
+
+## 4. Lighthouse nebyl změřen
+
+Skóre výkonu ≥ 80 a přístupnosti ≥ 90 je nezměřené, protože měřit se má na stránce s daty. Přístupnost je řešená v kódu (kontrast, viditelný focus, klávesnicí ovladatelné dialogy, popsané vstupy, cíle ≥ 44 px, `prefers-reduced-motion`), ale číslo zatím nemáme.
+
+## 5. Fotografie nabídek
+
+Karty i detail počítají s `image_url` a `cover_url`, ale repozitář žádné fotografie neobsahuje a seed je nemá vyplněné. Bez nich se vykreslí neutrální plocha se značkou. Pro pilot je potřeba doplnit skutečné fotky provozoven.
+
+## 6. Vědomě mimo V1
+
+Platby, zálohy, výplaty · předplatné · věrnostní programy a kupony · recenze · chat · push a SMS · dynamické ceny · integrace na rezervační systémy · vícejazyčné rozhraní · nativní aplikace · fakturace · QR skenování.
+
+Z P2 nebylo dokončeno nic: e-mailová oznámení, oblíbené podniky, export do kalendáře ani zakládání provozovny administrátorem s pozvánkou vlastníka. P0 a P1 mají přednost a P2 se nebude vydávat za hotové.
