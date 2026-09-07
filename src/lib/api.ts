@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import { result } from './errors';
 import { noteServerNow } from './clock';
 import type {
+  AdminBooking,
   AdminBusiness,
   AdminMetrics,
   AdminUser,
@@ -225,8 +226,8 @@ export async function adminOffers(query: string): Promise<MerchantOffer[]> {
   return (await result<MerchantOffer[]>(supabase.rpc('admin_offers', { p_query: query, p_limit: 50 }))) ?? [];
 }
 
-export async function adminBookings(query: string): Promise<CustomerBooking[]> {
-  return (await result<CustomerBooking[]>(supabase.rpc('admin_bookings', { p_query: query, p_limit: 50 }))) ?? [];
+export async function adminBookings(query: string): Promise<AdminBooking[]> {
+  return (await result<AdminBooking[]>(supabase.rpc('admin_bookings', { p_query: query, p_limit: 50 }))) ?? [];
 }
 
 export async function adminUserLookup(email: string): Promise<AdminUser[]> {

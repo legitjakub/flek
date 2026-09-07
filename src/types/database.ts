@@ -125,6 +125,9 @@ export type CustomerBooking = {
   server_now: string;
 };
 
+/** Raw `bookings` row: what the admin list RPCs return, without the customer view's extras. */
+export type AdminBooking = Omit<CustomerBooking, 'business_phone' | 'can_cancel' | 'cancellation_deadline' | 'server_now'>;
+
 export type MerchantBooking = Omit<CustomerBooking, 'business_phone' | 'can_cancel' | 'cancellation_deadline'> & {
   customer_id: string;
   customer_label: string;
@@ -199,6 +202,6 @@ export type AdminBusiness = Business & {
   upcoming_offers: number;
 };
 
-export type AdminUser = Profile & { email: string; bookings: CustomerBooking[] };
+export type AdminUser = Profile & { email: string; bookings: AdminBooking[] };
 
 export type SortKey = 'recommended' | 'nearest' | 'discount' | 'cheapest' | 'soonest';
