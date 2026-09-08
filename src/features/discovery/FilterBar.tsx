@@ -83,12 +83,12 @@ export function FilterBar({
       <div className="rail rail-fade flex max-w-full gap-1 border-b border-line" aria-label="Kategorie">
         {[{ slug: '', label_cs: 'Vše' }, ...categories].map((category) => {
           const active = (filters.category ?? '') === category.slug;
-          return <button key={category.slug} type="button" aria-pressed={active} onClick={() => onChange({ ...filters, category: category.slug || null })} className={`min-h-12 shrink-0 border-b-2 px-3 text-sm font-semibold transition-colors ${active ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-ink'}`}>{category.label_cs}</button>;
+          return <button key={category.slug} type="button" aria-pressed={active} onClick={() => onChange({ ...filters, category: category.slug || null })} className={`min-h-12 shrink-0 border-b-2 px-3 text-sm font-bold transition-colors ${active ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-ink'}`}>{category.label_cs}</button>;
         })}
       </div>
       {chips.length ? <div className="flex flex-wrap items-center gap-x-3 text-sm text-muted">
         <span>{chips.map((chip) => chip.label).join(' · ')}</span>
-        <button type="button" onClick={() => onChange({ ...DEFAULT_FILTERS, when: filters.when, category: filters.category })} className="min-h-11 font-semibold text-accent underline underline-offset-4">Zrušit omezení</button>
+        <button type="button" onClick={() => onChange({ ...DEFAULT_FILTERS, when: filters.when, category: filters.category })} className="min-h-11 font-bold text-accent underline underline-offset-4">Zrušit omezení</button>
       </div> : null}
 
       <Sheet

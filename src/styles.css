@@ -38,6 +38,10 @@
   --color-warning: #8a5a00;
   --color-danger: #a12d36;
 
+  /* The whole scale. Roles, so a new screen does not invent a thirteenth combination:
+     2xl/800 page heading · xl/800 price and time · lg/800 section heading ·
+     base/700 emphasis · base/400 body and content · sm/500 metadata only · xs badges.
+     Weights are 400, 700 and 800 — nothing in between. */
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-base: 1rem;

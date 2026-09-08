@@ -69,7 +69,7 @@ export function MapPage() {
           </section>
           <div ref={mapArea} className="relative min-h-0 min-w-0">
             <LazyMap className="h-full min-h-80 w-full" center={point} markers={markers} selectedId={openGroup[0] ?? highlighted ?? undefined} eager fitToMarkers onSelect={openMarker} onSelectGroup={(ids) => { lastSelection.current = ids; setOpenGroup(ids); }} ariaLabel="Mapa aktivit. Cena otevře konkrétní aktivitu, číslo u ceny nabídne více termínů v okolí." />
-            <p className="pointer-events-none absolute top-3 left-3 z-10 max-w-[calc(100%-6rem)] rounded-xl border border-line bg-card px-3 py-2 text-sm font-semibold shadow-card">Klepni na cenu a vyber si termín</p>
+            <p className="pointer-events-none absolute top-3 left-3 z-10 max-w-[calc(100%-6rem)] rounded-xl border border-line bg-card px-3 py-2 text-sm font-bold shadow-card">Klepni na cenu a vyber si termín</p>
           </div>
         </div>
       ) : null}

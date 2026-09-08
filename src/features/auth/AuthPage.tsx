@@ -87,7 +87,7 @@ export function AuthPage() {
 
       {confirmSent ? (
         <div className="mt-6 rounded-2xl border border-line bg-card p-5 sm:p-6">
-          <h2 className="text-lg font-bold">Potvrď svůj e-mail</h2>
+          <h2 className="text-lg font-extrabold">Potvrď svůj e-mail</h2>
           <p className="mt-2 text-base leading-relaxed text-muted">
             Poslali jsme odkaz na <strong className="text-ink">{form.getValues('email')}</strong>. Otevři ho a účet se
             aktivuje. Mrkni i do složky s nevyžádanou poštou.
@@ -160,7 +160,7 @@ export function AuthPage() {
 
       <button
         type="button"
-        className="mt-5 min-h-11 w-full text-sm font-semibold text-ink underline underline-offset-4"
+        className="mt-5 min-h-11 w-full text-sm font-bold text-ink underline underline-offset-4"
         onClick={() => {
           setFailure(null);
           setMode(isSignup ? 'login' : 'signup');

@@ -164,14 +164,14 @@ export function CreateOfferSheet({
               onChange={(event) => setPrice(event.target.value.replace(/\D/g, ''))}
             />
             {service && dealCents > 0 ? (
-              <p className="tnum text-sm font-semibold text-ink">
+              <p className="tnum text-sm font-bold text-ink">
                 {money(normal)} → {money(dealCents)} · −{discount} %
               </p>
             ) : null}
           </fieldset>
 
           <details className="border-t border-line pt-2" open={showAdvanced} onToggle={(event) => setShowAdvanced(event.currentTarget.open)}>
-            <summary className="flex min-h-11 cursor-pointer items-center text-sm font-semibold text-muted">Více míst a pokročilé nastavení</summary>
+            <summary className="flex min-h-11 cursor-pointer items-center text-sm font-bold text-muted">Více míst a pokročilé nastavení</summary>
             <div className="mt-3 grid gap-4 sm:grid-cols-2">
               <Field id="offer-capacity" label="Počet míst"><Input id="offer-capacity" inputMode="numeric" value={capacity} onChange={(event) => setCapacity(event.target.value.replace(/\D/g, '') || '1')} /></Field>
               <Field id="offer-cutoff" label="Uzávěrka před začátkem" hint="V minutách"><Input id="offer-cutoff" inputMode="numeric" value={cutoffMinutes} onChange={(event) => setCutoffMinutes(event.target.value.replace(/\D/g, '') || '0')} /></Field>

@@ -162,7 +162,7 @@ function BookingRow({
   return (
     <div className="flex flex-wrap items-start justify-between gap-4">
       <div className="min-w-0">
-        <p className="tnum text-sm font-semibold text-ink">
+        <p className="tnum text-sm font-bold text-ink">
           {dayLabel(booking.start_at_snapshot, now)} {clockTime(booking.start_at_snapshot)}–
           {clockTime(booking.end_at_snapshot)}
         </p>
@@ -170,9 +170,9 @@ function BookingRow({
         <p className="text-sm text-muted">
           {booking.customer_label} · {money(booking.price_cents)}
           {booking.payment_status === 'paid' ? (
-            <span className="ml-2 font-semibold text-positive">{' '}Zaplaceno předem</span>
+            <span className="ml-2 font-bold text-positive">{' '}Zaplaceno předem</span>
           ) : booking.payment_status === 'refunded' ? (
-            <span className="ml-2 font-semibold text-muted">Vráceno</span>
+            <span className="ml-2 font-bold text-muted">Vráceno</span>
           ) : null}
         </p>
         <p className="tnum mt-1 font-mono text-sm font-bold tracking-[0.1em] text-ink">{booking.reservation_code}</p>
@@ -184,7 +184,7 @@ function BookingRow({
             </a>
           </p>
         ) : null}
-        <p className="mt-1 text-xs font-semibold text-muted">{STATUS_LABEL[booking.status] ?? booking.status}</p>
+        <p className="mt-1 text-xs font-bold text-muted">{STATUS_LABEL[booking.status] ?? booking.status}</p>
       </div>
       {booking.status === 'confirmed' ? <ResolveButtons booking={booking} /> : null}
     </div>

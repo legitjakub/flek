@@ -52,7 +52,7 @@ export function ProfilePage() {
           action={
             <Link
               to="/prihlaseni?returnTo=%2Fprofil"
-              className="inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-semibold text-accent-ink"
+              className="inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-bold text-accent-ink"
             >
               Přihlásit se
             </Link>
@@ -63,7 +63,7 @@ export function ProfilePage() {
           <p className="mt-1 text-sm text-muted">Nabídněte volné termíny a naplňte je i na poslední chvíli.</p>
           <Link
             to="/prihlaseni?role=merchant&mode=signup&returnTo=%2Fpartner"
-            className="mt-3 inline-flex min-h-11 items-center rounded-xl border border-line px-4 text-sm font-semibold text-ink"
+            className="mt-3 inline-flex min-h-11 items-center rounded-xl border border-line px-4 text-sm font-bold text-ink"
           >
             FLEK Partner
           </Link>
@@ -111,20 +111,20 @@ export function ProfilePage() {
       <div className="mt-8 flex flex-col gap-2">
         <Link
           to="/partner"
-          className="inline-flex min-h-11 items-center rounded-xl border border-line bg-card px-4 text-sm font-semibold text-ink"
+          className="inline-flex min-h-11 items-center rounded-xl border border-line bg-card px-4 text-sm font-bold text-ink"
         >
           FLEK Partner — správa provozovny
         </Link>
         {admin ? (
           <Link
             to="/admin"
-            className="inline-flex min-h-11 items-center rounded-xl border border-line bg-card px-4 text-sm font-semibold text-ink"
+            className="inline-flex min-h-11 items-center rounded-xl border border-line bg-card px-4 text-sm font-bold text-ink"
           >
             Administrace
           </Link>
         ) : null}
         <p className="tnum text-base text-muted">
-          Verze aplikace <span className="font-semibold text-ink">{import.meta.env.VITE_BUILD_ID ?? 'dev'}</span>
+          Verze aplikace <span className="font-bold text-ink">{import.meta.env.VITE_BUILD_ID ?? 'dev'}</span>
         </p>
         <Button
           variant="secondary"

@@ -104,7 +104,7 @@ function Routes() {
     <CustomerShell>
       <main className="mx-auto w-full max-w-2xl px-4 py-16 text-center">
         <h1 className="text-2xl font-extrabold text-ink">Tuhle stránku neznáme.</h1>
-        <Link to="/" className="mt-4 inline-block text-sm font-semibold underline underline-offset-4">
+        <Link to="/" className="mt-4 inline-block text-sm font-bold underline underline-offset-4">
           Zpět na nabídky
         </Link>
       </main>
@@ -121,7 +121,7 @@ class Boundary extends Component<{ children: ReactNode }, { error: unknown }> {
     if (!this.state.error) return this.props.children;
     return (
       <main className="mx-auto w-full max-w-md px-4 py-16 text-center">
-        <h1 className="text-lg font-bold text-ink">{errorMessage(this.state.error)}</h1>
+        <h1 className="text-lg font-extrabold text-ink">{errorMessage(this.state.error)}</h1>
         <Button className="mt-4" onClick={() => window.location.reload()}>
           Načíst znovu
         </Button>

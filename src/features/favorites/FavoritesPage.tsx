@@ -45,7 +45,7 @@ export function FavoritesPage() {
             action={
               <Link
                 to="/prihlaseni?returnTo=%2Foblibene"
-                className="inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-semibold text-accent-ink"
+                className="inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-bold text-accent-ink"
               >
                 Přihlásit se
               </Link>
@@ -75,7 +75,7 @@ export function FavoritesPage() {
             action={
               <Link
                 to="/"
-                className="inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-semibold text-accent-ink"
+                className="inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-bold text-accent-ink"
               >
                 Objevit nabídky
               </Link>
@@ -109,7 +109,7 @@ export function FavoritesPage() {
               >
                 <div className="min-w-0">
                   <p className="text-base font-bold">{place.display_name}</p>
-                  <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
+                  <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-base text-muted">
                     <span className="inline-flex items-center gap-1.5">
                       <MapPin size={15} aria-hidden="true" />
                       {place.district || place.city}
@@ -117,7 +117,7 @@ export function FavoritesPage() {
                     <Rating average={place.rating_avg} count={place.rating_count} />
                   </p>
                 </div>
-                <p className="tnum text-sm font-semibold">
+                <p className="tnum text-base font-bold">
                   {place.open_offers > 0 ? `${place.open_offers} volných termínů` : 'Teď nic volného'}
                   {place.new_offers > 0 ? (
                     <span className="ml-2 rounded-md bg-accent-soft px-2 py-0.5 text-accent">
@@ -132,7 +132,7 @@ export function FavoritesPage() {
       ) : null}
 
       {places.length > 0 && news.length === 0 ? (
-        <p className="mt-6 flex items-center gap-2 text-sm text-muted">
+        <p className="mt-6 flex items-center gap-2 text-base text-muted">
           <Heart size={16} aria-hidden="true" />U sledovaných míst zatím nic nového nepřibylo.
         </p>
       ) : null}

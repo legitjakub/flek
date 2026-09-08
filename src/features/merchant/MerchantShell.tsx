@@ -28,11 +28,11 @@ export function MerchantShell({ children }: { children: (business: Business) => 
     return (
       <MerchantFrame>
         <div className="rounded-2xl border border-line bg-card p-5">
-          <h1 className="text-lg font-bold text-ink">Přihlaste se jako partner</h1>
+          <h1 className="text-lg font-extrabold text-ink">Přihlaste se jako partner</h1>
           <p className="mt-1 text-sm text-muted">Účtem partnera spravujete provozovnu a volné termíny.</p>
           <Link
             to="/prihlaseni?role=merchant&returnTo=%2Fpartner"
-            className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-semibold text-accent-ink"
+            className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-bold text-accent-ink"
           >
             Přihlásit se
           </Link>
@@ -61,13 +61,13 @@ export function MerchantShell({ children }: { children: (business: Business) => 
     return (
       <MerchantFrame>
         <div className="rounded-2xl border border-line bg-card p-5">
-          <h1 className="text-lg font-bold text-ink">Zaregistrujte provozovnu</h1>
+          <h1 className="text-lg font-extrabold text-ink">Zaregistrujte provozovnu</h1>
           <p className="mt-1 text-sm text-muted">
             Vyplníte základní údaje, my je do 24 hodin zkontrolujeme a pak můžete zveřejňovat volné termíny.
           </p>
           <Link
             to="/partner/registrace"
-            className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-semibold text-accent-ink"
+            className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-bold text-accent-ink"
           >
             Přidat provozovnu
           </Link>
@@ -114,17 +114,17 @@ function MerchantFrame({
         <div className="mx-auto flex min-h-18 max-w-[1440px] items-center justify-between gap-3 px-4 lg:px-8">
           <Link to="/partner" aria-label="FLEK Partner" className="inline-flex min-h-11 items-center"><Wordmark suffix="Partner" /></Link>
           <div className="flex min-w-0 items-center gap-6">
-            {business ? <span className="hidden max-w-sm truncate text-sm font-semibold text-muted sm:inline">{business.display_name}</span> : null}
-            <Link to="/" className="inline-flex min-h-11 shrink-0 items-center gap-1 text-sm font-semibold">Zákaznická část<ArrowUpRight size={16} aria-hidden="true" /></Link>
+            {business ? <span className="hidden max-w-sm truncate text-sm font-bold text-muted sm:inline">{business.display_name}</span> : null}
+            <Link to="/" className="inline-flex min-h-11 shrink-0 items-center gap-1 text-sm font-bold">Zákaznická část<ArrowUpRight size={16} aria-hidden="true" /></Link>
           </div>
         </div>
       </header>
       <div className={`mx-auto max-w-[1440px] ${nav ? 'lg:grid lg:grid-cols-[224px_minmax(0,1fr)]' : ''}`}>
-        {nav ? <aside className="hidden min-h-[calc(100dvh-73px)] border-r border-line bg-card px-4 py-6 lg:block"><nav aria-label="Partner" className="sticky top-24"><ul className="flex flex-col gap-2">{NAV.map(({ to, label, icon: Icon }) => <li key={to}><Link to={to} aria-current={path === to ? 'page' : undefined} className={`flex min-h-12 items-center gap-3 rounded-xl px-4 text-sm font-semibold ${path === to ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-surface hover:text-ink'}`}><Icon size={20} aria-hidden="true" />{label}</Link></li>)}</ul></nav></aside> : null}
+        {nav ? <aside className="hidden min-h-[calc(100dvh-73px)] border-r border-line bg-card px-4 py-6 lg:block"><nav aria-label="Partner" className="sticky top-24"><ul className="flex flex-col gap-2">{NAV.map(({ to, label, icon: Icon }) => <li key={to}><Link to={to} aria-current={path === to ? 'page' : undefined} className={`flex min-h-12 items-center gap-3 rounded-xl px-4 text-sm font-bold ${path === to ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-surface hover:text-ink'}`}><Icon size={20} aria-hidden="true" />{label}</Link></li>)}</ul></nav></aside> : null}
         <main id="partner-obsah" className="min-w-0 px-4 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6 lg:p-8">{children}</main>
       </div>
-      {nav ? <nav aria-label="Partner" className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card pb-[env(safe-area-inset-bottom)] lg:hidden"><ul className="flex">{NAV.slice(0, 3).map(({ to, label, icon: Icon }) => <li key={to} className="flex-1"><Link to={to} aria-current={path === to ? 'page' : undefined} className={`flex min-h-16 flex-col items-center justify-center gap-1 text-xs font-semibold ${path === to ? 'text-accent' : 'text-muted'}`}><Icon size={22} aria-hidden="true" />{label}</Link></li>)}<li className="flex-1"><button type="button" onClick={() => setMenu(true)} aria-haspopup="dialog" className={`flex min-h-16 w-full flex-col items-center justify-center gap-1 text-xs font-semibold ${NAV.slice(3).some((item) => item.to === path) ? 'text-accent' : 'text-muted'}`}><Ellipsis size={22} aria-hidden="true" />Další</button></li></ul></nav> : null}
-      <Sheet open={menu} onClose={() => setMenu(false)} title="Správa provozovny"><div className="flex flex-col gap-2">{NAV.slice(3).map(({ to, label, icon: Icon }) => <button key={to} type="button" onClick={() => { setMenu(false); navigate(to); }} className={`flex min-h-13 items-center gap-3 rounded-xl px-4 text-base font-semibold ${path === to ? 'bg-accent-soft text-accent' : 'hover:bg-surface'}`}><Icon size={20} aria-hidden="true" />{label}</button>)}</div></Sheet>
+      {nav ? <nav aria-label="Partner" className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card pb-[env(safe-area-inset-bottom)] lg:hidden"><ul className="flex">{NAV.slice(0, 3).map(({ to, label, icon: Icon }) => <li key={to} className="flex-1"><Link to={to} aria-current={path === to ? 'page' : undefined} className={`flex min-h-16 flex-col items-center justify-center gap-1 text-xs font-bold ${path === to ? 'text-accent' : 'text-muted'}`}><Icon size={22} aria-hidden="true" />{label}</Link></li>)}<li className="flex-1"><button type="button" onClick={() => setMenu(true)} aria-haspopup="dialog" className={`flex min-h-16 w-full flex-col items-center justify-center gap-1 text-xs font-bold ${NAV.slice(3).some((item) => item.to === path) ? 'text-accent' : 'text-muted'}`}><Ellipsis size={22} aria-hidden="true" />Další</button></li></ul></nav> : null}
+      <Sheet open={menu} onClose={() => setMenu(false)} title="Správa provozovny"><div className="flex flex-col gap-2">{NAV.slice(3).map(({ to, label, icon: Icon }) => <button key={to} type="button" onClick={() => { setMenu(false); navigate(to); }} className={`flex min-h-13 items-center gap-3 rounded-xl px-4 text-base font-bold ${path === to ? 'bg-accent-soft text-accent' : 'hover:bg-surface'}`}><Icon size={20} aria-hidden="true" />{label}</button>)}</div></Sheet>
     </div>
   );
 }

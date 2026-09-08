@@ -24,7 +24,7 @@ export function ResolveButtons({ booking }: { booking: MerchantBooking | Merchan
   if (booking.status !== 'confirmed') {
     const label =
       booking.status === 'completed' ? 'Zákazník dorazil' : booking.status === 'no_show' ? 'Nedorazil' : 'Zrušeno';
-    return <span className="text-sm font-semibold text-muted">{label}</span>;
+    return <span className="text-sm font-bold text-muted">{label}</span>;
   }
 
   return (

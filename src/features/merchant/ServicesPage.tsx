@@ -171,7 +171,7 @@ function ServiceSheet({
           <Textarea id="s-description" value={description} onChange={(event) => setDescription(event.target.value)} />
         </Field>
         {service ? (
-          <label className="flex min-h-11 items-center gap-2 text-sm font-semibold text-ink">
+          <label className="flex min-h-11 items-center gap-2 text-sm font-bold text-ink">
             <input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} className="size-5" />
             Služba je aktivní
           </label>

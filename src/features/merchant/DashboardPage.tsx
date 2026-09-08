@@ -40,7 +40,7 @@ function Dashboard({ businessId, approved }: { businessId: string; approved: boo
         <div className="mb-4">
           <Banner tone="success">
             Nabídka je aktivní. <span className="tnum">{published}</span>{' '}
-            <button type="button" onClick={() => setPublished(null)} className="font-semibold underline underline-offset-4">Skrýt</button>
+            <button type="button" onClick={() => setPublished(null)} className="font-bold underline underline-offset-4">Skrýt</button>
           </Banner>
         </div>
       ) : null}
@@ -68,7 +68,7 @@ function Dashboard({ businessId, approved }: { businessId: string; approved: boo
         {next ? (
           <div className="mt-4 flex flex-wrap items-center gap-5"><div className="tnum flex items-center gap-3 rounded-xl bg-accent-soft p-4 text-accent"><CalendarDays size={24} aria-hidden="true" /><span className="text-xl font-extrabold">{clockTime(next.start_at_snapshot)}</span></div><div>
             <p className="tnum font-mono text-lg font-extrabold tracking-[0.1em] text-ink">{next.reservation_code}</p>
-            <p className="tnum mt-1 text-sm font-semibold text-ink">
+            <p className="tnum mt-1 text-sm font-bold text-ink">
               {dayLabel(next.start_at_snapshot, now)} {clockTime(next.start_at_snapshot)} · {next.service_name_snapshot}
             </p>
             <p className="text-sm text-muted">
@@ -87,7 +87,7 @@ function Dashboard({ businessId, approved }: { businessId: string; approved: boo
             {toResolve.map((booking) => (
               <li key={booking.id} className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-3 first:border-0 first:pt-0">
                 <div>
-                  <p className="tnum text-sm font-semibold text-ink">
+                  <p className="tnum text-sm font-bold text-ink">
                     {clockTime(booking.start_at_snapshot)} · {booking.service_name_snapshot}
                   </p>
                   <p className="text-sm text-muted">
@@ -108,7 +108,7 @@ function Dashboard({ businessId, approved }: { businessId: string; approved: boo
           action={
             <Link
               to="/partner/sluzby"
-              className="inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-semibold text-accent-ink"
+              className="inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-bold text-accent-ink"
             >
               Přidat službu
             </Link>

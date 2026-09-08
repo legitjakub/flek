@@ -48,7 +48,7 @@ function Offers({ businessId, approved }: { businessId: string; approved: boolea
         <div className="mb-4">
           <Banner tone="success">
             Nabídka je aktivní. <span className="tnum">{published}</span>{' '}
-            <button type="button" onClick={() => setPublished(null)} className="font-semibold underline underline-offset-4">Skrýt</button>
+            <button type="button" onClick={() => setPublished(null)} className="font-bold underline underline-offset-4">Skrýt</button>
           </Banner>
         </div>
       ) : null}
@@ -101,13 +101,13 @@ function Offers({ businessId, approved }: { businessId: string; approved: boolea
                 <p className="tnum text-sm text-muted">
                   {dayLabel(offer.start_at, now)} {clockTime(offer.start_at)}–{clockTime(offer.end_at)}
                 </p>
-                <p className="tnum mt-1 text-sm font-semibold text-ink">
+                <p className="tnum mt-1 text-sm font-bold text-ink">
                   {money(offer.deal_price_cents)}{' '}
                   <span className="font-normal text-muted line-through">{money(offer.original_price_cents)}</span>
                 </p>
               </div>
               <div className="text-right">
-                <p className="tnum text-sm font-semibold text-ink">
+                <p className="tnum text-sm font-bold text-ink">
                   {offer.booked}/{offer.capacity_total} obsazeno
                 </p>
                 <p className="text-xs text-muted">

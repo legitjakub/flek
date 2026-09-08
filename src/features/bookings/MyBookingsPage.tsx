@@ -53,7 +53,7 @@ export function MyBookingsPage() {
           action={
             <Link
               to="/prihlaseni?returnTo=%2Frezervace"
-              className="inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-semibold text-accent-ink"
+              className="inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-bold text-accent-ink"
             >
               Přihlásit se
             </Link>
@@ -93,7 +93,7 @@ export function MyBookingsPage() {
             action={
               <Link
                 to="/"
-                className="inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-semibold text-accent-ink"
+                className="inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-bold text-accent-ink"
               >
                 Objevit nabídky
               </Link>
@@ -118,13 +118,13 @@ export function MyBookingsPage() {
                     {clockTime(booking.end_at_snapshot)}
                   </p>
                 </div>
-                <span className="shrink-0 rounded-lg bg-surface px-2 py-1 text-xs font-semibold text-muted">
+                <span className="shrink-0 rounded-lg bg-surface px-2 py-1 text-xs font-bold text-muted">
                   {STATUS_LABEL[booking.status]}
                 </span>
               </div>
 
               <p className="mt-4 text-base font-bold text-ink">{booking.service_name_snapshot}</p>
-              <p className="text-sm text-muted">
+              <p className="text-base text-muted">
                 {booking.business_name_snapshot} · {booking.business_address_snapshot}
               </p>
               <p className="tnum mt-2 text-base font-bold text-accent">
@@ -134,13 +134,13 @@ export function MyBookingsPage() {
               {booking.status === 'completed' ? <RatingPrompt booking={booking} /> : null}
 
               {booking.cancellation_reason ? (
-                <p className="mt-2 text-sm text-accent">Důvod: {booking.cancellation_reason}</p>
+                <p className="mt-2 text-base text-accent">Důvod: {booking.cancellation_reason}</p>
               ) : null}
 
               {booking.status === 'confirmed' ? (
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <a
-                    className="inline-flex min-h-11 items-center rounded-xl border border-line px-3 text-sm font-semibold text-ink"
+                    className="inline-flex min-h-11 items-center rounded-xl border border-line px-3 text-sm font-bold text-ink"
                     href={`tel:${booking.business_phone}`}
                   >
                     Zavolat podniku
@@ -221,7 +221,7 @@ function RatingPrompt({ booking }: { booking: CustomerBooking }) {
     return (
       <p className="tnum mt-3 inline-flex items-center gap-1.5 text-sm text-muted">
         Ohodnotil/a jsi
-        <span className="inline-flex items-center gap-1 font-semibold text-ink">
+        <span className="inline-flex items-center gap-1 font-bold text-ink">
           <Star size={15} aria-hidden="true" className="fill-ink text-ink" />
           {booking.rating}
         </span>
@@ -232,7 +232,7 @@ function RatingPrompt({ booking }: { booking: CustomerBooking }) {
 
   return (
     <div className="mt-3 border-t border-line pt-3">
-      <p className="text-sm font-semibold">Jak to bylo?</p>
+      <p className="text-sm font-bold">Jak to bylo?</p>
       <div className="mt-2 flex flex-wrap items-center gap-1" role="group" aria-label="Hodnocení termínu">
         {[1, 2, 3, 4, 5].map((value) => (
           <button

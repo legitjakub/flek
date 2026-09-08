@@ -183,7 +183,7 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-4 border-b border-line pb-2 last:border-0">
       <dt className="shrink-0 text-muted">{label}</dt>
-      <dd className="tnum text-right font-semibold text-ink">{value}</dd>
+      <dd className="tnum text-right font-bold text-ink">{value}</dd>
     </div>
   );
 }

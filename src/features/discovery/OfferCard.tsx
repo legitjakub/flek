@@ -57,9 +57,10 @@ export function OfferCard({
             <h3 className="text-base leading-snug font-extrabold text-ink [overflow-wrap:anywhere]">
               {offer.service_name}
             </h3>
-            <p className="mt-1 text-sm leading-relaxed text-muted [overflow-wrap:anywhere]">
+            {/* The venue is identity, not metadata: it gets its own line in ink. Glued to
+                the district in grey it read as one unbroken string. */}
+            <p className="mt-1 text-base leading-snug font-bold text-ink [overflow-wrap:anywhere]">
               {offer.business_name}
-              {offer.district ? ` · ${offer.district}` : ''}
             </p>
           </div>
           <ArrowUpRight
@@ -74,27 +75,37 @@ export function OfferCard({
             {dayLabel(offer.start_at, now)} {clockTime(offer.start_at)}
           </p>
           {startingSoon ? (
-            <span className="tnum text-sm font-bold text-ink">Začíná {relativeTime(offer.start_at, now)}</span>
+            <span className="tnum text-base font-bold text-ink">Začíná {relativeTime(offer.start_at, now)}</span>
           ) : null}
-          {lastSeat ? <span className="text-sm font-semibold text-muted">Poslední místo</span> : null}
         </div>
 
-        <p className="tnum mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
+        {/* Everything that merely describes the offer sits together, at one size. */}
+        <p className="tnum mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
+          {offer.district ? <span>{offer.district}</span> : null}
+          {offer.district ? <span aria-hidden="true">·</span> : null}
           <span className="inline-flex items-center gap-1.5">
-            <Clock3 size={15} aria-hidden="true" />
-            {duration(offer.start_at, offer.end_at)} min
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <MapPin size={15} aria-hidden="true" />
+            <MapPin size={14} aria-hidden="true" />
             {formatDistance(offer.distance_m)}
           </span>
+          <span aria-hidden="true">·</span>
+          <span className="inline-flex items-center gap-1.5">
+            <Clock3 size={14} aria-hidden="true" />
+            {duration(offer.start_at, offer.end_at)} min
+          </span>
+          <span aria-hidden="true">·</span>
           <Rating average={offer.rating_avg} count={offer.rating_count} />
+          {lastSeat ? (
+            <>
+              <span aria-hidden="true">·</span>
+              <span className="font-bold text-ink">Poslední místo</span>
+            </>
+          ) : null}
         </p>
 
         <div className="mt-auto flex flex-wrap items-baseline gap-2 pt-4">
           <span className="tnum text-xl font-extrabold tracking-tight">{money(offer.deal_price_cents)}</span>
-          <s className="tnum text-sm text-muted">{money(offer.original_price_cents)}</s>
-          <span className="tnum ml-auto text-sm font-bold text-accent">−{offer.discount_pct} %</span>
+          <s className="tnum text-base text-muted">{money(offer.original_price_cents)}</s>
+          <span className="tnum ml-auto text-base font-bold text-accent">−{offer.discount_pct} %</span>
         </div>
       </div>
     </Link>

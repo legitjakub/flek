@@ -146,7 +146,7 @@ export function AddressField({
               >
                 <MapPin size={16} aria-hidden="true" className="mt-0.5 shrink-0 text-muted" />
                 <span>
-                  <span className="font-semibold">{item.address_line}</span>
+                  <span className="font-bold">{item.address_line}</span>
                   <span className="block text-muted">
                     {[item.postal_code, item.city, item.district].filter(Boolean).join(' · ')}
                   </span>

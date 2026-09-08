@@ -60,7 +60,7 @@ export function Wordmark({ tone = 'ink', suffix }: { tone?: 'ink' | 'invert'; su
         </span>
         <Dashes className="mt-[-3px] ml-0.5 size-3.5 shrink-0 text-brand" />
       </span>
-      {suffix ? <span className="text-xs font-semibold tracking-wide text-muted uppercase">{suffix}</span> : null}
+      {suffix ? <span className="text-xs font-bold tracking-wide text-muted uppercase">{suffix}</span> : null}
     </span>
   );
 }
@@ -80,7 +80,7 @@ export function Button({ variant = 'primary', size = 'md', loading, className, c
       disabled={rest.disabled || loading}
       aria-busy={loading || undefined}
       className={cx(
-        'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-55',
+        'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-55',
         size === 'lg' ? 'min-h-13 px-5 text-base' : 'text-sm',
         variant === 'primary' && 'bg-action text-accent-ink hover:bg-[#11161a]',
         variant === 'secondary' && 'border border-line bg-card text-ink hover:bg-surface',
@@ -122,7 +122,7 @@ export function Field({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-sm font-semibold text-ink">
+      <label htmlFor={id} className="text-sm font-bold text-ink">
         {label}
       </label>
       {children}
@@ -190,7 +190,7 @@ export function LoadingList({ rows = 3 }: { rows?: number }) {
 export function EmptyState({ title, body, action }: { title: string; body?: string; action?: ReactNode }) {
   return (
     <div className="rounded-2xl border border-line bg-card px-5 py-10 text-center">
-      <p className="text-base font-semibold text-ink">{title}</p>
+      <p className="text-base font-bold text-ink">{title}</p>
       {body ? <p className="mx-auto mt-1 max-w-xs text-sm text-muted">{body}</p> : null}
       {action ? <div className="mt-4 flex justify-center">{action}</div> : null}
     </div>
@@ -200,7 +200,7 @@ export function EmptyState({ title, body, action }: { title: string; body?: stri
 export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
   return (
     <div role="alert" className="rounded-2xl border border-line bg-accent-soft px-5 py-6 text-center">
-      <p className="text-sm font-semibold text-ink">{errorMessage(error)}</p>
+      <p className="text-sm font-bold text-ink">{errorMessage(error)}</p>
       {onRetry ? (
         <Button variant="secondary" className="mt-3" onClick={onRetry}>
           Zkusit znovu
@@ -295,7 +295,7 @@ export function Tabs<T extends string>({
           }}
           onClick={() => onChange(item.value)}
           className={cx(
-            'min-h-11 shrink-0 rounded-lg px-3 text-sm font-semibold whitespace-nowrap transition-colors',
+            'min-h-11 shrink-0 rounded-lg px-3 text-sm font-bold whitespace-nowrap transition-colors',
             value === item.value ? 'bg-card text-ink shadow-sm' : 'text-muted hover:text-ink',
           )}
         >
@@ -348,7 +348,7 @@ export function Segmented<T extends string | number | null>({
             }}
             onClick={() => onChange(option.value)}
             className={cx(
-              'min-h-11 rounded-lg px-1.5 text-sm font-semibold transition-colors',
+              'min-h-11 rounded-lg px-1.5 text-sm font-bold transition-colors',
               active ? 'bg-action text-card shadow-sm' : 'text-muted hover:text-ink',
             )}
           >
@@ -363,7 +363,7 @@ export function Segmented<T extends string | number | null>({
 /** Removable pill for one applied filter. */
 export function FilterPill({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
-    <span className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-full bg-ink pr-1 pl-3 text-sm font-semibold text-surface">
+    <span className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-full bg-ink pr-1 pl-3 text-sm font-bold text-surface">
       {label}
       <button
         type="button"
@@ -406,7 +406,7 @@ export function Rating({
   }
   const value = new Intl.NumberFormat('cs-CZ', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(average);
   return (
-    <span className={cx('tnum inline-flex items-center gap-1 font-semibold', text)}>
+    <span className={cx('tnum inline-flex items-center gap-1 font-bold', text)}>
       <Star aria-hidden="true" size={size === 'md' ? 17 : 15} className="fill-ink text-ink" />
       {value}
       <span className="font-normal text-muted">({count})</span>
@@ -426,7 +426,7 @@ export function Chip({
       {...rest}
       aria-pressed={active}
       className={cx(
-        'min-h-11 shrink-0 rounded-xl border px-3.5 text-sm font-semibold whitespace-nowrap transition-colors',
+        'min-h-11 shrink-0 rounded-xl border px-3.5 text-sm font-bold whitespace-nowrap transition-colors',
         active ? 'border-ink bg-ink text-surface' : 'border-line bg-card text-ink hover:border-ink/40',
       )}
     >

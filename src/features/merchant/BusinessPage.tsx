@@ -192,7 +192,7 @@ function BusinessForm({ business }: { business?: Business }) {
           <button
             type="button"
             onClick={() => setManualPoint((v) => !v)}
-            className="font-semibold text-accent underline underline-offset-4"
+            className="font-bold text-accent underline underline-offset-4"
           >
             {manualPoint ? 'Skrýt ruční úpravu' : 'Upravit ručně'}
           </button>

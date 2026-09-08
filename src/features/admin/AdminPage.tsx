@@ -39,7 +39,7 @@ export function AdminFrame({ children }: { children: ReactNode }) {
           <Link to="/admin">
             <Wordmark suffix="Admin" />
           </Link>
-          <Link to="/" className="text-sm font-semibold underline underline-offset-4">
+          <Link to="/" className="text-sm font-bold underline underline-offset-4">
             Zpět do aplikace
           </Link>
         </div>
@@ -50,7 +50,7 @@ export function AdminFrame({ children }: { children: ReactNode }) {
                 <Link
                   to={item.to}
                   aria-current={path === item.to ? 'page' : undefined}
-                  className={`inline-flex min-h-10 items-center rounded-lg px-3 text-sm font-semibold whitespace-nowrap ${
+                  className={`inline-flex min-h-10 items-center rounded-lg px-3 text-sm font-bold whitespace-nowrap ${
                     path === item.to ? 'bg-ink text-surface' : 'text-muted hover:text-ink'
                   }`}
                 >
@@ -70,7 +70,7 @@ export function AdminFrame({ children }: { children: ReactNode }) {
             action={
               <Link
                 to="/prihlaseni?returnTo=%2Fadmin"
-                className="inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-semibold text-accent-ink"
+                className="inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-bold text-accent-ink"
               >
                 Přihlásit se
               </Link>
@@ -118,7 +118,7 @@ export function AdminBusinessesPage() {
               <div className="min-w-0">
                 <p className="text-base font-bold text-ink">
                   {business.display_name}{' '}
-                  <span className="text-xs font-semibold text-muted uppercase">{business.status}</span>
+                  <span className="text-xs font-bold text-muted uppercase">{business.status}</span>
                 </p>
                 <p className="text-sm text-muted">
                   {business.address_line}, {business.postal_code} {business.city}
