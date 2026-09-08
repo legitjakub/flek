@@ -11,7 +11,7 @@ import type { SearchRow } from '../../types/database';
  * supports — the offer is an opportunity, not a coupon. Urgency is only ever the real
  * clock: no invented scarcity, no countdown that is not true.
  */
-export function OfferCard({ offer, now }: { offer: SearchRow; now: string }) {
+export function OfferCard({ offer, now, compact }: { offer: SearchRow; now: string; compact?: boolean }) {
   const { path, search } = useRouter();
   const origin = `${path}${search.size ? `?${search}` : ''}`;
   const photo = offer.image_url ?? offer.cover_url;
@@ -24,7 +24,7 @@ export function OfferCard({ offer, now }: { offer: SearchRow; now: string }) {
       to={`/nabidka/${offer.id}?from=${encodeURIComponent(origin)}`}
       className="offer-card group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-card transition duration-150 hover:border-accent/40 hover:shadow-card"
     >
-      {photo ? (
+      {photo && !compact ? (
         <img
           src={photo}
           alt=""

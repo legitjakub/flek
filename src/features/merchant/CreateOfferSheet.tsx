@@ -8,7 +8,7 @@ import { serverNow } from '../../lib/clock';
 import { Banner, Button, Chip, Field, Input, Sheet } from '../../components/ui';
 import type { Service } from '../../types/database';
 
-export type OfferDraft = { service_id: string; deal_price_cents: number } | null;
+export type OfferDraft = { service_id: string; deal_price_cents: number; start_at?: string } | null;
 
 /**
  * The flow that decides whether this company exists: one screen, no wizard.
@@ -19,23 +19,25 @@ export function CreateOfferSheet({
   onClose,
   services,
   draft,
+  onPublished,
 }: {
   open: boolean;
   onClose: () => void;
   services: Service[];
   draft?: OfferDraft;
+  /** Confirmation belongs on the page behind the sheet, not in one more screen to dismiss. */
+  onPublished?: (summary: string) => void;
 }) {
   const queryClient = useQueryClient();
   const active = useMemo(() => services.filter((s) => s.is_active), [services]);
   const [serviceId, setServiceId] = useState<string | null>(draft?.service_id ?? active[0]?.id ?? null);
-  const [start, setStart] = useState<string>(() => nextSlot(serverNow()));
+  const [start, setStart] = useState<string>(() => (draft?.start_at ? repeatSlot(draft.start_at, serverNow()) : nextSlot(serverNow())));
   const [price, setPrice] = useState<string>(draft ? String(draft.deal_price_cents / 100) : '');
   const [capacity, setCapacity] = useState('1');
   const [cutoffMinutes, setCutoffMinutes] = useState('15');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const [overlap, setOverlap] = useState(false);
-  const [done, setDone] = useState(false);
 
   const service = active.find((s) => s.id === serviceId) ?? active[0] ?? null;
   const normal = service?.normal_price_cents ?? 0;
@@ -56,9 +58,11 @@ export function CreateOfferSheet({
       });
     },
     onSuccess: async () => {
-      setDone(true);
-      setFailure(null);
-      setOverlap(false);
+      const startInstant = localToInstantSafe(start);
+      onPublished?.(
+        `${service?.name} · ${dayLabel(startInstant, serverNow())} ${clockTime(startInstant)} · ${money(dealCents)}`,
+      );
+      close();
       await queryClient.invalidateQueries();
     },
     onError: (error) => {
@@ -74,32 +78,9 @@ export function CreateOfferSheet({
   });
 
   function close() {
-    setDone(false);
     setFailure(null);
     setOverlap(false);
     onClose();
-  }
-
-  if (done) {
-    return (
-      <Sheet open={open} onClose={close} title="Hotovo" footer={<Button className="w-full" onClick={close}>Zavřít</Button>}>
-        <Banner tone="success">Nabídka je aktivní.</Banner>
-        <p className="tnum mt-3 text-sm text-ink">
-          {service?.name} · {dayLabel(localToInstantSafe(start), serverNow())} {clockTime(localToInstantSafe(start))} ·{' '}
-          {money(dealCents)}
-        </p>
-        <Button
-          variant="secondary"
-          className="mt-4 w-full"
-          onClick={() => {
-            setDone(false);
-            setStart(nextSlot(serverNow()));
-          }}
-        >
-          Přidat další termín
-        </Button>
-      </Sheet>
-    );
   }
 
   return (
@@ -113,9 +94,9 @@ export function CreateOfferSheet({
           className="w-full"
           loading={publish.isPending}
           disabled={!service || !/^\d+$/.test(price)}
-          onClick={() => publish.mutate(false)}
+          onClick={() => publish.mutate(overlap)}
         >
-          Zveřejnit nabídku
+          {overlap ? 'Zveřejnit i tak' : 'Zveřejnit nabídku'}
         </Button>
       }
     >
@@ -132,10 +113,7 @@ export function CreateOfferSheet({
                 <Chip
                   key={item.id}
                   active={item.id === service?.id}
-                  onClick={() => {
-                    setServiceId(item.id);
-                    setPrice('');
-                  }}
+                  onClick={() => setServiceId(item.id)}
                 >
                   {item.name} · {item.duration_minutes} min
                 </Chip>
@@ -200,19 +178,22 @@ export function CreateOfferSheet({
             </div>
           </details>
 
-          {overlap ? (
-            <div className="flex flex-col gap-2">
-              <Banner tone="warning">Ve stejnou dobu už máte jinou nabídku. Máte dostatečnou kapacitu?</Banner>
-              <Button variant="secondary" loading={publish.isPending} onClick={() => publish.mutate(true)}>
-                Ano, zveřejnit i tak
-              </Button>
-            </div>
-          ) : null}
+          {overlap ? <Banner tone="warning">Ve stejnou dobu už máte jinou nabídku. Máte dostatečnou kapacitu?</Banner> : null}
           {failure ? <Banner tone="warning">{failure}</Banner> : null}
         </div>
       )}
     </Sheet>
   );
+}
+
+/**
+ * Repeating an offer keeps its time of day and moves it to the next day that is still in
+ * the future — a barber repeating tomorrow's 18:00 does not mean "in thirty minutes".
+ */
+export function repeatSlot(previousStart: string, now: string): string {
+  let candidate = Date.parse(previousStart);
+  while (candidate <= Date.parse(now)) candidate += 24 * 3600_000;
+  return localInput(new Date(candidate).toISOString());
 }
 
 /** Next half-hour in Prague wall-clock, as a `datetime-local` value. */

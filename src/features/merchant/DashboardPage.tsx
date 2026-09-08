@@ -5,7 +5,7 @@ import { merchantBookings } from '../../lib/api';
 import { money } from '../../lib/format';
 import { clockTime, dayBounds, dayLabel } from '../../lib/time';
 import { useServerNow } from '../../lib/clock';
-import { Button, EmptyState, ErrorState, LoadingList } from '../../components/ui';
+import { Banner, Button, EmptyState, ErrorState, LoadingList } from '../../components/ui';
 import { Link } from '../../app/router';
 import { MerchantShell } from './MerchantShell';
 import { CreateOfferSheet } from './CreateOfferSheet';
@@ -19,6 +19,7 @@ export function MerchantDashboardPage() {
 function Dashboard({ businessId, approved }: { businessId: string; approved: boolean }) {
   const now = useServerNow();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [published, setPublished] = useState<string | null>(null);
   const services = useServices(businessId);
   const metrics = useMerchantMetrics(businessId);
   const day = dayBounds(now);
@@ -35,6 +36,14 @@ function Dashboard({ businessId, approved }: { businessId: string; approved: boo
 
   return (
     <div className="flex flex-col gap-6">
+      {published ? (
+        <div className="mb-4">
+          <Banner tone="success">
+            Nabídka je aktivní. <span className="tnum">{published}</span>{' '}
+            <button type="button" onClick={() => setPublished(null)} className="font-semibold underline underline-offset-4">Skrýt</button>
+          </Banner>
+        </div>
+      ) : null}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div><h1 className="text-2xl font-extrabold tracking-tight text-ink">Přehled</h1><p className="mt-1 text-sm text-muted">Vaše termíny a rezervace na jednom místě.</p></div>
         <Button size="lg" className="w-full sm:w-auto" disabled={!approved || services.isPending} onClick={() => setSheetOpen(true)}>
@@ -107,7 +116,7 @@ function Dashboard({ businessId, approved }: { businessId: string; approved: boo
         />
       ) : null}
 
-      {sheetOpen ? <CreateOfferSheet open onClose={() => setSheetOpen(false)} services={services.data ?? []} /> : null}
+      {sheetOpen ? <CreateOfferSheet onPublished={setPublished} open onClose={() => setSheetOpen(false)} services={services.data ?? []} /> : null}
     </div>
   );
 }

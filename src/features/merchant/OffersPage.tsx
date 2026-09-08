@@ -7,6 +7,7 @@ import { clockTime, dayLabel } from '../../lib/time';
 import { useServerNow } from '../../lib/clock';
 import { Banner, Button, EmptyState, ErrorState, Field, Input, LoadingList, Sheet, Tabs } from '../../components/ui';
 import { MerchantShell } from './MerchantShell';
+import { Plus } from 'lucide-react';
 import { CreateOfferSheet, type OfferDraft } from './CreateOfferSheet';
 import { useServices } from './useBusiness';
 import type { MerchantOffer } from '../../types/database';
@@ -22,6 +23,7 @@ function Offers({ businessId, approved }: { businessId: string; approved: boolea
   const [tab, setTab] = useState<Tab>('active');
   const [draft, setDraft] = useState<OfferDraft>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [published, setPublished] = useState<string | null>(null);
   const [toCancel, setToCancel] = useState<MerchantOffer | null>(null);
   const [toEdit, setToEdit] = useState<MerchantOffer | null>(null);
   const services = useServices(businessId);
@@ -42,6 +44,14 @@ function Offers({ businessId, approved }: { businessId: string; approved: boolea
 
   return (
     <div className="flex flex-col gap-4">
+      {published ? (
+        <div className="mb-4">
+          <Banner tone="success">
+            Nabídka je aktivní. <span className="tnum">{published}</span>{' '}
+            <button type="button" onClick={() => setPublished(null)} className="font-semibold underline underline-offset-4">Skrýt</button>
+          </Banner>
+        </div>
+      ) : null}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-extrabold tracking-tight text-ink">Nabídky</h1>
         <Button
@@ -53,7 +63,7 @@ function Offers({ businessId, approved }: { businessId: string; approved: boolea
             setSheetOpen(true);
           }}
         >
-          + Přidat volný termín
+          <Plus size={20} aria-hidden="true" />Přidat volný termín
         </Button>
       </div>
 
@@ -76,7 +86,7 @@ function Offers({ businessId, approved }: { businessId: string; approved: boolea
           body="Prázdný termín zveřejníte za půl minuty."
           action={
             approved ? (
-              <Button onClick={() => setSheetOpen(true)}>+ Přidat volný termín</Button>
+              <Button onClick={() => setSheetOpen(true)}><Plus size={20} aria-hidden="true" />Přidat volný termín</Button>
             ) : undefined
           }
         />
@@ -114,7 +124,7 @@ function Offers({ businessId, approved }: { businessId: string; approved: boolea
               <Button
                 variant="secondary"
                 onClick={() => {
-                  setDraft({ service_id: offer.service_id, deal_price_cents: offer.deal_price_cents });
+                  setDraft({ service_id: offer.service_id, deal_price_cents: offer.deal_price_cents, start_at: offer.start_at });
                   setSheetOpen(true);
                 }}
               >
@@ -135,7 +145,7 @@ function Offers({ businessId, approved }: { businessId: string; approved: boolea
         ))}
       </ul>
 
-      {sheetOpen ? <CreateOfferSheet
+      {sheetOpen ? <CreateOfferSheet onPublished={setPublished}
         key={draft?.service_id ?? 'new'}
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
@@ -170,9 +180,10 @@ function CancelOfferSheet({ offer, onClose }: { offer: MerchantOffer | null; onC
       onClose={onClose}
       title="Zrušit nabídku"
       footer={
-        <Button className="w-full" loading={cancel.isPending} disabled={reason.trim().length < 3} onClick={() => cancel.mutate()}>
-          Zrušit nabídku
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" className="flex-1" onClick={onClose}>Nechat</Button>
+          <Button variant="danger" className="flex-[2]" loading={cancel.isPending} disabled={reason.trim().length < 3} onClick={() => cancel.mutate()}>Zrušit nabídku</Button>
+        </div>
       }
     >
       {offer && offer.booked > 0 ? (
@@ -198,8 +209,8 @@ function CancelOfferSheet({ offer, onClose }: { offer: MerchantOffer | null; onC
 /** Once a booking exists only capacity may rise; price, time and service stay immutable. */
 function EditOfferSheet({ offer, onClose }: { offer: MerchantOffer | null; onClose: () => void }) {
   const queryClient = useQueryClient();
-  const [capacity, setCapacity] = useState('');
-  const [price, setPrice] = useState('');
+  const [capacity, setCapacity] = useState(offer ? String(offer.capacity_total) : '');
+  const [price, setPrice] = useState(offer ? String(offer.deal_price_cents / 100) : '');
   const [failure, setFailure] = useState<string | null>(null);
   const locked = (offer?.booked ?? 0) > 0 || (offer?.capacity_remaining ?? 0) < (offer?.capacity_total ?? 0);
 
