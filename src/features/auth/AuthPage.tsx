@@ -25,6 +25,7 @@ export function AuthPage() {
   const merchant = search.get('role') === 'merchant';
   const [mode, setMode] = useState<'login' | 'signup'>(search.get('mode') === 'signup' ? 'signup' : 'login');
   const [failure, setFailure] = useState<string | null>(null);
+  const [confirmSent, setConfirmSent] = useState(false);
   const formal = merchant;
 
   const form = useForm<SignupValues>({
@@ -35,17 +36,28 @@ export function AuthPage() {
 
   async function submit(values: SignupValues) {
     setFailure(null);
+    setConfirmSent(false);
     try {
       if (mode === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email: values.email, password: values.password });
         if (error) throw error;
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email: values.email,
           password: values.password,
-          options: { data: { first_name: values.first_name, last_name: values.last_name } },
+          options: {
+            data: { first_name: values.first_name, last_name: values.last_name },
+            emailRedirectTo: `${window.location.origin}${returnTo}`,
+          },
         });
         if (error) throw error;
+        // With e-mail confirmation switched on, sign-up returns no session. Navigating here
+        // would drop the customer back into the app still signed out, which reads as
+        // "registration is broken" — so say what actually has to happen next.
+        if (!data.session) {
+          setConfirmSent(true);
+          return;
+        }
       }
       navigate(returnTo, { replace: true });
     } catch (error) {
@@ -73,7 +85,27 @@ export function AuthPage() {
           : 'Prohlížet můžeš i bez účtu. Účet potřebuješ až k rezervaci.'}
       </p>
 
-      <form className="mt-6 flex flex-col gap-4 rounded-2xl border border-line bg-card p-5 sm:p-6" onSubmit={form.handleSubmit(submit)} noValidate>
+      {confirmSent ? (
+        <div className="mt-6 rounded-2xl border border-line bg-card p-5 sm:p-6">
+          <h2 className="text-lg font-bold">Potvrď svůj e-mail</h2>
+          <p className="mt-2 text-base leading-relaxed text-muted">
+            Poslali jsme odkaz na <strong className="text-ink">{form.getValues('email')}</strong>. Otevři ho a účet se
+            aktivuje. Mrkni i do složky s nevyžádanou poštou.
+          </p>
+          <Button
+            variant="secondary"
+            className="mt-4"
+            onClick={() => {
+              setConfirmSent(false);
+              setMode('login');
+            }}
+          >
+            Už jsem potvrdil — přihlásit se
+          </Button>
+        </div>
+      ) : null}
+
+      <form hidden={confirmSent} className="mt-6 flex flex-col gap-4 rounded-2xl border border-line bg-card p-5 sm:p-6" onSubmit={form.handleSubmit(submit)} noValidate>
         {isSignup ? (
           <div className="grid grid-cols-2 gap-3">
             <Field id="first_name" label="Jméno" error={form.formState.errors.first_name?.message}>
