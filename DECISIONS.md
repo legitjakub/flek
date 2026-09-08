@@ -30,4 +30,9 @@ Jeden řádek na rozhodnutí, chronologicky. Kde bylo zadání nejednoznačné, 
 - Denní doba je serverový parametr `search_offers`, ne klientský filtr. Řeže se podle pražských hodin; kdyby to dělal prohlížeč, uživatel v jiné zóně by dostal jiný „večer" a stránkování by přestalo dávat smysl.
 - Použité filtry zůstávají viditelné jako odebratelné pilulky. Tichý filtr, který uživatel nevidí, je nejrychlejší způsob, jak vypadat prázdně.
 - Objevování má rytmus: co začíná do tří hodin jde do vodorovného pásu nahoře, nejhlubší slevy do druhého, zbytek je seznam. Žádná nabídka není ve dvou sekcích zároveň.
+- Hodnocení stojí na `bookings.rating`, ne na samostatné tabulce recenzí. Hodnotit tak může jen ten, kdo má vlastní dokončenou rezervaci — omezení vynucuje datový model, ne aplikace. Průměr se počítá v dotazu; denormalizovaný čítač je jen další věc, která se může rozejít s pravdou.
+- Hodnocení se zobrazuje až od tří kusů. Jedna pětihvězdička vypadá jako autorita, i když není.
+- Sekce na objevování se musí zasloužit: až od šesti nabídek celkem a jen se dvěma a více položkami. Prázdný karusel je horší než poctivý seznam a pilot začíná s hrstkou termínů.
+- Náhled nabídky nad mapou zůstal plovoucí kartou, ne modálním sheetem. Modál by zakryl mapu, ve které si uživatel právě vybírá.
+- Mezikrok „Hotovo" po zveřejnění termínu zmizel. Potvrzení patří na stránku za sheetem; jinak partner platí klepnutím navíc za informaci, kterou už vidí.
 - Barevnost je odvozená z loga: značková tyrkysová kreslí znak, tmavší odstín je vyhrazený pro hlavní CTA. Slevový odznak je tmavý, aby s CTA nesoutěžil.

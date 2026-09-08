@@ -26,12 +26,20 @@ Do hostovaného projektu je nahraný vývojový seed včetně účtů `demo-*@fl
 
 Karty i detail počítají s `image_url` a `cover_url`, ale repozitář žádné fotografie neobsahuje a seed je nemá vyplněné. Bez nich se vykreslí neutrální plocha se značkou. Pro pilot je potřeba doplnit skutečné fotky provozoven.
 
-## 6. Jeden účet = jedna provozovna
+## 6. Fotografie jsou demo obsah z cizího hostitele
+
+Seed ilustruje fiktivní provozovny stock fotkami z `images.unsplash.com`. Pro demo je to v pořádku, pro pilot ne: je to závislost na cizí službě a stojí to zhruba deset bodů výkonu v Lighthouse. Aplikace i Storage buckety jsou připravené na vlastní fotky provozoven — je to obsahová práce, ne vývojová.
+
+## 7. Hodnocení jsou vědomé rozšíření nad V1
+
+Původní zadání recenze z V1 vyřazovalo. Hodnocení jsou přidaná na výslovné rozhodnutí a záměrně v nejmenší poctivé podobě: jen hvězdičky bez textu, hodnotit smí pouze zákazník s vlastní **dokončenou** rezervací, průměr se počítá v dotazu a zobrazí se až od tří hodnocení. Neřešená agenda, kterou to otevírá: moderace, odpovědi podniku, obrana proti zneužití a to, co se stane s hodnocením zrušeného podniku.
+
+## 8. Jeden účet = jedna provozovna
 
 Partnerská část pracuje s první provozovnou účtu. Datový model víc provozoven na účet unese (`business_members`), ale přepínač mezi nimi v rozhraní není. Pro pilot s ručním onboardingem to stačí; jakmile bude mít někdo dvě pobočky, je potřeba ho doplnit.
 
-## 7. Vědomě mimo V1
+## 9. Vědomě mimo V1
 
 Platby, zálohy, výplaty · předplatné · věrnostní programy a kupony · recenze · chat · push a SMS · dynamické ceny · integrace na rezervační systémy · vícejazyčné rozhraní · nativní aplikace · fakturace · QR skenování.
 
-Z P2 nebylo dokončeno nic: e-mailová oznámení, oblíbené podniky, export do kalendáře ani zakládání provozovny administrátorem s pozvánkou vlastníka. P0 a P1 mají přednost a P2 se nebude vydávat za hotové.
+Z P2 je hotový jen export do kalendáře (.ics u potvrzení). Zbytek ne: e-mailová oznámení, oblíbené podniky ani zakládání provozovny administrátorem s pozvánkou vlastníka. P0 a P1 mají přednost a P2 se nebude vydávat za hotové.

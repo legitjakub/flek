@@ -39,14 +39,16 @@ export function DiscoveryPage() {
           {Array.from({ length: 6 }, (_, i) => <CardSkeleton key={i} />)}
         </div>
       ) : null}
-      {sections.map((section) => (
+      {sections.map((section, sectionIndex) => (
         <section key={section.key} className="mt-8 first:mt-4" aria-labelledby={`sekce-${section.key}`}>
           <div className="mb-4 flex items-baseline justify-between gap-3">
             <h2 id={`sekce-${section.key}`} className="text-lg font-extrabold tracking-tight">{section.title}</h2>
             <span className="tnum shrink-0 text-sm text-muted">{section.note ?? `${section.rows.length} ${plural(section.rows.length)}`}</span>
           </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {section.rows.map((offer) => <OfferCard key={offer.id} offer={offer} now={now} />)}
+            {section.rows.map((offer, index) => (
+              <OfferCard key={offer.id} offer={offer} now={now} priority={sectionIndex === 0 && index === 0} />
+            ))}
           </div>
         </section>
       ))}

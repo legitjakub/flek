@@ -85,7 +85,7 @@ with pics(category_slug, a, b) as (values
  ('joga','photo-1544367567-0f2fcb009e0b','photo-1512290923902-8a9f81dc236c'),
  ('wellness','photo-1571019613914-85f342c6a11e','photo-1519824145371-296894a0daa9'))
 update public.services s
-set image_url='https://images.unsplash.com/'||(case when substr(md5(s.id::text),1,1)<'8' then p.a else p.b end)||'?w=800&q=80&auto=format&fit=crop'
+set image_url='https://images.unsplash.com/'||(case when substr(md5(s.id::text),1,1)<'8' then p.a else p.b end)||'?w=640&q=70&auto=format&fit=crop'
 from pics p where p.category_slug=s.category_slug;
 
 with pics(category_slug, a, b) as (values
@@ -96,7 +96,7 @@ with pics(category_slug, a, b) as (values
  ('joga','photo-1512290923902-8a9f81dc236c','photo-1544367567-0f2fcb009e0b'),
  ('wellness','photo-1519824145371-296894a0daa9','photo-1571019613914-85f342c6a11e'))
 update public.businesses b
-set cover_url='https://images.unsplash.com/'||(case when substr(md5(b.id::text),1,1)<'8' then p.a else p.b end)||'?w=1200&q=80&auto=format&fit=crop'
+set cover_url='https://images.unsplash.com/'||(case when substr(md5(b.id::text),1,1)<'8' then p.a else p.b end)||'?w=960&q=70&auto=format&fit=crop'
 from pics p where p.category_slug=b.category_slug;
 
 -- Ratings come from attendance, so the demo needs past bookings that were actually

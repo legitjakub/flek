@@ -6,7 +6,7 @@ Migrace i seed byly aplikované na **skutečný hostovaný PostgreSQL 17 s PostG
 
 ## Akceptační běh proti skutečné databázi
 
-`npm run test:acceptance` — **27/27 prošlo**, opakovaně spustitelné (skript si nabídky sám zveřejní přes `publish_offer` a na konci je zruší).
+`npm run test:acceptance` — **34/34 prošlo**, opakovaně spustitelné (skript si nabídky sám zveřejní přes `publish_offer` a na konci je zruší).
 
 | Kontrola | Výsledek |
 | --- | --- |
@@ -24,7 +24,8 @@ Migrace i seed byly aplikované na **skutečný hostovaný PostgreSQL 17 s PostG
 | `Nedorazil` před začátkem | `TOO_EARLY` |
 | Admin funkce neadminovi | `FORBIDDEN`; `analytics_events` nepřečte |
 | Anonym | nevidí neschválené provozovny ani žádné rezervace |
-| Vyhledávání | 33 nabídek, žádná nedostupná |
+| Vyhledávání | 33 nabídek, žádná nedostupná; nese průměr hodnocení i jeho počet |
+| Hodnotit smí jen ten, kdo dorazil | vlastní dokončená ✓, nedokončená `NOT_RATEABLE`, cizí `FORBIDDEN`, mimo rozsah `VALIDATION_ERROR`, hodnocení se propíše zpět |
 
 Ověřeno navíc přímo v databázi: seed nahrán (15 provozoven, 30 služeb, 38 nabídek, 11 rezervací ve všech pěti stavech), trigger `handle_new_user` zakládá profily, PostGIS vzdálenosti a skóre `search_offers` odpovídají, filtr denní doby řeže podle **pražských** hodin (ráno 24 nabídek do 11:30, odpoledne 8 mezi 12:00 a 15:30).
 
@@ -35,11 +36,14 @@ Ověřeno navíc přímo v databázi: seed nahrán (15 provozoven, 30 služeb, 3
 | `npm run test:unit` | **6/6 prošlo** — Praha přes půlnoc, nezávislost na UTC dni, neexistující březnová 02:30, dvojí říjnová 02:30, 23‑ a 25hodinový den, celočíselné peníze |
 | `npx tsc --noEmit` | bez chyb |
 | `npm run build` | projde; MapLibre je vydělený a načítá se až na obrazovkách s mapou |
-| **Lighthouse** (produkční build, stránky **se skutečnými daty**) | Objevování **výkon 92, přístupnost 100**; detail nabídky **výkon 88, přístupnost 100**. TBT 0 ms, CLS 0. Obojí nad prahem ze zadání (≥ 80 / ≥ 90). |
+| **Lighthouse** (produkční build, stránky se skutečnými daty **včetně fotografií**) | Objevování **výkon 81, přístupnost 100**; detail nabídky **výkon 81, přístupnost 100**. CLS 0. Obojí nad prahem (≥ 80 / ≥ 90), ale výkon má jen malou rezervu — viz poznámka níže. |
 | Service-role klíč v balíčku | jediná shoda `service_role` je naše vlastní pojistka, která takový klíč odmítne |
 | Vodorovný posun | žádný na 375, 768 ani 1280 px |
 | Trasy v prohlížeči | `/`, `/prihlaseni`, `/rezervace`, `/partner`, `/admin`, detail nabídky i neznámá cesta bez chyb v konzoli |
-| Filtry end-to-end v aplikaci | volba „Odpoledne" zúžila 30 → 8 nabídek, všechny 12:00–16:59, s odebratelnou pilulkou |
+| Filtry end-to-end v aplikaci | volba „Odpoledne" zúžila 30 → 8 nabídek, všechny 12:00–16:59 |
+| Řídký inventář | 16 nabídek dá tři sekce; po zúžení na 4 se obrazovka přeskládá do jednoho seznamu a **žádná sekce nezůstane prázdná** |
+| Karta | 9 karet s hodnocením, 7 s „Nové na FLEK", 5 s živým odpočtem „Začíná za…" |
+| Publikace termínu partnerem | dvě klepnutí (sleva → zveřejnit), sheet se zavře sám, potvrzení na stránce; při překryvu se z tlačítka stane „Zveřejnit i tak" |
 
 ## Chyby nalezené a opravené při ověřování
 
@@ -47,6 +51,10 @@ Ověřeno navíc přímo v databázi: seed nahrán (15 provozoven, 30 služeb, 3
 2. TanStack Query ve výchozím režimu výpadek sítě jen pozastaví; zákazník by při ztrátě spojení viděl nekonečný skeleton a zaseknuté „Potvrdit rezervaci". Nastaveno `networkMode: 'always'`.
 3. `server_clock` byla jediná funkce bez pevného `search_path` — odhalil databázový linter po nasazení. Opraveno migrací `202609080007`.
 4. Neaktivní položky segmentovaného ovladače měly kontrast 4,48:1, těsně pod AA. Tlumená barva ztmavena na `#5d6a68`.
+7. Registrace povolovala prázdné příjmení, ale rezervační formulář ho vyžadoval — zákazník registrovaný jen s křestním jménem narazil na chybu u pole, které potvrzovací text nezmiňuje. Sjednoceno na nepovinné.
+8. `customer_booking_details` vznikl před sloupcem `rating`, takže ho neobsahoval a hodnocení se nevracelo do aplikace. Pohled přestavěn migrací `202609080010`.
+9. `Zopakovat nabídku` navrhovalo čas „za 30 minut" místo stejné denní doby, takže zopakovat zítřejší osmnáctou hodinu nešlo jedním klepnutím.
+10. Editace nabídky startovala z prázdných polí; uložení bez zásahu prošlo jako úspěch, ačkoli neposlalo žádnou změnu.
 5. Odznak „Začíná za…" měl na světlém tyrkysovém podkladu 4,29:1. Akcentní barva ztmavena na `#0a6a62`; obě stránky mají přístupnost 100.
 6. Detail nabídky platil při načtení za celý balík MapLibre, přestože mapa je pod ohybem stránky. Mapa se teď načte, až se doroluje do zorného pole — výkon 80 → 88.
 
@@ -64,6 +72,10 @@ Ověřeno navíc přímo v databázi: seed nahrán (15 provozoven, 30 služeb, 3
 | 10 | Získaná tržba a naplněnost | **ověřeno** — `merchant_metrics` i `admin_metrics` odpovídají |
 | 11 | Kapacita 2: třetí odmítnut | **ověřeno** variantou capacity=5 na 10 volání |
 | 12 | Zrušení vrátí kapacitu do vyhledávání | **ověřeno** |
+
+### Poznámka k výkonu
+
+Před doplněním fotografií měly obě stránky výkon 88–93. S fotografiemi je to 81. Příčinou není aplikace, ale to, že demo obrázky jdou z cizího hostitele (`images.unsplash.com`) — LCP čeká na DNS, TLS a stažení. Zmenšení na 640 px, `fetchpriority` na první kartě a `preconnect` daly dohromady jen jednotky bodů. Pro pilot patří fotky do Supabase Storage, které aplikace už umí; tím se to vyřeší.
 
 ### Co zůstává neověřené
 

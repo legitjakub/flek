@@ -11,7 +11,18 @@ import type { SearchRow } from '../../types/database';
  * supports — the offer is an opportunity, not a coupon. Urgency is only ever the real
  * clock: no invented scarcity, no countdown that is not true.
  */
-export function OfferCard({ offer, now, compact }: { offer: SearchRow; now: string; compact?: boolean }) {
+export function OfferCard({
+  offer,
+  now,
+  compact,
+  priority,
+}: {
+  offer: SearchRow;
+  now: string;
+  compact?: boolean;
+  /** The one card above the fold: fetched eagerly so it is not the slow LCP element. */
+  priority?: boolean;
+}) {
   const { path, search } = useRouter();
   const origin = `${path}${search.size ? `?${search}` : ''}`;
   const photo = offer.image_url ?? offer.cover_url;
@@ -28,7 +39,8 @@ export function OfferCard({ offer, now, compact }: { offer: SearchRow; now: stri
         <img
           src={photo}
           alt=""
-          loading="lazy"
+          loading={priority ? 'eager' : 'lazy'}
+          fetchPriority={priority ? 'high' : 'auto'}
           decoding="async"
           width={800}
           height={400}
