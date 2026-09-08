@@ -17,7 +17,9 @@
   --color-surface: #f6f7f6;
   --color-card: #ffffff;
   --color-ink: #22282b;
-  --color-muted: #5a655c;
+  /* Strong enough to read as text, not as something disabled: 7.4:1 on the surface.
+     The lighter tone made whole paragraphs look washed out. */
+  --color-muted: #4b534e;
   --color-line: #e1e6e2;
 
   /* The bright lime is the logo and decoration only: on white it measures 2.2:1, so it

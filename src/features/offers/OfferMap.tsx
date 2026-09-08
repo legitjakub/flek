@@ -6,12 +6,22 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 
 /**
  * All map configuration lives here so the tile provider can be swapped in one file.
- * A light grey canvas with labels on a separate layer: the streets recede and the price
- * pins become the content. Raw OSM tiles carry every shop icon and road shield, which
- * competes with the offers instead of framing them. Raster rather than vector on purpose —
- * no style server, sprites or glyph fonts to fail, and no API key.
+ *
+ * A hand-written vector style rather than someone else's raster tiles: vectors stay crisp
+ * at every zoom, and the colours are ours, so the map recedes into the palette instead of
+ * fighting it. The ground is near-monochrome on purpose — the price pins are the content.
+ * OpenFreeMap serves OpenStreetMap data with no API key.
  */
 export const MAP_ATTRIBUTION = '© Esri, HERE, Garmin, © OpenStreetMap';
+
+const GROUND = '#f1f3f1';
+const GREEN = '#e6ede0';
+const WATER = '#dae3e7';
+const BUILDING = '#e7e9e7';
+const ROAD = '#ffffff';
+const ROAD_EDGE = '#e3e6e3';
+const LABEL = '#4a534d';
+const HALO = '#ffffff';
 
 const ESRI = 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas';
 
@@ -38,6 +48,9 @@ export const MAP_STYLE: MapOptions['style'] = {
     { id: 'labels', type: 'raster', source: 'labels' },
   ],
 };
+
+
+
 
 export type MapMarker = { id: string; lat: number; lng: number; label: string; description?: string; count?: number; price?: number };
 
