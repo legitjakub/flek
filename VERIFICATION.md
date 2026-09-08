@@ -31,7 +31,7 @@ Ověřeno navíc přímo v databázi: seed nahrán (15 provozoven, 30 služeb, 3
 
 ## Nasazená ukázka
 
-Nasazeno na <https://flek-demo.netlify.app> (produkční build, hostovaný Supabase). Ověřeno po nasazení: domovská stránka 200, hluboký odkaz na detail nabídky 200 (SPA přesměrování funguje), v balíčku je jen naše vlastní pojistka proti service-role klíči, 17 nabídek se třemi sekcemi, žádný vodorovný posun a **všechny čtyři položky spodní navigace jsou dosažitelné** — odznak Netlify je nejprve překrýval dvě z nich.
+Nasazeno na <https://flek-nine.vercel.app> (produkční build, hostovaný Supabase, automaticky z `main`). Ověřeno po nasazení: domovská stránka, `/mapa`, `/partner`, `/admin`, hluboký odkaz na detail i neznámá cesta vrací 200 (SPA přepis funguje), assety mají roční cache, service-role klíč v balíčku není, 17 nabídek ve třech sekcích, žádný vodorovný posun, všechny čtyři položky spodní navigace dosažitelné a žádná chyba v konzoli. **Lighthouse na produkci: objevování 82/100, detail nabídky 85/100.**
 
 Demo hesla byla před zveřejněním otočena; stará přestala platit, administrátorský účet má vlastní.
 

@@ -100,12 +100,20 @@ export function MapCanvas({
   const reduceMotion = () =>
     typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  /**
+   * An animated camera move needs animation frames, and a hidden tab gets none — a map
+   * opened in the background would stay on its initial view. Jumping straight there costs
+   * nothing and is correct either way.
+   */
+  const cameraDuration = () =>
+    reduceMotion() || document.visibilityState === 'hidden' ? 0 : 400;
+
   // Only an actual change of centre moves the map, so fitting is not undone on mount.
   useEffect(() => {
     const key = `${center.lat},${center.lng}`;
     if (key === lastCenter.current) return;
     lastCenter.current = key;
-    map.current?.easeTo({ center: [center.lng, center.lat], duration: reduceMotion() ? 0 : 300 });
+    map.current?.easeTo({ center: [center.lng, center.lat], duration: cameraDuration() ? 300 : 0 });
   }, [center.lat, center.lng]);
 
   useEffect(() => {
@@ -135,7 +143,7 @@ export function MapCanvas({
     instance.fitBounds(bounds, {
       padding: { top: 48, right: 44, bottom: 88, left: 44 },
       maxZoom: 15,
-      duration: reduceMotion() ? 0 : 400,
+      duration: cameraDuration(),
     });
     lastCenter.current = '';
   }, [markers, onSelect, selectedId, fitToMarkers]);

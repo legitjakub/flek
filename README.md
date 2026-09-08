@@ -17,7 +17,7 @@ React 19 + TypeScript + Vite · Tailwind v4 · TanStack Query · React Hook Form
 
 ## Nasazená ukázka
 
-<https://flek-demo.netlify.app> — produkční build nad hostovaným Supabase. Nasazení řídí `netlify.toml`; klíčové je přesměrování `/* → /index.html`, bez kterého by obnovení stránky na detailu nabídky skončilo chybou 404.
+<https://flek-nine.vercel.app> — produkční build nad hostovaným Supabase, nasazovaný automaticky z větve `main`. Konfiguraci řídí `vercel.json`; klíčový je přepis `/(.*) → /index.html`, bez kterého by obnovení stránky na detailu nabídky skončilo chybou 404. Proměnné `VITE_SUPABASE_URL` a `VITE_SUPABASE_ANON_KEY` musí být dostupné **při sestavení**, jinak se aplikace nespustí.
 
 ## Nastavení
 

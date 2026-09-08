@@ -40,12 +40,11 @@ Partnerská část pracuje s první provozovnou účtu. Datový model víc provo
 
 ## 9. Veřejná ukázka a její hranice
 
-<https://flek-demo.netlify.app> je veřejně dostupná bez hesla. Data jsou fiktivní a RLS drží, ale je potřeba vědět:
+<https://flek-nine.vercel.app> je veřejně dostupná bez hesla. Data jsou fiktivní a RLS drží, ale je potřeba vědět:
 
 - Demo účty mají vygenerovaná hesla mimo repozitář; administrátorský účet má vlastní, nesdílené. Před dalším sdílením je vhodné je znovu otočit.
 - V Supabase je stále **vypnutá ochrana proti prolomeným heslům** (Auth → leaked password protection). Pro cokoli s reálnými uživateli ji zapněte.
-- Kdokoli s odkazem si může založit účet a rezervovat. Pro pilot s reálnými podniky je potřeba ukázku buď zaheslovat (Netlify to umí), nebo oddělit demo data od ostrých.
-- Na bezplatném tarifu Netlify překrývá spodní lištu odznak „Powered by Netlify". Atribuci jsme nechali být a místo toho zvedli spodní navigaci, aby byly použitelné obě. S vlastní doménou nebo placeným tarifem odznak zmizí a pravidlo se samo přestane uplatňovat.
+- Kdokoli s odkazem si může založit účet a rezervovat. Pro pilot s reálnými podniky je potřeba ukázku buď zaheslovat (Vercel to umí přes Deployment Protection), nebo oddělit demo data od ostrých.
 
 ## 10. Vědomě mimo V1
 
