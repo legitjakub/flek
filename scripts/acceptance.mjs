@@ -138,6 +138,25 @@ check('Zrušení vrátí kapacitu a nabídku do prodeje',
   !cancel.error && before.data.capacity_remaining === 0 && after.data.capacity_remaining === 1 && after.data.bookable === true,
   `před ${before.data.capacity_remaining} → po ${after.data.capacity_remaining}`);
 
+// --- ratings are earned by attendance, not collected
+const customer = users[8]; // demo-customer, the account the seed gives history to
+const history = (await customer.client.rpc('my_bookings')).data ?? [];
+const done = history.find((b) => b.status === 'completed');
+const open_ = history.find((b) => b.status === 'confirmed');
+check('Zákazník má dokončenou rezervaci k ohodnocení', Boolean(done), done?.reservation_code);
+check('Vlastní dokončenou rezervaci lze ohodnotit',
+  !(await customer.client.rpc('rate_booking', { p_booking_id: done.id, p_rating: 5 })).error);
+if (open_) {
+  check('Nedokončenou rezervaci ohodnotit nelze',
+    err((await customer.client.rpc('rate_booking', { p_booking_id: open_.id, p_rating: 5 })).error).includes('NOT_RATEABLE'));
+}
+check('Cizí rezervaci ohodnotit nelze',
+  err((await users[0].client.rpc('rate_booking', { p_booking_id: done.id, p_rating: 1 })).error).includes('FORBIDDEN'));
+check('Hodnocení mimo rozsah je odmítnuto',
+  err((await customer.client.rpc('rate_booking', { p_booking_id: done.id, p_rating: 9 })).error).includes('VALIDATION_ERROR'));
+check('Hodnocení se propíše zpět do rezervace',
+  ((await customer.client.rpc('my_bookings')).data ?? []).find((b) => b.id === done.id)?.rating === 5);
+
 // --- discovery never leaks unbookable inventory
 const search = await anon.rpc('search_offers', {
   p_lat: 50.0875, p_lng: 14.4213, p_radius_m: 25000, p_category: null, p_from: new Date().toISOString(),
@@ -147,6 +166,10 @@ check('Vyhledávání nevrací nedostupné nabídky',
   (search.data ?? []).every((r) => r.capacity_remaining > 0 && new Date(r.booking_cutoff_at) > new Date()),
   `${search.data?.length} nabídek`);
 check('Vyprodaná nabídka zmizí z vyhledávání', !(search.data ?? []).some((r) => r.id === offerA));
+check('Vyhledávání nese průměr hodnocení a jeho počet',
+  (search.data ?? []).every((r) => typeof r.rating_count === 'number' && (r.rating_avg === null || Number(r.rating_avg) > 0)) &&
+  (search.data ?? []).some((r) => r.rating_count > 0),
+  `${(search.data ?? []).filter((r) => r.rating_count > 0).length} nabídek s hodnocením`);
 
 // Cancelling the offers releases every booking this run created, so the demo seed is left
 // as it was found and the next run starts from a clean three-booking allowance.

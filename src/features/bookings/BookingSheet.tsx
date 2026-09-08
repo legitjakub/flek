@@ -38,6 +38,7 @@ export function BookingSheet({
   const queryClient = useQueryClient();
   const [failure, setFailure] = useState<string | null>(null);
   const needsPhone = !hasPhone(profile);
+  const needsName = !profile?.first_name?.trim();
 
   const form = useForm<ProfileValues>({
     resolver: zodResolver(profileSchema),
@@ -122,20 +123,36 @@ export function BookingSheet({
         <Row label="Ušetříš" value={money(savings)} />
         <Row label="Zrušit můžeš zdarma do" value={clockTime(cancellationDeadline(offer.start_at))} />
       </dl>
+      {Date.parse(cancellationDeadline(offer.start_at)) <= Date.parse(now) ? (
+        <p className="mt-2 text-sm text-muted">
+          Termín je blízko, takže na bezplatné zrušení máš 10 minut od rezervace.
+        </p>
+      ) : null}
 
       {needsPhone ? (
         <form className="mt-5 flex flex-col gap-3" noValidate>
           <p className="text-sm text-muted">Podnik tě potřebuje umět kontaktovat. Zadej prosím telefon.</p>
-          <div className="grid grid-cols-2 gap-3">
-            <Field id="booking-first" label="Jméno" error={form.formState.errors.first_name?.message}>
-              <Input id="booking-first" autoComplete="given-name" data-autofocus {...form.register('first_name')} />
-            </Field>
-            <Field id="booking-last" label="Příjmení" error={form.formState.errors.last_name?.message}>
-              <Input id="booking-last" autoComplete="family-name" {...form.register('last_name')} />
-            </Field>
-          </div>
+          {/* The name is already on the profile from signup; asking for it again here was
+              three fields for one missing value. Only show it when it is genuinely blank. */}
+          {needsName ? (
+            <div className="grid grid-cols-2 gap-3">
+              <Field id="booking-first" label="Jméno" error={form.formState.errors.first_name?.message}>
+                <Input id="booking-first" autoComplete="given-name" data-autofocus {...form.register('first_name')} />
+              </Field>
+              <Field id="booking-last" label="Příjmení (nepovinné)" error={form.formState.errors.last_name?.message}>
+                <Input id="booking-last" autoComplete="family-name" {...form.register('last_name')} />
+              </Field>
+            </div>
+          ) : null}
           <Field id="booking-phone" label="Telefon" error={form.formState.errors.phone?.message}>
-            <Input id="booking-phone" type="tel" inputMode="tel" autoComplete="tel" {...form.register('phone')} />
+            <Input
+              id="booking-phone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              data-autofocus={needsName ? undefined : true}
+              {...form.register('phone')}
+            />
           </Field>
         </form>
       ) : null}

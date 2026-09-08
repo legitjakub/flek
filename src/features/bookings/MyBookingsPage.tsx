@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { cancelBooking, myBookings } from '../../lib/api';
+import { Star } from 'lucide-react';
+import { cancelBooking, myBookings, rateBooking } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
 import { clockTime, dayLabel } from '../../lib/time';
@@ -130,6 +131,8 @@ export function MyBookingsPage() {
                 {money(booking.price_cents)} <span className="font-normal text-muted">na místě</span>
               </p>
 
+              {booking.status === 'completed' ? <RatingPrompt booking={booking} /> : null}
+
               {booking.cancellation_reason ? (
                 <p className="mt-2 text-sm text-accent">Důvod: {booking.cancellation_reason}</p>
               ) : null}
@@ -194,5 +197,61 @@ export function MyBookingsPage() {
         ) : null}
       </Sheet>
     </main>
+  );
+}
+
+/**
+ * The rating loop closes here: only a booking the merchant marked as completed can be
+ * rated, which is what keeps the averages on the cards honest.
+ */
+function RatingPrompt({ booking }: { booking: CustomerBooking }) {
+  const queryClient = useQueryClient();
+  const [failure, setFailure] = useState<string | null>(null);
+
+  const rate = useMutation({
+    mutationFn: (value: number) => rateBooking(booking.id, value),
+    onSuccess: async () => {
+      setFailure(null);
+      await queryClient.invalidateQueries();
+    },
+    onError: (error) => setFailure(errorMessage(error)),
+  });
+
+  if (booking.rating) {
+    return (
+      <p className="tnum mt-3 inline-flex items-center gap-1.5 text-sm text-muted">
+        Ohodnotil/a jsi
+        <span className="inline-flex items-center gap-1 font-semibold text-ink">
+          <Star size={15} aria-hidden="true" className="fill-ink text-ink" />
+          {booking.rating}
+        </span>
+        z 5
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-3 border-t border-line pt-3">
+      <p className="text-sm font-semibold">Jak to bylo?</p>
+      <div className="mt-2 flex flex-wrap items-center gap-1" role="group" aria-label="Hodnocení termínu">
+        {[1, 2, 3, 4, 5].map((value) => (
+          <button
+            key={value}
+            type="button"
+            disabled={rate.isPending}
+            onClick={() => rate.mutate(value)}
+            aria-label={`${value} z 5`}
+            className="grid size-11 place-items-center rounded-lg text-muted hover:bg-accent-soft hover:text-accent disabled:opacity-50"
+          >
+            <Star size={22} aria-hidden="true" />
+          </button>
+        ))}
+      </div>
+      {failure ? (
+        <p role="alert" className="mt-1 text-sm font-medium text-accent">
+          {failure}
+        </p>
+      ) : null}
+    </div>
   );
 }

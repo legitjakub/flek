@@ -1,4 +1,4 @@
-import { ArrowLeft, CalendarDays, Clock3, MapPin, Banknote, Check } from 'lucide-react';
+import { ArrowLeft, CalendarDays, CalendarPlus, Clock3, MapPin, Banknote, Check } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { getOfferDetail } from '../../lib/api';
@@ -7,7 +7,8 @@ import { relativeTime, useServerNow } from '../../lib/clock';
 import { money, distance as formatDistance } from '../../lib/format';
 import { clockTime, dayLabel, duration } from '../../lib/time';
 import { DEFAULT_POINT, storedPoint } from '../../lib/geo';
-import { Banner, Button, ErrorState, Skeleton } from '../../components/ui';
+import { Banner, Button, ErrorState, Rating, Skeleton } from '../../components/ui';
+import { bookingIcs, icsHref } from '../../lib/calendar';
 import { Link, useRouter } from '../../app/router';
 import { BookingSheet, cancellationDeadline } from '../bookings/BookingSheet';
 import { LazyMap } from './LazyMap';
@@ -73,6 +74,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
   const savings = offer.original_price_cents - offer.deal_price_cents;
   const minutesAway = Math.round((Date.parse(offer.start_at) - Date.parse(now)) / 60000);
   const lastSeat = offer.capacity_remaining === 1 && offer.capacity_total > 1;
+  const cutoffMinutes = Math.round((Date.parse(offer.booking_cutoff_at) - Date.parse(now)) / 60000);
 
   return (
     <main className="page-container pb-32 md:pb-10">
@@ -81,11 +83,12 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
         <div className="min-w-0">
           {image ? <img src={image} alt="" className="mb-6 aspect-[2/1] w-full rounded-2xl object-cover" /> : null}
           <h1 className="text-2xl leading-tight font-extrabold tracking-tight [overflow-wrap:anywhere]">{offer.service_name}</h1>
-          <p className="mt-2 text-base font-semibold">{offer.business_name}</p>
+          <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-base font-semibold">{offer.business_name}<Rating average={offer.rating_avg} count={offer.rating_count} size="md" /></p>
           <p className="mt-2 flex items-start gap-2 text-sm leading-relaxed text-muted"><MapPin size={18} aria-hidden="true" className="mt-0.5 shrink-0" /><span>{offer.address_line}, {offer.city}{offer.distance_m != null ? ` · ${formatDistance(offer.distance_m)}` : ''}</span></p>
           <div className="mt-5 flex flex-wrap gap-2">
             {minutesAway > 0 && minutesAway <= 120 ? <span className="tnum rounded-lg bg-accent-soft px-3 py-2 text-sm font-bold text-accent">Začíná {relativeTime(offer.start_at, now)}</span> : null}
             {lastSeat ? <span className="rounded-lg bg-card px-3 py-2 text-sm font-semibold">Poslední místo</span> : null}
+            {offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60 ? <span className="tnum rounded-lg bg-card px-3 py-2 text-sm font-semibold">Rezervovat lze ještě {cutoffMinutes} min</span> : null}
           </div>
 
         </div>
@@ -142,7 +145,7 @@ function BookingSuccess({
 }) {
   return (
     <main className="mx-auto w-full max-w-md px-4 py-10 text-center">
-      <span className="mx-auto mb-5 grid size-14 place-items-center rounded-full bg-accent-soft text-accent"><Check size={28} aria-hidden="true" /></span><h1 className="text-xl font-extrabold">Rezervace potvrzena</h1>
+      <span className="mx-auto mb-5 grid size-14 place-items-center rounded-full bg-accent-soft text-accent"><Check size={28} aria-hidden="true" /></span><h1 className="text-xl font-extrabold">Máš svůj FLEK.</h1>
       <p className="tnum mt-4 rounded-2xl border border-line bg-card px-4 py-6 font-mono text-2xl font-extrabold tracking-[0.12em] text-ink">
         {code}
       </p>
@@ -161,6 +164,13 @@ function BookingSuccess({
           rel="noreferrer"
         >
           Navigovat
+        </a>
+        <a
+          className="inline-flex min-h-13 w-full items-center justify-center gap-2 rounded-xl border border-line bg-card px-5 text-base font-semibold text-ink"
+          href={icsHref(bookingIcs({ code, serviceName: offer.service_name, businessName: offer.business_name, address: `${offer.address_line}, ${offer.city}`, startAt: offer.start_at, endAt: offer.end_at }))}
+          download={`flek-${code}.ics`}
+        >
+          <CalendarPlus size={18} aria-hidden="true" />Přidat do kalendáře
         </a>
         <Link
           to="/rezervace"
