@@ -53,7 +53,7 @@ export function MyBookingsPage() {
           action={
             <Link
               to="/prihlaseni?returnTo=%2Frezervace"
-              className="inline-flex min-h-11 items-center rounded-xl bg-accent px-4 font-semibold text-accent-ink"
+              className="inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-semibold text-accent-ink"
             >
               Přihlásit se
             </Link>
@@ -93,7 +93,7 @@ export function MyBookingsPage() {
             action={
               <Link
                 to="/"
-                className="inline-flex min-h-11 items-center rounded-xl bg-accent px-4 font-semibold text-accent-ink"
+                className="inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-semibold text-accent-ink"
               >
                 Objevit nabídky
               </Link>

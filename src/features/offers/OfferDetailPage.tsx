@@ -164,7 +164,7 @@ function BookingSuccess({
       </p>
       <div className="mt-6 flex flex-col gap-2">
         <a
-          className="inline-flex min-h-13 w-full items-center justify-center rounded-xl bg-accent px-5 text-base font-semibold text-accent-ink"
+          className="inline-flex min-h-13 w-full items-center justify-center rounded-xl bg-action px-5 text-base font-semibold text-accent-ink"
           href={`https://www.openstreetmap.org/?mlat=${offer.latitude}&mlon=${offer.longitude}#map=17/${offer.latitude}/${offer.longitude}`}
           target="_blank"
           rel="noreferrer"

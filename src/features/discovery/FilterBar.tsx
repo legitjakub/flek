@@ -62,7 +62,7 @@ export function FilterBar({
                   role="radio"
                   aria-checked={active}
                   onClick={() => onChange(applyIntent(filters, intent.key))}
-                  className={`min-h-11 shrink-0 rounded-full border px-4 text-sm font-bold whitespace-nowrap transition-colors ${active ? 'border-accent bg-accent text-accent-ink' : 'border-line bg-card text-ink hover:border-accent'}`}
+                  className={`min-h-11 shrink-0 rounded-full border px-4 text-sm font-bold whitespace-nowrap transition-colors ${active ? 'border-action bg-action text-accent-ink' : 'border-line bg-card text-ink hover:border-accent'}`}
                 >
                   {intent.label}
                 </button>
@@ -74,7 +74,7 @@ export function FilterBar({
           <SlidersHorizontal size={17} aria-hidden="true" />
           Filtry
           {count ? (
-            <span className="tnum grid size-5 place-items-center rounded-full bg-accent text-xs text-accent-ink">
+            <span className="tnum grid size-5 place-items-center rounded-full bg-brand text-xs font-bold text-ink">
               {count}
             </span>
           ) : null}
