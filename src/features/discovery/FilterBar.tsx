@@ -49,10 +49,10 @@ export function FilterBar({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-end gap-2">
+      <div className="flex items-end gap-3">
         <div className="min-w-0 flex-1">
           <p id="kdy-label" className="mb-2 text-sm font-bold">Kdy máš čas?</p>
-          <div role="radiogroup" aria-labelledby="kdy-label" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+          <div role="radiogroup" aria-labelledby="kdy-label" className="rail rail-fade -mx-1 flex gap-2 px-1 pb-1">
             {TIME_INTENTS.map((intent) => {
               const active = intentOf(filters) === intent.key;
               return (
@@ -70,14 +70,20 @@ export function FilterBar({
             })}
           </div>
         </div>
-        <button type="button" onClick={openSheet} aria-haspopup="dialog" className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-line bg-card px-3 text-sm font-bold hover:border-accent">
-          <SlidersHorizontal size={17} aria-hidden="true" />Filtry{count ? <span className="tnum text-accent">{count}</span> : null}
+        <button type="button" onClick={openSheet} aria-haspopup="dialog" className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-line bg-card px-4 text-sm font-bold hover:border-accent">
+          <SlidersHorizontal size={17} aria-hidden="true" />
+          Filtry
+          {count ? (
+            <span className="tnum grid size-5 place-items-center rounded-full bg-accent text-xs text-accent-ink">
+              {count}
+            </span>
+          ) : null}
         </button>
       </div>
-      <div className="flex max-w-full gap-5 overflow-x-auto border-b border-line" aria-label="Kategorie">
+      <div className="rail rail-fade flex max-w-full gap-1 border-b border-line" aria-label="Kategorie">
         {[{ slug: '', label_cs: 'Vše' }, ...categories].map((category) => {
           const active = (filters.category ?? '') === category.slug;
-          return <button key={category.slug} type="button" aria-pressed={active} onClick={() => onChange({ ...filters, category: category.slug || null })} className={`min-h-12 shrink-0 border-b-2 px-1 text-sm font-semibold transition-colors ${active ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-ink'}`}>{category.label_cs}</button>;
+          return <button key={category.slug} type="button" aria-pressed={active} onClick={() => onChange({ ...filters, category: category.slug || null })} className={`min-h-12 shrink-0 border-b-2 px-3 text-sm font-semibold transition-colors ${active ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-ink'}`}>{category.label_cs}</button>;
         })}
       </div>
       {chips.length ? <div className="flex flex-wrap items-center gap-x-3 text-sm text-muted">

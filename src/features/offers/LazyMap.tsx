@@ -15,6 +15,8 @@ type Props = {
   ariaLabel: string;
   /** Load immediately instead of waiting to be scrolled into view. */
   eager?: boolean;
+  /** Frame the results instead of a fixed centre. */
+  fitToMarkers?: boolean;
 };
 
 /**

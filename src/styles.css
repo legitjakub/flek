@@ -66,6 +66,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .map-pin--selected {
+    transform: none;
+  }
+
   *,
   *::before,
   *::after {
@@ -77,6 +81,55 @@
 }
 
 @layer components {
+  /* Price pins are the content of the map, so they read as buttons rather than markers. */
+  .map-pin {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding-inline: 10px;
+    border-radius: 999px;
+    border: 1px solid var(--color-line);
+    background: var(--color-card);
+    color: var(--color-ink);
+    font-size: 0.8125rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    box-shadow: 0 1px 2px rgb(20 18 16 / 0.14), 0 4px 12px -4px rgb(20 18 16 / 0.24);
+    cursor: pointer;
+    transition:
+      background-color 150ms,
+      color 150ms,
+      transform 150ms;
+  }
+  .map-pin:hover {
+    border-color: var(--color-accent);
+  }
+  .map-pin--selected {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: var(--color-accent-ink);
+    transform: scale(1.08);
+    z-index: 1;
+  }
+
+  /* Horizontal filter rails scroll, but the scrollbar itself is visual noise. */
+  .rail {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .rail::-webkit-scrollbar {
+    display: none;
+  }
+  /* A hard cut at the edge reads as broken; a fade reads as "there is more". Dropped while
+     focus is inside so a keyboard focus ring on the last item is never clipped. */
+  .rail-fade:not(:focus-within) {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent 100%);
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent 100%);
+  }
+
 
   .page-container { width: 100%; max-width: 1200px; margin-inline: auto; padding-inline: 16px; }
   @media (min-width: 768px) { .page-container { padding-inline: 32px; } }
