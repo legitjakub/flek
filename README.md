@@ -15,6 +15,10 @@ Aplikace ověřuje jedinou hypotézu: **budou podniky opakovaně zveřejňovat z
 
 React 19 + TypeScript + Vite · Tailwind v4 · TanStack Query · React Hook Form + Zod · MapLibre GL nad OpenStreetMap · Supabase (PostgreSQL, Auth, Storage, RLS, PostGIS) · Temporal polyfill pro práci s časem · instalovatelná PWA.
 
+## Nasazená ukázka
+
+<https://flek-demo.netlify.app> — produkční build nad hostovaným Supabase. Nasazení řídí `netlify.toml`; klíčové je přesměrování `/* → /index.html`, bez kterého by obnovení stránky na detailu nabídky skončilo chybou 404.
+
 ## Nastavení
 
 Potřebujete Node.js ≥ 22.12.
@@ -56,14 +60,14 @@ Migrace v `supabase/migrations/` se aplikují v pořadí názvů:
 
 ### Demo účty
 
-Všechny mají **pouze pro lokální vývoj** heslo `FlekDemo2026!`. Seed ani hesla nikdy nenasazujte do produkce.
+Seed nastavuje **pouze pro lokální vývoj** heslo `FlekDemo2026!`. Nasazená ukázka má vlastní vygenerovaná hesla, která v repozitáři nejsou — vyžádejte si je u správce. Demo seed ani jeho hesla nikdy nenasazujte do produkce.
 
 | E-mail | Role |
 | --- | --- |
 | `demo-customer@flek.test` | zákazník s historií rezervací |
 | `demo-merchant@flek.test` | partner se schválenou provozovnou |
 | `demo-merchant2@flek.test` | partner s provozovnou čekající na schválení |
-| `demo-admin@flek.test` | administrace |
+| `demo-admin@flek.test` | administrace — na nasazené ukázce má **vlastní** heslo, nesdílené s ostatními |
 
 ## Testy
 

@@ -33,7 +33,7 @@ export function CustomerShell({ children }: { children: ReactNode }) {
         </div>
       </header>
       <div id="obsah" className={cx('min-w-0 flex-1', !detail && 'pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-8')}>{children}</div>
-      {!detail ? <nav aria-label="Hlavní" className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card pb-[env(safe-area-inset-bottom)] md:hidden"><ul className="flex">{navItems(true)}</ul></nav> : null}
+      {!detail ? <nav aria-label="Hlavní" className="app-bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card pb-[env(safe-area-inset-bottom)] md:hidden"><ul className="flex">{navItems(true)}</ul></nav> : null}
     </div>
   );
 }

@@ -29,6 +29,12 @@ Migrace i seed byly aplikované na **skutečný hostovaný PostgreSQL 17 s PostG
 
 Ověřeno navíc přímo v databázi: seed nahrán (15 provozoven, 30 služeb, 38 nabídek, 11 rezervací ve všech pěti stavech), trigger `handle_new_user` zakládá profily, PostGIS vzdálenosti a skóre `search_offers` odpovídají, filtr denní doby řeže podle **pražských** hodin (ráno 24 nabídek do 11:30, odpoledne 8 mezi 12:00 a 15:30).
 
+## Nasazená ukázka
+
+Nasazeno na <https://flek-demo.netlify.app> (produkční build, hostovaný Supabase). Ověřeno po nasazení: domovská stránka 200, hluboký odkaz na detail nabídky 200 (SPA přesměrování funguje), v balíčku je jen naše vlastní pojistka proti service-role klíči, 17 nabídek se třemi sekcemi, žádný vodorovný posun a **všechny čtyři položky spodní navigace jsou dosažitelné** — odznak Netlify je nejprve překrýval dvě z nich.
+
+Demo hesla byla před zveřejněním otočena; stará přestala platit, administrátorský účet má vlastní.
+
 ## Ostatní kontroly
 
 | Kontrola | Výsledek |

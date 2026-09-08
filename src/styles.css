@@ -77,6 +77,16 @@
 }
 
 @layer components {
+
   .page-container { width: 100%; max-width: 1200px; margin-inline: auto; padding-inline: 16px; }
   @media (min-width: 768px) { .page-container { padding-inline: 32px; } }
+}
+
+@layer utilities {
+  /* Netlify's free-plan badge is a fixed iframe pinned to the bottom centre, and it lands
+     on top of the last two tabs. The attribution stays exactly where it is; the bar simply
+     makes room for it so both remain usable. */
+  body:has(#nl-badge-frame) .app-bottom-nav {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 46px);
+  }
 }

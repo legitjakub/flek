@@ -38,7 +38,16 @@ Původní zadání recenze z V1 vyřazovalo. Hodnocení jsou přidaná na výslo
 
 Partnerská část pracuje s první provozovnou účtu. Datový model víc provozoven na účet unese (`business_members`), ale přepínač mezi nimi v rozhraní není. Pro pilot s ručním onboardingem to stačí; jakmile bude mít někdo dvě pobočky, je potřeba ho doplnit.
 
-## 9. Vědomě mimo V1
+## 9. Veřejná ukázka a její hranice
+
+<https://flek-demo.netlify.app> je veřejně dostupná bez hesla. Data jsou fiktivní a RLS drží, ale je potřeba vědět:
+
+- Demo účty mají vygenerovaná hesla mimo repozitář; administrátorský účet má vlastní, nesdílené. Před dalším sdílením je vhodné je znovu otočit.
+- V Supabase je stále **vypnutá ochrana proti prolomeným heslům** (Auth → leaked password protection). Pro cokoli s reálnými uživateli ji zapněte.
+- Kdokoli s odkazem si může založit účet a rezervovat. Pro pilot s reálnými podniky je potřeba ukázku buď zaheslovat (Netlify to umí), nebo oddělit demo data od ostrých.
+- Na bezplatném tarifu Netlify překrývá spodní lištu odznak „Powered by Netlify". Atribuci jsme nechali být a místo toho zvedli spodní navigaci, aby byly použitelné obě. S vlastní doménou nebo placeným tarifem odznak zmizí a pravidlo se samo přestane uplatňovat.
+
+## 10. Vědomě mimo V1
 
 Platby, zálohy, výplaty · předplatné · věrnostní programy a kupony · recenze · chat · push a SMS · dynamické ceny · integrace na rezervační systémy · vícejazyčné rozhraní · nativní aplikace · fakturace · QR skenování.
 
