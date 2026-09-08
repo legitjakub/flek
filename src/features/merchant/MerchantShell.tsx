@@ -32,7 +32,7 @@ export function MerchantShell({ children }: { children: (business: Business) => 
           <p className="mt-1 text-sm text-muted">Účtem partnera spravujete provozovnu a volné termíny.</p>
           <Link
             to="/prihlaseni?role=merchant&returnTo=%2Fpartner"
-            className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-accent px-4 font-semibold text-accent-ink"
+            className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-semibold text-accent-ink"
           >
             Přihlásit se
           </Link>
@@ -67,7 +67,7 @@ export function MerchantShell({ children }: { children: (business: Business) => 
           </p>
           <Link
             to="/partner/registrace"
-            className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-accent px-4 font-semibold text-accent-ink"
+            className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-semibold text-accent-ink"
           >
             Přidat provozovnu
           </Link>

@@ -82,7 +82,7 @@ export function Button({ variant = 'primary', size = 'md', loading, className, c
       className={cx(
         'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-55',
         size === 'lg' ? 'min-h-13 px-5 text-base' : 'text-sm',
-        variant === 'primary' && 'bg-accent text-accent-ink hover:bg-[#07534d]',
+        variant === 'primary' && 'bg-action text-accent-ink hover:bg-[#11161a]',
         variant === 'secondary' && 'border border-line bg-card text-ink hover:bg-surface',
         variant === 'ghost' && 'text-ink hover:bg-line/50',
         variant === 'danger' && 'border border-danger/25 bg-card text-danger hover:bg-danger/5',
@@ -349,7 +349,7 @@ export function Segmented<T extends string | number | null>({
             onClick={() => onChange(option.value)}
             className={cx(
               'min-h-11 rounded-lg px-1.5 text-sm font-semibold transition-colors',
-              active ? 'bg-accent text-card shadow-sm' : 'text-muted hover:text-ink',
+              active ? 'bg-action text-card shadow-sm' : 'text-muted hover:text-ink',
             )}
           >
             {option.label}

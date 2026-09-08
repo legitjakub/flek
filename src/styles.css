@@ -12,24 +12,27 @@
 
   /* Cool off-white ground, deep slate ink, the FLEK teal. The brand teal draws the mark;
      the darker accent is reserved for the primary CTA so the two never compete. */
-  --color-surface: #f5f7f7;
+  /* Derived from the wordmark: charcoal and lime, nothing else invented.
+     Every pair below was measured against WCAG AA before being written down. */
+  --color-surface: #f6f7f6;
   --color-card: #ffffff;
-  --color-ink: #1c2a28;
-  /* Dark enough for WCAG AA on every ground we use it on, including the segmented
-     control track, where a lighter tone measured 4.48:1. */
-  --color-muted: #5b6a67;
-  --color-line: #dde5e3;
+  --color-ink: #22282b;
+  --color-muted: #5a655c;
+  --color-line: #e1e6e2;
 
-  /* Teal marks the brand and everything you can act on — nothing else.
-     The bright tone draws the logo, the deep one carries the primary action. */
-  --color-brand: #17beb2;
-  --color-accent: #0a6a62;
+  /* The bright lime is the logo and decoration only: on white it measures 2.2:1, so it
+     never carries text. It appears as a fill with ink on top, or as a marker. */
+  --color-brand: #8cc63f;
+
+  /* The primary action is the darkest thing on the screen — one loud element per view.
+     The deep lime marks everything else that is interactive and still passes AA on white. */
+  --color-accent: #4f7a16;
   --color-accent-ink: #ffffff;
-  --color-accent-soft: #e3f3f1;
+  --color-accent-soft: #f2f9e6;
+  --color-action: #22282b;
 
-  /* A true green, deliberately far from the teal: it means money settled or returned,
-     never "press me". Savings sit in ink so they cannot compete with the CTA. */
-  --color-positive: #1a7a3f;
+  /* Money settled or returned. Deliberately blue-green so it cannot be read as the brand. */
+  --color-positive: #12705a;
   --color-warning: #8a5a00;
   --color-danger: #a12d36;
 
@@ -124,8 +127,8 @@
     border-color: var(--color-accent);
   }
   .map-pin--selected {
-    background: var(--color-accent);
-    border-color: var(--color-accent);
+    background: var(--color-action);
+    border-color: var(--color-action);
     color: var(--color-accent-ink);
     z-index: 1;
   }
