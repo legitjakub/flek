@@ -1,5 +1,7 @@
+import { clusterPins } from '../discovery/mapClusters';
+import { money } from '../../lib/format';
 import { useEffect, useRef } from 'react';
-import { LngLatBounds, Map as MapLibreMap, Marker, type MapOptions } from 'maplibre-gl';
+import { LngLatBounds, Map as MapLibreMap, Marker, NavigationControl, type MapOptions } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 /**
@@ -37,13 +39,14 @@ export const MAP_STYLE: MapOptions['style'] = {
   ],
 };
 
-export type MapMarker = { id: string; lat: number; lng: number; label: string; description?: string };
+export type MapMarker = { id: string; lat: number; lng: number; label: string; description?: string; count?: number; price?: number };
 
 export function MapCanvas({
   center,
   zoom = 13,
   markers,
   onSelect,
+  onSelectGroup,
   selectedId,
   className,
   interactive = true,
@@ -54,6 +57,7 @@ export function MapCanvas({
   zoom?: number;
   markers: MapMarker[];
   onSelect?: (id: string) => void;
+  onSelectGroup?: (ids: string[]) => void;
   selectedId?: string;
   className?: string;
   interactive?: boolean;
@@ -63,6 +67,12 @@ export function MapCanvas({
 }) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
+  const groupRef = useRef(onSelectGroup);
+  const selectedRef = useRef(selectedId);
+  useEffect(() => { groupRef.current = onSelectGroup; selectedRef.current = selectedId; }, [onSelectGroup, selectedId]);
+  const selectRef = useRef(onSelect);
+  useEffect(() => { selectRef.current = onSelect; }, [onSelect]);
+  const selectable = Boolean(onSelect);
   const drawn = useRef<Marker[]>([]);
   const lastCenter = useRef<string>('');
   const lastFit = useRef<string>('');
@@ -79,12 +89,17 @@ export function MapCanvas({
       zoom,
       interactive,
       attributionControl: { compact: true, customAttribution: MAP_ATTRIBUTION },
+      locale: { 'NavigationControl.ZoomIn': 'Přiblížit mapu', 'NavigationControl.ZoomOut': 'Oddálit mapu', 'AttributionControl.ToggleAttribution': 'Zdroje mapy' },
     });
     // A map that fails silently is worse than one that complains: without this a broken
     // style just looks like an empty grey box.
+    if (interactive) map.current.addControl(new NavigationControl({ showCompass: false }), 'top-right');
     map.current.on('error', (event) => console.error('[mapa]', event.error?.message ?? event));
     lastCenter.current = `${center.lat},${center.lng}`;
+    const observer = new ResizeObserver(() => map.current?.resize());
+    observer.observe(container.current);
     return () => {
+      observer.disconnect();
       map.current?.remove();
       map.current = null;
       // These refs describe the map instance, not the component. Without clearing them a
@@ -119,34 +134,82 @@ export function MapCanvas({
   useEffect(() => {
     const instance = map.current;
     if (!instance) return;
-    drawn.current.forEach((m) => m.remove());
-    drawn.current = markers.map((marker) => {
-      const selected = marker.id === selectedId;
-      const el = document.createElement(onSelect ? 'button' : 'span');
-      if (el instanceof HTMLButtonElement) el.type = 'button';
-      el.textContent = marker.label;
-      el.setAttribute('aria-label', marker.description ?? marker.label);
-      if (onSelect) el.setAttribute('aria-pressed', String(selected));
-      el.className = `map-pin${selected ? ' map-pin--selected' : ''}`;
-      if (onSelect) el.addEventListener('click', () => onSelect(marker.id));
-      return new Marker({ element: el }).setLngLat([marker.lng, marker.lat]).addTo(instance);
-    });
+    function draw() {
+      if (!instance) return;
+      const focused = document.activeElement instanceof HTMLElement ? document.activeElement.dataset.mapIds : undefined;
+      drawn.current.forEach((marker) => marker.remove());
+      const projected = markers.map((marker, index) => {
+        const point = instance.project([marker.lng, marker.lat]);
+        return { x: point.x, y: point.y, width: Math.max(76, marker.label.length * 9 + 24 + ((marker.count ?? 1) > 1 ? 28 : 0)), indexes: [index] };
+      });
+      const clusters = groupRef.current ? clusterPins(projected) : projected;
+      drawn.current = clusters.map((cluster) => {
+        const entries = cluster.indexes.map((index) => markers[index]);
+        const ids = entries.map((entry) => entry.id);
+        const multiple = entries.length > 1;
+        const count = entries.reduce((sum, entry) => sum + (entry.count ?? 1), 0);
+        const label = multiple ? `od ${money(Math.min(...entries.map((entry) => entry.price ?? 0)))}` : entries[0].label;
+        const el = document.createElement(selectable ? 'button' : 'span');
+        if (el instanceof HTMLButtonElement) el.type = 'button';
+        el.textContent = label;
+        el.dataset.mapIds = JSON.stringify(ids);
+        el.setAttribute('aria-label', multiple ? `${count} ${count < 5 ? 'termíny' : 'termínů'} v této oblasti, ${label}. Vybrat aktivitu.` : entries[0].description ?? label);
+        el.className = 'map-pin';
+        const active = ids.includes(selectedRef.current ?? '');
+        el.classList.toggle('map-pin--selected', active);
+        if (selectable) el.setAttribute('aria-pressed', String(active));
+        if (count > 1) {
+          const badge = document.createElement('span');
+          badge.className = 'map-pin-count';
+          badge.textContent = String(count);
+          badge.setAttribute('aria-hidden', 'true');
+          el.append(badge);
+        }
+        if (selectable) el.addEventListener('click', () => multiple ? groupRef.current?.(ids) : selectRef.current?.(ids[0]));
+        const pin = new Marker({ element: el }).setLngLat(instance.unproject([cluster.x, cluster.y])).addTo(instance);
+        if (focused === el.dataset.mapIds) el.focus({ preventScroll: true });
+        return pin;
+      });
+    }
+    draw();
+    instance.on('moveend', draw);
+    instance.on('resize', draw);
+    return () => {
+      instance.off('moveend', draw);
+      instance.off('resize', draw);
+      drawn.current.forEach((marker) => marker.remove());
+      drawn.current = [];
+    };
+  }, [markers, selectable]);
 
-    // Frame whatever came back, once per result set. A fixed centre leaves half the
-    // venues off screen, which is how the map ended up looking empty.
-    if (!fitToMarkers || markers.length === 0) return;
-    const key = markers.map((m) => m.id).join(',');
-    if (key === lastFit.current) return;
-    lastFit.current = key;
-    const bounds = new LngLatBounds();
-    markers.forEach((m) => bounds.extend([m.lng, m.lat]));
-    instance.fitBounds(bounds, {
-      padding: { top: 48, right: 44, bottom: 88, left: 44 },
-      maxZoom: 15,
-      duration: cameraDuration(),
+  useEffect(() => {
+    const instance = map.current;
+    if (!instance) return;
+    // Reframe for a new result set or viewport size, but leave user pans/zoom alone.
+    function frame() {
+      if (!instance || !fitToMarkers || markers.length === 0) return;
+      const canvas = instance.getContainer();
+      const key = `${markers.map((m) => m.id).join(',')}:${canvas.clientWidth}x${canvas.clientHeight}`;
+      if (key === lastFit.current) return;
+      lastFit.current = key;
+      const bounds = new LngLatBounds();
+      markers.forEach((marker) => bounds.extend([marker.lng, marker.lat]));
+      instance.fitBounds(bounds, { padding: { top: 88, right: 72, bottom: 52, left: 72 }, maxZoom: 15, duration: 0 });
+    }
+    frame();
+    instance.on('resize', frame);
+    return () => { instance.off('resize', frame); };
+  }, [markers, fitToMarkers]);
+
+  useEffect(() => {
+    drawn.current.forEach((marker) => {
+      const element = marker.getElement();
+      const ids: string[] = JSON.parse(element.dataset.mapIds ?? '[]');
+      const active = ids.includes(selectedId ?? '');
+      element.classList.toggle('map-pin--selected', active);
+      if (selectable) element.setAttribute('aria-pressed', String(active));
     });
-    lastCenter.current = '';
-  }, [markers, onSelect, selectedId, fitToMarkers]);
+  }, [selectedId, markers, selectable]);
 
   return <div ref={container} className={className} role="region" aria-label={ariaLabel} />;
 }

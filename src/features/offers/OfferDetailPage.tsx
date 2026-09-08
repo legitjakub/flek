@@ -11,6 +11,7 @@ import { Banner, Button, ErrorState, Rating, Skeleton } from '../../components/u
 import { bookingIcs, icsHref } from '../../lib/calendar';
 import { Link, useRouter } from '../../app/router';
 import { BookingSheet, cancellationDeadline } from '../bookings/BookingSheet';
+import { Voucher } from '../bookings/Voucher';
 import { LazyMap } from './LazyMap';
 
 export function OfferDetailPage({ offerId }: { offerId: string }) {
@@ -19,6 +20,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
   const returnTo = /^(\/|\/mapa)(\?.*)?$/.test(origin) ? origin : '/';
   const now = useServerNow(15_000);
   const point = storedPoint() ?? DEFAULT_POINT;
+  const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [code, setCode] = useState<string | null>(null);
 
@@ -81,7 +83,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
       <Link to={returnTo} className="my-4 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-muted hover:text-accent"><ArrowLeft size={18} aria-hidden="true" />Zpět na nabídky</Link>
       <div className="grid items-start gap-6 md:grid-cols-[minmax(0,1fr)_320px] lg:gap-12 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="min-w-0">
-          {image ? <img src={image} alt="" className="mb-6 aspect-[2/1] w-full rounded-2xl object-cover" /> : null}
+          {image && image !== failedPhoto ? <img src={image} onError={() => setFailedPhoto(image)} alt="" className="mb-6 aspect-[2/1] w-full rounded-2xl object-cover" /> : null}
           <h1 className="text-2xl leading-tight font-extrabold tracking-tight [overflow-wrap:anywhere]">{offer.service_name}</h1>
           <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-base font-semibold">{offer.business_name}<Rating average={offer.rating_avg} count={offer.rating_count} size="md" /></p>
           <p className="mt-2 flex items-start gap-2 text-sm leading-relaxed text-muted"><MapPin size={18} aria-hidden="true" className="mt-0.5 shrink-0" /><span>{offer.address_line}, {offer.city}{offer.distance_m != null ? ` · ${formatDistance(offer.distance_m)}` : ''}</span></p>
@@ -92,7 +94,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           </div>
 
         </div>
-        <aside className="rounded-2xl border border-line bg-card p-5 shadow-card md:sticky md:top-24 lg:p-6" aria-label="Vybraný termín">
+        <aside className="rounded-2xl border border-line bg-card p-5 shadow-card md:sticky md:top-24 md:col-start-2 md:row-start-1 md:row-span-2 lg:p-6" aria-label="Vybraný termín">
           <h2 className="text-base font-bold">Tvůj termín</h2>
           <div className="mt-4 flex items-center gap-3 rounded-xl bg-accent-soft p-4 text-accent"><CalendarDays size={24} aria-hidden="true" /><div><p className="tnum text-xl font-extrabold">{dayLabel(offer.start_at, now)} {clockTime(offer.start_at)}</p><p className="tnum mt-1 text-sm">Do {clockTime(offer.end_at)}</p></div></div>
           <p className="mt-4 flex items-center justify-between gap-3 text-sm"><span className="inline-flex items-center gap-2 text-muted"><Clock3 size={17} aria-hidden="true" />Délka služby</span><span className="tnum font-semibold">{duration(offer.start_at, offer.end_at)} min</span></p>
@@ -101,7 +103,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           {!offer.bookable ? <div className="mt-4"><Banner tone="warning">Tento termín už bohužel není volný.</Banner></div> : null}
           <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:static md:mt-5 md:border-0 md:p-0">
             <Button size="lg" className="w-full" disabled={!offer.bookable} onClick={() => setSheetOpen(true)}>{offer.bookable ? `Rezervovat za ${money(offer.deal_price_cents)}` : 'Termín není volný'}</Button>
-            <p className="mt-2 flex items-center justify-center gap-2 text-sm text-muted"><Banknote size={16} aria-hidden="true" />Platba na místě</p>
+            <p className="mt-2 flex items-center justify-center gap-2 text-sm text-muted"><Banknote size={16} aria-hidden="true" />Zaplatíš rovnou, v podniku jen ukážeš kód</p>
           </div>
         </aside>
         <div className="min-w-0 md:col-start-1">          <div className="mb-8 border-t border-line pt-6">
@@ -113,7 +115,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           <LazyMap className="mt-4 h-56 w-full overflow-hidden rounded-2xl border border-line" center={{ lat: offer.latitude, lng: offer.longitude }} zoom={14} interactive={false} markers={[{ id: offer.id, lat: offer.latitude, lng: offer.longitude, label: offer.business_name }]} ariaLabel={`Mapa: ${offer.business_name}, ${offer.address_line}`} />
           <a className="mt-2 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-accent" href={`https://www.openstreetmap.org/?mlat=${offer.latitude}&mlon=${offer.longitude}#map=17/${offer.latitude}/${offer.longitude}`} target="_blank" rel="noreferrer"><MapPin size={17} aria-hidden="true" />Navigovat</a>
           <h2 className="mt-6 text-lg font-bold">Zrušení</h2>
-          <p className="mt-2 text-sm leading-relaxed text-muted">Zrušit můžeš zdarma do {clockTime(cancellationDeadline(offer.start_at))}. Když rezervuješ později, máš na zrušení 10 minut od rezervace.</p>
+          <p className="mt-2 text-sm leading-relaxed text-muted">Zrušit můžeš zdarma do {clockTime(cancellationDeadline(offer.start_at))} a vrátíme ti celou částku. Když rezervuješ později, máš na zrušení 10 minut od rezervace.</p>
         </div>
       </div>
 
@@ -146,10 +148,10 @@ function BookingSuccess({
   return (
     <main className="mx-auto w-full max-w-md px-4 py-10 text-center">
       <span className="mx-auto mb-5 grid size-14 place-items-center rounded-full bg-accent-soft text-accent"><Check size={28} aria-hidden="true" /></span><h1 className="text-xl font-extrabold">Máš svůj FLEK.</h1>
-      <p className="tnum mt-4 rounded-2xl border border-line bg-card px-4 py-6 font-mono text-2xl font-extrabold tracking-[0.12em] text-ink">
-        {code}
-      </p>
-      <p className="mt-3 text-sm text-muted">Kód ukaž na místě. Platíš až v podniku.</p>
+      <div className="mt-4">
+        <Voucher code={code} />
+      </div>
+      <p className="tnum mt-3 text-sm font-semibold text-positive">Zaplaceno {money(offer.deal_price_cents)}</p>
       <p className="tnum mt-4 text-base font-semibold text-ink">
         {dayLabel(offer.start_at, now)} {clockTime(offer.start_at)} · {offer.business_name}
       </p>

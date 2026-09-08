@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ArrowUpRight, Clock3, MapPin } from 'lucide-react';
 import { Link, useRouter } from '../../app/router';
 import { money, distance as formatDistance } from '../../lib/format';
@@ -23,6 +24,7 @@ export function OfferCard({
   /** The one card above the fold: fetched eagerly so it is not the slow LCP element. */
   priority?: boolean;
 }) {
+  const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
   const { path, search } = useRouter();
   const origin = `${path}${search.size ? `?${search}` : ''}`;
   const photo = offer.image_url ?? offer.cover_url;
@@ -35,9 +37,10 @@ export function OfferCard({
       to={`/nabidka/${offer.id}?from=${encodeURIComponent(origin)}`}
       className="offer-card group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-card transition duration-150 hover:border-accent/40 hover:shadow-card"
     >
-      {photo && !compact ? (
+      {photo && photo !== failedPhoto && !compact ? (
         <img
           src={photo}
+          onError={() => setFailedPhoto(photo)}
           alt=""
           loading={priority ? 'eager' : 'lazy'}
           fetchPriority={priority ? 'high' : 'auto'}

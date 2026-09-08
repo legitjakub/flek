@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
-import { createBooking, saveProfile } from '../../lib/api';
+import { confirmDemoPayment, createBooking, saveProfile, startPayment } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
 import { profileSchema } from '../../lib/schemas';
@@ -58,7 +58,11 @@ export function BookingSheet({
   const book = useMutation({
     mutationFn: async (values: ProfileValues | null) => {
       if (values) await saveProfile(values);
-      return createBooking(offer.id);
+      // Money first, seat second: the booking RPC refuses anything but a settled payment,
+      // and the amount it checks comes from the offer row rather than from here.
+      const payment = await startPayment(offer.id);
+      const settled = payment.status === 'paid' ? payment : await confirmDemoPayment(payment.id);
+      return createBooking(offer.id, settled.id);
     },
     onSuccess: async (booking) => {
       await queryClient.invalidateQueries();
@@ -108,7 +112,7 @@ export function BookingSheet({
             else book.mutate(null);
           }}
         >
-          Potvrdit rezervaci
+          {`Zaplatit ${money(offer.deal_price_cents)}`}
         </Button>
       }
     >
@@ -119,7 +123,7 @@ export function BookingSheet({
           label="Kdy"
           value={`${dayLabel(offer.start_at, now)} ${clockTime(offer.start_at)}–${clockTime(offer.end_at)}`}
         />
-        <Row label="Cena na místě" value={money(offer.deal_price_cents)} />
+        <Row label="Zaplatíš teď" value={money(offer.deal_price_cents)} />
         <Row label="Ušetříš" value={money(savings)} />
         <Row label="Zrušit můžeš zdarma do" value={clockTime(cancellationDeadline(offer.start_at))} />
       </dl>
@@ -158,7 +162,12 @@ export function BookingSheet({
       ) : null}
 
       <p className="mt-5 rounded-xl bg-surface px-3 py-2 text-sm text-muted">
-        Podnik ti termín drží. Když nemůžeš dorazit, zruš to prosím včas.
+        Platíš rovnou přes FLEK a v podniku už jen ukážeš kód. Když zrušíš včas, vrátíme ti
+        celou částku.
+      </p>
+      <p className="mt-2 rounded-xl border border-warning/30 bg-warning/8 px-3 py-2 text-sm text-ink">
+        <strong>Ukázkový režim.</strong> Platební brána zatím není napojená — žádné peníze se
+        nestrhnou.
       </p>
 
       {failure ? (

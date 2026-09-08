@@ -86,13 +86,13 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 34px;
+    min-height: 44px;
     padding-inline: 10px;
     border-radius: 999px;
     border: 1px solid var(--color-line);
     background: var(--color-card);
     color: var(--color-ink);
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     font-weight: 800;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
@@ -100,8 +100,7 @@
     cursor: pointer;
     transition:
       background-color 150ms,
-      color 150ms,
-      transform 150ms;
+      color 150ms;
   }
   .map-pin:hover {
     border-color: var(--color-accent);
@@ -110,7 +109,6 @@
     background: var(--color-accent);
     border-color: var(--color-accent);
     color: var(--color-accent-ink);
-    transform: scale(1.08);
     z-index: 1;
   }
 
@@ -133,4 +131,11 @@
 
   .page-container { width: 100%; max-width: 1200px; margin-inline: auto; padding-inline: 16px; }
   @media (min-width: 768px) { .page-container { padding-inline: 32px; } }
+}
+
+@layer components {
+  .map-page { height: calc(100dvh - 132px - env(safe-area-inset-bottom)); min-height: 660px; }
+  @media (min-width: 768px) { .map-page { height: calc(100dvh - 69px); min-height: 640px; } }
+  .map-pin-count { margin-left: 6px; display: inline-grid; place-items: center; min-width: 22px; height: 22px; border-radius: 50%; background: var(--color-accent-soft); color: var(--color-accent); font-size: 12px; }
+  .maplibregl-ctrl-group button { width: 44px; height: 44px; }
 }

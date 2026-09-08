@@ -4,6 +4,7 @@ import { createBusiness, listCategories, updateBusiness } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { Banner, Button, Field, Input, Select, Textarea } from '../../components/ui';
 import { MerchantShell } from './MerchantShell';
+import { AddressField } from './AddressField';
 import { LazyMap } from '../offers/LazyMap';
 import { useRouter } from '../../app/router';
 import { DEFAULT_POINT } from '../../lib/geo';
@@ -57,6 +58,7 @@ function BusinessForm({ business }: { business?: Business }) {
   const [values, setValues] = useState<Values>(() => initial(business));
   const [failure, setFailure] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [manualPoint, setManualPoint] = useState(false);
 
   const lat = Number(values.latitude);
   const lng = Number(values.longitude);
@@ -140,9 +142,22 @@ function BusinessForm({ business }: { business?: Business }) {
         <Input id="b-website" value={values.website} onChange={(event) => set('website', event.target.value)} />
       </Field>
 
-      <Field id="b-address" label="Ulice a číslo">
-        <Input id="b-address" value={values.address_line} onChange={(event) => set('address_line', event.target.value)} />
-      </Field>
+      <AddressField
+        value={values.address_line}
+        onPick={(picked) => {
+          setSaved(false);
+          setValues((prev) => ({
+            ...prev,
+            address_line: picked.address_line,
+            city: picked.city || prev.city,
+            district: picked.district || prev.district,
+            postal_code: picked.postal_code || prev.postal_code,
+            latitude: String(picked.latitude),
+            longitude: String(picked.longitude),
+          }));
+        }}
+      />
+
       <div className="grid gap-3 sm:grid-cols-3">
         <Field id="b-city" label="Město">
           <Input id="b-city" value={values.city} onChange={(event) => set('city', event.target.value)} />
@@ -155,14 +170,32 @@ function BusinessForm({ business }: { business?: Business }) {
         </Field>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Field id="b-lat" label="Zeměpisná šířka" hint="Zkontrolujte značku na mapě.">
-          <Input id="b-lat" inputMode="decimal" value={values.latitude} onChange={(event) => set('latitude', event.target.value)} />
-        </Field>
-        <Field id="b-lng" label="Zeměpisná délka">
-          <Input id="b-lng" inputMode="decimal" value={values.longitude} onChange={(event) => set('longitude', event.target.value)} />
-        </Field>
-      </div>
+      {validPoint ? (
+        <p className="tnum text-sm text-muted">
+          Poloha z adresy: {lat.toFixed(5)}, {lng.toFixed(5)}.{' '}
+          <button
+            type="button"
+            onClick={() => setManualPoint((v) => !v)}
+            className="font-semibold text-accent underline underline-offset-4"
+          >
+            {manualPoint ? 'Skrýt ruční úpravu' : 'Upravit ručně'}
+          </button>
+        </p>
+      ) : (
+        <p className="text-sm text-muted">Vyberte adresu z nabídky — poloha na mapě se doplní sama.</p>
+      )}
+
+      {manualPoint ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field id="b-lat" label="Zeměpisná šířka">
+            <Input id="b-lat" inputMode="decimal" value={values.latitude} onChange={(event) => set('latitude', event.target.value)} />
+          </Field>
+          <Field id="b-lng" label="Zeměpisná délka">
+            <Input id="b-lng" inputMode="decimal" value={values.longitude} onChange={(event) => set('longitude', event.target.value)} />
+          </Field>
+        </div>
+      ) : null}
+
       {validPoint ? (
         <LazyMap
           className="h-48 w-full overflow-hidden rounded-2xl border border-line"

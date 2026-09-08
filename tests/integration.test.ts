@@ -34,7 +34,14 @@ async function offer(cap=1,options:{business?:string;start?:number;cutoff?:numbe
  const r=await db.query(`insert into public.offers(business_id,service_id,start_at,end_at,booking_cutoff_at,original_price_cents,deal_price_cents,capacity_total,capacity_remaining,status) values($1,$2,now()+$3*interval '1 minute',now()+($3+45)*interval '1 minute',now()+$4*interval '1 minute',65000,39000,$5,$5,$6) returning *`,[b,s,options.start??180,options.cutoff??150,cap,options.status??'published']);
  return r.rows[0] as {id:string;capacity_remaining:number};
 }
-async function book(a:Account,o:{id:string}){return a.client.rpc('create_booking',{p_offer_id:o.id});}
+// Booking now requires settled money, so the helper pays first.
+async function book(a:Account,o:{id:string}){
+ const started=await a.client.rpc('start_payment',{p_offer_id:o.id});
+ if(started.error)return started;
+ const settled=await a.client.rpc('demo_confirm_payment',{p_payment_id:(started.data as {id:string}).id});
+ if(settled.error)return settled;
+ return a.client.rpc('create_booking',{p_offer_id:o.id,p_payment_id:(settled.data as {id:string}).id});
+}
 async function stored(id:string){return (await db.query('select * from public.offers where id=$1',[id])).rows[0] as {capacity_remaining:number;capacity_total:number};}
 function code(error:{message:string}|null,expected:string){expect(error?.message).toContain(expected);}
 

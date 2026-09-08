@@ -12,6 +12,8 @@ const URL_ = process.env.SUPABASE_URL;
 const ANON = process.env.SUPABASE_ANON_KEY;
 if (!URL_ || !ANON) throw new Error('Nastavte SUPABASE_URL a SUPABASE_ANON_KEY.');
 const PASSWORD = process.env.DEMO_PASSWORD ?? 'FlekDemo2026!';
+// The admin account is deliberately not on the shared demo password.
+const ADMIN_PASSWORD = process.env.DEMO_ADMIN_PASSWORD ?? PASSWORD;
 const SERVICE_ID = '11d06bdf-8e9c-63c3-6bd3-3774c2773965'; // md5('flek-service-1'), Pánský střih
 
 const results = [];
@@ -23,7 +25,8 @@ const err = (e) => e?.message ?? '';
 
 async function signIn(email) {
   const client = createClient(URL_, ANON, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { data, error } = await client.auth.signInWithPassword({ email, password: PASSWORD });
+  const password = email.startsWith('demo-admin@') ? ADMIN_PASSWORD : PASSWORD;
+  const { data, error } = await client.auth.signInWithPassword({ email, password });
   if (error) throw new Error(`${email}: ${error.message}`);
   return { client, id: data.user.id, email };
 }
@@ -45,6 +48,16 @@ async function publish(capacity, minutesAhead = 180) {
   return data.id;
 }
 
+
+/** Booking now requires settled money, so every attempt goes through the payment first. */
+async function book(client, offerId) {
+  const started = await client.rpc('start_payment', { p_offer_id: offerId });
+  if (started.error) return started;
+  const settled = await client.rpc('demo_confirm_payment', { p_payment_id: started.data.id });
+  if (settled.error) return settled;
+  return client.rpc('create_booking', { p_offer_id: offerId, p_payment_id: settled.data.id });
+}
+
 const users = await Promise.all(
   ['demo-5', 'demo-6', 'demo-7', 'demo-8', 'demo-9', 'demo-10', 'demo-11', 'demo-12', 'demo-customer', 'demo-merchant2']
     .map((n) => signIn(`${n}@flek.test`)),
@@ -57,7 +70,7 @@ const offerC = await publish(1);
 check('Partner zveřejní nabídku přes publish_offer', created.length === 3);
 
 // --- concurrency: the failure that would destroy merchant trust permanently
-const raceA = await Promise.all(users.map((u) => u.client.rpc('create_booking', { p_offer_id: offerA })));
+const raceA = await Promise.all(users.map((u) => book(u.client, offerA)));
 const okA = raceA.filter((r) => !r.error);
 check('capacity=1, 10 souběžných uživatelů: právě 1 uspěje', okA.length === 1,
   `úspěchů ${okA.length}, OFFER_UNAVAILABLE ${raceA.filter((r) => err(r.error).includes('OFFER_UNAVAILABLE')).length}`);
@@ -65,14 +78,14 @@ check('Kód má tvar FLEK-XXXXXX bez zaměnitelných znaků',
   /^FLEK-[2346789ABCDEFGHJKLMNPQRTUVWXYZ]{6}$/.test(okA[0]?.data?.[0]?.reservation_code ?? ''),
   okA[0]?.data?.[0]?.reservation_code);
 
-const raceB = await Promise.all(users.map((u) => u.client.rpc('create_booking', { p_offer_id: offerB })));
+const raceB = await Promise.all(users.map((u) => book(u.client, offerB)));
 check('capacity=5, 10 souběžných volání: právě 5 uspěje', raceB.filter((r) => !r.error).length === 5);
 
 // A separate account, so the three-booking limit from the races above cannot mask this.
 const tapper = await signIn('demo-admin@flek.test');
 const dbl = await Promise.all([
-  tapper.client.rpc('create_booking', { p_offer_id: offerC }),
-  tapper.client.rpc('create_booking', { p_offer_id: offerC }),
+  book(tapper.client, offerC),
+  book(tapper.client, offerC),
 ]);
 const okC = dbl.filter((r) => !r.error);
 check('Dvojité klepnutí téhož uživatele: jedna rezervace', okC.length === 1,
@@ -137,6 +150,29 @@ const after = await anon.rpc('get_offer_detail', { p_offer_id: offerC, p_lat: nu
 check('Zrušení vrátí kapacitu a nabídku do prodeje',
   !cancel.error && before.data.capacity_remaining === 0 && after.data.capacity_remaining === 1 && after.data.bookable === true,
   `před ${before.data.capacity_remaining} → po ${after.data.capacity_remaining}`);
+
+// --- money before seat
+// tapper released its only booking in the cancellation check above, so it is not sitting
+// at the three-booking limit — which would mask the payment errors this block is about.
+const payer = tapper;
+const payOffer = await publish(1, 200);
+const attempt = await payer.client.rpc('start_payment', { p_offer_id: payOffer });
+check('Platba se otevře s částkou z nabídky', !attempt.error && attempt.data.amount_cents === 39000,
+  `${attempt.data?.amount_cents} h, stav ${attempt.data?.status}`);
+check('Nezaplacená rezervace je odmítnuta',
+  err((await payer.client.rpc('create_booking', { p_offer_id: payOffer, p_payment_id: attempt.data.id })).error).includes('PAYMENT_REQUIRED'));
+const settledPay = await payer.client.rpc('demo_confirm_payment', { p_payment_id: attempt.data.id });
+check('Po zaplacení rezervace projde',
+  !(await payer.client.rpc('create_booking', { p_offer_id: payOffer, p_payment_id: settledPay.data.id })).error);
+check('Tutéž platbu nelze použít podruhé',
+  err((await payer.client.rpc('create_booking', { p_offer_id: payOffer, p_payment_id: settledPay.data.id })).error).length > 0);
+check('Cizí platbu nelze potvrdit',
+  err((await users[2].client.rpc('demo_confirm_payment', { p_payment_id: settledPay.data.id })).error).includes('FORBIDDEN'));
+const payerBooking = ((await payer.client.rpc('my_bookings')).data ?? []).find((b) => b.offer_id === payOffer);
+check('Rezervace nese stav zaplaceno', payerBooking?.payment_status === 'paid', payerBooking?.payment_status);
+await payer.client.rpc('cancel_booking', { p_booking_id: payerBooking.id });
+const afterRefund = ((await payer.client.rpc('my_bookings')).data ?? []).find((b) => b.id === payerBooking.id);
+check('Zrušení vrátí peníze', afterRefund?.payment_status === 'refunded', afterRefund?.payment_status);
 
 // --- ratings are earned by attendance, not collected
 const customer = users[8]; // demo-customer, the account the seed gives history to

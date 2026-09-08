@@ -35,4 +35,10 @@ Jeden řádek na rozhodnutí, chronologicky. Kde bylo zadání nejednoznačné, 
 - Sekce na objevování se musí zasloužit: až od šesti nabídek celkem a jen se dvěma a více položkami. Prázdný karusel je horší než poctivý seznam a pilot začíná s hrstkou termínů.
 - Náhled nabídky nad mapou zůstal plovoucí kartou, ne modálním sheetem. Modál by zakryl mapu, ve které si uživatel právě vybírá.
 - Mezikrok „Hotovo" po zveřejnění termínu zmizel. Potvrzení patří na stránku za sheetem; jinak partner platí klepnutím navíc za informaci, kterou už vidí.
+- Platí se předem přes FLEK, ne na místě. Sedadlo se vydá až proti vypořádaným penězům: `create_booking` odmítne cokoli jiného než platbu ve stavu `paid` a částku porovná s cenou v nabídce, takže změna ceny mezi zaplacením a rezervací nemůže zákazníka přeplatit.
+- Poskytovatel platby je za tabulkou `payments`. Ukázka vypořádává přes `demo_confirm_payment`, skutečná brána bude tentýž řádek označovat z webhooku pod service role. Nic jiného ve schématu se tou výměnou nezmění.
+- Jedna vypořádaná platba koupí právě jedno sedadlo — hlídá to částečný unikátní index `bookings_one_per_payment`, ne aplikace.
+- Zrušení v bezplatném okně vrací celou částku. Storno po lhůtě je odmítnuté už dřív, takže „vrátit jen část" nemá kdy nastat. Výplaty podnikům a provize řeší pilot mimo aplikaci; Stripe Connect je mimo rozsah.
+- Ověřovacím artefaktem zůstává rezervační kód. QR je jen odkaz na partnerské vyhledání s předvyplněným kódem — partner tak ověřuje foťákem, ne přepisováním šesti znaků, a nepotřebuje k tomu žádnou čtečku v aplikaci.
+- Adresu provozovny hledá Photon nad OpenStreetMap: bez klíče a dost rychle na psaní. Souřadnice jsou důsledkem vybrané adresy, ne samostatné pole — obchodník nemá důvod vědět, co je zeměpisná šířka. Ruční úprava zůstává schovaná pro případ, kdy našeptávač mine.
 - Barevnost je odvozená z loga: značková tyrkysová kreslí znak, tmavší odstín je vyhrazený pro hlavní CTA. Slevový odznak je tmavý, aby s CTA nesoutěžil.

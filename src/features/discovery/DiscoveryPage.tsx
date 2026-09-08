@@ -6,7 +6,7 @@ import { useServerNow } from '../../lib/clock';
 import { Banner, Button, CardSkeleton, EmptyState, ErrorState } from '../../components/ui';
 import { OfferCard } from './OfferCard';
 import { buildSections } from './sections';
-import { DEFAULT_FILTERS, SORT_LABELS } from './filters';
+import { DEFAULT_FILTERS, SORT_LABELS, activeCount } from './filters';
 import { useDiscovery } from './useDiscovery';
 import { useDiscoveryState } from './useDiscoveryState';
 import { LocationChip } from './LocationChip';
@@ -20,7 +20,10 @@ export function DiscoveryPage() {
   const categories = useQuery({ queryKey: ['categories'], queryFn: listCategories, staleTime: 3_600_000 });
   const discovery = useDiscovery(point, filters);
   const rows = discovery.data?.rows ?? [];
-  const sections = useMemo(() => buildSections(rows, now), [rows, now]);
+  const customized = activeCount(filters) > 0 || filters.when !== DEFAULT_FILTERS.when;
+  const sections = useMemo(() => customized
+    ? (rows.length ? [{ key: 'all', title: 'Volné termíny', rows }] : [])
+    : buildSections(rows, now), [rows, now, customized]);
   return (
     <main className="page-container py-5 sm:py-8">
       <LocationChip point={point} onChange={setPoint} />

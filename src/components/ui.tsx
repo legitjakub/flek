@@ -218,12 +218,14 @@ export function Sheet({
   title,
   children,
   footer,
+  returnFocus,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: ReactNode;
   footer?: ReactNode;
+  returnFocus?: () => HTMLElement | null;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   return (
@@ -231,7 +233,7 @@ export function Sheet({
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-ink/40 transition-opacity duration-150 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
         <Dialog.Viewport className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-6">
-          <Dialog.Popup ref={ref} initialFocus={(type) => type === 'touch' ? ref.current : ref.current?.querySelector<HTMLElement>('[data-autofocus]') ?? true} className="relative flex max-h-[92dvh] w-full flex-col rounded-t-3xl bg-card text-ink shadow-card outline-none md:max-w-lg md:rounded-2xl">
+          <Dialog.Popup ref={ref} finalFocus={returnFocus} initialFocus={(type) => type === 'touch' ? ref.current : ref.current?.querySelector<HTMLElement>('[data-autofocus]') ?? true} className="relative flex max-h-[92dvh] w-full flex-col rounded-t-3xl bg-card text-ink shadow-card outline-none md:max-w-lg md:rounded-2xl">
             <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3">
               <Dialog.Title className="text-lg font-extrabold tracking-tight">{title}</Dialog.Title>
               <Dialog.Close aria-label="Zavřít" className="grid size-11 shrink-0 place-items-center rounded-xl text-muted hover:bg-surface"><X size={20} aria-hidden="true" /></Dialog.Close>

@@ -55,6 +55,8 @@ Migrace v `supabase/migrations/` se aplikují v pořadí názvů:
 | `…0004_queries.sql` | PostGIS vyhledávání, detail nabídky, čtecí modely |
 | `…0005_storage.sql` | Storage buckety a pravidla přístupu |
 | `…0006_metrics.sql` | čtecí modely a metriky pro partnera a administraci |
+| `…0009_ratings.sql` | hodnocení z dokončených rezervací |
+| `…0011_payments.sql` | platba předem, vratky a stav platby ve čtecích modelech |
 
 `supabase/seed.sql` je **jen pro lokální vývoj**: 15 fiktivních pražských provozoven, 30 služeb a 38 termínů generovaných relativně k `now()`, takže demo je živé i příští týden. Rezervace pokrývají všechny stavy včetně dokončené i nedostavené.
 
@@ -87,7 +89,7 @@ Integrační testy se přihlašují **skutečnými JWT**, ne service-role klíč
 
 ## Hlavní obrazovky
 
-**Zákazník** — Objevit (`/`), Mapa (`/mapa`), detail nabídky (`/nabidka/:id`), Rezervace (`/rezervace`), Profil (`/profil`).
+**Zákazník** — Objevit (`/`), Mapa (`/mapa`), detail nabídky (`/nabidka/:id`), Rezervace (`/rezervace`), Profil (`/profil`). Platí se při rezervaci; zákazník dostane voucher s kódem a QR, podnik ho ověří načtením.
 
 **FLEK Partner** (`/partner`) — přehled, zveřejnění termínu, nabídky, rezervace s vyhledáním podle kódu, služby, provozovna, metriky.
 

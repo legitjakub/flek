@@ -188,7 +188,7 @@ export function MyBookingsPage() {
         }
       >
         <p className="text-sm text-ink">
-          Termín se vrátí do nabídky a někdo jiný ho může využít. Zrušení je zdarma.
+          Termín se vrátí do nabídky a někdo jiný ho může využít. Vrátíme ti celou zaplacenou částku.
         </p>
         {failure ? (
           <div className="mt-3">

@@ -14,6 +14,7 @@ import type {
   MerchantMetrics,
   MerchantOffer,
   OfferDetail,
+  Payment,
   Profile,
   SearchRow,
   Service,
@@ -99,9 +100,25 @@ export async function saveProfile(input: {
   );
 }
 
-export async function createBooking(offerId: string): Promise<{ booking_id: string; reservation_code: string }> {
+/** Opens (or reuses) a payment attempt. The amount always comes from the offer row. */
+export async function startPayment(offerId: string): Promise<Payment> {
+  return await result<Payment>(supabase.rpc('start_payment', { p_offer_id: offerId }));
+}
+
+/**
+ * Demo settlement. A real gateway never goes through here — it settles the same row from
+ * its webhook, and this call disappears with the demo provider.
+ */
+export async function confirmDemoPayment(paymentId: string): Promise<Payment> {
+  return await result<Payment>(supabase.rpc('demo_confirm_payment', { p_payment_id: paymentId }));
+}
+
+export async function createBooking(
+  offerId: string,
+  paymentId: string,
+): Promise<{ booking_id: string; reservation_code: string }> {
   const rows = await result<{ booking_id: string; reservation_code: string }[]>(
-    supabase.rpc('create_booking', { p_offer_id: offerId }),
+    supabase.rpc('create_booking', { p_offer_id: offerId, p_payment_id: paymentId }),
   );
   const row = rows?.[0];
   if (!row) throw new Error('OFFER_UNAVAILABLE');

@@ -122,3 +122,18 @@ begin
   end loop;
  end loop;
 end $$;
+
+-- Seeded bookings predate paying up front; give them settled payments so the demo does not
+-- show a wall of unpaid seats. Cancelled ones show the money going back.
+insert into public.payments(customer_id, offer_id, amount_cents, status, provider, provider_reference, paid_at, refunded_at)
+select k.customer_id, k.offer_id, k.price_cents,
+       case when k.status in ('cancelled_by_customer','cancelled_by_merchant') then 'refunded' else 'paid' end::public.payment_status,
+       'demo', 'demo-seed', k.created_at,
+       case when k.status in ('cancelled_by_customer','cancelled_by_merchant') then k.cancelled_at end
+from public.bookings k where k.payment_id is null;
+
+update public.bookings k set payment_id = p.id
+from public.payments p
+where k.payment_id is null and p.provider_reference='demo-seed'
+  and p.customer_id=k.customer_id and p.offer_id=k.offer_id and p.amount_cents=k.price_cents
+  and not exists (select 1 from public.bookings x where x.payment_id=p.id);

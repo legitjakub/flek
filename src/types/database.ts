@@ -124,6 +124,7 @@ export type CustomerBooking = {
   cancellation_reason: string | null;
   rating: number | null;
   rated_at: string | null;
+  payment_status: PaymentStatus | null;
   business_phone: string;
   can_cancel: boolean;
   cancellation_deadline: string;
@@ -208,5 +209,20 @@ export type AdminBusiness = Business & {
 };
 
 export type AdminUser = Profile & { email: string; bookings: AdminBooking[] };
+
+export type PaymentStatus = 'pending' | 'paid' | 'refunded' | 'failed';
+
+export type Payment = {
+  id: string;
+  customer_id: string;
+  offer_id: string;
+  amount_cents: number;
+  status: PaymentStatus;
+  provider: string;
+  provider_reference: string | null;
+  created_at: string;
+  paid_at: string | null;
+  refunded_at: string | null;
+};
 
 export type SortKey = 'recommended' | 'nearest' | 'discount' | 'cheapest' | 'soonest';

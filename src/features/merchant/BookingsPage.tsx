@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { merchantBookings, merchantLookupBooking } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
 import { clockTime, dayBounds, dayLabel } from '../../lib/time';
 import { useServerNow } from '../../lib/clock';
 import { Banner, Button, EmptyState, ErrorState, Field, Input, LoadingList, Tabs } from '../../components/ui';
+import { useRouter } from '../../app/router';
 import { MerchantShell } from './MerchantShell';
 import { ResolveButtons } from './ResolveButtons';
 import type { MerchantBooking, MerchantBookingDetail } from '../../types/database';
@@ -19,7 +20,9 @@ export function MerchantBookingsPage() {
 function Bookings({ businessId }: { businessId: string }) {
   const now = useServerNow();
   const [tab, setTab] = useState<Tab>('today');
-  const [code, setCode] = useState('');
+  const { search } = useRouter();
+  const scanned = (search.get('kod') ?? '').toUpperCase();
+  const [code, setCode] = useState(scanned);
   const [lookup, setLookup] = useState<MerchantBookingDetail | null>(null);
   const [lookupState, setLookupState] = useState<'idle' | 'pending' | 'missing' | 'error'>('idle');
   const [lookupError, setLookupError] = useState<string | null>(null);
@@ -39,6 +42,16 @@ function Bookings({ businessId }: { businessId: string }) {
     return start < Date.parse(day.from);
   });
   const unresolved = all.filter((booking) => booking.unresolved);
+
+  // Arriving from a scanned voucher: look the code up straight away instead of making the
+  // merchant press a button they never chose to see.
+  useEffect(() => {
+    if (!scanned) return;
+    setCode(scanned);
+    void find();
+    // The scanned code is the trigger; find() closes over it through state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scanned]);
 
   async function find() {
     setLookupState('pending');
@@ -156,6 +169,11 @@ function BookingRow({
         <p className="text-base font-bold text-ink">{booking.service_name_snapshot}</p>
         <p className="text-sm text-muted">
           {booking.customer_label} · {money(booking.price_cents)}
+          {booking.payment_status === 'paid' ? (
+            <span className="ml-2 font-semibold text-positive">{' '}Zaplaceno předem</span>
+          ) : booking.payment_status === 'refunded' ? (
+            <span className="ml-2 font-semibold text-muted">Vráceno</span>
+          ) : null}
         </p>
         <p className="tnum mt-1 font-mono text-sm font-bold tracking-[0.1em] text-ink">{booking.reservation_code}</p>
         {showContact && detail.phone ? (
