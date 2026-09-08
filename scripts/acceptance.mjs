@@ -195,6 +195,30 @@ check('Změna politiky nemění už uzavřenou rezervaci', wbAfter?.cancellation
   `${wbAfter?.cancellation_window_minutes} min`);
 await payer.client.rpc('cancel_booking', { p_booking_id: wb.id });
 
+// --- following a venue, and hearing about its next slot
+const follower = users[2];
+const followBiz = businessId;
+check('Sledování se zapne a vypne týmž voláním',
+  (await follower.client.rpc('toggle_favorite', { p_business_id: followBiz })).data === true &&
+    (await follower.client.rpc('toggle_favorite', { p_business_id: followBiz })).data === false);
+await follower.client.rpc('toggle_favorite', { p_business_id: followBiz });
+await follower.client.rpc('mark_favorites_seen');
+check('Po označení za přečtené nic nového nezbývá',
+  (await follower.client.rpc('new_at_favorites_count')).data === 0);
+const freshOffer = await publish(1, 500);
+const countAfter = (await follower.client.rpc('new_at_favorites_count')).data;
+check('Nový termín u sledovaného místa se objeví', countAfter >= 1, `${countAfter} nových`);
+const freshList = (await follower.client.rpc('new_at_favorites', { p_limit: 20 })).data ?? [];
+check('Seznam novinek obsahuje právě ten termín', freshList.some((o) => o.id === freshOffer));
+check('Cizí novinky nikdo jiný nevidí',
+  ((await users[3].client.rpc('new_at_favorites', { p_limit: 20 })).data ?? []).every((o) => o.id !== freshOffer));
+check('Anonym na oblíbené nedosáhne',
+  err((await anon.rpc('my_favorites')).error).length > 0);
+await follower.client.rpc('mark_favorites_seen');
+check('Otevření seznamu odznak vynuluje',
+  (await follower.client.rpc('new_at_favorites_count')).data === 0);
+await follower.client.rpc('toggle_favorite', { p_business_id: followBiz });
+
 // --- ratings are earned by attendance, not collected
 const customer = users[8]; // demo-customer, the account the seed gives history to
 const history = (await customer.client.rpc('my_bookings')).data ?? [];

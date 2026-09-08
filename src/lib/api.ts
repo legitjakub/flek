@@ -9,6 +9,8 @@ import type {
   Business,
   Category,
   CustomerBooking,
+  FavoriteBusiness,
+  FavoriteOffer,
   MerchantBooking,
   MerchantBookingDetail,
   MerchantMetrics,
@@ -135,6 +137,28 @@ export async function rateBooking(bookingId: string, rating: number): Promise<vo
 
 export async function myBookings(): Promise<CustomerBooking[]> {
   return withClock((await result<CustomerBooking[]>(supabase.rpc('my_bookings'))) ?? []);
+}
+
+/* ----------------------------------------------------------------- favourites */
+
+export async function toggleFavorite(businessId: string): Promise<boolean> {
+  return (await result<boolean>(supabase.rpc('toggle_favorite', { p_business_id: businessId }))) === true;
+}
+
+export async function myFavorites(): Promise<FavoriteBusiness[]> {
+  return (await result<FavoriteBusiness[]>(supabase.rpc('my_favorites'))) ?? [];
+}
+
+export async function newAtFavorites(): Promise<FavoriteOffer[]> {
+  return withClock((await result<FavoriteOffer[]>(supabase.rpc('new_at_favorites', { p_limit: 20 }))) ?? []);
+}
+
+export async function newAtFavoritesCount(): Promise<number> {
+  return (await result<number>(supabase.rpc('new_at_favorites_count'))) ?? 0;
+}
+
+export async function markFavoritesSeen(): Promise<void> {
+  await result(supabase.rpc('mark_favorites_seen'));
 }
 
 export async function isAdmin(): Promise<boolean> {

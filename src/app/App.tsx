@@ -9,6 +9,7 @@ import { DiscoveryPage } from '../features/discovery/DiscoveryPage';
 import { MapPage } from '../features/discovery/MapPage';
 import { OfferDetailPage } from '../features/offers/OfferDetailPage';
 import { MyBookingsPage } from '../features/bookings/MyBookingsPage';
+import { FavoritesPage } from '../features/favorites/FavoritesPage';
 // A customer never opens the merchant or admin trees, so they are not part of the bundle
 // that has to arrive before the first offer can be read.
 const MerchantDashboardPage = lazy(() =>
@@ -65,6 +66,7 @@ const ROUTES: { path: string; render: (params: Record<string, string>) => ReactN
   { path: '/', render: () => <DiscoveryPage />, shell: true },
   { path: '/mapa', render: () => <MapPage />, shell: true },
   { path: '/nabidka/:id', render: (p) => <OfferDetailPage offerId={p.id} />, shell: true },
+  { path: '/oblibene', render: () => <FavoritesPage />, shell: true },
   { path: '/rezervace', render: () => <MyBookingsPage />, shell: true },
   { path: '/profil', render: () => <ProfilePage />, shell: true },
   { path: '/prihlaseni', render: () => <AuthPage />, shell: false },

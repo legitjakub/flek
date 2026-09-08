@@ -1,6 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="FLEK">
-  <rect width="64" height="64" fill="#f4f8f7"/>
-  <path d="M30 15c-7.73 0-14 6.27-14 14 0 9.8 11.82 22.1 13.38 23.67a.87.87 0 0 0 1.24 0C32.18 51.1 44 38.8 44 29c0-7.73-6.27-14-14-14z" fill="#17beb2"/>
-  <circle cx="30" cy="29" r="8.6" fill="#ffffff"/>
-  <path d="M30 23.6V29l3.9 3.6" fill="none" stroke="#2b3a38" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect width="64" height="64" fill="#f5f7f7"/>
+  <g fill="none" stroke="#1c2a28" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M39 21c-6.9 0-11.6 4.5-11.6 11.2V46"/>
+    <path d="M20 34h15.2"/>
+  </g>
+  <g fill="none" stroke="#17beb2" stroke-width="5.6" stroke-linecap="round">
+    <path d="M44 25.5 49 20"/>
+    <path d="M47.5 35.5 53 32.5"/>
+  </g>
 </svg>

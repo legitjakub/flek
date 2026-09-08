@@ -9,39 +9,56 @@ export function cx(...parts: (string | false | null | undefined)[]) {
 
 /* ------------------------------------------------------------------ wordmark */
 
-/** The FLEK mark: a pin holding a clock. Isolated here so the identity swaps in one edit. */
+/**
+ * The FLEK monogram: the wordmark's own lowercase "f" with the two motion dashes. Used
+ * where the full wordmark would be unreadable — favicon, app icon, tight spaces.
+ */
 export function Mark({ className = 'size-6' }: { className?: string }) {
   return (
     <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false" className={className}>
-      <path
-        d="M26 9c-9.39 0-17 7.61-17 17 0 11.9 14.36 26.83 16.25 28.74a1.05 1.05 0 0 0 1.5 0C28.64 52.83 43 37.9 43 26c0-9.39-7.61-17-17-17z"
-        fill="currentColor"
-      />
-      <circle cx="26" cy="26" r="10.5" fill="var(--color-card)" />
-      <path
-        d="M26 19.5V26l4.8 4.4"
-        fill="none"
-        stroke="var(--color-ink)"
-        strokeWidth="2.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <g fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round">
-        <path d="M50.5 12.5 47 16" />
-        <path d="M55 20.5 50.5 22.5" />
-        <path d="M52.5 30h-4.5" />
+      <g fill="none" stroke="currentColor" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M42 15c-8.6 0-14.5 5.6-14.5 14V50" />
+        <path d="M17.5 31.5h19" />
+      </g>
+      {/* The dashes carry the brand colour; the letter stays ink. */}
+      <g fill="none" stroke="var(--color-brand)" strokeWidth="7" strokeLinecap="round">
+        <path d="M49.5 20.5 56 13" />
+        <path d="M53.5 33.5 60.5 30" />
       </g>
     </svg>
   );
 }
 
-/** The single place the FLEK wordmark is drawn, so it can be replaced in one component. */
+/** Two dashes leaving the k — the only decorative part of the identity. */
+function Dashes({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false" className={className}>
+      <g fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round">
+        <path d="M6 12 14 3" />
+        <path d="M11.5 17 18.5 13.5" />
+      </g>
+    </svg>
+  );
+}
+
+/**
+ * The single place the FLEK wordmark is drawn, so it can be replaced in one component.
+ * Lowercase and tightly set, with the dashes lifting off the k.
+ */
 export function Wordmark({ tone = 'ink', suffix }: { tone?: 'ink' | 'invert'; suffix?: string }) {
   return (
     <span className="inline-flex items-center gap-1.5">
-      <Mark className="size-8 text-brand" />
-      <span className={cx('text-lg font-extrabold tracking-[-0.04em]', tone === 'invert' ? 'text-surface' : 'text-ink')}>
-        FLEK
+      <span className="inline-flex items-start">
+        <span
+          className={cx(
+            'text-2xl leading-none font-extrabold lowercase',
+            tone === 'invert' ? 'text-surface' : 'text-ink',
+          )}
+          style={{ letterSpacing: '-0.055em' }}
+        >
+          flek
+        </span>
+        <Dashes className="mt-[-3px] ml-0.5 size-3.5 shrink-0 text-brand" />
       </span>
       {suffix ? <span className="text-xs font-semibold tracking-wide text-muted uppercase">{suffix}</span> : null}
     </span>

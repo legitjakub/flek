@@ -230,4 +230,20 @@ export type Payment = {
   refunded_at: string | null;
 };
 
+export type FavoriteBusiness = Business & {
+  favorited_at: string;
+  seen_at: string;
+  rating_avg: number | null;
+  rating_count: number;
+  open_offers: number;
+  /** Offers published at this venue since the customer last looked at the list. */
+  new_offers: number;
+};
+
+export type FavoriteOffer = SearchRow & {
+  bookable: boolean;
+  seen_at: string;
+  is_new: boolean;
+};
+
 export type SortKey = 'recommended' | 'nearest' | 'discount' | 'cheapest' | 'soonest';

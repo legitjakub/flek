@@ -12,6 +12,7 @@ import { bookingIcs, icsHref } from '../../lib/calendar';
 import { Link, useRouter } from '../../app/router';
 import { BookingSheet, cancellationDeadline } from '../bookings/BookingSheet';
 import { Voucher } from '../bookings/Voucher';
+import { FavoriteButton } from '../favorites/FavoriteButton';
 import { LazyMap } from './LazyMap';
 
 export function OfferDetailPage({ offerId }: { offerId: string }) {
@@ -87,6 +88,9 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           <h1 className="text-2xl leading-tight font-extrabold tracking-tight [overflow-wrap:anywhere]">{offer.service_name}</h1>
           <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-base font-semibold">{offer.business_name}<Rating average={offer.rating_avg} count={offer.rating_count} size="md" /></p>
           <p className="mt-2 flex items-start gap-2 text-sm leading-relaxed text-muted"><MapPin size={18} aria-hidden="true" className="mt-0.5 shrink-0" /><span>{offer.address_line}, {offer.city}{offer.distance_m != null ? ` · ${formatDistance(offer.distance_m)}` : ''}</span></p>
+          <div className="mt-4">
+            <FavoriteButton businessId={offer.business_id} businessName={offer.business_name} />
+          </div>
           <div className="mt-5 flex flex-wrap gap-2">
             {minutesAway > 0 && minutesAway <= 120 ? <span className="tnum rounded-lg bg-surface px-3 py-2 text-sm font-bold text-ink">Začíná {relativeTime(offer.start_at, now)}</span> : null}
             {lastSeat ? <span className="rounded-lg bg-card px-3 py-2 text-sm font-semibold">Poslední místo</span> : null}

@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
-import { Compass, Map, CalendarDays, UserRound, ArrowUpRight } from 'lucide-react';
+import { Compass, Map, Heart, CalendarDays, UserRound, ArrowUpRight } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { newAtFavoritesCount } from '../lib/api';
 import { Link, useRouter } from './router';
 import { Wordmark, cx } from '../components/ui';
 import { useSession } from '../features/auth/session';
@@ -7,6 +9,7 @@ import { useSession } from '../features/auth/session';
 const NAV = [
   { to: '/', label: 'Objevit', icon: Compass },
   { to: '/mapa', label: 'Mapa', icon: Map },
+  { to: '/oblibene', label: 'Oblíbené', icon: Heart },
   { to: '/rezervace', label: 'Rezervace', icon: CalendarDays },
   { to: '/profil', label: 'Profil', icon: UserRound },
 ];
@@ -14,12 +17,22 @@ const NAV = [
 export function CustomerShell({ children }: { children: ReactNode }) {
   const { path, search } = useRouter();
   const { userId } = useSession();
+  // The badge is derived, never stored: it counts offers published at followed venues
+  // since the customer last opened the list.
+  const newCount = useQuery({
+    queryKey: ['favorites-count', userId],
+    queryFn: newAtFavoritesCount,
+    enabled: Boolean(userId),
+    refetchOnWindowFocus: true,
+    staleTime: 60_000,
+  });
   const detail = path.startsWith('/nabidka/');
   const query = (path === '/' || path === '/mapa') && search.size ? `?${search}` : '';
   function navItems(mobile: boolean) {
     return NAV.map(({ to, label, icon: Icon }) => {
       const active = to === '/' ? path === '/' : path.startsWith(to);
-      return <li key={to} className={mobile ? 'flex-1' : ''}><Link to={to + (to === '/' || to === '/mapa' ? query : '')} aria-current={active ? 'page' : undefined} className={cx('flex items-center justify-center font-semibold transition-colors', mobile ? 'min-h-16 flex-col gap-1 text-xs' : 'min-h-11 gap-2 rounded-xl px-4 text-sm', active ? 'text-accent' : 'text-muted hover:text-ink', !mobile && active && 'bg-accent-soft')}><Icon size={mobile ? 22 : 18} aria-hidden="true" strokeWidth={active ? 2.3 : 1.8} />{label}</Link></li>;
+      const badge = to === '/oblibene' ? (newCount.data ?? 0) : 0;
+      return <li key={to} className={mobile ? 'flex-1' : ''}><Link to={to + (to === '/' || to === '/mapa' ? query : '')} aria-current={active ? 'page' : undefined} className={cx('flex items-center justify-center font-semibold transition-colors', mobile ? 'min-h-16 flex-col gap-1 text-xs' : 'min-h-11 gap-2 rounded-xl px-4 text-sm', active ? 'text-accent' : 'text-muted hover:text-ink', !mobile && active && 'bg-accent-soft')}><span className="relative inline-flex"><Icon size={mobile ? 22 : 18} aria-hidden="true" strokeWidth={active ? 2.3 : 1.8} />{badge > 0 ? <span className="tnum absolute -top-1.5 -right-2 grid min-h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] font-bold text-accent-ink" aria-label={`${badge} nových`}>{badge > 9 ? '9+' : badge}</span> : null}</span>{label}</Link></li>;
     });
   }
   return (
