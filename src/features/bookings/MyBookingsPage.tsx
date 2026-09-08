@@ -128,7 +128,7 @@ export function MyBookingsPage() {
                 {booking.business_name_snapshot} · {booking.business_address_snapshot}
               </p>
               <p className="tnum mt-2 text-base font-bold text-accent">
-                {money(booking.price_cents)} <span className="font-normal text-muted">na místě</span>
+                {money(booking.price_cents)}
               </p>
 
               {booking.status === 'completed' ? <RatingPrompt booking={booking} /> : null}

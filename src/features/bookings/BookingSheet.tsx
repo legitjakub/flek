@@ -125,9 +125,9 @@ export function BookingSheet({
         />
         <Row label="Zaplatíš teď" value={money(offer.deal_price_cents)} />
         <Row label="Ušetříš" value={money(savings)} />
-        <Row label="Zrušit můžeš zdarma do" value={clockTime(cancellationDeadline(offer.start_at))} />
+        <Row label="Zrušit můžeš zdarma do" value={clockTime(cancellationDeadline(offer.start_at, offer.cancellation_window_minutes))} />
       </dl>
-      {Date.parse(cancellationDeadline(offer.start_at)) <= Date.parse(now) ? (
+      {Date.parse(cancellationDeadline(offer.start_at, offer.cancellation_window_minutes)) <= Date.parse(now) ? (
         <p className="mt-2 text-sm text-muted">
           Termín je blízko, takže na bezplatné zrušení máš 10 minut od rezervace.
         </p>
@@ -188,7 +188,10 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** Mirrors `customer_booking_details.cancellation_deadline`; the database still decides. */
-export function cancellationDeadline(startAt: string): string {
-  return new Date(Date.parse(startAt) - 60 * 60_000).toISOString();
+/**
+ * Mirrors `customer_booking_details.cancellation_deadline`; the database still decides.
+ * The window is per venue, so it has to be passed in rather than assumed to be an hour.
+ */
+export function cancellationDeadline(startAt: string, windowMinutes: number): string {
+  return new Date(Date.parse(startAt) - windowMinutes * 60_000).toISOString();
 }

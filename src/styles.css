@@ -1,23 +1,35 @@
 @import 'tailwindcss';
-@import '@fontsource-variable/manrope';
+/* Only the weight axis, upright. The full package also ships italic and width files this
+   interface never asks for. One family on purpose: a display face was worth about 60 kB on
+   a mobile-first product, and weight plus tracking give headings enough voice without it. */
+@import '@fontsource-variable/instrument-sans/wght.css';
 
 @theme {
-  --font-sans: 'Manrope Variable', ui-sans-serif, system-ui, sans-serif;
+  /* Instrument Sans for everything you read and act on: a modern grotesque that stays
+     crisp at 14 px and keeps prices and times in true tabular columns. Bricolage Grotesque
+     only for headlines and the wordmark — that is where the brand gets a voice. */
+  --font-sans: 'Instrument Sans Variable', ui-sans-serif, system-ui, sans-serif;
 
   /* Cool off-white ground, deep slate ink, the FLEK teal. The brand teal draws the mark;
      the darker accent is reserved for the primary CTA so the two never compete. */
-  --color-surface: #f6f8f8;
+  --color-surface: #f5f7f7;
   --color-card: #ffffff;
-  --color-ink: #253130;
+  --color-ink: #1c2a28;
   /* Dark enough for WCAG AA on every ground we use it on, including the segmented
-     control track (#ecf0ef), where the previous tone measured 4.48:1. */
-  --color-muted: #5d6a68;
-  --color-line: #dfe6e4;
+     control track, where a lighter tone measured 4.48:1. */
+  --color-muted: #5b6a67;
+  --color-line: #dde5e3;
+
+  /* Teal marks the brand and everything you can act on — nothing else.
+     The bright tone draws the logo, the deep one carries the primary action. */
   --color-brand: #17beb2;
   --color-accent: #0a6a62;
   --color-accent-ink: #ffffff;
-  --color-accent-soft: #e4f4f2;
-  --color-positive: #0f6b53;
+  --color-accent-soft: #e3f3f1;
+
+  /* A true green, deliberately far from the teal: it means money settled or returned,
+     never "press me". Savings sit in ink so they cannot compete with the CTA. */
+  --color-positive: #1a7a3f;
   --color-warning: #8a5a00;
   --color-danger: #a12d36;
 
@@ -36,6 +48,12 @@
 }
 
 @layer base {
+  h1,
+  h2 {
+    letter-spacing: -0.025em;
+    font-weight: 800;
+  }
+
   html {
     background: var(--color-surface);
     color: var(--color-ink);

@@ -26,7 +26,7 @@ export function bookingIcs(input: {
     `DTEND:${stamp(input.endAt)}`,
     `SUMMARY:${escapeText(`${input.serviceName} — ${input.businessName}`)}`,
     `LOCATION:${escapeText(input.address)}`,
-    `DESCRIPTION:${escapeText(`Rezervační kód ${input.code}. Platba na místě.`)}`,
+    `DESCRIPTION:${escapeText(`Rezervační kód ${input.code}. Zaplaceno předem přes FLEK.`)}`,
     'END:VEVENT',
     'END:VCALENDAR',
   ].join('\r\n');

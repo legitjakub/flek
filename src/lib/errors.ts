@@ -7,6 +7,7 @@ const messages:Record<string,string>={
  BOOKING_BLOCKED:'Rezervace je na tvém účtu dočasně pozastavená.',ALREADY_RESOLVED:'Tato rezervace už je vyřízená.',NOT_RATEABLE:'Hodnotit můžeš až termín, na který jsi dorazil/a.',
  PAYMENT_REQUIRED:'Platba zatím neproběhla. Zkus to prosím znovu.',PAYMENT_FAILED:'Platbu se nepodařilo dokončit. Zkus to prosím znovu.',
  PAYMENT_ALREADY_USED:'Tahle platba už je použitá u jiné rezervace.',PRICE_CHANGED:'Cena termínu se mezitím změnila. Načti nabídku znovu.',
+ INVALID_CANCELLATION_WINDOW:'Lhůta pro bezplatné zrušení musí být 0 až 10 080 minut.',
  TOO_EARLY:'Docházku můžete potvrdit až po začátku termínu.',OFFER_STARTED:'Termín už začal. Nabídku nelze zrušit.',
  BUSINESS_NOT_APPROVED:'Nejdříve musíme schválit vaši provozovnu.',OVERLAP_CONFIRMATION_REQUIRED:'Ve stejnou dobu už máte jinou nabídku. Máte fleku kapacitu?',
  OFFER_HAS_BOOKINGS:'Nabídka už má rezervace. Můžete pouze zvýšit kapacitu.',INVALID_CAPACITY:'Kapacitu nelze snížit pod již rezervovaná místa. Nejvýše lze nabídnout 50 míst.',

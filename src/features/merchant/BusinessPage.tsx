@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { createBusiness, listCategories, updateBusiness } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
-import { Banner, Button, Field, Input, Select, Textarea } from '../../components/ui';
+import { Banner, Button, Field, Input, Segmented, Select, Textarea } from '../../components/ui';
 import { MerchantShell } from './MerchantShell';
 import { AddressField } from './AddressField';
 import { LazyMap } from '../offers/LazyMap';
@@ -23,7 +23,17 @@ type Values = {
   postal_code: string;
   latitude: string;
   longitude: string;
+  cancellation_window_minutes: string;
 };
+
+/** Round numbers a merchant actually thinks in, plus the option to type any other. */
+const CANCELLATION_PRESETS: [number, string][] = [
+  [0, 'Až do začátku'],
+  [60, 'Hodinu předem'],
+  [180, '3 hodiny předem'],
+  [720, '12 hodin předem'],
+  [1440, 'Den předem'],
+];
 
 function initial(business?: Business): Values {
   return {
@@ -39,6 +49,7 @@ function initial(business?: Business): Values {
     postal_code: business?.postal_code ?? '',
     latitude: String(business?.latitude ?? DEFAULT_POINT.lat),
     longitude: String(business?.longitude ?? DEFAULT_POINT.lng),
+    cancellation_window_minutes: String(business?.cancellation_window_minutes ?? 60),
   };
 }
 
@@ -75,7 +86,12 @@ function BusinessForm({ business }: { business?: Business }) {
 
   const save = useMutation({
     mutationFn: async () => {
-      const payload = { ...values, latitude: lat, longitude: lng };
+      const payload = {
+        ...values,
+        latitude: lat,
+        longitude: lng,
+        cancellation_window_minutes: Number(values.cancellation_window_minutes) || 0,
+      };
       return business ? updateBusiness(business.id, payload) : createBusiness(payload);
     },
     onSuccess: async () => {
@@ -206,6 +222,33 @@ function BusinessForm({ business }: { business?: Business }) {
           ariaLabel="Poloha provozovny na mapě"
         />
       ) : null}
+
+      <fieldset className="flex flex-col gap-2">
+        <legend className="pb-1 text-sm font-bold">Bezplatné zrušení</legend>
+        <p className="text-sm text-muted">
+          Do kdy před začátkem může zákazník zrušit a dostat peníze zpět. Kdo si termín
+          rezervuje později, má na rozmyšlenou vždy 10 minut od zaplacení.
+        </p>
+        <Segmented
+          label="Bezplatné zrušení"
+          value={Number(values.cancellation_window_minutes)}
+          onChange={(minutes) => set('cancellation_window_minutes', String(minutes))}
+          options={CANCELLATION_PRESETS.map(([value, label]) => ({ value, label }))}
+          columns={2}
+        />
+        <Field
+          id="b-cancel"
+          label="Nebo přesný počet minut"
+          hint="0 znamená, že zrušit lze až do začátku termínu. Nejvýše 7 dní (10 080 minut)."
+        >
+          <Input
+            id="b-cancel"
+            inputMode="numeric"
+            value={values.cancellation_window_minutes}
+            onChange={(event) => set('cancellation_window_minutes', event.target.value.replace(/\D/g, '') || '0')}
+          />
+        </Field>
+      </fieldset>
 
       {saved ? <Banner tone="success">Údaje jsou uložené.</Banner> : null}
       {failure ? <Banner tone="warning">{failure}</Banner> : null}

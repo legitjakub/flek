@@ -17,8 +17,8 @@ function MissingConfig() {
         maxWidth: '32rem',
         margin: '0 auto',
         padding: '3rem 1.25rem',
-        fontFamily: "'Manrope Variable', system-ui, sans-serif",
-        color: '#253130',
+        fontFamily: "'Instrument Sans Variable', system-ui, sans-serif",
+        color: '#1c2a28',
       }}
     >
       <h1 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>FLEK nemá připojení k databázi.</h1>

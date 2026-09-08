@@ -28,7 +28,7 @@ export function DiscoveryPage() {
     <main className="page-container py-5 sm:py-8">
       <LocationChip point={point} onChange={setPoint} />
       <h1 className="mt-3 max-w-2xl text-2xl leading-tight font-extrabold tracking-tight">Volné termíny v okolí, levněji.</h1>
-      <p className="mt-2 text-base text-muted">Vyber si svůj termín. Plať až na místě.</p>
+      <p className="mt-2 text-base text-muted">Vyber si termín, zaplať rovnou a v podniku jen ukaž kód.</p>
       <div className="mt-6"><FilterBar filters={filters} onChange={setFilters} categories={categories.data ?? []} resultCount={rows.length} pending={discovery.isFetching} /></div>
       <div className="mt-6 flex items-center justify-between gap-3">
         <p className="text-sm text-muted" aria-live="polite">{discovery.isPending ? 'Hledáme volné termíny…' : discovery.isSuccess ? `${rows.length} ${plural(rows.length)} · ${SORT_LABELS[filters.sort]}` : 'Nabídky se nepodařilo načíst'}</p>

@@ -43,6 +43,8 @@ export type Business = {
   status: BusinessStatus;
   status_reason: string | null;
   commission_rate: number;
+  /** Minutes before the start until a customer can still cancel for free. */
+  cancellation_window_minutes: number;
   latitude: number;
   longitude: number;
   created_at: string;
@@ -97,6 +99,7 @@ export type SearchRow = {
 
 export type OfferDetail = SearchRow & {
   status: OfferStatus;
+  cancellation_window_minutes: number;
   business_description: string;
   business_phone: string;
   business_status: BusinessStatus;
@@ -124,6 +127,8 @@ export type CustomerBooking = {
   cancellation_reason: string | null;
   rating: number | null;
   rated_at: string | null;
+  /** Snapshotted at booking time: a later policy change must not move the goalposts. */
+  cancellation_window_minutes: number;
   payment_status: PaymentStatus | null;
   business_phone: string;
   can_cancel: boolean;

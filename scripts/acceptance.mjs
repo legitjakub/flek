@@ -174,6 +174,27 @@ await payer.client.rpc('cancel_booking', { p_booking_id: payerBooking.id });
 const afterRefund = ((await payer.client.rpc('my_bookings')).data ?? []).find((b) => b.id === payerBooking.id);
 check('Zrušení vrátí peníze', afterRefund?.payment_status === 'refunded', afterRefund?.payment_status);
 
+// --- the venue sets its own free-cancellation window, and the booking keeps the one it was made under
+const bizWindow = (await merchant.client.rpc('my_businesses')).data?.[0]?.cancellation_window_minutes;
+check('Provozovna nese lhůtu pro bezplatné zrušení', typeof bizWindow === 'number', `${bizWindow} min`);
+check('Lhůtu mimo rozsah nelze uložit',
+  err((await merchant.client.rpc('update_business', { p_business_id: businessId, p_data: { cancellation_window_minutes: 99999 } })).error).includes('INVALID_CANCELLATION_WINDOW'));
+const widened = await merchant.client.rpc('update_business', { p_business_id: businessId, p_data: { cancellation_window_minutes: 180 } });
+check('Partner si lhůtu nastaví', widened.data?.cancellation_window_minutes === 180);
+const windowOffer = await publish(1, 400);
+const wp = await payer.client.rpc('start_payment', { p_offer_id: windowOffer });
+const wps = await payer.client.rpc('demo_confirm_payment', { p_payment_id: wp.data.id });
+await payer.client.rpc('create_booking', { p_offer_id: windowOffer, p_payment_id: wps.data.id });
+const wb = ((await payer.client.rpc('my_bookings')).data ?? []).find((b) => b.offer_id === windowOffer);
+check('Rezervace si lhůtu odnese jako snapshot', wb?.cancellation_window_minutes === 180, `${wb?.cancellation_window_minutes} min`);
+const deadlineGap = Math.round((Date.parse(wb.start_at_snapshot) - Date.parse(wb.cancellation_deadline)) / 60000);
+check('Lhůta se propíše do termínu pro zrušení', deadlineGap === 180, `${deadlineGap} min před začátkem`);
+await merchant.client.rpc('update_business', { p_business_id: businessId, p_data: { cancellation_window_minutes: 60 } });
+const wbAfter = ((await payer.client.rpc('my_bookings')).data ?? []).find((b) => b.id === wb.id);
+check('Změna politiky nemění už uzavřenou rezervaci', wbAfter?.cancellation_window_minutes === 180,
+  `${wbAfter?.cancellation_window_minutes} min`);
+await payer.client.rpc('cancel_booking', { p_booking_id: wb.id });
+
 // --- ratings are earned by attendance, not collected
 const customer = users[8]; // demo-customer, the account the seed gives history to
 const history = (await customer.client.rpc('my_bookings')).data ?? [];

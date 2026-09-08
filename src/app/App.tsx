@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Component, type ReactNode } from 'react';
+import { Component, Suspense, lazy, type ReactNode } from 'react';
 import { RouterProvider, matchPath, useRouter, Link } from './router';
 import { CustomerShell } from './CustomerShell';
 import { SessionProvider } from '../features/auth/session';
@@ -9,21 +9,46 @@ import { DiscoveryPage } from '../features/discovery/DiscoveryPage';
 import { MapPage } from '../features/discovery/MapPage';
 import { OfferDetailPage } from '../features/offers/OfferDetailPage';
 import { MyBookingsPage } from '../features/bookings/MyBookingsPage';
-import { MerchantDashboardPage } from '../features/merchant/DashboardPage';
-import { MerchantOffersPage } from '../features/merchant/OffersPage';
-import { MerchantBookingsPage } from '../features/merchant/BookingsPage';
-import { MerchantServicesPage } from '../features/merchant/ServicesPage';
-import { MerchantBusinessPage, MerchantRegisterPage } from '../features/merchant/BusinessPage';
-import { MerchantMetricsPage } from '../features/merchant/MetricsPage';
-import {
-  AdminBookingsPage,
-  AdminBusinessesPage,
-  AdminMetricsPage,
-  AdminOffersPage,
-  AdminUsersPage,
-} from '../features/admin/AdminPage';
+// A customer never opens the merchant or admin trees, so they are not part of the bundle
+// that has to arrive before the first offer can be read.
+const MerchantDashboardPage = lazy(() =>
+  import('../features/merchant/DashboardPage').then((m) => ({ default: m.MerchantDashboardPage })),
+);
+const MerchantOffersPage = lazy(() =>
+  import('../features/merchant/OffersPage').then((m) => ({ default: m.MerchantOffersPage })),
+);
+const MerchantBookingsPage = lazy(() =>
+  import('../features/merchant/BookingsPage').then((m) => ({ default: m.MerchantBookingsPage })),
+);
+const MerchantServicesPage = lazy(() =>
+  import('../features/merchant/ServicesPage').then((m) => ({ default: m.MerchantServicesPage })),
+);
+const MerchantBusinessPage = lazy(() =>
+  import('../features/merchant/BusinessPage').then((m) => ({ default: m.MerchantBusinessPage })),
+);
+const MerchantRegisterPage = lazy(() =>
+  import('../features/merchant/BusinessPage').then((m) => ({ default: m.MerchantRegisterPage })),
+);
+const MerchantMetricsPage = lazy(() =>
+  import('../features/merchant/MetricsPage').then((m) => ({ default: m.MerchantMetricsPage })),
+);
+const AdminBusinessesPage = lazy(() =>
+  import('../features/admin/AdminPage').then((m) => ({ default: m.AdminBusinessesPage })),
+);
+const AdminOffersPage = lazy(() =>
+  import('../features/admin/AdminPage').then((m) => ({ default: m.AdminOffersPage })),
+);
+const AdminBookingsPage = lazy(() =>
+  import('../features/admin/AdminPage').then((m) => ({ default: m.AdminBookingsPage })),
+);
+const AdminUsersPage = lazy(() =>
+  import('../features/admin/AdminPage').then((m) => ({ default: m.AdminUsersPage })),
+);
+const AdminMetricsPage = lazy(() =>
+  import('../features/admin/AdminPage').then((m) => ({ default: m.AdminMetricsPage })),
+);
 import { errorMessage } from '../lib/errors';
-import { Button } from '../components/ui';
+import { Button, LoadingList } from '../components/ui';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -57,13 +82,21 @@ const ROUTES: { path: string; render: (params: Record<string, string>) => ReactN
   { path: '/admin/metriky', render: () => <AdminMetricsPage />, shell: false },
 ];
 
+function RouteLoading() {
+  return (
+    <div className="page-container py-10" role="status" aria-label="Načítáme">
+      <LoadingList rows={3} />
+    </div>
+  );
+}
+
 function Routes() {
   const { path } = useRouter();
   for (const route of ROUTES) {
     const params = matchPath(route.path, path);
     if (!params) continue;
-    const element = route.render(params);
-    return route.shell ? <CustomerShell>{element}</CustomerShell> : <>{element}</>;
+    const element = <Suspense fallback={<RouteLoading />}>{route.render(params)}</Suspense>;
+    return route.shell ? <CustomerShell>{element}</CustomerShell> : element;
   }
   return (
     <CustomerShell>

@@ -88,7 +88,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-base font-semibold">{offer.business_name}<Rating average={offer.rating_avg} count={offer.rating_count} size="md" /></p>
           <p className="mt-2 flex items-start gap-2 text-sm leading-relaxed text-muted"><MapPin size={18} aria-hidden="true" className="mt-0.5 shrink-0" /><span>{offer.address_line}, {offer.city}{offer.distance_m != null ? ` · ${formatDistance(offer.distance_m)}` : ''}</span></p>
           <div className="mt-5 flex flex-wrap gap-2">
-            {minutesAway > 0 && minutesAway <= 120 ? <span className="tnum rounded-lg bg-accent-soft px-3 py-2 text-sm font-bold text-accent">Začíná {relativeTime(offer.start_at, now)}</span> : null}
+            {minutesAway > 0 && minutesAway <= 120 ? <span className="tnum rounded-lg bg-surface px-3 py-2 text-sm font-bold text-ink">Začíná {relativeTime(offer.start_at, now)}</span> : null}
             {lastSeat ? <span className="rounded-lg bg-card px-3 py-2 text-sm font-semibold">Poslední místo</span> : null}
             {offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60 ? <span className="tnum rounded-lg bg-card px-3 py-2 text-sm font-semibold">Rezervovat lze ještě {cutoffMinutes} min</span> : null}
           </div>
@@ -99,7 +99,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           <div className="mt-4 flex items-center gap-3 rounded-xl bg-accent-soft p-4 text-accent"><CalendarDays size={24} aria-hidden="true" /><div><p className="tnum text-xl font-extrabold">{dayLabel(offer.start_at, now)} {clockTime(offer.start_at)}</p><p className="tnum mt-1 text-sm">Do {clockTime(offer.end_at)}</p></div></div>
           <p className="mt-4 flex items-center justify-between gap-3 text-sm"><span className="inline-flex items-center gap-2 text-muted"><Clock3 size={17} aria-hidden="true" />Délka služby</span><span className="tnum font-semibold">{duration(offer.start_at, offer.end_at)} min</span></p>
           <div className="mt-5 flex flex-wrap items-baseline gap-2 border-t border-line pt-5"><span className="tnum text-2xl font-extrabold tracking-tight">{money(offer.deal_price_cents)}</span><s className="tnum text-sm text-muted">{money(offer.original_price_cents)}</s></div>
-          <p className="tnum mt-1 text-sm font-semibold text-positive">Ušetříš {money(savings)} · −{offer.discount_pct} %</p>
+          <p className="tnum mt-1 text-sm font-semibold text-ink">Ušetříš {money(savings)} · −{offer.discount_pct} %</p>
           {!offer.bookable ? <div className="mt-4"><Banner tone="warning">Tento termín už bohužel není volný.</Banner></div> : null}
           <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:static md:mt-5 md:border-0 md:p-0">
             <Button size="lg" className="w-full" disabled={!offer.bookable} onClick={() => setSheetOpen(true)}>{offer.bookable ? `Rezervovat za ${money(offer.deal_price_cents)}` : 'Termín není volný'}</Button>
@@ -115,7 +115,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           <LazyMap className="mt-4 h-56 w-full overflow-hidden rounded-2xl border border-line" center={{ lat: offer.latitude, lng: offer.longitude }} zoom={14} interactive={false} markers={[{ id: offer.id, lat: offer.latitude, lng: offer.longitude, label: offer.business_name }]} ariaLabel={`Mapa: ${offer.business_name}, ${offer.address_line}`} />
           <a className="mt-2 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-accent" href={`https://www.openstreetmap.org/?mlat=${offer.latitude}&mlon=${offer.longitude}#map=17/${offer.latitude}/${offer.longitude}`} target="_blank" rel="noreferrer"><MapPin size={17} aria-hidden="true" />Navigovat</a>
           <h2 className="mt-6 text-lg font-bold">Zrušení</h2>
-          <p className="mt-2 text-sm leading-relaxed text-muted">Zrušit můžeš zdarma do {clockTime(cancellationDeadline(offer.start_at))} a vrátíme ti celou částku. Když rezervuješ později, máš na zrušení 10 minut od rezervace.</p>
+          <p className="mt-2 text-sm leading-relaxed text-muted">Zrušit můžeš zdarma do {clockTime(cancellationDeadline(offer.start_at, offer.cancellation_window_minutes))} a vrátíme ti celou částku. Když rezervuješ později, máš na zrušení 10 minut od rezervace.</p>
         </div>
       </div>
 

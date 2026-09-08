@@ -74,7 +74,7 @@ export function OfferCard({
             {dayLabel(offer.start_at, now)} {clockTime(offer.start_at)}
           </p>
           {startingSoon ? (
-            <span className="tnum text-sm font-bold text-accent">Začíná {relativeTime(offer.start_at, now)}</span>
+            <span className="tnum text-sm font-bold text-ink">Začíná {relativeTime(offer.start_at, now)}</span>
           ) : null}
           {lastSeat ? <span className="text-sm font-semibold text-muted">Poslední místo</span> : null}
         </div>

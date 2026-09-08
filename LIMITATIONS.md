@@ -46,7 +46,13 @@ Partnerská část pracuje s první provozovnou účtu. Datový model víc provo
 - V Supabase je stále **vypnutá ochrana proti prolomeným heslům** (Auth → leaked password protection). Pro cokoli s reálnými uživateli ji zapněte.
 - Kdokoli s odkazem si může založit účet a rezervovat. Pro pilot s reálnými podniky je potřeba ukázku buď zaheslovat (Vercel to umí přes Deployment Protection), nebo oddělit demo data od ostrých.
 
-## 10. Vědomě mimo V1
+## 10. Výkon po doplnění fotografií a plateb
+
+Lighthouse na objevování se drží kolem 80. Hlavní zátěž není v písmech (ověřeno: subsetting nepomohl), ale v JavaScriptu a v obrázcích z cizího hostitele. Partnerská část a administrace už se načítají odděleně; další velký kus je polyfill Temporalu, který je potřeba hned kvůli pražským dnům a letnímu času.
+
+Kdo v tom bude pokračovat: nejvíc přinese nahrazení Temporalu v zobrazovací cestě (`Intl` to umí nativně) a přesun fotografií do Storage. Měřit se to má na produkci, ne na lokálním `vite preview` — čísla se tam liší i o pět bodů mezi běhy.
+
+## 11. Vědomě mimo V1
 
 Platby, zálohy, výplaty · předplatné · věrnostní programy a kupony · recenze · chat · push a SMS · dynamické ceny · integrace na rezervační systémy · vícejazyčné rozhraní · nativní aplikace · fakturace · QR skenování.
 
