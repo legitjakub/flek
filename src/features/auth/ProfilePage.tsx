@@ -123,6 +123,9 @@ export function ProfilePage() {
             Administrace
           </Link>
         ) : null}
+        <p className="tnum text-base text-muted">
+          Verze aplikace <span className="font-semibold text-ink">{import.meta.env.VITE_BUILD_ID ?? 'dev'}</span>
+        </p>
         <Button
           variant="secondary"
           className="self-start"

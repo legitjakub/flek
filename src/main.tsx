@@ -46,7 +46,9 @@ if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KE
   // Shell-only caching. Offer and booking responses must never be served from a cache.
   if ('serviceWorker' in navigator && import.meta.env.PROD) {
     window.addEventListener('load', () => {
-      void navigator.serviceWorker.register('/sw.js').catch(() => undefined);
+      void navigator.serviceWorker
+        .register(`/sw.js?v=${import.meta.env.VITE_BUILD_ID ?? 'dev'}`)
+        .catch(() => undefined);
     });
   }
 }
