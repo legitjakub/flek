@@ -19,6 +19,7 @@
   --color-accent-soft: #e4f4f2;
   --color-positive: #0f6b53;
   --color-warning: #8a5a00;
+  --color-danger: #a12d36;
 
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
@@ -43,7 +44,6 @@
   body {
     margin: 0;
     font-family: var(--font-sans);
-    overflow-x: hidden;
   }
   :focus-visible {
     outline: 2px solid var(--color-ink);
@@ -56,7 +56,7 @@
   input,
   select,
   textarea {
-    font: inherit;
+    font-family: inherit;
   }
   /* Prices, times and codes always align in a column. */
   .tnum {
@@ -74,4 +74,9 @@
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+@layer components {
+  .page-container { width: 100%; max-width: 1200px; margin-inline: auto; padding-inline: 16px; }
+  @media (min-width: 768px) { .page-container { padding-inline: 32px; } }
 }

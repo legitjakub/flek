@@ -68,7 +68,7 @@ export function MyBookingsPage() {
   const rows = tab === 'upcoming' ? upcoming : history;
 
   return (
-    <main className="mx-auto w-full max-w-2xl px-4 pt-4 pb-6">
+    <main className="mx-auto w-full max-w-3xl px-4 pt-8 pb-6">
       <h1 className="text-2xl font-extrabold tracking-tight text-ink">Moje rezervace</h1>
       <div className="mt-4">
         <Tabs
@@ -107,12 +107,12 @@ export function MyBookingsPage() {
               key={booking.id}
               className={`rounded-2xl border bg-card p-4 ${today && booking.status === 'confirmed' ? 'border-accent' : 'border-line'}`}
             >
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="tnum font-mono text-lg font-extrabold tracking-[0.1em] text-ink">
+                  <p className="tnum font-mono text-xl font-extrabold tracking-[0.1em] text-ink">
                     {booking.reservation_code}
                   </p>
-                  <p className="tnum mt-1 text-sm font-semibold text-ink">
+                  <p className="tnum mt-2 text-base font-bold text-accent">
                     {dayLabel(booking.start_at_snapshot, now)} {clockTime(booking.start_at_snapshot)}–
                     {clockTime(booking.end_at_snapshot)}
                   </p>
@@ -122,11 +122,11 @@ export function MyBookingsPage() {
                 </span>
               </div>
 
-              <p className="mt-2 text-sm font-semibold text-ink">{booking.service_name_snapshot}</p>
+              <p className="mt-4 text-base font-bold text-ink">{booking.service_name_snapshot}</p>
               <p className="text-sm text-muted">
                 {booking.business_name_snapshot} · {booking.business_address_snapshot}
               </p>
-              <p className="tnum mt-1 text-sm font-semibold text-ink">
+              <p className="tnum mt-2 text-base font-bold text-accent">
                 {money(booking.price_cents)} <span className="font-normal text-muted">na místě</span>
               </p>
 
@@ -174,7 +174,7 @@ export function MyBookingsPage() {
               Nechat
             </Button>
             <Button
-              variant="primary"
+              variant="danger"
               className="flex-1"
               loading={cancel.isPending}
               onClick={() => toCancel && cancel.mutate(toCancel)}

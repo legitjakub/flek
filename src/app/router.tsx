@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 type RouterValue = {
   path: string;
   search: URLSearchParams;
-  navigate: (to: string, options?: { replace?: boolean }) => void;
+  navigate: (to: string, options?: { replace?: boolean; scroll?: boolean }) => void;
   back: () => void;
 };
 
@@ -26,11 +26,11 @@ export function RouterProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('popstate', onPop);
   }, []);
 
-  const navigate = useCallback((to: string, options?: { replace?: boolean }) => {
+  const navigate = useCallback((to: string, options?: { replace?: boolean; scroll?: boolean }) => {
     if (to === current()) return;
     window.history[options?.replace ? 'replaceState' : 'pushState']({}, '', to);
     setHref(to);
-    window.scrollTo({ top: 0 });
+    if (options?.scroll !== false) window.scrollTo({ top: 0 });
   }, []);
 
   const value = useMemo<RouterValue>(() => {
@@ -70,6 +70,7 @@ export function Link({
   children,
   className,
   replace,
+  onClick,
   ...rest
 }: { to: string; children: ReactNode; className?: string; replace?: boolean } & Omit<
   React.AnchorHTMLAttributes<HTMLAnchorElement>,
@@ -82,6 +83,7 @@ export function Link({
       href={to}
       className={className}
       onClick={(event) => {
+        onClick?.(event);
         if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
         event.preventDefault();
         navigate(to, { replace });

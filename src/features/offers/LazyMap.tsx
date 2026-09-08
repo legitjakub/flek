@@ -9,6 +9,7 @@ type Props = {
   zoom?: number;
   markers: MapMarker[];
   onSelect?: (id: string) => void;
+  selectedId?: string;
   className?: string;
   interactive?: boolean;
   ariaLabel: string;

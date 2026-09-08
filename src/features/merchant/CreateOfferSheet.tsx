@@ -31,14 +31,13 @@ export function CreateOfferSheet({
   const [start, setStart] = useState<string>(() => nextSlot(serverNow()));
   const [price, setPrice] = useState<string>(draft ? String(draft.deal_price_cents / 100) : '');
   const [capacity, setCapacity] = useState('1');
-  const [showCapacity, setShowCapacity] = useState(false);
   const [cutoffMinutes, setCutoffMinutes] = useState('15');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const [overlap, setOverlap] = useState(false);
   const [done, setDone] = useState(false);
 
-  const service = active.find((s) => s.id === serviceId) ?? null;
+  const service = active.find((s) => s.id === serviceId) ?? active[0] ?? null;
   const normal = service?.normal_price_cents ?? 0;
   const dealCents = /^\d+$/.test(price) ? Number(price) * 100 : 0;
   const discount = normal > 0 && dealCents > 0 ? Math.floor(((normal - dealCents) * 100) / normal) : 0;
@@ -127,12 +126,12 @@ export function CreateOfferSheet({
       ) : (
         <div className="flex flex-col gap-5">
           <fieldset className="flex flex-col gap-2">
-            <legend className="text-sm font-semibold text-ink">Služba</legend>
+            <legend className="mb-2 text-base font-bold text-ink">Služba</legend>
             <div className="flex flex-wrap gap-2">
               {active.map((item) => (
                 <Chip
                   key={item.id}
-                  active={item.id === serviceId}
+                  active={item.id === service?.id}
                   onClick={() => {
                     setServiceId(item.id);
                     setPrice('');
@@ -145,7 +144,7 @@ export function CreateOfferSheet({
           </fieldset>
 
           <fieldset className="flex flex-col gap-2">
-            <legend className="text-sm font-semibold text-ink">Začátek</legend>
+            <legend className="mb-2 text-base font-bold text-ink">Začátek</legend>
             <div className="flex flex-wrap gap-2">
               {quickTimes(serverNow()).map((option) => (
                 <Chip key={option.value} active={start === option.value} onClick={() => setStart(option.value)}>
@@ -163,7 +162,7 @@ export function CreateOfferSheet({
           </fieldset>
 
           <fieldset className="flex flex-col gap-2">
-            <legend className="text-sm font-semibold text-ink">Cena</legend>
+            <legend className="mb-2 text-base font-bold text-ink">Cena</legend>
             {service ? (
               <div className="flex flex-wrap gap-2">
                 {[20, 30, 40].map((pct) => (
@@ -182,6 +181,7 @@ export function CreateOfferSheet({
               inputMode="numeric"
               aria-label="Cena v korunách"
               placeholder="Cena v Kč"
+              className="tnum min-h-14 text-xl font-extrabold"
               value={price}
               onChange={(event) => setPrice(event.target.value.replace(/\D/g, ''))}
             />
@@ -192,47 +192,17 @@ export function CreateOfferSheet({
             ) : null}
           </fieldset>
 
-          {showCapacity ? (
-            <Field id="offer-capacity" label="Počet míst">
-              <Input
-                id="offer-capacity"
-                inputMode="numeric"
-                value={capacity}
-                onChange={(event) => setCapacity(event.target.value.replace(/\D/g, '') || '1')}
-              />
-            </Field>
-          ) : (
-            <button
-              type="button"
-              className="self-start text-sm font-semibold text-ink underline underline-offset-4"
-              onClick={() => setShowCapacity(true)}
-            >
-              více míst
-            </button>
-          )}
-
-          {showAdvanced ? (
-            <Field id="offer-cutoff" label="Uzávěrka rezervací (minut před začátkem)">
-              <Input
-                id="offer-cutoff"
-                inputMode="numeric"
-                value={cutoffMinutes}
-                onChange={(event) => setCutoffMinutes(event.target.value.replace(/\D/g, '') || '0')}
-              />
-            </Field>
-          ) : (
-            <button
-              type="button"
-              className="self-start text-sm font-semibold text-muted underline underline-offset-4"
-              onClick={() => setShowAdvanced(true)}
-            >
-              pokročilé nastavení
-            </button>
-          )}
+          <details className="border-t border-line pt-2" open={showAdvanced} onToggle={(event) => setShowAdvanced(event.currentTarget.open)}>
+            <summary className="flex min-h-11 cursor-pointer items-center text-sm font-semibold text-muted">Více míst a pokročilé nastavení</summary>
+            <div className="mt-3 grid gap-4 sm:grid-cols-2">
+              <Field id="offer-capacity" label="Počet míst"><Input id="offer-capacity" inputMode="numeric" value={capacity} onChange={(event) => setCapacity(event.target.value.replace(/\D/g, '') || '1')} /></Field>
+              <Field id="offer-cutoff" label="Uzávěrka před začátkem" hint="V minutách"><Input id="offer-cutoff" inputMode="numeric" value={cutoffMinutes} onChange={(event) => setCutoffMinutes(event.target.value.replace(/\D/g, '') || '0')} /></Field>
+            </div>
+          </details>
 
           {overlap ? (
             <div className="flex flex-col gap-2">
-              <Banner tone="warning">Ve stejnou dobu už máte jinou nabídku. Máte fleku kapacitu?</Banner>
+              <Banner tone="warning">Ve stejnou dobu už máte jinou nabídku. Máte dostatečnou kapacitu?</Banner>
               <Button variant="secondary" loading={publish.isPending} onClick={() => publish.mutate(true)}>
                 Ano, zveřejnit i tak
               </Button>

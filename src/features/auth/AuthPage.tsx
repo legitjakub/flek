@@ -6,7 +6,7 @@ import { supabase } from '../../lib/supabase';
 import { errorMessage } from '../../lib/errors';
 import { loginSchema } from '../../lib/schemas';
 import { Button, Field, Input, Wordmark } from '../../components/ui';
-import { useRouter } from '../../app/router';
+import { Link, useRouter } from '../../app/router';
 
 const signupSchema = loginSchema.extend({
   first_name: z.string().trim().min(1, 'Vyplň prosím jméno.').max(80),
@@ -20,14 +20,15 @@ type SignupValues = z.infer<typeof signupSchema>;
  */
 export function AuthPage() {
   const { search, navigate } = useRouter();
-  const returnTo = search.get('returnTo') || '/';
+  const target = search.get('returnTo') || '/';
+  const returnTo = target.startsWith('/') && !target.startsWith('//') ? target : '/';
   const merchant = search.get('role') === 'merchant';
   const [mode, setMode] = useState<'login' | 'signup'>(search.get('mode') === 'signup' ? 'signup' : 'login');
   const [failure, setFailure] = useState<string | null>(null);
   const formal = merchant;
 
   const form = useForm<SignupValues>({
-    resolver: zodResolver(signupSchema),
+    resolver: zodResolver(mode === 'signup' ? signupSchema : loginSchema.extend({ first_name: z.string(), last_name: z.string() })),
     defaultValues: { email: '', password: '', first_name: '', last_name: '' },
     mode: 'onTouched',
   });
@@ -55,8 +56,8 @@ export function AuthPage() {
   const isSignup = mode === 'signup';
 
   return (
-    <main className="mx-auto w-full max-w-md px-4 py-10">
-      <Wordmark suffix={merchant ? 'Partner' : undefined} />
+    <main className="mx-auto w-full max-w-lg px-4 py-8 sm:py-14">
+      <Link to="/" aria-label="FLEK — domů" className="inline-flex min-h-11 items-center"><Wordmark suffix={merchant ? 'Partner' : undefined} /></Link>
       <h1 className="mt-6 text-2xl font-extrabold tracking-tight text-ink">
         {isSignup
           ? formal
@@ -72,7 +73,7 @@ export function AuthPage() {
           : 'Prohlížet můžeš i bez účtu. Účet potřebuješ až k rezervaci.'}
       </p>
 
-      <form className="mt-6 flex flex-col gap-4" onSubmit={form.handleSubmit(submit)} noValidate>
+      <form className="mt-6 flex flex-col gap-4 rounded-2xl border border-line bg-card p-5 sm:p-6" onSubmit={form.handleSubmit(submit)} noValidate>
         {isSignup ? (
           <div className="grid grid-cols-2 gap-3">
             <Field id="first_name" label="Jméno" error={form.formState.errors.first_name?.message}>
@@ -127,7 +128,7 @@ export function AuthPage() {
 
       <button
         type="button"
-        className="mt-5 w-full text-sm font-semibold text-ink underline underline-offset-4"
+        className="mt-5 min-h-11 w-full text-sm font-semibold text-ink underline underline-offset-4"
         onClick={() => {
           setFailure(null);
           setMode(isSignup ? 'login' : 'signup');

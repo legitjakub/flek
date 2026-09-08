@@ -45,7 +45,9 @@ function Offers({ businessId, approved }: { businessId: string; approved: boolea
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-extrabold tracking-tight text-ink">Nabídky</h1>
         <Button
-          disabled={!approved}
+          size="lg"
+          className="w-full sm:w-auto"
+          disabled={!approved || services.isPending}
           onClick={() => {
             setDraft(null);
             setSheetOpen(true);
@@ -70,7 +72,7 @@ function Offers({ businessId, approved }: { businessId: string; approved: boolea
       {query.isError ? <ErrorState error={query.error} onRetry={() => query.refetch()} /> : null}
       {query.isSuccess && rows.length === 0 ? (
         <EmptyState
-          title="Dnes zatím nemáte žádnou fleku nabídku."
+          title="V tomto přehledu zatím nemáte žádnou nabídku."
           body="Prázdný termín zveřejníte za půl minuty."
           action={
             approved ? (
@@ -82,7 +84,7 @@ function Offers({ businessId, approved }: { businessId: string; approved: boolea
 
       <ul className="flex flex-col gap-3">
         {rows.map((offer) => (
-          <li key={offer.id} className="rounded-2xl border border-line bg-card p-4">
+          <li key={offer.id} className="rounded-2xl border border-line bg-card p-5 xl:grid xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center xl:gap-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-base font-bold text-ink">{offer.service_name}</p>
@@ -108,7 +110,7 @@ function Offers({ businessId, approved }: { businessId: string; approved: boolea
               <p className="mt-2 text-sm text-accent">Důvod zrušení: {offer.cancellation_reason}</p>
             ) : null}
 
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-4 flex flex-wrap gap-2 xl:mt-0">
               <Button
                 variant="secondary"
                 onClick={() => {
@@ -133,13 +135,13 @@ function Offers({ businessId, approved }: { businessId: string; approved: boolea
         ))}
       </ul>
 
-      <CreateOfferSheet
+      {sheetOpen ? <CreateOfferSheet
         key={draft?.service_id ?? 'new'}
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
         services={services.data ?? []}
         draft={draft}
-      />
+      /> : null}
       <CancelOfferSheet offer={toCancel} onClose={() => setToCancel(null)} />
       <EditOfferSheet offer={toEdit} onClose={() => setToEdit(null)} />
     </div>

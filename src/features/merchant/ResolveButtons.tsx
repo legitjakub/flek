@@ -25,10 +25,10 @@ export function ResolveButtons({ booking }: { booking: MerchantBooking | Merchan
 
   return (
     <div className="flex flex-col items-end gap-1">
-      <div className="flex gap-2">
+      <div className="flex flex-wrap justify-end gap-2">
         <Button
           size="lg"
-          disabled={!booking.can_resolve}
+          disabled={!booking.can_resolve || resolve.isPending}
           loading={resolve.isPending && resolve.variables === 'completed'}
           onClick={() => resolve.mutate('completed')}
         >
@@ -36,8 +36,8 @@ export function ResolveButtons({ booking }: { booking: MerchantBooking | Merchan
         </Button>
         <Button
           size="lg"
-          variant="secondary"
-          disabled={!booking.can_resolve}
+          variant="danger"
+          disabled={!booking.can_resolve || resolve.isPending}
           loading={resolve.isPending && resolve.variables === 'no_show'}
           onClick={() => resolve.mutate('no_show')}
         >

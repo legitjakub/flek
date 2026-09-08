@@ -44,3 +44,6 @@ next-env.d.ts
 /flek-handoff.zip
 # Superseded package from the previous session; kept on disk, never committed.
 /volno-handoff.zip
+
+# Výstupy nástroje pro ovládání prohlížeče
+/.playwright-cli/

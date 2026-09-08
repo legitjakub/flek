@@ -34,7 +34,7 @@ export function BookingSheet({
   onBooked: (code: string, bookingId: string) => void;
 }) {
   const { profile, userId } = useSession();
-  const { navigate } = useRouter();
+  const { navigate, search } = useRouter();
   const queryClient = useQueryClient();
   const [failure, setFailure] = useState<string | null>(null);
   const needsPhone = !hasPhone(profile);
@@ -81,7 +81,7 @@ export function BookingSheet({
           className="mt-4 w-full"
           size="lg"
           data-autofocus
-          onClick={() => navigate(`/prihlaseni?returnTo=${encodeURIComponent(`/nabidka/${offer.id}?rezervovat=1`)}`)}
+          onClick={() => navigate(`/prihlaseni?returnTo=${encodeURIComponent(`/nabidka/${offer.id}?${new URLSearchParams({ ...Object.fromEntries(search), rezervovat: '1' })}`)}`)}
         >
           Přihlásit se a pokračovat
         </Button>

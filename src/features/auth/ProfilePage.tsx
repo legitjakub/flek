@@ -73,11 +73,11 @@ export function ProfilePage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-2xl px-4 pt-4 pb-6">
+    <main className="mx-auto w-full max-w-2xl px-4 pt-8 pb-6">
       <h1 className="text-2xl font-extrabold tracking-tight text-ink">Profil</h1>
       <p className="mt-1 text-sm text-muted">{session?.user.email}</p>
 
-      <form className="mt-6 flex flex-col gap-4" onSubmit={form.handleSubmit((values) => save.mutate(values))} noValidate>
+      <form className="mt-6 flex flex-col gap-4 rounded-2xl border border-line bg-card p-5 sm:p-6" onSubmit={form.handleSubmit((values) => save.mutate(values))} noValidate>
         <div className="grid grid-cols-2 gap-3">
           <Field id="p-first" label="Jméno" error={form.formState.errors.first_name?.message}>
             <Input id="p-first" autoComplete="given-name" {...form.register('first_name')} />

@@ -17,13 +17,14 @@ export const MAP_STYLE: MapOptions['style'] = {
   layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
 };
 
-export type MapMarker = { id: string; lat: number; lng: number; label: string };
+export type MapMarker = { id: string; lat: number; lng: number; label: string; description?: string };
 
 export function MapCanvas({
   center,
   zoom = 13,
   markers,
   onSelect,
+  selectedId,
   className,
   interactive = true,
   ariaLabel,
@@ -32,6 +33,7 @@ export function MapCanvas({
   zoom?: number;
   markers: MapMarker[];
   onSelect?: (id: string) => void;
+  selectedId?: string;
   className?: string;
   interactive?: boolean;
   ariaLabel: string;
@@ -59,7 +61,7 @@ export function MapCanvas({
   }, []);
 
   useEffect(() => {
-    map.current?.easeTo({ center: [center.lng, center.lat], duration: 300 });
+    map.current?.easeTo({ center: [center.lng, center.lat], duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 200 });
   }, [center.lat, center.lng]);
 
   useEffect(() => {
@@ -67,16 +69,17 @@ export function MapCanvas({
     if (!instance) return;
     drawn.current.forEach((m) => m.remove());
     drawn.current = markers.map((marker) => {
-      const el = document.createElement('button');
-      el.type = 'button';
+      const el = document.createElement(onSelect ? 'button' : 'span');
+      if (el instanceof HTMLButtonElement) el.type = 'button';
       el.textContent = marker.label;
-      el.setAttribute('aria-label', marker.label);
+      el.setAttribute('aria-label', marker.description ?? marker.label);
+      if (onSelect) el.setAttribute('aria-pressed', String(marker.id === selectedId));
       el.className =
-        'tnum min-h-9 rounded-full border border-ink bg-ink px-2.5 text-xs font-bold text-surface shadow-md';
+        `tnum inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border-2 px-3 text-sm font-bold shadow-card ${marker.id === selectedId ? 'border-card bg-accent text-card ring-2 ring-accent' : 'border-ink bg-card text-ink'}`;
       if (onSelect) el.addEventListener('click', () => onSelect(marker.id));
       return new Marker({ element: el }).setLngLat([marker.lng, marker.lat]).addTo(instance);
     });
-  }, [markers, onSelect]);
+  }, [markers, onSelect, selectedId]);
 
   return <div ref={container} className={className} role="region" aria-label={ariaLabel} />;
 }
