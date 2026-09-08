@@ -4,7 +4,7 @@ const messages:Record<string,string>={
  BLOCKED_NO_SHOW:'Rezervace je dočasně nedostupná, protože jsi opakovaně nedorazil/a.',
  CANCELLATION_CLOSED:'Rezervaci už nejde zrušit. Dej prosím podniku vědět telefonicky.',
  AUTH_REQUIRED:'Pro pokračování se přihlas.',FORBIDDEN:'K této akci nemáte oprávnění.',NOT_FOUND:'Tento záznam už není dostupný.',
- BOOKING_BLOCKED:'Rezervace je na tvém účtu dočasně pozastavená.',ALREADY_RESOLVED:'Tato rezervace už je vyřízená.',
+ BOOKING_BLOCKED:'Rezervace je na tvém účtu dočasně pozastavená.',ALREADY_RESOLVED:'Tato rezervace už je vyřízená.',NOT_RATEABLE:'Hodnotit můžeš až termín, na který jsi dorazil/a.',
  TOO_EARLY:'Docházku můžete potvrdit až po začátku termínu.',OFFER_STARTED:'Termín už začal. Nabídku nelze zrušit.',
  BUSINESS_NOT_APPROVED:'Nejdříve musíme schválit vaši provozovnu.',OVERLAP_CONFIRMATION_REQUIRED:'Ve stejnou dobu už máte jinou nabídku. Máte fleku kapacitu?',
  OFFER_HAS_BOOKINGS:'Nabídka už má rezervace. Můžete pouze zvýšit kapacitu.',INVALID_CAPACITY:'Kapacitu nelze snížit pod již rezervovaná místa. Nejvýše lze nabídnout 50 míst.',

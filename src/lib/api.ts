@@ -112,6 +112,10 @@ export async function cancelBooking(bookingId: string): Promise<void> {
   await result(supabase.rpc('cancel_booking', { p_booking_id: bookingId }));
 }
 
+export async function rateBooking(bookingId: string, rating: number): Promise<void> {
+  await result(supabase.rpc('rate_booking', { p_booking_id: bookingId, p_rating: rating }));
+}
+
 export async function myBookings(): Promise<CustomerBooking[]> {
   return withClock((await result<CustomerBooking[]>(supabase.rpc('my_bookings'))) ?? []);
 }

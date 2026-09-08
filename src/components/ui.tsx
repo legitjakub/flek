@@ -1,5 +1,5 @@
 import { Dialog } from '@base-ui/react/dialog';
-import { X } from 'lucide-react';
+import { Star, X } from 'lucide-react';
 import { useRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from 'react';
 import { errorMessage } from '../lib/errors';
 
@@ -364,6 +364,35 @@ export function CardSkeleton() {
     <div className="flex min-h-56 flex-col gap-3 rounded-2xl border border-line bg-card p-5" role="status" aria-label="Načítáme nabídku">
       <Skeleton className="h-5 w-2/3" /><Skeleton className="h-4 w-1/2" /><Skeleton className="mt-3 h-10 w-32" /><Skeleton className="mt-auto h-6 w-24" />
     </div>
+  );
+}
+
+/** Ratings are only shown once enough people have attended for the number to mean something. */
+export const RATING_THRESHOLD = 3;
+
+export function Rating({
+  average,
+  count,
+  size = 'sm',
+  showNew = true,
+}: {
+  average: number | null;
+  count: number;
+  size?: 'sm' | 'md';
+  showNew?: boolean;
+}) {
+  const text = size === 'md' ? 'text-base' : 'text-sm';
+  if (average == null || count < RATING_THRESHOLD) {
+    return showNew ? <span className={cx(text, 'text-muted')}>Nové na FLEK</span> : null;
+  }
+  const value = new Intl.NumberFormat('cs-CZ', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(average);
+  return (
+    <span className={cx('tnum inline-flex items-center gap-1 font-semibold', text)}>
+      <Star aria-hidden="true" size={size === 'md' ? 17 : 15} className="fill-ink text-ink" />
+      {value}
+      <span className="font-normal text-muted">({count})</span>
+      <span className="sr-only">z 5, {count} hodnocení</span>
+    </span>
   );
 }
 

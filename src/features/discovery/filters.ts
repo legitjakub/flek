@@ -1,7 +1,7 @@
 import type { SortKey } from '../../types/database';
 import { dayBounds } from '../../lib/time';
 
-export type When = 'now' | 'today' | 'tomorrow' | 'week';
+export type When = 'now' | 'soon' | 'today' | 'tomorrow' | 'week';
 export type Daypart = 'morning' | 'afternoon' | 'evening';
 
 export type Filters = {
@@ -27,6 +27,7 @@ export const DEFAULT_FILTERS: Filters = {
 /** Window boundaries are Prague days derived from the server clock, never the device. */
 export function windowFor(when: When, serverNow: string): { from: string | null; until: string | null } {
   if (when === 'now') return { from: serverNow, until: new Date(Date.parse(serverNow) + 4 * 3600_000).toISOString() };
+  if (when === 'soon') return { from: serverNow, until: new Date(Date.parse(serverNow) + 2 * 3600_000).toISOString() };
   if (when === 'today') return { from: serverNow, until: dayBounds(serverNow, 0).until };
   if (when === 'tomorrow') {
     const day = dayBounds(serverNow, 1);
@@ -38,6 +39,7 @@ export function windowFor(when: When, serverNow: string): { from: string | null;
 /** Short enough to sit on one line in the segmented control at 375 px. */
 export const WHEN_LABELS: Record<When, string> = {
   now: 'Teď',
+  soon: 'Do 2 h',
   today: 'Dnes',
   tomorrow: 'Zítra',
   week: 'Týden',
@@ -46,6 +48,7 @@ export const WHEN_LABELS: Record<When, string> = {
 /** The same choices written so they read inside a sentence. */
 export const WHEN_SENTENCE: Record<When, string> = {
   now: 'nejbližší hodiny',
+  soon: 'nejbližší dvě hodiny',
   today: 'dnešek',
   tomorrow: 'zítřek',
   week: 'celý týden',
@@ -86,6 +89,31 @@ export const PRICE_LABELS: [number | null, string][] = [
   [50000, 'Do 500 Kč'],
   [100000, 'Do 1 000 Kč'],
 ];
+
+/**
+ * FLEK is organised around WHEN, so the time control speaks in intent ("mám volno večer")
+ * rather than in the two server parameters it happens to set.
+ */
+export type TimeIntent = 'now' | 'soon' | 'afternoon' | 'evening' | 'tomorrow' | 'week';
+
+export const TIME_INTENTS: { key: TimeIntent; label: string; when: When; daypart: Daypart | null }[] = [
+  { key: 'now', label: 'Teď', when: 'now', daypart: null },
+  { key: 'soon', label: 'Do 2 h', when: 'soon', daypart: null },
+  { key: 'afternoon', label: 'Odpoledne', when: 'today', daypart: 'afternoon' },
+  { key: 'evening', label: 'Večer', when: 'today', daypart: 'evening' },
+  { key: 'tomorrow', label: 'Zítra', when: 'tomorrow', daypart: null },
+  { key: 'week', label: 'Týden', when: 'week', daypart: null },
+];
+
+/** Which intent the current filters read as, or null for a combination only the sheet can make. */
+export function intentOf(filters: Filters): TimeIntent | null {
+  return TIME_INTENTS.find((i) => i.when === filters.when && i.daypart === filters.daypart)?.key ?? null;
+}
+
+export function applyIntent(filters: Filters, key: TimeIntent): Filters {
+  const intent = TIME_INTENTS.find((i) => i.key === key);
+  return intent ? { ...filters, when: intent.when, daypart: intent.daypart } : filters;
+}
 
 /** How many choices differ from the default — the number shown on the Filtry button. */
 export function activeCount(filters: Filters): number {
@@ -146,7 +174,9 @@ export function wideningSteps(filters: Filters): Widening[] {
     (r, i, all) => all.indexOf(r) === i && r >= filters.radius_m,
   );
   const whens: When[] =
-    filters.when === 'week' ? ['week'] : [filters.when, filters.when === 'now' ? 'today' : 'tomorrow', 'week'];
+    filters.when === 'week'
+      ? ['week']
+      : [filters.when, filters.when === 'now' || filters.when === 'soon' ? 'today' : 'tomorrow', 'week'];
   const steps: Widening[] = [];
   for (const when of whens.filter((w, i, all) => all.indexOf(w) === i)) {
     for (const radius of radii) {

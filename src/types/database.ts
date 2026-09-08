@@ -90,6 +90,9 @@ export type SearchRow = {
   discount_pct: number;
   score: number;
   server_now: string;
+  /** Average of ratings left by customers who actually attended; null until anyone has. */
+  rating_avg: number | null;
+  rating_count: number;
 };
 
 export type OfferDetail = SearchRow & {
@@ -119,6 +122,8 @@ export type CustomerBooking = {
   cancelled_at: string | null;
   resolved_at: string | null;
   cancellation_reason: string | null;
+  rating: number | null;
+  rated_at: string | null;
   business_phone: string;
   can_cancel: boolean;
   cancellation_deadline: string;

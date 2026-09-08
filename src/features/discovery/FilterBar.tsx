@@ -5,16 +5,17 @@ import type { Category, SortKey } from '../../types/database';
 import {
   activeChips,
   activeCount,
+  applyIntent,
   DAYPART_LABELS,
   DEFAULT_FILTERS,
+  intentOf,
   DISCOUNT_LABELS,
   PRICE_LABELS,
   RADIUS_LABELS,
   SORT_LABELS,
-  WHEN_LABELS,
+  TIME_INTENTS,
   type Daypart,
   type Filters,
-  type When,
 } from './filters';
 
 /**
@@ -48,11 +49,28 @@ export function FilterBar({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2">
-        <div className="min-w-0 flex-1 sm:max-w-md">
-          <Segmented label="Kdy" value={filters.when} onChange={(when) => onChange({ ...filters, when: when as When })} options={(Object.keys(WHEN_LABELS) as When[]).map((w) => ({ value: w, label: WHEN_LABELS[w] }))} />
+      <div className="flex items-end gap-2">
+        <div className="min-w-0 flex-1">
+          <p id="kdy-label" className="mb-2 text-sm font-bold">Kdy máš čas?</p>
+          <div role="radiogroup" aria-labelledby="kdy-label" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+            {TIME_INTENTS.map((intent) => {
+              const active = intentOf(filters) === intent.key;
+              return (
+                <button
+                  key={intent.key}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => onChange(applyIntent(filters, intent.key))}
+                  className={`min-h-11 shrink-0 rounded-full border px-4 text-sm font-bold whitespace-nowrap transition-colors ${active ? 'border-accent bg-accent text-accent-ink' : 'border-line bg-card text-ink hover:border-accent'}`}
+                >
+                  {intent.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
-        <button type="button" onClick={openSheet} aria-haspopup="dialog" className="inline-flex min-h-13 shrink-0 items-center gap-2 rounded-xl border border-line bg-card px-3 text-sm font-bold hover:border-accent">
+        <button type="button" onClick={openSheet} aria-haspopup="dialog" className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-line bg-card px-3 text-sm font-bold hover:border-accent">
           <SlidersHorizontal size={17} aria-hidden="true" />Filtry{count ? <span className="tnum text-accent">{count}</span> : null}
         </button>
       </div>

@@ -74,3 +74,51 @@ begin
   end if;
  end loop;
 end $$;
+
+-- Demo photography: fictional venues illustrated with stock images. In production a
+-- business uploads its own into Storage; see LIMITATIONS.md.
+with pics(category_slug, a, b) as (values
+ ('vlasy','photo-1503951914875-452162b0f3f1','photo-1585747860715-2ba37e788b70'),
+ ('masaze','photo-1544161515-4ab6ce6db874','photo-1540555700478-4be289fbecef'),
+ ('krasa','photo-1604654894610-df63bc536371','photo-1596178065887-1198b6148b2b'),
+ ('sport','photo-1554068865-24cecd4e34b8','photo-1571019613454-1cb2f99b2d8b'),
+ ('joga','photo-1544367567-0f2fcb009e0b','photo-1512290923902-8a9f81dc236c'),
+ ('wellness','photo-1571019613914-85f342c6a11e','photo-1519824145371-296894a0daa9'))
+update public.services s
+set image_url='https://images.unsplash.com/'||(case when substr(md5(s.id::text),1,1)<'8' then p.a else p.b end)||'?w=800&q=80&auto=format&fit=crop'
+from pics p where p.category_slug=s.category_slug;
+
+with pics(category_slug, a, b) as (values
+ ('vlasy','photo-1585747860715-2ba37e788b70','photo-1503951914875-452162b0f3f1'),
+ ('masaze','photo-1540555700478-4be289fbecef','photo-1544161515-4ab6ce6db874'),
+ ('krasa','photo-1596178065887-1198b6148b2b','photo-1604654894610-df63bc536371'),
+ ('sport','photo-1571019613454-1cb2f99b2d8b','photo-1554068865-24cecd4e34b8'),
+ ('joga','photo-1512290923902-8a9f81dc236c','photo-1544367567-0f2fcb009e0b'),
+ ('wellness','photo-1519824145371-296894a0daa9','photo-1571019613914-85f342c6a11e'))
+update public.businesses b
+set cover_url='https://images.unsplash.com/'||(case when substr(md5(b.id::text),1,1)<'8' then p.a else p.b end)||'?w=1200&q=80&auto=format&fit=crop'
+from pics p where p.category_slug=b.category_slug;
+
+-- Ratings come from attendance, so the demo needs past bookings that were actually
+-- completed. Venues 9-15 stay unrated, which is what a new venue looks like.
+do $$
+declare b record; i integer; n integer; oid uuid; s public.services; uid uuid; st timestamptz; price integer;
+begin
+ for b in select id, row_number() over (order by slug) rn from public.businesses where status='approved' loop
+  exit when b.rn > 8;
+  select * into s from public.services where business_id=b.id order by created_at, id limit 1;
+  n := 2 + (b.rn % 5)::integer;
+  st := date_trunc('hour', now()) - make_interval(days => 10 + b.rn::integer);
+  oid := md5('flek-past-'||b.rn)::uuid;
+  price := (s.normal_price_cents * 70 / 10000) * 100;
+  insert into public.offers(id,business_id,service_id,start_at,end_at,booking_cutoff_at,original_price_cents,deal_price_cents,capacity_total,capacity_remaining,published_at)
+  values(oid,b.id,s.id,st,st+make_interval(mins=>s.duration_minutes),st-interval '15 minutes',s.normal_price_cents,price,n,0,st-interval '1 day');
+  for i in 1..n loop
+   uid := md5('flek-user-'||(1+((b.rn::integer*3+i) % 12)))::uuid;
+   insert into public.bookings(offer_id,business_id,customer_id,reservation_code,price_cents,service_name_snapshot,business_name_snapshot,business_address_snapshot,start_at_snapshot,end_at_snapshot,original_price_cents_snapshot,status,created_at,resolved_at,rating,rated_at)
+   select oid,b.id,uid,'FLEK-'||public.generate_reservation_code(6),price,s.name,bb.display_name,bb.address_line||', '||bb.city,st,st+make_interval(mins=>s.duration_minutes),s.normal_price_cents,'completed',st-interval '3 hours',st+interval '1 hour',
+    case when (b.rn+i) % 7 = 0 then 3 when (b.rn+i) % 3 = 0 then 4 else 5 end, st+interval '2 hours'
+   from public.businesses bb where bb.id=b.id;
+  end loop;
+ end loop;
+end $$;
