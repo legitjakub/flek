@@ -97,8 +97,14 @@ export function OfferCard({
           ) : null}
         </p>
 
-        <div className="mt-auto flex items-end justify-between gap-3 border-t border-line pt-3">
-          <div className="flex min-w-0 items-start gap-2.5">
+        {/*
+          Centred, not bottom-aligned. The price column is two lines (price, then the struck
+          original with the discount badge) while the time column is usually one, so aligning
+          their bottoms left a hole under the time exactly the height of the second price
+          line — it read as a missing element rather than as spacing.
+        */}
+        <div className="mt-auto flex items-center justify-between gap-3 border-t border-line pt-3">
+          <div className="flex min-w-0 items-center gap-2.5">
             <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent">
               <CalendarDays size={16} aria-hidden="true" />
             </span>

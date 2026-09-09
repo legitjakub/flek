@@ -42,7 +42,7 @@ export const WHEN_LABELS: Record<When, string> = {
   soon: 'Do 2 h',
   today: 'Dnes',
   tomorrow: 'Zítra',
-  week: 'Týden',
+  week: 'Vše',
 };
 
 /** The same choices written so they read inside a sentence. */
@@ -94,15 +94,26 @@ export const PRICE_LABELS: [number | null, string][] = [
  * FLEK is organised around WHEN, so the time control speaks in intent ("mám volno večer")
  * rather than in the two server parameters it happens to set.
  */
-export type TimeIntent = 'now' | 'soon' | 'afternoon' | 'evening' | 'tomorrow' | 'week';
+export type TimeIntent = 'now' | 'soon' | 'today' | 'afternoon' | 'evening' | 'tomorrow' | 'week';
 
+/*
+ * Narrowest to widest, and the set is closed: every state the rail can be in has a pill, so
+ * exactly one is always lit.
+ *
+ * Two gaps this closes. The default (today, no daypart) matched no pill at all, so the rail
+ * opened with nothing selected and looked broken — hence "Dnes". And once a pill was pressed
+ * there was no way back to everything, because the widest option was labelled "Týden", which
+ * reads as one more narrow slice rather than as "no limit". It is in fact everything the
+ * marketplace can hold: private.validate_offer refuses any start_at beyond now + 7 days.
+ */
 export const TIME_INTENTS: { key: TimeIntent; label: string; when: When; daypart: Daypart | null }[] = [
   { key: 'now', label: 'Teď', when: 'now', daypart: null },
   { key: 'soon', label: 'Do 2 h', when: 'soon', daypart: null },
+  { key: 'today', label: 'Dnes', when: 'today', daypart: null },
   { key: 'afternoon', label: 'Odpoledne', when: 'today', daypart: 'afternoon' },
   { key: 'evening', label: 'Večer', when: 'today', daypart: 'evening' },
   { key: 'tomorrow', label: 'Zítra', when: 'tomorrow', daypart: null },
-  { key: 'week', label: 'Týden', when: 'week', daypart: null },
+  { key: 'week', label: 'Vše', when: 'week', daypart: null },
 ];
 
 /** Which intent the current filters read as, or null for a combination only the sheet can make. */

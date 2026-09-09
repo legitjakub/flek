@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowUpRight, Clock3, List, MapPin } from 'lucide-react';
+import { ChevronRight, List, MapPin } from 'lucide-react';
 import { Link, useRouter } from '../../app/router';
 import { listCategories } from '../../lib/api';
 import { money, distance } from '../../lib/format';
@@ -83,14 +83,45 @@ export function MapPage() {
   );
 }
 
+/**
+ * One appointment in the list beside the map and in the sheet a pin opens.
+ *
+ * It used to stand about 190 px tall and carry three separate invitations to the same place:
+ * an arrow in the top corner, the row itself being a link, and a "Zobrazit aktivitu" line at
+ * the bottom. Five appointments therefore buried the map completely — on a screen whose whole
+ * purpose is showing where things are. Now it is three lines and one chevron, so the sheet
+ * stays short enough to leave the map in view.
+ */
 function MapOffer({ offer, now, to }: { offer: SearchRow; now: string; to: string }) {
   return (
-    <Link to={to} className="group block p-4 transition-colors hover:bg-surface focus-visible:bg-accent-soft">
-      <div className="flex items-start justify-between gap-3"><h3 className="min-w-0 text-base leading-snug font-extrabold [overflow-wrap:anywhere]">{offer.service_name}</h3><ArrowUpRight size={18} className="shrink-0 text-muted group-hover:text-accent" aria-hidden="true" /></div>
-      <p className="mt-1 text-sm text-muted">{offer.business_name}{offer.district ? ` · ${offer.district}` : ''}</p>
-      <p className="tnum mt-3 text-base font-extrabold text-accent">{dayLabel(offer.start_at, now)} {clockTime(offer.start_at)}</p>
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-2"><p className="tnum inline-flex items-center gap-1 text-sm text-muted"><Clock3 size={14} aria-hidden="true" />{duration(offer.start_at, offer.end_at)} min · {distance(offer.distance_m)}</p><span className="tnum text-lg font-extrabold">{money(offer.deal_price_cents)}</span></div>
-      <span className="mt-3 inline-flex min-h-6 items-center gap-1 text-sm font-bold text-accent">Zobrazit aktivitu<ArrowUpRight size={14} aria-hidden="true" /></span>
+    <Link
+      to={to}
+      className="group flex items-center gap-3 p-3 transition-colors hover:bg-surface focus-visible:bg-accent-soft"
+    >
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-base leading-snug font-extrabold text-ink">
+          {offer.service_name}
+        </span>
+        <span className="block truncate text-sm text-muted">
+          {offer.business_name}
+          {offer.district ? ` · ${offer.district}` : ''}
+        </span>
+        {/* Time first and in ink: on a last-minute marketplace it is the fact people scan
+            for. The rest of the row is context, so it stays muted. */}
+        <span className="tnum mt-1 block truncate text-sm">
+          <span className="font-bold text-ink">
+            {dayLabel(offer.start_at, now)} {clockTime(offer.start_at)}
+          </span>
+          <span className="text-muted">
+            {' · '}
+            {duration(offer.start_at, offer.end_at)} min · {distance(offer.distance_m)}
+          </span>
+        </span>
+      </span>
+      <span className="tnum shrink-0 text-base font-extrabold text-ink">
+        {money(offer.deal_price_cents)}
+      </span>
+      <ChevronRight size={18} className="shrink-0 text-muted group-hover:text-accent" aria-hidden="true" />
     </Link>
   );
 }
