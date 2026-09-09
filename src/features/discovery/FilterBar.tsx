@@ -52,7 +52,7 @@ export function FilterBar({
       <div className="flex items-end gap-3">
         <div className="min-w-0 flex-1">
           {/* The six labelled pills say this themselves; the heading only cost height. */}
-          <div role="radiogroup" aria-label="Kdy máš čas" className="rail rail-fade -mx-1 flex gap-2 px-1 pb-1">
+          <div role="radiogroup" aria-label="Kdy máš čas" className="rail rail-fade -mx-1 -my-1 flex gap-2 px-1 py-1">
             {TIME_INTENTS.map((intent) => {
               const active = intentOf(filters) === intent.key;
               return (
