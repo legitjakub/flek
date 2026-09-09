@@ -1,3 +1,4 @@
+import { ImageOff } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { publishOffer } from '../../lib/api';
@@ -6,6 +7,7 @@ import { czkToCents, money } from '../../lib/format';
 import { addMinutes, clockTime, dayLabel, localInput, localToInstant, ZONE } from '../../lib/time';
 import { serverNow } from '../../lib/clock';
 import { Banner, Button, Chip, Field, Input, Sheet } from '../../components/ui';
+import { Link } from '../../app/router';
 import type { Service } from '../../types/database';
 
 export type OfferDraft = { service_id: string; deal_price_cents: number; start_at?: string } | null;
@@ -119,6 +121,42 @@ export function CreateOfferSheet({
                 </Chip>
               ))}
             </div>
+
+            {/*
+              What the customer will see. The photograph was invisible to merchants until
+              now — it came from the category, so a listing could be illustrated with
+              something unrelated and nobody publishing it would ever notice.
+            */}
+            {service ? (
+              <div className="mt-3 flex items-center gap-3 rounded-xl bg-surface p-3">
+                {service.image_url ? (
+                  <img src={service.image_url} alt="" className="size-16 shrink-0 rounded-lg object-cover" />
+                ) : (
+                  <span className="grid size-16 shrink-0 place-items-center rounded-lg bg-line text-muted">
+                    <ImageOff size={20} aria-hidden="true" />
+                  </span>
+                )}
+                <p className="text-sm text-muted">
+                  {service.image_url ? (
+                    <>
+                      Takhle nabídku uvidí zákazník. Fotku změníte{' '}
+                      <Link to="/partner/sluzby" className="font-bold text-accent underline underline-offset-2">
+                        u služby
+                      </Link>
+                      .
+                    </>
+                  ) : (
+                    <>
+                      Tahle služba nemá fotku, použije se fotka provozovny.{' '}
+                      <Link to="/partner/sluzby" className="font-bold text-accent underline underline-offset-2">
+                        Vyberte ji u služby
+                      </Link>
+                      .
+                    </>
+                  )}
+                </p>
+              </div>
+            ) : null}
           </fieldset>
 
           <fieldset className="flex flex-col gap-2">

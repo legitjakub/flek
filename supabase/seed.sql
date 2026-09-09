@@ -77,27 +77,23 @@ end $$;
 
 -- Demo photography: fictional venues illustrated with stock images. In production a
 -- business uploads its own into Storage; see LIMITATIONS.md.
-with pics(category_slug, a, b) as (values
- ('vlasy','photo-1503951914875-452162b0f3f1','photo-1585747860715-2ba37e788b70'),
- ('masaze','photo-1544161515-4ab6ce6db874','photo-1540555700478-4be289fbecef'),
- ('krasa','photo-1604654894610-df63bc536371','photo-1596178065887-1198b6148b2b'),
- ('sport','photo-1554068865-24cecd4e34b8','photo-1571019613454-1cb2f99b2d8b'),
- ('joga','photo-1544367567-0f2fcb009e0b','photo-1512290923902-8a9f81dc236c'),
- ('wellness','photo-1571019613914-85f342c6a11e','photo-1519824145371-296894a0daa9'))
+--
+-- Photographs come from public.service_photos (migration 202609090016), where each one is
+-- filed by what is actually in the picture. The previous mapping here picked by md5 of the
+-- service id from a per-category pair, and three of the twelve images had been filed under
+-- the wrong category — a yoga class could be illustrated with a facial treatment, a sauna
+-- with a gym floor. Matching on the service name keeps it honest inside a category too.
 update public.services s
-set image_url='https://images.unsplash.com/'||(case when substr(md5(s.id::text),1,1)<'8' then p.a else p.b end)||'?w=640&q=70&auto=format&fit=crop'
-from pics p where p.category_slug=s.category_slug;
+set image_url = coalesce(
+ (select p.image_url from public.service_photos p
+  where p.category_slug=s.category_slug and lower(s.name) like '%'||lower(p.label_cs)||'%'
+  order by length(p.label_cs) desc, p.sort_order limit 1),
+ (select p.image_url from public.service_photos p
+  where p.category_slug=s.category_slug order by p.sort_order limit 1));
 
-with pics(category_slug, a, b) as (values
- ('vlasy','photo-1585747860715-2ba37e788b70','photo-1503951914875-452162b0f3f1'),
- ('masaze','photo-1540555700478-4be289fbecef','photo-1544161515-4ab6ce6db874'),
- ('krasa','photo-1596178065887-1198b6148b2b','photo-1604654894610-df63bc536371'),
- ('sport','photo-1571019613454-1cb2f99b2d8b','photo-1554068865-24cecd4e34b8'),
- ('joga','photo-1512290923902-8a9f81dc236c','photo-1544367567-0f2fcb009e0b'),
- ('wellness','photo-1519824145371-296894a0daa9','photo-1571019613914-85f342c6a11e'))
 update public.businesses b
-set cover_url='https://images.unsplash.com/'||(case when substr(md5(b.id::text),1,1)<'8' then p.a else p.b end)||'?w=960&q=70&auto=format&fit=crop'
-from pics p where p.category_slug=b.category_slug;
+set cover_url=(select p.image_url from public.service_photos p
+ where p.category_slug=b.category_slug order by p.sort_order desc limit 1);
 
 -- Ratings come from attendance, so the demo needs past bookings that were actually
 -- completed. Venues 9-15 stay unrated, which is what a new venue looks like.

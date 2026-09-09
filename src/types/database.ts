@@ -267,3 +267,12 @@ export type ReferralClaim = {
   claimed: boolean;
   reason: 'already_referred' | 'unknown_code' | 'self' | 'not_a_new_account' | null;
 };
+
+/** One activity a venue can sell, with the photograph that belongs to it. Reference data. */
+export type ServicePhoto = {
+  slug: string;
+  category_slug: string;
+  label_cs: string;
+  image_url: string;
+  sort_order: number;
+};

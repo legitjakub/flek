@@ -69,3 +69,11 @@ Důvod je architektonický, ne časový. `create_booking` přijímá jen vypoř�
 „Upozornit na další FLEK" zapne sledování podniku. Nové termíny se pak objeví v Oblíbených a na odznaku v navigaci. Do zařízení nic nedorazí — web push není implementovaný a aplikace proto **nežádá o povolení oznámení**, protože by ho nemohla využít. Texty to říkají doslova: „Nové FLEKy uvidíš v Oblíbených."
 
 Stejně tak dashboard podniku říká, že provozovnu někdo sleduje — nikdy, že jim bylo něco odesláno.
+
+## 14. Fotoaparát katalogu činností je malý
+
+`public.service_photos` má 36 činností, ale jen **12 fotografií** — ověřených tak, že se každá skutečně načte v prohlížeči. Uvnitř kategorie proto několik činností sdílí jeden snímek: čtyři ze šesti kadeřnických dlaždic ukazují tentýž interiér holičství.
+
+Vymýšlet další identifikátory na Unsplash bez ověření by znamenalo riskovat mrtvé odkazy, a rozbitá fotka je horší než opakovaná. Pro pilot je správná cesta vlastní fotka provozovny — nahrávání je hotové (tlačítko „Nahrát vlastní fotku" u služby, soubor jde do bucketu `covers` do složky pojmenované po provozovně, což je přesně to, co dovoluje politika úložiště).
+
+Doplnit katalog o vlastní, licencované snímky je práce na zdroj fotografií, ne na kód: stačí přidat řádky do `service_photos`.

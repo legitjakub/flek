@@ -5,6 +5,7 @@ import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
 import { Banner, Button, EmptyState, Field, Input, LoadingList, Select, Sheet, Textarea } from '../../components/ui';
 import { MerchantShell } from './MerchantShell';
+import { ActivityPicker } from './ActivityPicker';
 import { useServices } from './useBusiness';
 import type { Service } from '../../types/database';
 
@@ -99,6 +100,11 @@ function ServiceSheet({
   const [minutes, setMinutes] = useState(String(service?.duration_minutes ?? 45));
   const [price, setPrice] = useState(service ? String(service.normal_price_cents / 100) : '');
   const [active, setActive] = useState(service?.is_active ?? true);
+  // What the customer will actually see on the card and the detail page.
+  const [imageUrl, setImageUrl] = useState<string | null>(service?.image_url ?? null);
+  // True while the name is still the one the picker wrote. A merchant who types their own
+  // name owns it from then on; a merchant correcting a mis-tap should get the name fixed too.
+  const [autoNamed, setAutoNamed] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
 
   const save = useMutation({
@@ -112,6 +118,7 @@ function ServiceSheet({
           duration_minutes: Number(minutes),
           normal_price_cents: Number(price) * 100,
           is_active: active,
+          image_url: imageUrl,
         },
         service?.id ?? null,
       ),
@@ -137,8 +144,32 @@ function ServiceSheet({
       }
     >
       <div className="flex flex-col gap-3">
+        {/* Before the name, because picking the activity fills the name in. */}
+        <ActivityPicker
+          businessId={businessId}
+          categorySlug={category}
+          value={imageUrl}
+          onPick={({ label, imageUrl: url }) => {
+            setImageUrl(url);
+            // Never overwrite a name the merchant wrote themselves — they may sell
+            // "Pánský střih s mytím" and only want the photograph.
+            if (label && (!name.trim() || autoNamed)) {
+              setName(label);
+              setAutoNamed(true);
+            }
+          }}
+        />
+
         <Field id="s-name" label="Název">
-          <Input id="s-name" data-autofocus value={name} onChange={(event) => setName(event.target.value)} />
+          <Input
+            id="s-name"
+            data-autofocus
+            value={name}
+            onChange={(event) => {
+              setName(event.target.value);
+              setAutoNamed(false);
+            }}
+          />
         </Field>
         <Field id="s-category" label="Kategorie">
           <Select id="s-category" value={category} onChange={(event) => setCategory(event.target.value)}>

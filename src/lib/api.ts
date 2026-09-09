@@ -22,6 +22,7 @@ import type {
   ReferralClaim,
   ReferralStats,
   SearchRow,
+  ServicePhoto,
   Service,
   SortKey,
 } from '../types/database';
@@ -154,6 +155,34 @@ export async function toggleFavorite(businessId: string): Promise<boolean> {
  */
 export async function setFavorite(businessId: string, value: boolean): Promise<boolean> {
   return (await result<boolean>(supabase.rpc('set_favorite', { p_business_id: businessId, p_value: value }))) === true;
+}
+
+/** Read like categories: public reference data, ordered for a stable picker. */
+export async function listServicePhotos(): Promise<ServicePhoto[]> {
+  return (
+    (await result<ServicePhoto[]>(
+      supabase.from('service_photos').select('*').order('category_slug').order('sort_order'),
+    )) ?? []
+  );
+}
+
+/**
+ * A venue's own photograph beats any stock picture, and the storage policy already scopes
+ * writes to the folder named after the business the caller belongs to. The bucket enforces
+ * type and size as well; these checks exist to fail in Czech instead of with a 400.
+ */
+export async function uploadServiceImage(businessId: string, file: File): Promise<string> {
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+    throw new Error('Fotka musí být JPG, PNG nebo WebP.');
+  }
+  if (file.size > 5 * 1024 * 1024) throw new Error('Fotka může mít nejvýš 5 MB.');
+
+  const extension = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
+  // The first path segment must be the business id: that is what the storage policy checks.
+  const path = `${businessId}/services/${crypto.randomUUID()}.${extension}`;
+  const { error } = await supabase.storage.from('covers').upload(path, file, { upsert: false });
+  if (error) throw error;
+  return supabase.storage.from('covers').getPublicUrl(path).data.publicUrl;
 }
 
 export async function myFavorites(): Promise<FavoriteBusiness[]> {
