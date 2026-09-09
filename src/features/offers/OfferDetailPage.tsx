@@ -116,38 +116,70 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             ) : null}
           </div>
         </div>
-        <aside className="rounded-2xl bg-card p-5 shadow-card md:sticky md:top-24 md:col-start-2 md:row-start-1 md:row-span-2 lg:p-6" aria-label="Vybraný termín">
-          <h2 className="text-lg font-extrabold">Tvůj termín</h2>
-          <div className="mt-4 flex items-start gap-3 rounded-xl bg-accent-soft p-4 text-accent">
-            <CalendarDays size={22} aria-hidden="true" className="mt-0.5 shrink-0" />
-            <div className="min-w-0">
-              <p className="tnum text-xl leading-tight font-extrabold">
-                {dayLabel(offer.start_at, now)} {clockTime(offer.start_at)}
-              </p>
-              <p className="tnum mt-1 text-base">Do {clockTime(offer.end_at)}</p>
-              {minutesAway > 0 && minutesAway <= 120 ? (
-                <p className="tnum mt-2 text-base font-bold">Začíná {relativeTime(offer.start_at, now)}</p>
-              ) : null}
-            </div>
+        {/*
+          On a phone this is not a panel: a white box on cream repeating a price that the
+          sticky bar already shows was one surface and one number too many. The facts sit
+          straight on the ground, separated by rules. From md up it becomes the sticky
+          booking card, which is where that pattern earns its place.
+        */}
+        <aside
+          className="md:sticky md:top-24 md:col-start-2 md:row-start-1 md:row-span-2 md:rounded-2xl md:bg-card md:p-5 md:shadow-card lg:p-6"
+          aria-label="Vybraný termín"
+        >
+          <h2 className="sr-only md:not-sr-only md:mb-4 md:block md:text-lg md:font-extrabold">Tvůj termín</h2>
+
+          {/* The same lime chip the card uses, so the time speaks one language everywhere. */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <p className="tnum inline-flex items-center gap-2 rounded-xl bg-brand px-3 py-2 text-xl font-extrabold text-ink">
+              <CalendarDays size={20} aria-hidden="true" />
+              {dayLabel(offer.start_at, now)} {clockTime(offer.start_at)}
+            </p>
+            {minutesAway > 0 && minutesAway <= 120 ? (
+              <span className="tnum text-base font-bold text-ink">Začíná {relativeTime(offer.start_at, now)}</span>
+            ) : null}
           </div>
-          <p className="mt-4 flex items-center justify-between gap-3 text-base">
-            <span className="inline-flex items-center gap-2 text-muted">
-              <Clock3 size={17} aria-hidden="true" />
-              Délka služby
-            </span>
-            <span className="tnum font-bold">{duration(offer.start_at, offer.end_at)} min</span>
-          </p>
-          {offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60 ? (
-            <p className="tnum mt-2 text-base text-muted">Rezervovat lze ještě {cutoffMinutes} min</p>
+
+          <dl className="mt-4 divide-y divide-line border-y border-line text-base">
+            <div className="flex items-center justify-between gap-3 py-2.5">
+              <dt className="text-muted">Konec</dt>
+              <dd className="tnum font-bold">{clockTime(offer.end_at)}</dd>
+            </div>
+            <div className="flex items-center justify-between gap-3 py-2.5">
+              <dt className="inline-flex items-center gap-2 text-muted">
+                <Clock3 size={17} aria-hidden="true" />
+                Délka služby
+              </dt>
+              <dd className="tnum font-bold">{duration(offer.start_at, offer.end_at)} min</dd>
+            </div>
+            {offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60 ? (
+              <div className="flex items-center justify-between gap-3 py-2.5">
+                <dt className="text-muted">Rezervovat lze ještě</dt>
+                <dd className="tnum font-bold">{cutoffMinutes} min</dd>
+              </div>
+            ) : null}
+          </dl>
+
+          <div className="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span className="tnum text-2xl font-extrabold tracking-tight">{money(offer.deal_price_cents)}</span>
+            <s className="tnum text-base text-muted">{money(offer.original_price_cents)}</s>
+            <span className="tnum text-base font-bold text-accent">−{offer.discount_pct} %</span>
+          </div>
+          <p className="tnum mt-1 text-base font-bold text-ink">Ušetříš {money(savings)}</p>
+
+          {!offer.bookable ? (
+            <div className="mt-4">
+              <Banner tone="warning">Tento termín už bohužel není volný.</Banner>
+            </div>
           ) : null}
-          <div className="mt-5 flex flex-wrap items-baseline gap-2 border-t border-line pt-5"><span className="tnum text-2xl font-extrabold tracking-tight">{money(offer.deal_price_cents)}</span><s className="tnum text-base text-muted">{money(offer.original_price_cents)}</s></div>
-          <p className="tnum mt-2 text-base font-bold text-ink">
-            Ušetříš {money(savings)} · −{offer.discount_pct} %
-          </p>
-          {!offer.bookable ? <div className="mt-4"><Banner tone="warning">Tento termín už bohužel není volný.</Banner></div> : null}
-          <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:static md:mt-5 md:border-0 md:p-0">
-            <Button size="lg" className="w-full" disabled={!offer.bookable} onClick={() => setSheetOpen(true)}>{offer.bookable ? `Rezervovat za ${money(offer.deal_price_cents)}` : 'Termín není volný'}</Button>
-            <p className="mt-2 flex items-center justify-center gap-2 text-base text-muted"><Banknote size={16} aria-hidden="true" />Zaplatíš rovnou, v podniku jen ukážeš kód</p>
+
+          <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:static md:mt-5 md:border-0 md:bg-transparent md:p-0">
+            <Button size="lg" className="w-full" disabled={!offer.bookable} onClick={() => setSheetOpen(true)}>
+              {offer.bookable ? `Rezervovat za ${money(offer.deal_price_cents)}` : 'Termín není volný'}
+            </Button>
+            <p className="mt-2 flex items-center justify-center gap-2 text-sm text-muted">
+              <Banknote size={16} aria-hidden="true" />
+              Zaplatíš rovnou, v podniku jen ukážeš kód
+            </p>
           </div>
         </aside>
         <div className="min-w-0 md:col-start-1">          <div className="mb-8 border-t border-line pt-6">
