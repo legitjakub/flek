@@ -3,9 +3,10 @@ import { useEffect } from 'react';
 import { Heart, MapPin } from 'lucide-react';
 import { markFavoritesSeen, myFavorites, newAtFavorites } from '../../lib/api';
 import { useServerNow } from '../../lib/clock';
-import { Button, EmptyState, ErrorState, LoadingList, Rating } from '../../components/ui';
+import { Button, EmptyState, ErrorState, LoadingList } from '../../components/ui';
 import { Link } from '../../app/router';
 import { OfferCard } from '../discovery/OfferCard';
+import { GooglePlaceRating } from '../ratings/GooglePlaceRating';
 import { useSession } from '../auth/session';
 
 /**
@@ -114,7 +115,7 @@ export function FavoritesPage() {
                       <MapPin size={15} aria-hidden="true" />
                       {place.district || place.city}
                     </span>
-                    <Rating average={place.rating_avg} count={place.rating_count} />
+                    <GooglePlaceRating businessId={place.id} placeId={place.google_place_id} mapsUri />
                   </p>
                 </div>
                 <p className="tnum text-base font-bold">

@@ -290,6 +290,30 @@ export async function adminSetBusinessStatus(businessId: string, status: string,
   await result(supabase.rpc('admin_set_business_status', { p_business_id: businessId, p_status: status, p_reason: reason }));
 }
 
+export async function adminSetGooglePlaceId(businessId: string, placeId: string | null): Promise<void> {
+  await result(
+    supabase.rpc('admin_set_google_place_id', {
+      p_business_id: businessId,
+      p_place_id: placeId,
+    }),
+  );
+}
+
+export type GooglePlaceRatingData = {
+  rating: number;
+  userRatingCount: number;
+  googleMapsUri: string;
+};
+
+/** Google content is returned directly and deliberately never written to our database. */
+export async function googlePlaceRating(businessId: string): Promise<GooglePlaceRatingData | null> {
+  const { data, error } = await supabase.functions.invoke<GooglePlaceRatingData | null>('google-place-rating', {
+    body: { business_id: businessId },
+  });
+  if (error) throw error;
+  return data;
+}
+
 export async function adminOffers(query: string): Promise<MerchantOffer[]> {
   return (await result<MerchantOffer[]>(supabase.rpc('admin_offers', { p_query: query, p_limit: 50 }))) ?? [];
 }

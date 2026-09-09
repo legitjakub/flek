@@ -30,9 +30,11 @@ Karty i detail počítají s `image_url` a `cover_url`, ale repozitář žádné
 
 Seed ilustruje fiktivní provozovny stock fotkami z `images.unsplash.com`. Pro demo je to v pořádku, pro pilot ne: je to závislost na cizí službě a stojí to zhruba deset bodů výkonu v Lighthouse. Aplikace i Storage buckety jsou připravené na vlastní fotky provozoven — je to obsahová práce, ne vývojová.
 
-## 7. Hodnocení jsou vědomé rozšíření nad V1
+## 7. Google hodnocení potřebuje provozní konfiguraci
 
-Původní zadání recenze z V1 vyřazovalo. Hodnocení jsou přidaná na výslovné rozhodnutí a záměrně v nejmenší poctivé podobě: jen hvězdičky bez textu, hodnotit smí pouze zákazník s vlastní **dokončenou** rezervací, průměr se počítá v dotazu a zobrazí se až od tří hodnocení. Neřešená agenda, kterou to otevírá: moderace, odpovědi podniku, obrana proti zneužití a to, co se stane s hodnocením zrušeného podniku.
+Veřejné rozhraní už nepoužívá demo hvězdičky z rezervací FLEK. Zobrazuje jen hodnocení načtené přímo přes Places API a označené `Google Maps`. Kód, databázová migrace, administrátorské přiřazení Place ID i serverová Edge Function jsou připravené.
+
+V nasazeném prostředí je ještě potřeba zapnout Places API (New) s billingem, nastavit serverový secret `GOOGLE_MAPS_API_KEY`, nasadit `google-place-rating` a ke každé reálné provozovně přiřadit správné Place ID. Google dovoluje trvale uložit Place ID, ne samotné hodnocení; funkce proto odpověď necachuje. Před ostrým použitím musí být na veřejném webu také finální podmínky služby a zásady ochrany soukromí zahrnující podmínky a zásady Google.
 
 ## 8. Jeden účet = jedna provozovna
 
@@ -56,7 +58,7 @@ Kdo v tom bude pokračovat: nejvíc přinese nahrazení Temporalu v zobrazovací
 
 Předplatné · psané recenze a jejich moderace · chat · push a SMS · dynamické ceny · integrace na rezervační systémy · vícejazyčné rozhraní · nativní aplikace · fakturace · výplaty podnikům.
 
-Tenhle seznam byl zastaralý a je opravený. Mezitím **přibylo**: platba předem (demo poskytovatel, viz níže), hodnocení hvězdičkami z proběhlých rezervací, oblíbené podniky s odvozeným upozorněním, export do kalendáře, skenování QR u partnera a atribuce doporučení.
+Tenhle seznam byl zastaralý a je opravený. Mezitím **přibylo**: platba předem (demo poskytovatel, viz níže), připravené živé hodnocení z Google Places, oblíbené podniky s odvozeným upozorněním, export do kalendáře, skenování QR u partnera a atribuce doporučení.
 
 ## 12. Doporučení nemají odměnu
 

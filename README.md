@@ -59,6 +59,7 @@ Migrace v `supabase/migrations/` se aplikují v pořadí názvů:
 | `…0011_payments.sql` | platba předem, vratky a stav platby ve čtecích modelech |
 | `…0012_cancellation_window.sql` | vlastní lhůta pro bezplatné zrušení u každé provozovny |
 | `…0014_favorites.sql` | oblíbená místa a odvozená novinka u nich |
+| `…0018_google_place_ratings.sql` | bezpečné propojení provozovny s Google Place ID |
 
 `supabase/seed.sql` je **jen pro lokální vývoj**: 15 fiktivních pražských provozoven, 30 služeb a 38 termínů generovaných relativně k `now()`, takže demo je živé i příští týden. Rezervace pokrývají všechny stavy včetně dokončené i nedostavené.
 
@@ -72,6 +73,11 @@ Seed nastavuje **pouze pro lokální vývoj** heslo `FlekDemo2026!`. Nasazená u
 | `demo-merchant@flek.test` | partner se schválenou provozovnou |
 | `demo-merchant2@flek.test` | partner s provozovnou čekající na schválení |
 | `demo-admin@flek.test` | administrace — na nasazené ukázce má **vlastní** heslo, nesdílené s ostatními |
+
+Přímé vstupy do jednotlivých částí jsou `/prihlaseni?returnTo=%2Fprofil` pro zákazníka,
+`/prihlaseni?role=merchant&returnTo=%2Fpartner` pro partnera a `/prihlaseni?returnTo=%2Fadmin`
+pro administrátora. Zákazník se odhlašuje v Profilu; partner a administrátor mají odhlášení
+přímo v hlavičce své správy. Po odhlášení se smaže i klientská cache předchozího účtu.
 
 ## Testy
 
@@ -88,6 +94,20 @@ SUPABASE_URL=... SUPABASE_ANON_KEY=... npm run test:acceptance
 ```
 
 Integrační testy se přihlašují **skutečnými JWT**, ne service-role klíčem, takže ověřují i RLS. Pokrývají souběžné rezervace (10 zákazníků na jedno místo), oversell, dvojité klepnutí, autorizaci mezi podniky, kapacitu, storna, nedostavení, kolize kódů a determinismus vyhledávání.
+
+## Hodnocení z Google Maps
+
+Veřejné karty a detail používají pouze aktuální hodnocení z Google Places. Databáze ukládá jen stabilní `google_place_id`; průměr, počet hodnocení a odkaz se načítají přes Edge Function s hlavičkou `no-store`. API klíč proto nikdy není součástí frontendového balíčku.
+
+Pro zapnutí integrace povolte **Places API (New)** a billing v Google Cloud, potom nasaďte migraci a funkci:
+
+```sh
+supabase db push
+supabase secrets set GOOGLE_MAPS_API_KEY=<serverový-api-klíč>
+supabase functions deploy google-place-rating
+```
+
+V administraci u každé reálné provozovny doplňte její Google Place ID. Dokud propojení chybí nebo API není dostupné, aplikace žádné náhradní ani demo hodnocení nezobrazuje.
 
 ## Hlavní obrazovky
 

@@ -1,6 +1,7 @@
 import { LayoutDashboard, CalendarDays, Ticket, Scissors, Store, ChartNoAxesColumn, Ellipsis, ArrowUpRight } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { Banner, LoadingList, ErrorState, Wordmark, Sheet } from '../../components/ui';
+import { SignOutButton } from '../auth/SignOutButton';
 import { Link, useRouter } from '../../app/router';
 import { useSession } from '../auth/session';
 import { useMyBusinesses } from './useBusiness';
@@ -107,15 +108,25 @@ function MerchantFrame({
 }) {
   const [menu, setMenu] = useState(false);
   const { navigate } = useRouter();
+  const { userId } = useSession();
   return (
     <div className="min-h-dvh bg-surface">
       <a href="#partner-obsah" className="sr-only focus:not-sr-only focus:fixed focus:z-50 focus:bg-ink focus:p-3 focus:text-card">Přeskočit na obsah</a>
       <header className="sticky top-0 z-20 border-b border-line bg-card">
         <div className="mx-auto flex min-h-18 max-w-[1440px] items-center justify-between gap-3 px-4 lg:px-8">
           <Link to="/partner" aria-label="FLEK Partner" className="inline-flex min-h-11 items-center"><Wordmark suffix="Partner" /></Link>
-          <div className="flex min-w-0 items-center gap-6">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-6">
             {business ? <span className="hidden max-w-sm truncate text-sm font-bold text-muted sm:inline">{business.display_name}</span> : null}
-            <Link to="/" className="inline-flex min-h-11 shrink-0 items-center gap-1 text-sm font-bold">Zákaznická část<ArrowUpRight size={16} aria-hidden="true" /></Link>
+            <Link
+              to="/"
+              aria-label="Přejít do zákaznické části"
+              title="Přejít do zákaznické části"
+              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 text-sm font-bold sm:min-w-0"
+            >
+              <span className="hidden sm:inline">Zákaznická část</span>
+              <ArrowUpRight size={17} aria-hidden="true" />
+            </Link>
+            {userId ? <SignOutButton compact /> : null}
           </div>
         </div>
       </header>

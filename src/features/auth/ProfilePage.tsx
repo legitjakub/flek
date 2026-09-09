@@ -4,12 +4,12 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
 import { saveProfile } from '../../lib/api';
-import { supabase } from '../../lib/supabase';
 import { errorMessage } from '../../lib/errors';
 import { profileSchema } from '../../lib/schemas';
 import { Banner, Button, EmptyState, Field, Input } from '../../components/ui';
-import { Link, useRouter } from '../../app/router';
+import { Link } from '../../app/router';
 import { useSession } from './session';
+import { SignOutButton } from './SignOutButton';
 import { CustomerFlekStats } from '../profile/CustomerFlekStats';
 import { ReferralInvite } from '../profile/ReferralInvite';
 import { InstallPrompt } from '../pwa/InstallPrompt';
@@ -18,7 +18,6 @@ type ProfileValues = z.infer<typeof profileSchema>;
 
 export function ProfilePage() {
   const { userId, profile, session, admin } = useSession();
-  const { navigate } = useRouter();
   const queryClient = useQueryClient();
   const [saved, setSaved] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
@@ -137,17 +136,9 @@ export function ProfilePage() {
         <p className="tnum text-base text-muted">
           Verze aplikace <span className="font-bold text-ink">{import.meta.env.VITE_BUILD_ID ?? 'dev'}</span>
         </p>
-        <Button
-          variant="secondary"
-          className="self-start"
-          onClick={async () => {
-            await supabase.auth.signOut();
-            queryClient.clear();
-            navigate('/');
-          }}
-        >
-          Odhlásit se
-        </Button>
+        <div className="self-start">
+          <SignOutButton />
+        </div>
       </div>
     </main>
   );

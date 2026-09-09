@@ -31,7 +31,8 @@ Jeden řádek na rozhodnutí, chronologicky. Kde bylo zadání nejednoznačné, 
 - Použité filtry zůstávají viditelné jako odebratelné pilulky. Tichý filtr, který uživatel nevidí, je nejrychlejší způsob, jak vypadat prázdně.
 - Objevování má rytmus: co začíná do tří hodin jde do vodorovného pásu nahoře, nejhlubší slevy do druhého, zbytek je seznam. Žádná nabídka není ve dvou sekcích zároveň.
 - Hodnocení stojí na `bookings.rating`, ne na samostatné tabulce recenzí. Hodnotit tak může jen ten, kdo má vlastní dokončenou rezervaci — omezení vynucuje datový model, ne aplikace. Průměr se počítá v dotazu; denormalizovaný čítač je jen další věc, která se může rozejít s pravdou.
-- Hodnocení se zobrazuje až od tří kusů. Jedna pětihvězdička vypadá jako autorita, i když není.
+- Veřejná důvěryhodnost provozovny se bere z Google Places, ne z interních demo hodnocení. Ukládá se jen `google_place_id`; aktuální průměr a počet se načtou serverově bez cache a vždy se označí atribucí `Google Maps`. Staré sloupce hodnocení zůstávají kvůli kompatibilitě databáze, ale veřejné rozhraní je nepoužívá.
+- Hranice tří kusů platila pro původní interní hodnocení. Veřejné rozhraní je už nepoužívá; Google průměr vždy doprovází skutečný počet hodnocení a atribuce zdroje.
 - Sekce na objevování se musí zasloužit: až od šesti nabídek celkem a jen se dvěma a více položkami. Prázdný karusel je horší než poctivý seznam a pilot začíná s hrstkou termínů.
 - Náhled nabídky nad mapou zůstal plovoucí kartou, ne modálním sheetem. Modál by zakryl mapu, ve které si uživatel právě vybírá.
 - Mezikrok „Hotovo" po zveřejnění termínu zmizel. Potvrzení patří na stránku za sheetem; jinak partner platí klepnutím navíc za informaci, kterou už vidí.
@@ -63,4 +64,3 @@ Jeden řádek na rozhodnutí, chronologicky. Kde bylo zadání nejednoznačné, 
 - Nahrávání vlastních fotek partnerem zamítnuto z bezpečnostních důvodů: neomoderovaný obsah ve veřejném bucketu. Politika úložiště v databázi zůstává z dřívější migrace, aplikace ji nepoužívá.
 - Výběr se sleduje podle činnosti, ne podle fotky. Porovnávání přes `image_url` rozsvítilo všechny dlaždice, které snímek sdílejí — výběr „Dámský střih" vypadal, jako by bylo vybráno čtvero.
 - Název doplněný výběrem jde opravit dalším výběrem, název napsaný rukou ne. Partner, který se překlikne, potřebuje opravit obojí; partner, který prodává „Pánský střih s mytím", chce jen tu fotku.
-

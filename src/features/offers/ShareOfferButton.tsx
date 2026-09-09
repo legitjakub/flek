@@ -25,7 +25,7 @@ export function shareText(offer: OfferDetail, now: string): string {
  * gone by the time they open it, the detail page's recovery block takes over — which is why
  * sharing a specific offer stays worthwhile rather than becoming a dead end.
  */
-export function ShareOfferButton({ offer, now }: { offer: OfferDetail; now: string }) {
+export function ShareOfferButton({ offer, now, compact = false }: { offer: OfferDetail; now: string; compact?: boolean }) {
   const [done, setDone] = useState<'shared' | 'copied' | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -33,9 +33,12 @@ export function ShareOfferButton({ offer, now }: { offer: OfferDetail; now: stri
   const text = shareText(offer, now);
 
   return (
-    <>
+    <span className="relative inline-flex shrink-0 flex-wrap items-center gap-2">
       <Button
-        variant="secondary"
+        variant={compact ? 'ghost' : 'secondary'}
+        className={compact ? 'size-11 rounded-full! px-0!' : undefined}
+        aria-label={compact ? 'Sdílet nabídku' : undefined}
+        title={compact ? 'Sdílet nabídku' : undefined}
         onClick={async () => {
           setFailed(false);
           try {
@@ -55,19 +58,19 @@ export function ShareOfferButton({ offer, now }: { offer: OfferDetail; now: stri
           }
         }}
       >
-        <Share2 size={17} aria-hidden="true" />
-        Sdílet
+        {done === 'copied' ? <Check size={18} className="shrink-0" aria-hidden="true" /> : <Share2 size={18} className="shrink-0" aria-hidden="true" />}
+        {compact ? null : 'Sdílet'}
       </Button>
       <span role="status" aria-live="polite" className="sr-only">
         {done === 'copied' ? 'Odkaz zkopírován do schránky.' : done === 'shared' ? 'Sdíleno.' : ''}
       </span>
-      {done === 'copied' ? (
+      {done === 'copied' && !compact ? (
         <span className="inline-flex items-center gap-1.5 text-sm font-bold text-positive">
           <Check size={15} aria-hidden="true" />
           Zkopírováno
         </span>
       ) : null}
-      {failed ? <span className="text-sm font-medium text-danger">Sdílení se nepodařilo.</span> : null}
-    </>
+      {failed ? <span role="alert" className={compact ? 'absolute top-full right-0 z-10 w-44 rounded-lg bg-card p-2 text-sm text-danger shadow-card' : 'text-sm text-danger'}>Sdílení se nepodařilo.</span> : null}
+    </span>
   );
 }

@@ -5,15 +5,18 @@ import {
   adminBusinesses,
   adminMetrics,
   adminOffers,
+  adminSetGooglePlaceId,
   adminSetBookingBlock,
   adminSetBusinessStatus,
   adminUserLookup,
 } from '../../lib/api';
+import { House } from 'lucide-react';
 import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
 import { clockTime, dayLabel } from '../../lib/time';
 import { useServerNow } from '../../lib/clock';
 import { Banner, Button, EmptyState, ErrorState, Field, Input, LoadingList, Sheet, Wordmark } from '../../components/ui';
+import { SignOutButton } from '../auth/SignOutButton';
 import { Link, useRouter } from '../../app/router';
 import { useSession } from '../auth/session';
 import { LazyMap } from '../offers/LazyMap';
@@ -39,9 +42,16 @@ export function AdminFrame({ children }: { children: ReactNode }) {
           <Link to="/admin">
             <Wordmark suffix="Admin" />
           </Link>
-          <Link to="/" className="text-sm font-bold underline underline-offset-4">
-            Zpět do aplikace
+          <Link
+            to="/"
+            aria-label="Zpět do zákaznické aplikace"
+            title="Zpět do zákaznické aplikace"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 text-sm font-bold sm:min-w-0 sm:underline sm:underline-offset-4"
+          >
+            <House size={17} aria-hidden="true" className="sm:hidden" />
+            <span className="hidden sm:inline">Zpět do aplikace</span>
           </Link>
+          {userId ? <SignOutButton compact /> : null}
         </div>
         <nav aria-label="Administrace" className="mx-auto w-full max-w-5xl overflow-x-auto px-4">
           <ul className="flex gap-1 pb-2">
@@ -133,6 +143,7 @@ export function AdminBusinessesPage() {
                 {business.status_reason ? (
                   <p className="mt-1 text-sm text-accent">Důvod: {business.status_reason}</p>
                 ) : null}
+                <GooglePlaceConnector business={business} />
               </div>
               <LazyMap
                 className="h-32 w-full max-w-xs overflow-hidden rounded-xl border border-line"
@@ -211,6 +222,63 @@ export function AdminBusinessesPage() {
         ) : null}
       </Sheet>
     </AdminFrame>
+  );
+}
+
+function GooglePlaceConnector({ business }: { business: AdminBusiness }) {
+  const queryClient = useQueryClient();
+  const [placeId, setPlaceId] = useState(business.google_place_id ?? '');
+  const [message, setMessage] = useState<string | null>(null);
+  const save = useMutation({
+    mutationFn: () => adminSetGooglePlaceId(business.id, placeId.trim() || null),
+    onSuccess: async () => {
+      setMessage(placeId.trim() ? 'Google hodnocení je propojené.' : 'Propojení bylo odebráno.');
+      await queryClient.invalidateQueries({ queryKey: ['admin-businesses'] });
+    },
+    onError: (error) => setMessage(errorMessage(error)),
+  });
+
+  return (
+    <form
+      className="mt-3 max-w-xl rounded-xl bg-surface p-3"
+      onSubmit={(event) => {
+        event.preventDefault();
+        save.mutate();
+      }}
+    >
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="min-w-52 flex-1">
+          <Field
+            id={`google-place-${business.id}`}
+            label="Google Place ID"
+            hint="Hodnocení se zákazníkům načítá živě z Google Maps."
+          >
+            <Input
+              id={`google-place-${business.id}`}
+              value={placeId}
+              placeholder="ChIJ…"
+              autoComplete="off"
+              onChange={(event) => {
+                setPlaceId(event.target.value);
+                setMessage(null);
+              }}
+            />
+          </Field>
+        </div>
+        <Button type="submit" variant="secondary" loading={save.isPending}>
+          {placeId.trim() ? 'Propojit' : 'Odebrat'}
+        </Button>
+      </div>
+      <a
+        href="https://developers.google.com/maps/documentation/places/web-service/place-id"
+        target="_blank"
+        rel="noreferrer"
+        className="mt-2 inline-flex min-h-8 items-center text-xs font-bold text-accent underline underline-offset-2"
+      >
+        Jak najít Place ID
+      </a>
+      {message ? <p role="status" className="mt-1 text-sm text-muted">{message}</p> : null}
+    </form>
   );
 }
 

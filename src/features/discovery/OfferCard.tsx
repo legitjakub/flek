@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Clock3, MapPin } from 'lucide-react';
+import { CalendarDays, Clock3, MapPin } from 'lucide-react';
 import { Link, useRouter } from '../../app/router';
 import { money, distance as formatDistance } from '../../lib/format';
 import { clockTime, dayLabel, duration } from '../../lib/time';
 import { relativeTime } from '../../lib/clock';
-import { Rating } from '../../components/ui';
+import { GooglePlaceRating } from '../ratings/GooglePlaceRating';
 import type { SearchRow } from '../../types/database';
 
 /**
@@ -84,8 +84,11 @@ export function OfferCard({
             <Clock3 size={14} aria-hidden="true" />
             {duration(offer.start_at, offer.end_at)} min
           </span>
-          <span aria-hidden="true">·</span>
-          <Rating average={offer.rating_avg} count={offer.rating_count} />
+          <GooglePlaceRating
+            businessId={offer.business_id}
+            placeId={offer.google_place_id}
+            withSeparator
+          />
           {lastSeat ? (
             <>
               <span aria-hidden="true">·</span>
@@ -94,24 +97,27 @@ export function OfferCard({
           ) : null}
         </p>
 
-        {/* Time on the left in the brand colour, price on the right: the two things the
-            decision is made on, at opposite ends so neither has to be hunted for. */}
-        <div className="mt-auto flex flex-wrap items-end justify-between gap-x-3 gap-y-2 pt-1">
-          <div className="min-w-0">
-            <span className="tnum inline-block rounded-lg bg-brand px-2.5 py-1.5 text-base font-extrabold text-ink">
-              {dayLabel(offer.start_at, now)} {clockTime(offer.start_at)}
+        <div className="mt-auto flex items-end justify-between gap-3 border-t border-line pt-3">
+          <div className="flex min-w-0 items-start gap-2.5">
+            <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent">
+              <CalendarDays size={16} aria-hidden="true" />
             </span>
+            <div className="min-w-0">
+              <p className="tnum text-base leading-5 font-extrabold text-ink">
+                {dayLabel(offer.start_at, now)} · {clockTime(offer.start_at)}
+              </p>
             {startingSoon ? (
-              <span className="tnum mt-1 block text-sm font-bold text-ink">
+              <span className="tnum mt-0.5 block text-xs font-bold text-accent">
                 Začíná {relativeTime(offer.start_at, now)}
               </span>
             ) : null}
+            </div>
           </div>
-          <div className="text-right">
+          <div className="shrink-0 text-right">
             <p className="tnum text-xl leading-none font-extrabold text-ink">{money(offer.deal_price_cents)}</p>
-            <p className="tnum mt-1 text-sm text-muted">
+            <p className="tnum mt-1 text-xs text-muted">
               <s>{money(offer.original_price_cents)}</s>
-              <span className="ml-1.5 font-bold text-accent">−{offer.discount_pct} %</span>
+              <span className="ml-1.5 rounded-md bg-accent-soft px-1.5 py-0.5 font-bold text-accent">−{offer.discount_pct} %</span>
             </p>
           </div>
         </div>

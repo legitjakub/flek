@@ -7,7 +7,7 @@ import { relativeTime, useServerNow } from '../../lib/clock';
 import { money, distance as formatDistance } from '../../lib/format';
 import { clockTime, dayLabel, duration } from '../../lib/time';
 import { DEFAULT_POINT, storedPoint } from '../../lib/geo';
-import { Button, ErrorState, Rating, Skeleton, cx } from '../../components/ui';
+import { Button, ErrorState, Skeleton, cx } from '../../components/ui';
 import { bookingIcs, icsHref } from '../../lib/calendar';
 import { Link, useRouter } from '../../app/router';
 import { BookingSheet, cancellationDeadline } from '../bookings/BookingSheet';
@@ -19,6 +19,7 @@ import { LazyMap } from './LazyMap';
 import { ShareOfferButton } from './ShareOfferButton';
 import { UnavailableOfferRecovery } from './UnavailableOfferRecovery';
 import { unavailableReason } from './unavailable';
+import { GooglePlaceRating } from '../ratings/GooglePlaceRating';
 
 export function OfferDetailPage({ offerId }: { offerId: string }) {
   const { search, navigate } = useRouter();
@@ -124,12 +125,12 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
       {hasPhoto ? null : (
         <Link to={returnTo} className="my-4 inline-flex min-h-11 items-center gap-2 text-base font-bold text-muted hover:text-accent"><ArrowLeft size={18} aria-hidden="true" />Zpět na nabídky</Link>
       )}
-      <div className="grid items-start gap-6 md:grid-cols-[minmax(0,1fr)_320px] lg:gap-12 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid items-start gap-4 md:grid-cols-[minmax(0,1fr)_320px] md:gap-6 lg:gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="min-w-0">
           {hasPhoto ? (
             /* Full-bleed on a phone. Inset behind the page gutter it read as one more card
                on a page already made of cards; edge to edge it reads as the subject. */
-            <div className="relative -mx-4 mb-5 md:mx-0 md:mb-6">
+            <div className="relative -mx-4 mb-3 md:mx-0 md:mb-4">
               <img
                 src={image!}
                 onError={() => setFailedPhoto(image)}
@@ -161,27 +162,28 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             extra-bold blocks stacked on top of each other — the jump read as shouting. The
             district also duplicated the address, which already contains it.
           */}
-          <h1 className="text-xl leading-tight font-extrabold tracking-tight md:text-2xl [overflow-wrap:anywhere]">
-            {offer.service_name}
-          </h1>
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="min-w-0 text-xl leading-tight font-extrabold tracking-tight md:text-2xl [overflow-wrap:anywhere]">
+              {offer.service_name}
+            </h1>
+            <ShareOfferButton offer={offer} now={now} compact />
+          </div>
 
-          <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-base font-bold [overflow-wrap:anywhere]">
+          <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-bold [overflow-wrap:anywhere]">
             {offer.business_name}
-            {offer.rating_count > 0 ? (
-              <>
-                <span aria-hidden="true" className="font-normal text-muted">
-                  ·
-                </span>
-                <Rating average={offer.rating_avg} count={offer.rating_count} />
-              </>
-            ) : null}
+            <GooglePlaceRating
+              businessId={offer.business_id}
+              placeId={offer.google_place_id}
+              mapsUri
+              withSeparator
+            />
           </p>
 
           {/* The address is a link to the map already on this page, the way a booking app
               treats it — an address you cannot act on is just a string to read past. */}
           <a
             href="#kde-to-je"
-            className="mt-1.5 inline-flex min-h-11 flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-muted hover:text-accent"
+            className="inline-flex min-h-11 flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-muted hover:text-accent"
           >
             <MapPin size={15} aria-hidden="true" className="shrink-0" />
             <span>
@@ -196,15 +198,12 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             ) : null}
           </a>
 
-          {/* Secondary actions. Sharing lives here rather than beside the booking button:
-              it must be findable without ever competing with the one primary action.
-              Following only needs a control here when there is no photo to carry it. */}
-          <div className="mt-5 flex flex-wrap items-center gap-2">
-            {hasPhoto ? null : (
+          {/* Without a photograph, following needs a control below the venue details. */}
+          {hasPhoto ? null : (
+            <div className="mt-1">
               <FavoriteButton businessId={offer.business_id} businessName={offer.business_name} />
-            )}
-            <ShareOfferButton offer={offer} now={now} />
-          </div>
+            </div>
+          )}
           {followed ? (
             <p role="status" className="mt-3 text-base font-bold text-positive">
               Hotovo. {offer.business_name} teď sleduješ — nové FLEKy uvidíš v Oblíbených.
@@ -220,64 +219,57 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           y=755. Grouping them fixes the collision by construction, not by nudging offsets.
         */}
         <aside
-          className="rounded-2xl bg-card p-4 shadow-card md:sticky md:top-24 md:col-start-2 md:row-start-1 md:row-span-2 md:p-5 lg:p-6"
+          className="rounded-2xl bg-card p-4 shadow-card md:sticky md:top-24 md:col-start-2 md:row-start-1 md:row-span-2 md:p-5"
           aria-label="Vybraný termín"
         >
-          <h2 className="sr-only md:not-sr-only md:mb-4 md:block md:text-lg md:font-extrabold">Tvůj termín</h2>
+          <h2 className="sr-only md:not-sr-only md:mb-3 md:block md:text-base md:font-extrabold">Tvůj termín</h2>
 
-          {/* The same lime chip the card uses, so the time speaks one language everywhere. */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-            <p className="tnum inline-flex items-center gap-2 rounded-xl bg-brand px-3 py-2 text-xl font-extrabold text-ink">
-              <CalendarDays size={20} aria-hidden="true" />
-              {dayLabel(offer.start_at, now)} {clockTime(offer.start_at)}
-            </p>
+          <div className="flex items-start gap-3">
+            <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
+              <CalendarDays size={18} aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <p className="tnum text-base leading-5 font-bold">
+                {dayLabel(offer.start_at, now)} · {clockTime(offer.start_at)}–{clockTime(offer.end_at)}
+              </p>
+              <p className="tnum mt-1 flex items-center gap-1.5 text-sm leading-5 text-muted">
+                <Clock3 size={14} aria-hidden="true" />
+                {duration(offer.start_at, offer.end_at)} min
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 empty:hidden">
             {minutesAway > 0 && minutesAway <= 120 ? (
-              <span className="tnum text-base font-bold text-ink">Začíná {relativeTime(offer.start_at, now)}</span>
+              <span className="tnum mt-2 text-sm font-bold text-accent">Začíná {relativeTime(offer.start_at, now)}</span>
             ) : null}
             {/* Scarcity belongs next to the time it applies to, not on a row of its own
                 three screens away from the button. */}
             {lastSeat ? (
-              <span className="rounded-lg bg-warning-soft px-2 py-1 text-sm font-bold text-warning">
+              <span className="mt-2 rounded-lg bg-warning-soft px-2 py-1 text-sm font-bold text-warning">
                 Poslední místo
               </span>
             ) : null}
           </div>
 
-          <dl className="mt-4 divide-y divide-line border-y border-line text-base">
-            <div className="flex items-center justify-between gap-3 py-2.5">
-              <dt className="text-muted">Konec</dt>
-              <dd className="tnum font-bold">{clockTime(offer.end_at)}</dd>
-            </div>
-            <div className="flex items-center justify-between gap-3 py-2.5">
-              <dt className="inline-flex items-center gap-2 text-muted">
-                <Clock3 size={17} aria-hidden="true" />
-                Délka služby
-              </dt>
-              <dd className="tnum font-bold">{duration(offer.start_at, offer.end_at)} min</dd>
-            </div>
-            {offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60 ? (
-              <div className="flex items-center justify-between gap-3 py-2.5">
-                <dt className="text-muted">Rezervovat lze ještě</dt>
-                <dd className="tnum font-bold">{cutoffMinutes} min</dd>
-              </div>
-            ) : null}
-          </dl>
+          {offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60 ? (
+            <p className="tnum mt-2 text-sm text-muted">Rezervovat lze ještě <span className="font-bold text-ink">{cutoffMinutes} min</span></p>
+          ) : null}
 
-          <div className="mt-4 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 border-t border-line pt-3">
             {/* The scale in styles.css assigns xl/800 to prices and times and 2xl/800 to the
                 page heading. At 2xl the price was the largest thing on the screen, louder
                 than the title of the thing being bought. */}
             <span className="tnum text-xl font-extrabold tracking-tight">{money(offer.deal_price_cents)}</span>
-            <s className="tnum text-base text-muted">{money(offer.original_price_cents)}</s>
+            <s className="tnum text-sm text-muted">{money(offer.original_price_cents)}</s>
             <span className="tnum rounded-lg bg-accent-soft px-2 py-0.5 text-sm font-extrabold text-accent">
               −{offer.discount_pct} %
             </span>
           </div>
-          <p className="tnum mt-1 text-base font-bold text-ink">Ušetříš {money(savings)}</p>
+          <p className="tnum mt-0.5 text-sm text-muted">Ušetříš <span className="font-bold text-positive">{money(savings)}</span></p>
 
           {/* An unusually low price invites suspicion, and suspicion is what stops a first
               booking. Progressive disclosure: one line, opened only by someone who wondered. */}
-          <details className="group mt-3">
+          <details className="group mt-1">
             <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-sm font-bold text-muted hover:text-accent">
               Proč je to levnější?
               <ChevronDown size={15} aria-hidden="true" className="transition-transform group-open:rotate-180" />

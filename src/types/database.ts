@@ -40,6 +40,8 @@ export type Business = {
   country: string;
   logo_url: string | null;
   cover_url: string | null;
+  /** Stable Google identifier; rating data itself is fetched live and never persisted. */
+  google_place_id: string | null;
   status: BusinessStatus;
   status_reason: string | null;
   commission_rate: number;
@@ -92,9 +94,10 @@ export type SearchRow = {
   discount_pct: number;
   score: number;
   server_now: string;
-  /** Average of ratings left by customers who actually attended; null until anyone has. */
+  /** Legacy internal feedback kept for database compatibility; public UI uses Google Places. */
   rating_avg: number | null;
   rating_count: number;
+  google_place_id: string | null;
 };
 
 export type OfferDetail = SearchRow & {

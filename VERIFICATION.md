@@ -48,7 +48,7 @@ Demo hesla byla před zveřejněním otočena; stará přestala platit, administ
 | Trasy v prohlížeči | `/`, `/prihlaseni`, `/rezervace`, `/partner`, `/admin`, detail nabídky i neznámá cesta bez chyb v konzoli |
 | Filtry end-to-end v aplikaci | volba „Odpoledne" zúžila 30 → 8 nabídek, všechny 12:00–16:59 |
 | Řídký inventář | 16 nabídek dá tři sekce; po zúžení na 4 se obrazovka přeskládá do jednoho seznamu a **žádná sekce nezůstane prázdná** |
-| Karta | 9 karet s hodnocením, 7 s „Nové na FLEK", 5 s živým odpočtem „Začíná za…" |
+| Karta | Kompaktní časový řádek, živý odpočet a cena bez velké barevné nálepky; interní demo hodnocení se veřejně nezobrazuje |
 | Publikace termínu partnerem | dvě klepnutí (sleva → zveřejnit), sheet se zavře sám, potvrzení na stránce; při překryvu se z tlačítka stane „Zveřejnit i tak" |
 
 ## Chyby nalezené a opravené při ověřování
@@ -124,4 +124,3 @@ Před doplněním fotografií měly obě stránky výkon 88–93. S fotografiemi
 - **Živý průchod kamerou.** Skener nebyl vyzkoušen na skutečném zařízení; partnerská část vyžaduje přihlášení demo hesly.
 - **Kvalifikace doporučení od konce ke konci.** Databázová pravidla ověřená jsou, celý průchod „pozvánka → registrace → první proběhlá rezervace" ne, protože vyžaduje dokončení rezervace partnerem.
 - **Lighthouse** na nových obrazovkách. Dřívější měření (přístupnost 100) se týkalo starší podoby detailu.
-
