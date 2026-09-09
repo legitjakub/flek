@@ -43,7 +43,8 @@ if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KE
     </StrictMode>,
   );
 
-  // Shell-only caching. Offer and booking responses must never be served from a cache.
+  // The worker caches nothing; it exists so the app stays installable and so any cache an
+  // earlier version left behind gets deleted on activation.
   if ('serviceWorker' in navigator && import.meta.env.PROD) {
     window.addEventListener('load', () => {
       void navigator.serviceWorker
