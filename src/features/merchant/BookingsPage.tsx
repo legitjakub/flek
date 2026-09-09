@@ -8,6 +8,7 @@ import { useServerNow } from '../../lib/clock';
 import { Banner, Button, EmptyState, ErrorState, Field, Input, LoadingList, Tabs } from '../../components/ui';
 import { useRouter } from '../../app/router';
 import { MerchantShell } from './MerchantShell';
+import { ScanButton, ScanVoucherSheet } from './ScanVoucherSheet';
 import { ResolveButtons } from './ResolveButtons';
 import type { MerchantBooking, MerchantBookingDetail } from '../../types/database';
 
@@ -26,6 +27,7 @@ function Bookings({ businessId }: { businessId: string }) {
   const [lookup, setLookup] = useState<MerchantBookingDetail | null>(null);
   const [lookupState, setLookupState] = useState<'idle' | 'pending' | 'missing' | 'error'>('idle');
   const [lookupError, setLookupError] = useState<string | null>(null);
+  const [scanOpen, setScanOpen] = useState(false);
 
   const query = useQuery({
     queryKey: ['merchant-bookings', businessId, 'all'],
@@ -48,16 +50,17 @@ function Bookings({ businessId }: { businessId: string }) {
   useEffect(() => {
     if (!scanned) return;
     setCode(scanned);
-    void find();
-    // The scanned code is the trigger; find() closes over it through state.
+    void find(scanned);
+    // The scanned code is the trigger, and it is passed explicitly: state has not been
+    // committed yet at this point, so reading it here would search for the previous code.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scanned]);
 
-  async function find() {
+  async function find(searchFor: string = code) {
     setLookupState('pending');
     setLookupError(null);
     try {
-      const found = await merchantLookupBooking(code);
+      const found = await merchantLookupBooking(searchFor);
       setLookup(found);
       setLookupState(found ? 'idle' : 'missing');
     } catch (error) {
@@ -91,6 +94,12 @@ function Bookings({ businessId }: { businessId: string }) {
             </Button>
           </div>
         </Field>
+        {/* Typing six characters off a customer's screen is the step that goes wrong at a
+            busy counter, so the camera sits next to the field — never instead of it, because
+            a denied permission or a cracked screen still has to be workable. */}
+        <div className="mt-3">
+          <ScanButton onClick={() => setScanOpen(true)} />
+        </div>
         {lookupState === 'missing' ? (
           <p className="mt-3 text-sm text-muted">Kód nenašel žádnou rezervaci ve vaší provozovně.</p>
         ) : null}
@@ -105,6 +114,16 @@ function Bookings({ businessId }: { businessId: string }) {
           </div>
         ) : null}
       </form>
+
+      <ScanVoucherSheet
+        open={scanOpen}
+        onClose={() => setScanOpen(false)}
+        onCode={(scannedCode) => {
+          setScanOpen(false);
+          setCode(scannedCode);
+          void find(scannedCode);
+        }}
+      />
 
       {unresolved.length > 0 ? (
         <Banner tone="warning">
