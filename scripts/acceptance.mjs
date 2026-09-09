@@ -64,6 +64,13 @@ const check = (name, pass, detail = '') => {
   console.log(`${pass ? 'PASS' : 'FAIL'}  ${name}${detail ? ' — ' + detail : ''}`);
 };
 const err = (e) => e?.message ?? '';
+/*
+ * Anonymous callers are stopped in one of two places: by the EXECUTE grant (PostgREST
+ * reports 42501 and the function body never runs) or, where the grant exists, by the
+ * function's own AUTH_REQUIRED. Both are correct refusals, so tests assert the outcome —
+ * no data came back — rather than one particular layer.
+ */
+const refused = (res) => Boolean(res.error) && (res.data === null || res.data === undefined);
 
 async function signIn(email) {
   const client = createClient(URL_, ANON, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -315,7 +322,7 @@ check('Dvojí „přestat sledovat" nechá podnik nesledovaný',
   !((await customer.client.rpc('my_favorites')).data ?? []).some((f) => f.id === BUSINESS_ID));
 
 const anonFollow = await anon.rpc('set_favorite', { p_business_id: BUSINESS_ID, p_value: true });
-check('Nepřihlášený nemůže sledovat', /AUTH_REQUIRED/.test(err(anonFollow.error)));
+check('Nepřihlášený nemůže sledovat', refused(anonFollow), err(anonFollow.error));
 
 const ghostFollow = await customer.client.rpc('set_favorite', {
   p_business_id: '00000000-0000-0000-0000-000000000000', p_value: true,
@@ -333,7 +340,7 @@ check('Vyprodaná nabídka hlásí nulovou kapacitu', soldOut.data?.capacity_rem
 const myMetrics = (await customer.client.rpc('my_customer_metrics')).data;
 check('Zákaznické metriky vracejí všechna pole',
   myMetrics && ['month_completed','month_saved_cents','all_time_completed','all_time_saved_cents','best_discount_pct']
-    .every((k) => k in metrics));
+    .every((k) => k in myMetrics));
 const completedRows = ((await customer.client.rpc('my_bookings')).data ?? []).filter((b) => b.status === 'completed');
 check('Počet započtených rezervací odpovídá skutečně proběhlým',
   myMetrics?.all_time_completed === completedRows.length,
@@ -345,8 +352,7 @@ check('Zrušené ani nedostavené rezervace se do hodnoty nepočítají',
   ((await customer.client.rpc('my_bookings')).data ?? [])
     .filter((b) => b.status !== 'completed').length > 0 &&
   myMetrics?.all_time_completed === completedRows.length);
-check('Nepřihlášený se k metrikám nedostane',
-  /AUTH_REQUIRED/.test(err((await anon.rpc('my_customer_metrics')).error)));
+check('Nepřihlášený se k metrikám nedostane', refused(await anon.rpc('my_customer_metrics')));
 
 // --- referral attribution ---
 const refCode = (await customer.client.rpc('my_referral_code')).data;
@@ -365,7 +371,7 @@ const claimOld = await otherUser.client.rpc('claim_referral', { p_code: refCode 
 check('Zavedený účet se nestane nově doporučeným',
   claimOld.data?.claimed === false && claimOld.data?.reason === 'not_a_new_account');
 check('Nepřihlášený nemůže atribuci uplatnit',
-  /AUTH_REQUIRED/.test(err((await anon.rpc('claim_referral', { p_code: refCode })).error)));
+  refused(await anon.rpc('claim_referral', { p_code: refCode })));
 check('Cizí atribuční data nejsou čitelná',
   ((await otherUser.client.from('referrals').select('*')).data ?? []).length === 0);
 const refStats = (await customer.client.rpc('my_referral_stats')).data;

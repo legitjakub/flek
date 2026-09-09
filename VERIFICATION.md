@@ -114,8 +114,13 @@ Před doplněním fotografií měly obě stránky výkon 88–93. S fotografiemi
 
 ### Co ověřené není
 
-- **Akceptační sada.** Skript si teď adresu projektu a anon klíč bere z `.env.local` sám — dřív se musely vyexportovat ručně a příkaz z dokumentace kvůli tomu padal na „Nastavte SUPABASE_URL", přestože hodnoty v repozitáři byly. Chybí-li něco, hláška to pojmenuje. Spuštění: `DEMO_PASSWORD=heslo npm run test:acceptance`.
-- **Akceptační sada.** Rozšířena z 54 na **76 kontrol** (idempotentní sledování, veřejný detail nedostupné nabídky, zákaznické metriky proti `my_bookings`, atribuce doporučení včetně pokusu zavedeného účtu, počet sledujících). **Spuštěná nebyla** — vyžaduje demo hesla po rotaci, která nejsou na tomto počítači. Syntax ověřena `node --check`.
+- **Akceptační sada.** Rozšířena z 54 na **76 kontrol** (idempotentní sledování, veřejný detail nedostupné nabídky, zákaznické metriky proti `my_bookings`, atribuce doporučení včetně pokusu zavedeného účtu, počet sledujících). **Spuštěna proti hostované databázi: 76/76 prošlo.**
+
+  Skript si adresu projektu a anon klíč bere z `.env.local` sám. Dřív se musely vyexportovat ručně a doporučený příkaz kvůli tomu padal na „Nastavte SUPABASE_URL", přestože obě hodnoty v repozitáři byly. Spuštění je teď jen `npm run test:acceptance`.
+
+  První běh skončil 72/76 a všechny čtyři pády byly chyby v nově psaných kontrolách, ne v chování:
+  - Tři kontroly očekávaly u anonymního volání `AUTH_REQUIRED`. Anonym ale na tyhle funkce nemá EXECUTE, takže ho PostgREST odmítne o vrstvu dřív (`42501 permission denied`) a tělo funkce se vůbec nespustí — ochrana je **přísnější**, než tvrdil test. Ověřeno curlem proti `set_favorite`, `my_customer_metrics` a `claim_referral`. Kontroly teď ověřují výsledek (anonymovi se nic nevrátilo), ne konkrétní vrstvu odmítnutí.
+  - Jedna kontrola sahala kvůli přehlédnutému přejmenování na obálku odpovědi `merchant_metrics` místo na zákaznické metriky.
 - **Živý průchod kamerou.** Skener nebyl vyzkoušen na skutečném zařízení; partnerská část vyžaduje přihlášení demo hesly.
 - **Kvalifikace doporučení od konce ke konci.** Databázová pravidla ověřená jsou, celý průchod „pozvánka → registrace → první proběhlá rezervace" ne, protože vyžaduje dokončení rezervace partnerem.
 - **Lighthouse** na nových obrazovkách. Dřívější měření (přístupnost 100) se týkalo starší podoby detailu.
