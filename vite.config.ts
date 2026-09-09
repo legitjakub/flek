@@ -14,4 +14,4 @@ const buildId = (() => {
   }
 })();
 
-export default defineConfig({define:{'import.meta.env.VITE_BUILD_ID':JSON.stringify(buildId)},plugins:[react(),tailwindcss()],server:{host:'127.0.0.1',port:5173,strictPort:true,watch:{usePolling:true}},build:{rollupOptions:{output:{manualChunks(id){if(id.includes('maplibre-gl'))return 'map';if(id.includes('@js-temporal'))return 'time';}}}}});
+export default defineConfig({define:{'import.meta.env.VITE_BUILD_ID':JSON.stringify(buildId)},plugins:[react(),tailwindcss()],server:{host:'127.0.0.1',port:Number(process.env.PORT)||5173,strictPort:true,watch:{usePolling:true}},build:{rollupOptions:{output:{manualChunks(id){if(id.includes('maplibre-gl'))return 'map';if(id.includes('@js-temporal'))return 'time';}}}}});

@@ -1,58 +1,81 @@
+// Side effect only, and it must run before any map is constructed: it tells MapLibre where
+// its tile-decoding worker lives. Without it vector tiles are never requested at all.
+import './mapWorker';
 import { clusterPins } from '../discovery/mapClusters';
 import { money } from '../../lib/format';
 import { useEffect, useRef } from 'react';
-import { LngLatBounds, Map as MapLibreMap, Marker, NavigationControl, type MapOptions } from 'maplibre-gl';
+import { LngLatBounds, Map as MapLibreMap, Marker, NavigationControl, type MapOptions, type StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 /**
  * All map configuration lives here so the tile provider can be swapped in one file.
  *
- * A hand-written vector style rather than someone else's raster tiles: vectors stay crisp
- * at every zoom, and the colours are ours, so the map recedes into the palette instead of
- * fighting it. The ground is near-monochrome on purpose — the price pins are the content.
- * OpenFreeMap serves OpenStreetMap data with no API key.
+ * OpenFreeMap serves OpenStreetMap data as vector tiles with no API key and no quota: labels
+ * stay crisp at every zoom, streets and parks carry their real colours, and a phone downloads
+ * geometry once instead of a fresh picture per zoom level.
+ *
+ * The doc comment here used to claim exactly this while the code below served desaturated
+ * Esri raster tiles. It is true now.
  */
-export const MAP_ATTRIBUTION = '© Esri, HERE, Garmin, © OpenStreetMap';
+export const MAP_ATTRIBUTION = '© OpenStreetMap přispěvatelé';
+export const FALLBACK_ATTRIBUTION = '© Esri, HERE, Garmin, © OpenStreetMap';
 
-const GROUND = '#f1f3f1';
-const GREEN = '#e6ede0';
-const WATER = '#dae3e7';
-const BUILDING = '#e7e9e7';
-const ROAD = '#ffffff';
-const ROAD_EDGE = '#e3e6e3';
-const LABEL = '#4a534d';
-const HALO = '#ffffff';
+/**
+ * A URL, not an object. MapLibre fetches and owns it, so there is nothing of ours for it to
+ * mutate — which is why the structuredClone below guards only the fallback.
+ */
+export const MAP_STYLE: MapOptions['style'] = 'https://tiles.openfreemap.org/styles/liberty';
 
-const ESRI = 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas';
-
-export const MAP_STYLE: MapOptions['style'] = {
+/**
+ * OpenFreeMap is donated infrastructure with no service agreement, so there has to be a way
+ * back. Esri's World Street Map is colourful too, needs no key, and is served from the host
+ * this app already relied on.
+ *
+ * This one IS an object, and MapLibre mutates the style object it is given: sharing a single
+ * instance across maps left a remounted map with a consumed style and the error "There is no
+ * tile manager with ID 'base'" — a blank map with pins floating over it. Hence the clone at
+ * every use.
+ */
+export const RASTER_FALLBACK: StyleSpecification = {
   version: 8,
   sources: {
     base: {
       type: 'raster',
-      tiles: [`${ESRI}/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}`],
+      tiles: [
+        'https://services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+      ],
       tileSize: 256,
-      maxzoom: 16,
-      attribution: MAP_ATTRIBUTION,
-    },
-    labels: {
-      type: 'raster',
-      tiles: [`${ESRI}/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}`],
-      tileSize: 256,
-      maxzoom: 16,
+      maxzoom: 19,
+      attribution: FALLBACK_ATTRIBUTION,
     },
   },
-  layers: [
-    { id: 'base', type: 'raster', source: 'base' },
-    // Labels ride above the ground so street names stay readable under the pins.
-    { id: 'labels', type: 'raster', source: 'labels' },
-  ],
+  layers: [{ id: 'base', type: 'raster', source: 'base' }],
 };
 
 
 
 
 export type MapMarker = { id: string; lat: number; lng: number; label: string; description?: string; count?: number; price?: number };
+
+/**
+ * OpenMapTiles ships every name in `name` (local/English) plus translations in `name:xx`.
+ * Liberty renders `name`, so Prague showed up as "Prague" and Malá Strana as "Lesser Town"
+ * in a Czech-only product. Rewriting the text field per symbol layer is the documented way
+ * to localise a vector style, and it costs one pass over the layer list.
+ */
+function localiseLabels(instance: MapLibreMap) {
+  for (const layer of instance.getStyle().layers ?? []) {
+    if (layer.type !== 'symbol') continue;
+    const field = (layer.layout as { 'text-field'?: unknown } | undefined)?.['text-field'];
+    if (field === undefined) continue;
+    try {
+      instance.setLayoutProperty(layer.id, 'text-field', ['coalesce', ['get', 'name:cs'], ['get', 'name']]);
+    } catch {
+      // A layer whose text-field is not a plain name lookup (house numbers, shields) is
+      // left exactly as it is rather than broken.
+    }
+  }
+}
 
 export function MapCanvas({
   center,
@@ -92,26 +115,53 @@ export function MapCanvas({
 
   useEffect(() => {
     if (!container.current || map.current) return;
-    map.current = new MapLibreMap({
+    const instance = new MapLibreMap({
       container: container.current,
-      // MapLibre takes ownership of the style object and mutates it, so every instance gets
-      // its own copy. Sharing one left a remounted map with a consumed style and the error
-      // "There is no tile manager with ID 'base'" — a blank map with pins floating on it.
-      style: structuredClone(MAP_STYLE),
+      // A URL: MapLibre fetches it, so there is no object of ours for it to consume.
+      style: MAP_STYLE,
       center: [center.lng, center.lat],
       zoom,
       interactive,
-      attributionControl: { compact: true, customAttribution: MAP_ATTRIBUTION },
+      // No customAttribution: each style states its own sources, so attribution follows
+      // the basemap across the fallback swap instead of contradicting it.
+      attributionControl: { compact: true },
       locale: { 'NavigationControl.ZoomIn': 'Přiblížit mapu', 'NavigationControl.ZoomOut': 'Oddálit mapu', 'AttributionControl.ToggleAttribution': 'Zdroje mapy' },
     });
+    map.current = instance;
+
+    /*
+     * OpenFreeMap is donated infrastructure with no service agreement. If its style never
+     * arrives — outage, DNS, a captive portal — the map would sit there as an empty box, so
+     * a timer and the error event both fall back to raster tiles. DOM markers are overlays
+     * rather than style layers, so they survive setStyle and the pins stay put.
+     */
+    let styled = false;
+    let fellBack = false;
+    const useFallback = (why: string) => {
+      if (styled || fellBack) return;
+      fellBack = true;
+      console.warn('[mapa] vektorový podklad nedojel, přepínám na rastrový:', why);
+      instance.setStyle(structuredClone(RASTER_FALLBACK));
+    };
+    instance.once('style.load', () => {
+      styled = true;
+      localiseLabels(instance);
+    });
+    const fallbackTimer = window.setTimeout(() => useFallback('vypršel čas'), 6000);
     // A map that fails silently is worse than one that complains: without this a broken
     // style just looks like an empty grey box.
-    if (interactive) map.current.addControl(new NavigationControl({ showCompass: false }), 'top-right');
-    map.current.on('error', (event) => console.error('[mapa]', event.error?.message ?? event));
+    instance.on('error', (event) => {
+      const message = event.error?.message ?? String(event);
+      console.error('[mapa]', message);
+      useFallback(message);
+    });
+
+    if (interactive) instance.addControl(new NavigationControl({ showCompass: false }), 'top-right');
     lastCenter.current = `${center.lat},${center.lng}`;
     const observer = new ResizeObserver(() => map.current?.resize());
     observer.observe(container.current);
     return () => {
+      window.clearTimeout(fallbackTimer);
       observer.disconnect();
       map.current?.remove();
       map.current = null;

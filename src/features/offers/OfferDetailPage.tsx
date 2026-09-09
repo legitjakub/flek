@@ -15,6 +15,7 @@ import { Voucher } from '../bookings/Voucher';
 import { FavoriteButton } from '../favorites/FavoriteButton';
 import { useSession } from '../auth/session';
 import { InstallPrompt } from '../pwa/InstallPrompt';
+import { navigationHref } from '../../lib/maps';
 import { LazyMap } from './LazyMap';
 import { ShareOfferButton } from './ShareOfferButton';
 import { UnavailableOfferRecovery } from './UnavailableOfferRecovery';
@@ -336,7 +337,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           </div>
           <h2 id="kde-to-je" className="scroll-mt-24 text-lg font-extrabold">Kde to je</h2>
           <LazyMap className="mt-4 h-56 w-full overflow-hidden rounded-2xl border border-line" center={{ lat: offer.latitude, lng: offer.longitude }} zoom={14} interactive={false} markers={[{ id: offer.id, lat: offer.latitude, lng: offer.longitude, label: offer.business_name }]} ariaLabel={`Mapa: ${offer.business_name}, ${offer.address_line}`} />
-          <a className="mt-2 inline-flex min-h-11 items-center gap-2 text-base font-bold text-accent" href={`https://www.openstreetmap.org/?mlat=${offer.latitude}&mlon=${offer.longitude}#map=17/${offer.latitude}/${offer.longitude}`} target="_blank" rel="noreferrer"><MapPin size={17} aria-hidden="true" />Navigovat</a>
+          <a className="mt-2 inline-flex min-h-11 items-center gap-2 text-base font-bold text-accent" href={navigationHref(offer)} target="_blank" rel="noreferrer"><MapPin size={17} aria-hidden="true" />Navigovat</a>
           {/* Terms for a booking that can still be made. On a slot nobody can book any more
               they described a deadline that cannot be used — noise at best, misleading at worst. */}
           {offer.bookable ? (
@@ -397,7 +398,7 @@ function BookingSuccess({
       <div className="mt-6 flex flex-col gap-2">
         <a
           className="btn-primary"
-          href={`https://www.openstreetmap.org/?mlat=${offer.latitude}&mlon=${offer.longitude}#map=17/${offer.latitude}/${offer.longitude}`}
+          href={navigationHref(offer)}
           target="_blank"
           rel="noreferrer"
         >
