@@ -37,6 +37,11 @@ export function ScanVoucherSheet({
   onCode: (code: string) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  // Held in a ref so the camera effect depends only on `open`. The caller passes an inline
+  // arrow, whose identity changes every render; as a dependency it would restart the camera
+  // on each one.
+  const onCodeRef = useRef(onCode);
+  onCodeRef.current = onCode;
   const [status, setStatus] = useState<Status>('starting');
   const [detail, setDetail] = useState<string | null>(null);
   const [rejected, setRejected] = useState(false);
@@ -64,7 +69,7 @@ export function ScanVoucherSheet({
         return;
       }
       stopped = true;
-      onCode(code);
+      onCodeRef.current(code);
     };
 
     void (async () => {
@@ -135,7 +140,7 @@ export function ScanVoucherSheet({
       // Leaving the track running keeps the camera light on, which reads as spyware.
       stream?.getTracks().forEach((track) => track.stop());
     };
-  }, [open, onCode]);
+  }, [open]);
 
   return (
     <Sheet open={open} onClose={onClose} title="Načíst QR rezervace">
