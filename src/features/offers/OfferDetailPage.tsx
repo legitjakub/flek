@@ -155,27 +155,46 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
               </div>
             </div>
           ) : null}
-          <h1 className="text-2xl leading-tight font-extrabold tracking-tight [overflow-wrap:anywhere]">
+          {/*
+            Three lines, each with one job: what it is, who does it and how well, where it is
+            and how far. It used to be four, and they climbed 32 → 20 → 16 → 16 px with two
+            extra-bold blocks stacked on top of each other — the jump read as shouting. The
+            district also duplicated the address, which already contains it.
+          */}
+          <h1 className="text-xl leading-tight font-extrabold tracking-tight md:text-2xl [overflow-wrap:anywhere]">
             {offer.service_name}
           </h1>
 
-          {/* One line per idea. The venue owns its own line; everything that merely
-              describes it sits together in a single meta row at one size, separated by
-              dots — previously the rating was glued to the name and read as part of it. */}
-          <p className="mt-3 text-lg font-extrabold [overflow-wrap:anywhere]">{offer.business_name}</p>
-          <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-base text-muted">
-            {offer.district ? <span>{offer.district}</span> : null}
-            {offer.district && offer.distance_m != null ? <span aria-hidden="true">·</span> : null}
-            {offer.distance_m != null ? <span className="tnum">{formatDistance(offer.distance_m)}</span> : null}
-            <span aria-hidden="true">·</span>
-            <Rating average={offer.rating_avg} count={offer.rating_count} />
+          <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-base font-bold [overflow-wrap:anywhere]">
+            {offer.business_name}
+            {offer.rating_count > 0 ? (
+              <>
+                <span aria-hidden="true" className="font-normal text-muted">
+                  ·
+                </span>
+                <Rating average={offer.rating_avg} count={offer.rating_count} />
+              </>
+            ) : null}
           </p>
-          <p className="mt-1.5 flex items-start gap-2 text-base leading-relaxed text-muted">
-            <MapPin size={18} aria-hidden="true" className="mt-0.5 shrink-0" />
+
+          {/* The address is a link to the map already on this page, the way a booking app
+              treats it — an address you cannot act on is just a string to read past. */}
+          <a
+            href="#kde-to-je"
+            className="mt-1.5 inline-flex min-h-11 flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-muted hover:text-accent"
+          >
+            <MapPin size={15} aria-hidden="true" className="shrink-0" />
             <span>
-              {offer.address_line}, {offer.city}
+              {offer.address_line}
+              {offer.district ? `, ${offer.district}` : `, ${offer.city}`}
             </span>
-          </p>
+            {offer.distance_m != null ? (
+              <>
+                <span aria-hidden="true">·</span>
+                <span className="tnum">{formatDistance(offer.distance_m)}</span>
+              </>
+            ) : null}
+          </a>
 
           {/* Secondary actions. Sharing lives here rather than beside the booking button:
               it must be findable without ever competing with the one primary action.
@@ -245,7 +264,10 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           </dl>
 
           <div className="mt-4 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-            <span className="tnum text-2xl font-extrabold tracking-tight">{money(offer.deal_price_cents)}</span>
+            {/* The scale in styles.css assigns xl/800 to prices and times and 2xl/800 to the
+                page heading. At 2xl the price was the largest thing on the screen, louder
+                than the title of the thing being bought. */}
+            <span className="tnum text-xl font-extrabold tracking-tight">{money(offer.deal_price_cents)}</span>
             <s className="tnum text-base text-muted">{money(offer.original_price_cents)}</s>
             <span className="tnum rounded-lg bg-accent-soft px-2 py-0.5 text-sm font-extrabold text-accent">
               −{offer.discount_pct} %
@@ -270,9 +292,24 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
               dead end, and the recovery block below offers what is actually still possible. */}
           {offer.bookable ? (
           <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:static md:mt-5 md:border-0 md:bg-transparent md:p-0">
-            <Button size="lg" className="w-full" onClick={() => setSheetOpen(true)}>
-              Chytit FLEK · {money(offer.deal_price_cents)}
-            </Button>
+            {/*
+              Price beside the action, not inside its label. "Chytit FLEK · 375 Kč" crammed a
+              brand verb and a sum into one string joined by a floating dot, and neither half
+              could breathe. Every booking app splits these: the amount is a fact you read,
+              the button is a thing you press. On desktop the card above already carries the
+              price, so only the button remains.
+            */}
+            <div className="flex items-center gap-4">
+              <div className="min-w-0 md:hidden">
+                <p className="tnum text-lg leading-none font-extrabold">{money(offer.deal_price_cents)}</p>
+                <p className="tnum mt-1 text-xs text-muted">
+                  místo <s>{money(offer.original_price_cents)}</s>
+                </p>
+              </div>
+              <Button size="lg" className="flex-1" onClick={() => setSheetOpen(true)}>
+                Chytit FLEK
+              </Button>
+            </div>
             {/* Both facts a person weighs with their thumb already on the button: what the
                 payment is, and that it can be undone. The free-cancellation promise used to
                 be the last muted paragraph of the page, which is nowhere near the decision. */}
@@ -305,7 +342,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             <p className="mt-3 text-base leading-relaxed">{offer.description || `${offer.service_name} v podniku ${offer.business_name}. Délka služby ${duration(offer.start_at, offer.end_at)} minut.`}</p>
             {offer.business_description ? <p className="mt-3 text-base leading-relaxed">{offer.business_description}</p> : null}
           </div>
-          <h2 className="text-lg font-extrabold">Kde to je</h2>
+          <h2 id="kde-to-je" className="scroll-mt-24 text-lg font-extrabold">Kde to je</h2>
           <LazyMap className="mt-4 h-56 w-full overflow-hidden rounded-2xl border border-line" center={{ lat: offer.latitude, lng: offer.longitude }} zoom={14} interactive={false} markers={[{ id: offer.id, lat: offer.latitude, lng: offer.longitude, label: offer.business_name }]} ariaLabel={`Mapa: ${offer.business_name}, ${offer.address_line}`} />
           <a className="mt-2 inline-flex min-h-11 items-center gap-2 text-base font-bold text-accent" href={`https://www.openstreetmap.org/?mlat=${offer.latitude}&mlon=${offer.longitude}#map=17/${offer.latitude}/${offer.longitude}`} target="_blank" rel="noreferrer"><MapPin size={17} aria-hidden="true" />Navigovat</a>
           {/* Terms for a booking that can still be made. On a slot nobody can book any more
