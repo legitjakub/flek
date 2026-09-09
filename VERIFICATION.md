@@ -114,6 +114,7 @@ Před doplněním fotografií měly obě stránky výkon 88–93. S fotografiemi
 
 ### Co ověřené není
 
+- **Akceptační sada.** Skript si teď adresu projektu a anon klíč bere z `.env.local` sám — dřív se musely vyexportovat ručně a příkaz z dokumentace kvůli tomu padal na „Nastavte SUPABASE_URL", přestože hodnoty v repozitáři byly. Chybí-li něco, hláška to pojmenuje. Spuštění: `DEMO_PASSWORD=heslo npm run test:acceptance`.
 - **Akceptační sada.** Rozšířena z 54 na **76 kontrol** (idempotentní sledování, veřejný detail nedostupné nabídky, zákaznické metriky proti `my_bookings`, atribuce doporučení včetně pokusu zavedeného účtu, počet sledujících). **Spuštěná nebyla** — vyžaduje demo hesla po rotaci, která nejsou na tomto počítači. Syntax ověřena `node --check`.
 - **Živý průchod kamerou.** Skener nebyl vyzkoušen na skutečném zařízení; partnerská část vyžaduje přihlášení demo hesly.
 - **Kvalifikace doporučení od konce ke konci.** Databázová pravidla ověřená jsou, celý průchod „pozvánka → registrace → první proběhlá rezervace" ne, protože vyžaduje dokončení rezervace partnerem.

@@ -7,13 +7,55 @@
 // The script provisions its own offers through publish_offer and cancels them afterwards,
 // so it leaves the demo seed as it found it.
 import { createClient } from '@supabase/supabase-js';
+import { readFileSync } from 'node:fs';
 
-const URL_ = process.env.SUPABASE_URL;
-const ANON = process.env.SUPABASE_ANON_KEY;
-if (!URL_ || !ANON) throw new Error('Nastavte SUPABASE_URL a SUPABASE_ANON_KEY.');
-const PASSWORD = process.env.DEMO_PASSWORD ?? 'FlekDemo2026!';
+/*
+ * The project URL and anon key already live in .env.local, where Vite reads them. Requiring
+ * them to be exported by hand as well produced the one failure this script must never have:
+ * an error about missing configuration that is actually present, three lines above the real
+ * work. Read the file, and let the environment override it when someone points the run at a
+ * different project.
+ */
+function fromEnvFile(file) {
+  try {
+    return Object.fromEntries(
+      readFileSync(file, 'utf8')
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('#'))
+        .map((line) => {
+          const at = line.indexOf('=');
+          return [line.slice(0, at).trim(), line.slice(at + 1).trim().replace(/^["']|["']$/g, '')];
+        })
+        .filter(([key]) => key),
+    );
+  } catch {
+    return {};
+  }
+}
+
+const file = { ...fromEnvFile('.env'), ...fromEnvFile('.env.local') };
+const URL_ = process.env.SUPABASE_URL || file.SUPABASE_URL || file.VITE_SUPABASE_URL;
+const ANON = process.env.SUPABASE_ANON_KEY || file.SUPABASE_ANON_KEY || file.VITE_SUPABASE_ANON_KEY;
+const PASSWORD = process.env.DEMO_PASSWORD || file.DEMO_PASSWORD;
 // The admin account is deliberately not on the shared demo password.
-const ADMIN_PASSWORD = process.env.DEMO_ADMIN_PASSWORD ?? PASSWORD;
+const ADMIN_PASSWORD = process.env.DEMO_ADMIN_PASSWORD || file.DEMO_ADMIN_PASSWORD || PASSWORD;
+
+// Name what is missing and where to put it. "Set SUPABASE_URL" is useless advice when the
+// value is sitting in .env.local under a different name.
+const missing = [
+  !URL_ && 'VITE_SUPABASE_URL (nebo SUPABASE_URL)',
+  !ANON && 'VITE_SUPABASE_ANON_KEY (nebo SUPABASE_ANON_KEY)',
+  !PASSWORD && 'DEMO_PASSWORD — heslo demo účtů ze supabase/seed.sql',
+].filter(Boolean);
+if (missing.length) {
+  throw new Error(
+    `Chybí:\n  - ${missing.join('\n  - ')}\n\n` +
+      'Přidejte je do .env.local (jeden řádek KLÍČ=hodnota), nebo předejte v příkazu:\n' +
+      '  DEMO_PASSWORD=... DEMO_ADMIN_PASSWORD=... npm run test:acceptance\n\n' +
+      'Adresu projektu a anon klíč si skript vezme z .env.local sám.',
+  );
+}
 const SERVICE_ID = '11d06bdf-8e9c-63c3-6bd3-3774c2773965'; // md5('flek-service-1'), Pánský střih
 
 const results = [];
