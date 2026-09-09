@@ -79,12 +79,47 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
   const lastSeat = offer.capacity_remaining === 1 && offer.capacity_total > 1;
   const cutoffMinutes = Math.round((Date.parse(offer.booking_cutoff_at) - Date.parse(now)) / 60000);
 
+  const hasPhoto = Boolean(image) && image !== failedPhoto;
+
   return (
     <main className="page-container pb-32 md:pb-10">
-      <Link to={returnTo} className="my-4 inline-flex min-h-11 items-center gap-2 text-base font-bold text-muted hover:text-accent"><ArrowLeft size={18} aria-hidden="true" />Zpět na nabídky</Link>
+      {/* Above a photo the back arrow rides on the image itself, the way every booking app
+          does it: a text link there costs a whole row of height and pushes the price down.
+          Without a photo there is nothing to ride on, so the link comes back. */}
+      {hasPhoto ? null : (
+        <Link to={returnTo} className="my-4 inline-flex min-h-11 items-center gap-2 text-base font-bold text-muted hover:text-accent"><ArrowLeft size={18} aria-hidden="true" />Zpět na nabídky</Link>
+      )}
       <div className="grid items-start gap-6 md:grid-cols-[minmax(0,1fr)_320px] lg:gap-12 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="min-w-0">
-          {image && image !== failedPhoto ? <img src={image} onError={() => setFailedPhoto(image)} alt="" className="mb-6 aspect-[2/1] w-full rounded-2xl object-cover" /> : null}
+          {hasPhoto ? (
+            /* Full-bleed on a phone. Inset behind the page gutter it read as one more card
+               on a page already made of cards; edge to edge it reads as the subject. */
+            <div className="relative -mx-4 mb-5 md:mx-0 md:mb-6">
+              <img
+                src={image!}
+                onError={() => setFailedPhoto(image)}
+                alt=""
+                className="aspect-[16/9] w-full object-cover md:aspect-[2/1] md:rounded-2xl"
+              />
+              {/* Only under the controls, and only as far as they reach: a scrim over the
+                  whole image would dull the photograph for no reason. */}
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/35 to-transparent md:rounded-t-2xl" />
+              <div className="absolute inset-x-3 top-3 flex items-start justify-between gap-3">
+                <Link
+                  to={returnTo}
+                  aria-label="Zpět na nabídky"
+                  className="grid size-11 place-items-center rounded-full bg-card/90 text-ink shadow-card backdrop-blur-sm hover:bg-card"
+                >
+                  <ArrowLeft size={20} aria-hidden="true" />
+                </Link>
+                <FavoriteButton
+                  variant="overlay"
+                  businessId={offer.business_id}
+                  businessName={offer.business_name}
+                />
+              </div>
+            </div>
+          ) : null}
           <h1 className="text-2xl leading-tight font-extrabold tracking-tight [overflow-wrap:anywhere]">
             {offer.service_name}
           </h1>
@@ -107,23 +142,24 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             </span>
           </p>
 
-          <div className="mt-5 flex flex-wrap items-center gap-2">
-            <FavoriteButton businessId={offer.business_id} businessName={offer.business_name} />
-            {lastSeat ? (
-              <span className="rounded-xl border border-line bg-card px-3 py-2 text-base font-bold">
-                Poslední místo
-              </span>
-            ) : null}
-          </div>
+          {/* With a photo this control already sits on it. Without one it has nowhere else
+              to go, and a lone button on its own row is better than no way to follow. */}
+          {hasPhoto ? null : (
+            <div className="mt-5">
+              <FavoriteButton businessId={offer.business_id} businessName={offer.business_name} />
+            </div>
+          )}
         </div>
         {/*
-          On a phone this is not a panel: a white box on cream repeating a price that the
-          sticky bar already shows was one surface and one number too many. The facts sit
-          straight on the ground, separated by rules. From md up it becomes the sticky
-          booking card, which is where that pattern earns its place.
+          One surface for the whole decision. Before this the four things a person weighs —
+          when it starts, how long it runs, what it costs, and whether they can back out —
+          were spread over three visual bands, and the price block landed underneath the
+          fixed bar at the position the page opens at, so the strongest argument for booking
+          was painted over by the button. Measured on production: price at y=759, bar from
+          y=755. Grouping them fixes the collision by construction, not by nudging offsets.
         */}
         <aside
-          className="md:sticky md:top-24 md:col-start-2 md:row-start-1 md:row-span-2 md:rounded-2xl md:bg-card md:p-5 md:shadow-card lg:p-6"
+          className="rounded-2xl bg-card p-4 shadow-card md:sticky md:top-24 md:col-start-2 md:row-start-1 md:row-span-2 md:p-5 lg:p-6"
           aria-label="Vybraný termín"
         >
           <h2 className="sr-only md:not-sr-only md:mb-4 md:block md:text-lg md:font-extrabold">Tvůj termín</h2>
@@ -136,6 +172,13 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             </p>
             {minutesAway > 0 && minutesAway <= 120 ? (
               <span className="tnum text-base font-bold text-ink">Začíná {relativeTime(offer.start_at, now)}</span>
+            ) : null}
+            {/* Scarcity belongs next to the time it applies to, not on a row of its own
+                three screens away from the button. */}
+            {lastSeat ? (
+              <span className="rounded-lg bg-warning-soft px-2 py-1 text-sm font-bold text-warning">
+                Poslední místo
+              </span>
             ) : null}
           </div>
 
@@ -159,10 +202,12 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             ) : null}
           </dl>
 
-          <div className="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <div className="mt-4 flex flex-wrap items-baseline gap-x-2 gap-y-1">
             <span className="tnum text-2xl font-extrabold tracking-tight">{money(offer.deal_price_cents)}</span>
             <s className="tnum text-base text-muted">{money(offer.original_price_cents)}</s>
-            <span className="tnum text-base font-bold text-accent">−{offer.discount_pct} %</span>
+            <span className="tnum rounded-lg bg-accent-soft px-2 py-0.5 text-sm font-extrabold text-accent">
+              −{offer.discount_pct} %
+            </span>
           </div>
           <p className="tnum mt-1 text-base font-bold text-ink">Ušetříš {money(savings)}</p>
 
@@ -176,9 +221,23 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             <Button size="lg" className="w-full" disabled={!offer.bookable} onClick={() => setSheetOpen(true)}>
               {offer.bookable ? `Rezervovat za ${money(offer.deal_price_cents)}` : 'Termín není volný'}
             </Button>
-            <p className="mt-2 flex items-center justify-center gap-2 text-sm text-muted">
-              <Banknote size={16} aria-hidden="true" />
-              Zaplatíš rovnou, v podniku jen ukážeš kód
+            {/* Both facts a person weighs with their thumb already on the button: what the
+                payment is, and that it can be undone. The free-cancellation promise used to
+                be the last muted paragraph of the page, which is nowhere near the decision. */}
+            <p className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-muted">
+              <span className="inline-flex items-center gap-2">
+                <Banknote size={16} aria-hidden="true" />
+                Zaplatíš rovnou
+              </span>
+              {offer.bookable ? (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <span className="inline-flex items-center gap-1.5 font-bold text-positive">
+                    <Check size={15} aria-hidden="true" />
+                    Zrušení zdarma do {clockTime(cancellationDeadline(offer.start_at, offer.cancellation_window_minutes))}
+                  </span>
+                </>
+              ) : null}
             </p>
           </div>
         </aside>
