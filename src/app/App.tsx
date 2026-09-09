@@ -10,6 +10,8 @@ import { MapPage } from '../features/discovery/MapPage';
 import { OfferDetailPage } from '../features/offers/OfferDetailPage';
 import { MyBookingsPage } from '../features/bookings/MyBookingsPage';
 import { FavoritesPage } from '../features/favorites/FavoritesPage';
+import { ReferralLandingPage } from '../features/referral/ReferralLandingPage';
+import { ReferralClaimer } from '../features/referral/ReferralClaimer';
 // A customer never opens the merchant or admin trees, so they are not part of the bundle
 // that has to arrive before the first offer can be read.
 const MerchantDashboardPage = lazy(() =>
@@ -70,6 +72,8 @@ const ROUTES: { path: string; render: (params: Record<string, string>) => ReactN
   { path: '/rezervace', render: () => <MyBookingsPage />, shell: true },
   { path: '/profil', render: () => <ProfilePage />, shell: true },
   { path: '/prihlaseni', render: () => <AuthPage />, shell: false },
+  // Invitation links are public and must render before anyone signs in.
+  { path: '/r/:code', render: (p) => <ReferralLandingPage code={p.code} />, shell: false },
   { path: '/partner', render: () => <MerchantDashboardPage />, shell: false },
   { path: '/partner/nabidky', render: () => <MerchantOffersPage />, shell: false },
   { path: '/partner/rezervace', render: () => <MerchantBookingsPage />, shell: false },
@@ -136,6 +140,9 @@ export function App() {
       <QueryClientProvider client={queryClient}>
         <SessionProvider>
           <RouterProvider>
+            {/* Attribution is claimed the moment an account exists, wherever that happened:
+                a sign-up, a later sign-in, or a return from e-mail confirmation. */}
+            <ReferralClaimer />
             <Routes />
           </RouterProvider>
         </SessionProvider>

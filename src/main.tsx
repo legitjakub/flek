@@ -37,6 +37,10 @@ if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KE
   createRoot(root).render(<MissingConfig />);
 } else {
   const { App } = await import('./app/App');
+  // Registered before the first render: beforeinstallprompt fires once and early, and the
+  // component that offers installation only mounts much later, after a booking.
+  const { captureInstallPrompt } = await import('./features/pwa/install');
+  captureInstallPrompt();
   createRoot(root).render(
     <StrictMode>
       <App />

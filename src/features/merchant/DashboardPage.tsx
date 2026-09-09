@@ -58,6 +58,16 @@ function Dashboard({ businessId, approved }: { businessId: string; approved: boo
         <Stat label="Volná místa" value={metrics.data?.free_seats} />
       </div>
 
+      {/* Shown only once it means something — a follower count of one or two reads as
+          failure. Worded as an audience, never as "we notified them": there is no push
+          delivery, and claiming one would be a lie the merchant would repeat to customers. */}
+      {(metrics.data?.followers ?? 0) >= 5 ? (
+        <p className="rounded-2xl bg-card px-5 py-4 text-base text-ink shadow-card">
+          <span className="tnum font-extrabold">{metrics.data?.followers} lidí</span> sleduje vaši
+          provozovnu. Nový FLEK se objeví i jim.
+        </p>
+      ) : null}
+
       <section className="rounded-2xl bg-card shadow-card p-5 sm:p-6">
         <h2 className="text-base font-bold text-ink">Nejbližší rezervace</h2>
         {today.isPending ? <LoadingList rows={1} /> : null}

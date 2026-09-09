@@ -1,6 +1,18 @@
 import { supabase } from './supabase';
 
-const CLIENT_EVENTS = ['search_performed', 'offer_viewed', 'booking_started', 'booking_failed'] as const;
+// Mirrored by the allowlist inside record_event(); anything not in both is silently dropped.
+const CLIENT_EVENTS = [
+  'search_performed',
+  'offer_viewed',
+  'booking_started',
+  'booking_failed',
+  'favorite_added',
+  'favorite_removed',
+  'offer_shared',
+  'unavailable_recovery_clicked',
+  'similar_offers_clicked',
+  'referral_link_opened',
+] as const;
 export type ClientEvent = (typeof CLIENT_EVENTS)[number];
 
 function sessionId(): string {

@@ -1,19 +1,24 @@
-import { ArrowLeft, CalendarDays, CalendarPlus, Clock3, MapPin, Banknote, Check } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { ArrowLeft, CalendarDays, CalendarPlus, ChevronDown, Clock3, MapPin, Banknote, Check } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { getOfferDetail } from '../../lib/api';
+import { getOfferDetail, setFavorite } from '../../lib/api';
 import { track } from '../../lib/analytics';
 import { relativeTime, useServerNow } from '../../lib/clock';
 import { money, distance as formatDistance } from '../../lib/format';
 import { clockTime, dayLabel, duration } from '../../lib/time';
 import { DEFAULT_POINT, storedPoint } from '../../lib/geo';
-import { Banner, Button, ErrorState, Rating, Skeleton } from '../../components/ui';
+import { Button, ErrorState, Rating, Skeleton, cx } from '../../components/ui';
 import { bookingIcs, icsHref } from '../../lib/calendar';
 import { Link, useRouter } from '../../app/router';
 import { BookingSheet, cancellationDeadline } from '../bookings/BookingSheet';
 import { Voucher } from '../bookings/Voucher';
 import { FavoriteButton } from '../favorites/FavoriteButton';
+import { useSession } from '../auth/session';
+import { InstallPrompt } from '../pwa/InstallPrompt';
 import { LazyMap } from './LazyMap';
+import { ShareOfferButton } from './ShareOfferButton';
+import { UnavailableOfferRecovery } from './UnavailableOfferRecovery';
+import { unavailableReason } from './unavailable';
 
 export function OfferDetailPage({ offerId }: { offerId: string }) {
   const { search, navigate } = useRouter();
@@ -24,6 +29,9 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
   const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [code, setCode] = useState<string | null>(null);
+  const [followed, setFollowed] = useState(false);
+  const { userId } = useSession();
+  const queryClient = useQueryClient();
 
   const query = useQuery({
     queryKey: ['offer', offerId],
@@ -41,6 +49,32 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
   useEffect(() => {
     if (search.get('rezervovat') === '1' && offer?.bookable) setSheetOpen(true);
   }, [search, offer?.bookable]);
+
+  /*
+   * The same principle for following. set_favorite states the value rather than flipping it,
+   * so this replay cannot unfollow a venue the person had already followed — which is exactly
+   * what a toggle would have done here. The parameter is stripped afterwards so a refresh or
+   * a shared URL does not silently follow anything.
+   */
+  useEffect(() => {
+    if (search.get('sledovat') !== '1' || !userId || !offer) return;
+    let cancelled = false;
+    void setFavorite(offer.business_id, true)
+      .then(async () => {
+        if (cancelled) return;
+        setFollowed(true);
+        await queryClient.invalidateQueries({ queryKey: ['favorites'] });
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        const next = new URLSearchParams(search);
+        next.delete('sledovat');
+        navigate(`${window.location.pathname}${next.size ? `?${next}` : ''}`, { replace: true });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [search, userId, offer?.business_id]);
 
   if (query.isPending) {
     return (
@@ -80,9 +114,10 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
   const cutoffMinutes = Math.round((Date.parse(offer.booking_cutoff_at) - Date.parse(now)) / 60000);
 
   const hasPhoto = Boolean(image) && image !== failedPhoto;
+  const reason = unavailableReason(offer, now);
 
   return (
-    <main className="page-container pb-32 md:pb-10">
+    <main className={cx('page-container md:pb-10', offer.bookable ? 'pb-32' : 'pb-10')}>
       {/* Above a photo the back arrow rides on the image itself, the way every booking app
           does it: a text link there costs a whole row of height and pushes the price down.
           Without a photo there is nothing to ride on, so the link comes back. */}
@@ -142,13 +177,20 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             </span>
           </p>
 
-          {/* With a photo this control already sits on it. Without one it has nowhere else
-              to go, and a lone button on its own row is better than no way to follow. */}
-          {hasPhoto ? null : (
-            <div className="mt-5">
+          {/* Secondary actions. Sharing lives here rather than beside the booking button:
+              it must be findable without ever competing with the one primary action.
+              Following only needs a control here when there is no photo to carry it. */}
+          <div className="mt-5 flex flex-wrap items-center gap-2">
+            {hasPhoto ? null : (
               <FavoriteButton businessId={offer.business_id} businessName={offer.business_name} />
-            </div>
-          )}
+            )}
+            <ShareOfferButton offer={offer} now={now} />
+          </div>
+          {followed ? (
+            <p role="status" className="mt-3 text-base font-bold text-positive">
+              Hotovo. {offer.business_name} teď sleduješ — nové FLEKy uvidíš v Oblíbených.
+            </p>
+          ) : null}
         </div>
         {/*
           One surface for the whole decision. Before this the four things a person weighs —
@@ -211,15 +253,25 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           </div>
           <p className="tnum mt-1 text-base font-bold text-ink">Ušetříš {money(savings)}</p>
 
-          {!offer.bookable ? (
-            <div className="mt-4">
-              <Banner tone="warning">Tento termín už bohužel není volný.</Banner>
-            </div>
-          ) : null}
+          {/* An unusually low price invites suspicion, and suspicion is what stops a first
+              booking. Progressive disclosure: one line, opened only by someone who wondered. */}
+          <details className="group mt-3">
+            <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-sm font-bold text-muted hover:text-accent">
+              Proč je to levnější?
+              <ChevronDown size={15} aria-hidden="true" className="transition-transform group-open:rotate-180" />
+            </summary>
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              Podniku zůstal volný termín, který by jinak propadl. Přes FLEK ho proto může nabídnout za
+              výhodnější cenu. Dostaneš úplně stejnou službu jako za plnou cenu.
+            </p>
+          </details>
 
+          {/* No sticky bar when there is nothing to book: a permanently disabled button is a
+              dead end, and the recovery block below offers what is actually still possible. */}
+          {offer.bookable ? (
           <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:static md:mt-5 md:border-0 md:bg-transparent md:p-0">
-            <Button size="lg" className="w-full" disabled={!offer.bookable} onClick={() => setSheetOpen(true)}>
-              {offer.bookable ? `Rezervovat za ${money(offer.deal_price_cents)}` : 'Termín není volný'}
+            <Button size="lg" className="w-full" onClick={() => setSheetOpen(true)}>
+              Chytit FLEK · {money(offer.deal_price_cents)}
             </Button>
             {/* Both facts a person weighs with their thumb already on the button: what the
                 payment is, and that it can be undone. The free-cancellation promise used to
@@ -240,8 +292,15 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
               ) : null}
             </p>
           </div>
+          ) : null}
         </aside>
-        <div className="min-w-0 md:col-start-1">          <div className="mb-8 border-t border-line pt-6">
+        <div className="min-w-0 md:col-start-1">
+          {!offer.bookable && reason ? (
+            <div className="mb-8">
+              <UnavailableOfferRecovery offer={offer} reason={reason} now={now} point={point} />
+            </div>
+          ) : null}
+          <div className="mb-8 border-t border-line pt-6">
             <h2 className="text-lg font-extrabold">O službě</h2>
             <p className="mt-3 text-base leading-relaxed">{offer.description || `${offer.service_name} v podniku ${offer.business_name}. Délka služby ${duration(offer.start_at, offer.end_at)} minut.`}</p>
             {offer.business_description ? <p className="mt-3 text-base leading-relaxed">{offer.business_description}</p> : null}
@@ -249,8 +308,14 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           <h2 className="text-lg font-extrabold">Kde to je</h2>
           <LazyMap className="mt-4 h-56 w-full overflow-hidden rounded-2xl border border-line" center={{ lat: offer.latitude, lng: offer.longitude }} zoom={14} interactive={false} markers={[{ id: offer.id, lat: offer.latitude, lng: offer.longitude, label: offer.business_name }]} ariaLabel={`Mapa: ${offer.business_name}, ${offer.address_line}`} />
           <a className="mt-2 inline-flex min-h-11 items-center gap-2 text-base font-bold text-accent" href={`https://www.openstreetmap.org/?mlat=${offer.latitude}&mlon=${offer.longitude}#map=17/${offer.latitude}/${offer.longitude}`} target="_blank" rel="noreferrer"><MapPin size={17} aria-hidden="true" />Navigovat</a>
-          <h2 className="mt-6 text-lg font-extrabold">Zrušení</h2>
-          <p className="mt-2 text-base leading-relaxed text-muted">Zrušit můžeš zdarma do {clockTime(cancellationDeadline(offer.start_at, offer.cancellation_window_minutes))} a vrátíme ti celou částku. Když rezervuješ později, máš na zrušení 10 minut od rezervace.</p>
+          {/* Terms for a booking that can still be made. On a slot nobody can book any more
+              they described a deadline that cannot be used — noise at best, misleading at worst. */}
+          {offer.bookable ? (
+            <>
+              <h2 className="mt-6 text-lg font-extrabold">Zrušení</h2>
+              <p className="mt-2 text-base leading-relaxed text-muted">Zrušit můžeš zdarma do {clockTime(cancellationDeadline(offer.start_at, offer.cancellation_window_minutes))} a vrátíme ti celou částku. Když rezervuješ později, máš na zrušení 10 minut od rezervace.</p>
+            </>
+          ) : null}
         </div>
       </div>
 
@@ -287,6 +352,13 @@ function BookingSuccess({
         <Voucher code={code} />
       </div>
       <p className="tnum mt-3 text-base font-bold text-positive">Zaplaceno {money(offer.deal_price_cents)}</p>
+      {/* The number that makes the product worth coming back to, said once, plainly, at the
+          moment it is true. Computed from this booking, not from a running total. */}
+      {offer.original_price_cents > offer.deal_price_cents ? (
+        <p className="tnum mt-1 text-base font-bold text-ink">
+          Ušetřil jsi {money(offer.original_price_cents - offer.deal_price_cents)}
+        </p>
+      ) : null}
       <p className="tnum mt-4 text-base font-bold text-ink">
         {dayLabel(offer.start_at, now)} {clockTime(offer.start_at)} · {offer.business_name}
       </p>
@@ -315,6 +387,21 @@ function BookingSuccess({
         >
           Zobrazit rezervaci
         </Link>
+      </div>
+
+      {/* One retention ask, after the booking is safely done rather than during it. The offer
+          itself is usually gone now — the seat was just taken — so the ask is about the venue,
+          not about re-sharing a slot nobody else can have. */}
+      <div className="mt-8 border-t border-line pt-6">
+        <p className="text-base font-bold text-ink">Chceš vědět, až sem přibude další FLEK?</p>
+        <div className="mt-3">
+          <FavoriteButton variant="cta" businessId={offer.business_id} businessName={offer.business_name} />
+        </div>
+        <p className="mt-2 text-sm text-muted">Nové FLEKy uvidíš v Oblíbených.</p>
+      </div>
+
+      <div className="mt-6">
+        <InstallPrompt />
       </div>
     </main>
   );

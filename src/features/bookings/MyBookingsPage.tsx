@@ -127,8 +127,18 @@ export function MyBookingsPage() {
               <p className="text-base text-muted">
                 {booking.business_name_snapshot} · {booking.business_address_snapshot}
               </p>
-              <p className="tnum mt-2 text-base font-bold text-accent">
+              <p className="tnum mt-2 flex flex-wrap items-baseline gap-x-2 text-base font-bold text-accent">
                 {money(booking.price_cents)}
+                {/* Only a kept appointment created value. A cancellation or a no-show that
+                    counted towards "saved" would be a number the product cannot defend, so
+                    savings appear on completed bookings alone — and always from the snapshot
+                    taken at booking time, never from what the service costs today. */}
+                {booking.status === 'completed' &&
+                booking.original_price_cents_snapshot > booking.price_cents ? (
+                  <span className="text-sm font-bold text-positive">
+                    Ušetřeno {money(booking.original_price_cents_snapshot - booking.price_cents)}
+                  </span>
+                ) : null}
               </p>
 
               {booking.status === 'completed' ? <RatingPrompt booking={booking} /> : null}

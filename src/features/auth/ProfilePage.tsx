@@ -10,6 +10,9 @@ import { profileSchema } from '../../lib/schemas';
 import { Banner, Button, EmptyState, Field, Input } from '../../components/ui';
 import { Link, useRouter } from '../../app/router';
 import { useSession } from './session';
+import { CustomerFlekStats } from '../profile/CustomerFlekStats';
+import { ReferralInvite } from '../profile/ReferralInvite';
+import { InstallPrompt } from '../pwa/InstallPrompt';
 
 type ProfileValues = z.infer<typeof profileSchema>;
 
@@ -76,6 +79,14 @@ export function ProfilePage() {
     <main className="mx-auto w-full max-w-2xl px-4 pt-8 pb-6">
       <h1 className="text-2xl font-extrabold tracking-tight text-ink">Profil</h1>
       <p className="mt-1 text-sm text-muted">{session?.user.email}</p>
+
+      {/* Value before settings. Profile was account maintenance only, which gave a returning
+          customer no reason to open it; what FLEK has actually saved them does. */}
+      <div className="mt-6 flex flex-col gap-4">
+        <CustomerFlekStats userId={userId} />
+        <ReferralInvite userId={userId} />
+        <InstallPrompt />
+      </div>
 
       <form className="mt-6 flex flex-col gap-4 rounded-2xl bg-card shadow-card p-5 sm:p-6" onSubmit={form.handleSubmit((values) => save.mutate(values))} noValidate>
         <div className="grid grid-cols-2 gap-3">

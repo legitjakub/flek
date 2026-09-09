@@ -9,6 +9,7 @@ import type {
   Business,
   Category,
   CustomerBooking,
+  CustomerMetrics,
   FavoriteBusiness,
   FavoriteOffer,
   MerchantBooking,
@@ -18,6 +19,8 @@ import type {
   OfferDetail,
   Payment,
   Profile,
+  ReferralClaim,
+  ReferralStats,
   SearchRow,
   Service,
   SortKey,
@@ -143,6 +146,14 @@ export async function myBookings(): Promise<CustomerBooking[]> {
 
 export async function toggleFavorite(businessId: string): Promise<boolean> {
   return (await result<boolean>(supabase.rpc('toggle_favorite', { p_business_id: businessId }))) === true;
+}
+
+/**
+ * States the desired value instead of flipping the current one. A toggle replayed after
+ * authentication can undo the very intent it was meant to carry out; this cannot.
+ */
+export async function setFavorite(businessId: string, value: boolean): Promise<boolean> {
+  return (await result<boolean>(supabase.rpc('set_favorite', { p_business_id: businessId, p_value: value }))) === true;
 }
 
 export async function myFavorites(): Promise<FavoriteBusiness[]> {
@@ -293,4 +304,35 @@ export async function adminSetBookingBlock(userId: string, blocked: boolean, ove
 
 export async function adminMetrics(): Promise<AdminMetrics> {
   return await result<AdminMetrics>(supabase.rpc('admin_metrics'));
+}
+
+export async function myCustomerMetrics(): Promise<CustomerMetrics | null> {
+  return await result<CustomerMetrics | null>(supabase.rpc('my_customer_metrics'));
+}
+
+export async function myReferralCode(): Promise<string | null> {
+  return await result<string | null>(supabase.rpc('my_referral_code'));
+}
+
+export async function myReferralStats(): Promise<ReferralStats | null> {
+  return await result<ReferralStats | null>(supabase.rpc('my_referral_stats'));
+}
+
+/** Anonymous: the invitation landing page has to render before anyone signs in. */
+export async function resolveReferralCode(code: string): Promise<{ valid: boolean; first_name: string | null }> {
+  return (
+    (await result<{ valid: boolean; first_name: string | null }>(
+      supabase.rpc('resolve_referral_code', { p_code: code }),
+    )) ?? { valid: false, first_name: null }
+  );
+}
+
+/** Idempotent, and decided entirely on the server: the browser never asserts who referred whom. */
+export async function claimReferral(code: string): Promise<ReferralClaim> {
+  return (
+    (await result<ReferralClaim>(supabase.rpc('claim_referral', { p_code: code }))) ?? {
+      claimed: false,
+      reason: 'unknown_code',
+    }
+  );
 }

@@ -186,6 +186,8 @@ export type MerchantMetrics = {
   recovered_cents: number;
   active_offers: number;
   today_bookings: number;
+  /** People following this venue. Counted from favorites — not a notification delivery. */
+  followers: number;
   free_seats: number;
 };
 
@@ -247,3 +249,21 @@ export type FavoriteOffer = SearchRow & {
 };
 
 export type SortKey = 'recommended' | 'nearest' | 'discount' | 'cheapest' | 'soonest';
+
+/** What FLEK has demonstrably saved this customer. Every figure comes from booking snapshots. */
+export type CustomerMetrics = {
+  month_completed: number;
+  month_saved_cents: number;
+  all_time_completed: number;
+  all_time_saved_cents: number;
+  /** Null until the first completed booking: "no best catch yet" is not "0 %". */
+  best_discount_pct: number | null;
+};
+
+/** Invitations sent versus invitations that produced a customer who actually turned up. */
+export type ReferralStats = { invited: number; qualified: number };
+
+export type ReferralClaim = {
+  claimed: boolean;
+  reason: 'already_referred' | 'unknown_code' | 'self' | 'not_a_new_account' | null;
+};

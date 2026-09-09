@@ -11,7 +11,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1",
     "test": "node scripts/test.mjs",
-    "test:unit": "vitest run tests/time.test.ts tests/map.test.ts tests/scan.test.ts",
+    "test:unit": "vitest run tests/time.test.ts tests/map.test.ts tests/scan.test.ts tests/unavailable.test.ts",
     "test:integration": "node scripts/test.mjs",
     "db:start": "node scripts/local.mjs start",
     "db:reset": "node scripts/local.mjs reset",
