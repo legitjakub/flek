@@ -19,3 +19,8 @@ self.addEventListener('activate', (event) => {
       .then(() => self.clients.claim()),
   );
 });
+
+// A registered fetch listener is part of what browsers look for before offering to install
+// the app. It deliberately does nothing: without respondWith the browser handles the
+// request itself, so there is still no cache anywhere in the path.
+self.addEventListener('fetch', () => {});

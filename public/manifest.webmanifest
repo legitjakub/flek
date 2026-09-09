@@ -1,16 +1,21 @@
 {
+  "id": "/",
   "name": "FLEK — volné termíny se slevou",
   "short_name": "FLEK",
-  "description": "Poslední volné termíny v okolí se slevou. Rezervuj dnes, plať na místě.",
+  "description": "Poslední volné termíny v okolí se slevou. Zaplatíš rovnou, v podniku ukážeš kód.",
   "lang": "cs",
+  "dir": "ltr",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f6f7f6",
-  "theme_color": "#f6f7f6",
+  "background_color": "#faf7f2",
+  "theme_color": "#faf7f2",
   "orientation": "portrait",
+  "categories": ["lifestyle", "shopping"],
   "icons": [
-    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
-    { "src": "/icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ]
 }
