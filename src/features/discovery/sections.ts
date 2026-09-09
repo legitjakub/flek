@@ -43,7 +43,7 @@ export function buildSections(rows: SearchRow[], now: string): Section[] {
   const deals = take([...rows].sort((a, b) => b.discount_pct - a.discount_pct));
   if (deals.length) sections.push({ key: 'deals', title: 'Nejvýhodnější termíny', rows: deals });
 
-  const near = take([...rows].sort((a, b) => a.distance_m - b.distance_m));
+  const near = take([...rows].sort((a, b) => (a.distance_m ?? Number.POSITIVE_INFINITY) - (b.distance_m ?? Number.POSITIVE_INFINITY)));
   if (near.length) sections.push({ key: 'near', title: 'Blízko tebe', rows: near });
 
   const rest = byTime(rows.filter((row) => !used.has(row.id)));

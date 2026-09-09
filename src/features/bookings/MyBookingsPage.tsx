@@ -10,15 +10,8 @@ import { Banner, Button, EmptyState, ErrorState, LoadingList, Sheet, Tabs } from
 import { Link } from '../../app/router';
 import { useSession } from '../auth/session';
 import { Voucher } from './Voucher';
-import type { BookingStatus, CustomerBooking } from '../../types/database';
-
-const STATUS_LABEL: Record<BookingStatus, string> = {
-  confirmed: 'Potvrzeno',
-  completed: 'Dokončeno',
-  no_show: 'Nedorazil/a jsi',
-  cancelled_by_customer: 'Zrušeno tebou',
-  cancelled_by_merchant: 'Zrušeno podnikem',
-};
+import { StatusBadge } from '../../components/StatusBadge';
+import type { CustomerBooking } from '../../types/database';
 
 export function MyBookingsPage() {
   const { userId } = useSession();
@@ -108,20 +101,26 @@ export function MyBookingsPage() {
           return (
             <article
               key={booking.id}
-              className={`rounded-2xl bg-card shadow-card p-4 ${today && booking.status === 'confirmed' ? 'border-accent' : 'border-line'}`}
+              className={`rounded-2xl border bg-card p-4 shadow-card ${today && booking.status === 'confirmed' ? 'border-accent' : 'border-transparent'}`}
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="tnum font-mono text-xl font-extrabold tracking-[0.1em] text-ink">
                     {booking.reservation_code}
                   </p>
-                  <p className="tnum mt-2 text-base font-bold text-accent">
+                  <p className="tnum mt-2 text-base font-bold text-ink">
                     {dayLabel(booking.start_at_snapshot, now)} {clockTime(booking.start_at_snapshot)}–
                     {clockTime(booking.end_at_snapshot)}
                   </p>
                 </div>
-                <span className="shrink-0 rounded-lg bg-surface px-2 py-1 text-xs font-bold text-muted">
-                  {STATUS_LABEL[booking.status]}
+                <span className="flex shrink-0 flex-wrap justify-end gap-1.5">
+                  <StatusBadge status={booking.status} />
+                  {booking.payment_status ? (
+                    <StatusBadge
+                      status={booking.payment_status}
+                      label={booking.payment_status === 'pending' ? 'Čeká na platbu' : undefined}
+                    />
+                  ) : null}
                 </span>
               </div>
 
@@ -129,7 +128,7 @@ export function MyBookingsPage() {
               <p className="text-base text-muted">
                 {booking.business_name_snapshot} · {booking.business_address_snapshot}
               </p>
-              <p className="tnum mt-2 flex flex-wrap items-baseline gap-x-2 text-base font-bold text-accent">
+              <p className="tnum mt-2 flex flex-wrap items-baseline gap-x-2 text-base font-bold text-ink">
                 {money(booking.price_cents)}
                 {/* Only a kept appointment created value. A cancellation or a no-show that
                     counted towards "saved" would be a number the product cannot defend, so
@@ -144,7 +143,7 @@ export function MyBookingsPage() {
               </p>
 
               {booking.cancellation_reason ? (
-                <p className="mt-2 text-base text-accent">Důvod: {booking.cancellation_reason}</p>
+                <p className="mt-2 text-sm text-danger">Důvod: {booking.cancellation_reason}</p>
               ) : null}
 
               {booking.status === 'confirmed' ? (

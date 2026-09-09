@@ -36,36 +36,39 @@ export function OfferCard({
   const minutesAway = Math.round((Date.parse(offer.start_at) - Date.parse(now)) / 60000);
   const startingSoon = minutesAway > 0 && minutesAway <= 120;
   const lastSeat = offer.capacity_remaining === 1 && offer.capacity_total > 1;
+  const away = formatDistance(offer.distance_m);
 
   return (
     <Link
       to={`/nabidka/${offer.id}?from=${encodeURIComponent(origin)}`}
       className="group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl bg-card shadow-card transition-shadow duration-150 hover:shadow-lift"
     >
-      <div className="relative">
-        {showPhoto ? (
-          <img
-            src={photo as string}
-            onError={() => setFailedPhoto(photo as string)}
-            alt=""
-            loading={priority ? 'eager' : 'lazy'}
-            fetchPriority={priority ? 'high' : 'auto'}
-            decoding="async"
-            width={800}
-            height={500}
-            className="aspect-[8/5] w-full object-cover"
-          />
-        ) : (
-          // A missing photograph keeps the same height, so a mixed grid stays even.
-          <div className="aspect-[8/5] w-full bg-accent-soft" aria-hidden="true" />
-        )}
+      {!compact ? (
+        <div className="relative">
+          {showPhoto ? (
+            <img
+              src={photo as string}
+              onError={() => setFailedPhoto(photo as string)}
+              alt=""
+              loading={priority ? 'eager' : 'lazy'}
+              fetchPriority={priority ? 'high' : 'auto'}
+              decoding="async"
+              width={800}
+              height={500}
+              className="aspect-[8/5] w-full object-cover"
+            />
+          ) : (
+            // A missing photograph keeps the same height, so a mixed grid stays even.
+            <div className="aspect-[8/5] w-full bg-accent-soft" aria-hidden="true" />
+          )}
 
-        {/* Identity on the image: the scrim exists so white text survives a pale photo. */}
-        <div className="absolute inset-x-0 bottom-0 flex items-center gap-2 bg-gradient-to-t from-ink/75 to-transparent px-3 pt-8 pb-3">
-          <VenueMark name={offer.business_name} logo={offer.logo_url} />
-          <span className="truncate text-base font-bold text-card">{offer.business_name}</span>
+          {/* Identity on the image: the scrim exists so white text survives a pale photo. */}
+          <div className="absolute inset-x-0 bottom-0 flex items-center gap-2 bg-gradient-to-t from-ink/75 to-transparent px-3 pt-8 pb-3">
+            <VenueMark name={offer.business_name} logo={offer.logo_url} />
+            <span className="truncate text-base font-bold text-card">{offer.business_name}</span>
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <div className="flex flex-1 flex-col gap-3 p-4">
         <h3 className="text-base leading-snug font-extrabold text-ink [overflow-wrap:anywhere]">
@@ -74,12 +77,18 @@ export function OfferCard({
 
         <p className="tnum flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
           {offer.district ? <span>{offer.district}</span> : null}
-          {offer.district ? <span aria-hidden="true">·</span> : null}
-          <span className="inline-flex items-center gap-1">
-            <MapPin size={14} aria-hidden="true" />
-            {formatDistance(offer.distance_m)}
-          </span>
-          <span aria-hidden="true">·</span>
+          {offer.district && away ? <span aria-hidden="true">·</span> : null}
+          {/* The favourites feed comes from offer_details, which carries no distance, so this
+              segment has to disappear rather than render an icon next to nothing. */}
+          {away ? (
+            <>
+              <span className="inline-flex items-center gap-1">
+                <MapPin size={14} aria-hidden="true" />
+                {away}
+              </span>
+              <span aria-hidden="true">·</span>
+            </>
+          ) : null}
           <span className="inline-flex items-center gap-1">
             <Clock3 size={14} aria-hidden="true" />
             {duration(offer.start_at, offer.end_at)} min

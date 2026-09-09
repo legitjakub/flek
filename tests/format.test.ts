@@ -18,4 +18,10 @@ describe('distance', () => {
     expect(distance(1000)).toBe('1 km');
     expect(distance(2540)).toBe('2,5 km');
   });
+
+  it('omits a distance the query did not provide instead of printing NaN km', () => {
+    expect(distance(undefined)).toBeNull();
+    expect(distance(null)).toBeNull();
+    expect(distance(Number.NaN)).toBeNull();
+  });
 });

@@ -52,7 +52,7 @@ export function ResolveButtons({ booking }: { booking: MerchantBooking | Merchan
         <p className="text-xs text-muted">Docházku potvrdíte až po začátku termínu.</p>
       ) : null}
       {failure ? (
-        <p role="alert" className="text-xs font-medium text-accent">
+        <p role="alert" className="text-xs font-medium text-danger">
           {failure}
         </p>
       ) : null}

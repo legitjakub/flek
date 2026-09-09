@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { Heart, MapPin } from 'lucide-react';
+import { ChevronRight, Heart, MapPin } from 'lucide-react';
 import { markFavoritesSeen, myFavorites, newAtFavorites } from '../../lib/api';
 import { useServerNow } from '../../lib/clock';
-import { Button, EmptyState, ErrorState, LoadingList } from '../../components/ui';
+import { EmptyState, ErrorState, LoadingList } from '../../components/ui';
 import { Link } from '../../app/router';
 import { OfferCard } from '../discovery/OfferCard';
 import { GooglePlaceRating } from '../ratings/GooglePlaceRating';
@@ -104,28 +104,46 @@ export function FavoritesPage() {
           <h2 id="mista" className="mb-4 text-lg font-extrabold tracking-tight">Sleduješ</h2>
           <ul className="flex flex-col gap-3">
             {places.map((place) => (
-              <li
-                key={place.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-card shadow-card p-4"
-              >
-                <div className="min-w-0">
-                  <p className="text-base font-bold">{place.display_name}</p>
-                  <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-base text-muted">
-                    <span className="inline-flex items-center gap-1.5">
-                      <MapPin size={15} aria-hidden="true" />
-                      {place.district || place.city}
+              <li key={place.id}>
+                {/*
+                  The whole row is the link. It used to be a bare <li>: it announced
+                  "3 volných termínů" and offered nothing to press, and the single clickable
+                  thing on it — the Google rating chip — left the app entirely.
+                */}
+                <Link
+                  to={`/podnik/${place.id}?from=%2Foblibene`}
+                  className="group flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-card p-4 shadow-card transition-colors hover:bg-surface"
+                >
+                  <span className="min-w-0">
+                    <span className="block text-base font-bold text-ink">{place.display_name}</span>
+                    <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-base text-muted">
+                      <span className="inline-flex items-center gap-1.5">
+                        <MapPin size={15} aria-hidden="true" />
+                        {place.district || place.city}
+                      </span>
                     </span>
-                    <GooglePlaceRating businessId={place.id} placeId={place.google_place_id} mapsUri />
-                  </p>
-                </div>
-                <p className="tnum text-base font-bold">
-                  {place.open_offers > 0 ? `${place.open_offers} volných termínů` : 'Teď nic volného'}
-                  {place.new_offers > 0 ? (
-                    <span className="ml-2 rounded-md bg-accent-soft px-2 py-0.5 text-accent">
-                      {place.new_offers} nové
-                    </span>
-                  ) : null}
-                </p>
+                  </span>
+                  <span className="tnum inline-flex shrink-0 items-center gap-2 text-base font-bold">
+                    {place.open_offers > 0 ? (
+                      <span className="text-ink">
+                        {place.open_offers} {place.open_offers === 1 ? 'volný termín' : place.open_offers < 5 ? 'volné termíny' : 'volných termínů'}
+                      </span>
+                    ) : (
+                      <span className="text-muted">Teď nic volného</span>
+                    )}
+                    {place.new_offers > 0 ? (
+                      <span className="rounded-md bg-accent-soft px-2 py-0.5 text-sm text-accent">
+                        {place.new_offers} nové
+                      </span>
+                    ) : null}
+                    <ChevronRight size={18} className="text-muted group-hover:text-accent" aria-hidden="true" />
+                  </span>
+                </Link>
+                {/* Kept out of the link: it is a second destination (Google Maps), and an
+                    anchor inside an anchor is invalid. */}
+                <span className="mt-1 ml-4 inline-block">
+                  <GooglePlaceRating businessId={place.id} placeId={place.google_place_id} mapsUri />
+                </span>
               </li>
             ))}
           </ul>
@@ -140,8 +158,11 @@ export function FavoritesPage() {
 
       {places.length > 0 ? (
         <div className="mt-6">
-          <Link to="/">
-            <Button variant="secondary">Objevit další místa</Button>
+          <Link
+            to="/"
+            className="inline-flex min-h-11 items-center rounded-xl border border-line bg-card px-4 text-sm font-bold text-ink hover:bg-surface"
+          >
+            Objevit další místa
           </Link>
         </div>
       ) : null}

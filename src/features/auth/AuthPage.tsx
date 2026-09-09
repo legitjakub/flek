@@ -8,6 +8,16 @@ import { loginSchema } from '../../lib/schemas';
 import { Button, Field, Input, Wordmark } from '../../components/ui';
 import { Link, useRouter } from '../../app/router';
 
+const PENDING_SIGNUP_KEY = 'flek.pending-signup';
+
+function rememberSignup(email: string, returnTo: string, merchant: boolean) {
+  try {
+    localStorage.setItem(PENDING_SIGNUP_KEY, JSON.stringify({ email, returnTo, merchant }));
+  } catch {
+    // The callback still works without this convenience state (for example in private mode).
+  }
+}
+
 const signupSchema = loginSchema.extend({
   first_name: z.string().trim().min(1, 'Vyplň prosím jméno.').max(80),
   last_name: z.string().trim().max(80),
@@ -26,6 +36,9 @@ export function AuthPage() {
   const [mode, setMode] = useState<'login' | 'signup'>(search.get('mode') === 'signup' ? 'signup' : 'login');
   const [failure, setFailure] = useState<string | null>(null);
   const [confirmSent, setConfirmSent] = useState(false);
+  const [confirmationEmail, setConfirmationEmail] = useState('');
+  const [resending, setResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
   const formal = merchant;
 
   const form = useForm<SignupValues>({
@@ -42,12 +55,19 @@ export function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email: values.email, password: values.password });
         if (error) throw error;
       } else {
+        const confirmationUrl = `${window.location.origin}/potvrzeni`;
+        rememberSignup(values.email, returnTo, merchant);
         const { data, error } = await supabase.auth.signUp({
           email: values.email,
           password: values.password,
           options: {
-            data: { first_name: values.first_name, last_name: values.last_name },
-            emailRedirectTo: `${window.location.origin}${returnTo}`,
+            data: {
+              first_name: values.first_name,
+              last_name: values.last_name,
+              signup_return_to: returnTo,
+              signup_role: merchant ? 'merchant' : 'customer',
+            },
+            emailRedirectTo: confirmationUrl,
           },
         });
         if (error) throw error;
@@ -55,6 +75,7 @@ export function AuthPage() {
         // would drop the customer back into the app still signed out, which reads as
         // "registration is broken" — so say what actually has to happen next.
         if (!data.session) {
+          setConfirmationEmail(values.email);
           setConfirmSent(true);
           return;
         }
@@ -66,6 +87,31 @@ export function AuthPage() {
   }
 
   const isSignup = mode === 'signup';
+
+  async function resendConfirmation() {
+    const email = confirmationEmail || form.getValues('email');
+    if (!email) return;
+    setResending(true);
+    setResendMessage(null);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: { emailRedirectTo: `${window.location.origin}/potvrzeni` },
+      });
+      if (error) throw error;
+      setResendMessage('Nový potvrzovací e-mail je odeslaný. Starší odkaz už nemusí fungovat.');
+    } catch (error) {
+      const message = errorMessage(error);
+      setResendMessage(
+        /rate|limit|security|seconds?/i.test(message)
+          ? 'Další e-mail teď nejde odeslat. Chvíli počkej a zkus to znovu.'
+          : message,
+      );
+    } finally {
+      setResending(false);
+    }
+  }
 
   return (
     <main className="mx-auto w-full max-w-lg px-4 py-8 sm:py-14">
@@ -89,19 +135,24 @@ export function AuthPage() {
         <div className="mt-6 rounded-2xl bg-card shadow-card p-5 sm:p-6">
           <h2 className="text-lg font-extrabold">Potvrď svůj e-mail</h2>
           <p className="mt-2 text-base leading-relaxed text-muted">
-            Poslali jsme odkaz na <strong className="text-ink">{form.getValues('email')}</strong>. Otevři ho a účet se
+            Poslali jsme odkaz na <strong className="text-ink">{confirmationEmail || form.getValues('email')}</strong>. Otevři ho a účet se
             aktivuje. Mrkni i do složky s nevyžádanou poštou.
           </p>
-          <Button
-            variant="secondary"
-            className="mt-4"
-            onClick={() => {
-              setConfirmSent(false);
-              setMode('login');
-            }}
-          >
-            Už jsem potvrdil — přihlásit se
-          </Button>
+          {resendMessage ? <p role="status" className="mt-3 text-sm text-muted">{resendMessage}</p> : null}
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button variant="secondary" loading={resending} onClick={() => void resendConfirmation()}>
+              Poslat e-mail znovu
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setConfirmSent(false);
+                setMode('login');
+              }}
+            >
+              Přihlásit se
+            </Button>
+          </div>
         </div>
       ) : null}
 

@@ -4,12 +4,14 @@ import { RouterProvider, matchPath, useRouter, Link } from './router';
 import { CustomerShell } from './CustomerShell';
 import { SessionProvider } from '../features/auth/session';
 import { AuthPage } from '../features/auth/AuthPage';
+import { ConfirmationPage } from '../features/auth/ConfirmationPage';
 import { ProfilePage } from '../features/auth/ProfilePage';
 import { DiscoveryPage } from '../features/discovery/DiscoveryPage';
 import { MapPage } from '../features/discovery/MapPage';
 import { OfferDetailPage } from '../features/offers/OfferDetailPage';
 import { MyBookingsPage } from '../features/bookings/MyBookingsPage';
 import { FavoritesPage } from '../features/favorites/FavoritesPage';
+import { VenuePage } from '../features/business/VenuePage';
 import { ReferralLandingPage } from '../features/referral/ReferralLandingPage';
 import { ReferralClaimer } from '../features/referral/ReferralClaimer';
 // A customer never opens the merchant or admin trees, so they are not part of the bundle
@@ -69,9 +71,12 @@ const ROUTES: { path: string; render: (params: Record<string, string>) => ReactN
   { path: '/mapa', render: () => <MapPage />, shell: true },
   { path: '/nabidka/:id', render: (p) => <OfferDetailPage offerId={p.id} />, shell: true },
   { path: '/oblibene', render: () => <FavoritesPage />, shell: true },
+  // A venue and everything free at it — the destination favourites always implied.
+  { path: '/podnik/:id', render: (p) => <VenuePage businessId={p.id} />, shell: true },
   { path: '/rezervace', render: () => <MyBookingsPage />, shell: true },
   { path: '/profil', render: () => <ProfilePage />, shell: true },
   { path: '/prihlaseni', render: () => <AuthPage />, shell: false },
+  { path: '/potvrzeni', render: () => <ConfirmationPage />, shell: false },
   // Invitation links are public and must render before anyone signs in.
   { path: '/r/:code', render: (p) => <ReferralLandingPage code={p.code} />, shell: false },
   { path: '/partner', render: () => <MerchantDashboardPage />, shell: false },

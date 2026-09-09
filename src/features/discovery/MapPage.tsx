@@ -1,27 +1,35 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronRight, List, MapPin } from 'lucide-react';
+import { ChevronRight, Crosshair, List, MapPin, X } from 'lucide-react';
 import { Link, useRouter } from '../../app/router';
 import { listCategories } from '../../lib/api';
 import { money, distance } from '../../lib/format';
 import { clockTime, dayLabel, duration } from '../../lib/time';
 import { useServerNow } from '../../lib/clock';
-import { Banner, EmptyState, ErrorState, Sheet, Skeleton } from '../../components/ui';
+import { Banner, EmptyState, ErrorState, Skeleton } from '../../components/ui';
 import { LazyMap } from '../offers/LazyMap';
 import { LocationChip } from './LocationChip';
 import { FilterBar, plural } from './FilterBar';
 import { useDiscoveryState } from './useDiscoveryState';
 import { useDiscovery } from './useDiscovery';
 import { groupMapOffers } from './mapOffers';
+import { locate } from '../../lib/geo';
 import type { SearchRow } from '../../types/database';
+
+const markerTime = new Intl.DateTimeFormat('cs-CZ', {
+  weekday: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZone: 'Europe/Prague',
+});
 
 export function MapPage() {
   const { point, setPoint, filters, setFilters } = useDiscoveryState();
   const { search, navigate } = useRouter();
   const [openGroup, setOpenGroup] = useState<string[]>([]);
   const [highlighted, setHighlighted] = useState<string | null>(null);
-  const mapArea = useRef<HTMLDivElement>(null);
-  const lastSelection = useRef<string[]>([]);
+  const [locating, setLocating] = useState(false);
+  const [locateError, setLocateError] = useState(false);
   const now = useServerNow();
   const discovery = useDiscovery(point, filters);
   const categories = useQuery({ queryKey: ['categories'], queryFn: listCategories, staleTime: 3_600_000 });
@@ -36,15 +44,34 @@ export function MapPage() {
     label: `${group.offers.length > 1 ? 'od ' : ''}${money(group.minPrice)}`,
     count: group.offers.length, price: group.minPrice,
     description: group.offers.length === 1
-      ? `Otevřít ${group.offers[0].service_name}, ${group.offers[0].business_name}, ${dayLabel(group.offers[0].start_at, now)} ${clockTime(group.offers[0].start_at)}, ${money(group.minPrice)}`
+      ? `Otevřít ${group.offers[0].service_name}, ${group.offers[0].business_name}, ${markerTime.format(new Date(group.offers[0].start_at))}, ${money(group.minPrice)}`
       : `${group.offers[0].business_name}: ${group.offers.length} termíny, od ${money(group.minPrice)}. Vybrat termín.`,
-  })), [groups, now]);
+  })), [groups]);
+
+  useEffect(() => {
+    setOpenGroup((current) => {
+      const available = current.filter((id) => groups.some((group) => group.id === id));
+      return available.length === current.length ? current : available;
+    });
+  }, [groups]);
 
   function openMarker(id: string) {
     const group = groups.find((item) => item.id === id);
     if (!group) return;
     if (group.offers.length === 1) navigate(detailHref(group.offers[0].id));
-    else { lastSelection.current = [id]; setOpenGroup([id]); }
+    else setOpenGroup([id]);
+  }
+
+  async function useMyLocation() {
+    setLocating(true);
+    setLocateError(false);
+    try {
+      setPoint(await locate());
+    } catch {
+      setLocateError(true);
+    } finally {
+      setLocating(false);
+    }
   }
 
   return (
@@ -67,18 +94,49 @@ export function MapPage() {
               {rows.map((offer) => <li key={offer.id} onMouseEnter={() => setHighlighted(groups.find((g) => g.offers.some((o) => o.id === offer.id))?.id ?? null)} onMouseLeave={() => setHighlighted(null)} onFocus={() => setHighlighted(groups.find((g) => g.offers.some((o) => o.id === offer.id))?.id ?? null)} onBlur={() => setHighlighted(null)}><MapOffer offer={offer} now={now} to={detailHref(offer.id)} /></li>)}
             </ul>
           </section>
-          <div ref={mapArea} className="relative min-h-0 min-w-0">
-            <LazyMap className="h-full min-h-80 w-full" center={point} markers={markers} selectedId={openGroup[0] ?? highlighted ?? undefined} eager fitToMarkers onSelect={openMarker} onSelectGroup={(ids) => { lastSelection.current = ids; setOpenGroup(ids); }} ariaLabel="Mapa aktivit. Cena otevře konkrétní aktivitu, číslo u ceny nabídne více termínů v okolí." />
+          <div className="relative min-h-0 min-w-0">
+            <LazyMap className="h-full min-h-80 w-full" center={point} markers={markers} selectedId={openGroup[0] ?? highlighted ?? undefined} eager fitToMarkers onSelect={openMarker} onSelectGroup={setOpenGroup} ariaLabel="Mapa aktivit. Cena otevře konkrétní aktivitu, číslo u ceny nabídne více termínů v okolí." />
             <p className="pointer-events-none absolute top-3 left-3 z-10 max-w-[calc(100%-6rem)] rounded-xl border border-line bg-card px-3 py-2 text-sm font-bold shadow-card">Klepni na cenu a vyber si termín</p>
+            <button
+              type="button"
+              aria-label="Najít nabídky u mojí polohy"
+              title="Moje poloha"
+              disabled={locating}
+              onClick={() => void useMyLocation()}
+              className="absolute top-[108px] right-3 z-10 inline-flex size-11 items-center justify-center gap-2 rounded-xl border border-line bg-card text-ink shadow-card disabled:opacity-60 sm:w-auto sm:px-3"
+            >
+              <Crosshair size={18} className={locating ? 'animate-spin' : ''} aria-hidden="true" />
+              <span className="hidden text-sm font-bold sm:inline">Moje poloha</span>
+            </button>
+            {locateError ? (
+              <p role="status" className="absolute top-[160px] right-3 z-10 max-w-56 rounded-xl bg-card px-3 py-2 text-sm text-muted shadow-card">
+                Polohu se nepodařilo zjistit. Vyber ji nahoře ručně.
+              </p>
+            ) : null}
+            {selectedOffers.length ? (
+              <section className="absolute inset-x-2 bottom-2 z-20 rounded-2xl border border-line bg-card/95 p-2 shadow-lift backdrop-blur-sm sm:inset-x-3 sm:bottom-3" aria-label="Vybrané termíny">
+                <div className="flex items-center gap-2 px-2 pb-1">
+                  <MapPin size={16} className="shrink-0 text-accent" aria-hidden="true" />
+                  <p className="min-w-0 flex-1 truncate text-sm font-bold text-ink">
+                    {oneBusiness ? selectedOffers[0].business_name : 'Termíny v této části mapy'}
+                    <span className="ml-1 font-normal text-muted">· {selectedOffers.length} {plural(selectedOffers.length)}</span>
+                  </p>
+                  <button type="button" onClick={() => setOpenGroup([])} aria-label="Zavřít výběr" className="grid size-10 shrink-0 place-items-center rounded-xl text-muted hover:bg-surface hover:text-ink">
+                    <X size={18} aria-hidden="true" />
+                  </button>
+                </div>
+                <ul className="rail rail-fade flex snap-x gap-2 overflow-x-auto pb-1">
+                  {selectedOffers.map((offer) => (
+                    <li key={offer.id} className="w-[min(82vw,330px)] shrink-0 snap-start overflow-hidden rounded-xl border border-line bg-card">
+                      <MapOffer offer={offer} now={now} to={detailHref(offer.id)} />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
           </div>
         </div>
       ) : null}
-      <Sheet returnFocus={() => [...(mapArea.current?.querySelectorAll<HTMLElement>('[data-map-ids]') ?? [])].find((element) => {
-        const ids: string[] = JSON.parse(element.dataset.mapIds ?? '[]');
-        return ids.some((id) => lastSelection.current.includes(id));
-      }) ?? null} open={selectedOffers.length > 0} onClose={() => setOpenGroup([])} title={oneBusiness ? selectedOffers[0].business_name : 'Vyber si aktivitu'}>
-        {selectedOffers.length ? <><p className="mb-4 flex items-start gap-2 text-sm text-muted"><MapPin size={18} className="shrink-0" aria-hidden="true" />{oneBusiness ? selectedOffers[0].address_line : 'Termíny v této části mapy'} · {selectedOffers.length} {plural(selectedOffers.length)}</p><ul className="divide-y divide-line rounded-xl border border-line">{selectedOffers.map((offer) => <li key={offer.id}><MapOffer offer={offer} now={now} to={detailHref(offer.id)} /></li>)}</ul></> : null}
-      </Sheet>
     </main>
   );
 }
@@ -114,7 +172,8 @@ function MapOffer({ offer, now, to }: { offer: SearchRow; now: string; to: strin
           </span>
           <span className="text-muted">
             {' · '}
-            {duration(offer.start_at, offer.end_at)} min · {distance(offer.distance_m)}
+            {duration(offer.start_at, offer.end_at)} min
+            {distance(offer.distance_m) ? ` · ${distance(offer.distance_m)}` : ''}
           </span>
         </span>
       </span>

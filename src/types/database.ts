@@ -90,7 +90,7 @@ export type SearchRow = {
   cover_url: string | null;
   logo_url: string | null;
   image_url: string | null;
-  distance_m: number;
+  distance_m: number | null;
   discount_pct: number;
   score: number;
   server_now: string;
@@ -279,4 +279,23 @@ export type ServicePhoto = {
   /** Null for an activity we have no photograph we may honestly use for. */
   image_url: string | null;
   sort_order: number;
+};
+
+/** The public face of a venue: what its own page needs before any offer is loaded. */
+export type PublicBusiness = {
+  id: string;
+  display_name: string;
+  slug: string;
+  description: string;
+  category_slug: string;
+  address_line: string;
+  city: string;
+  district: string | null;
+  logo_url: string | null;
+  cover_url: string | null;
+  google_place_id: string | null;
+  cancellation_window_minutes: number;
+  latitude: number;
+  longitude: number;
+  open_offers: number;
 };

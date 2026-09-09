@@ -10,6 +10,7 @@ import { useRouter } from '../../app/router';
 import { MerchantShell } from './MerchantShell';
 import { ScanButton, ScanVoucherSheet } from './ScanVoucherSheet';
 import { ResolveButtons } from './ResolveButtons';
+import { StatusBadge } from '../../components/StatusBadge';
 import type { MerchantBooking, MerchantBookingDetail } from '../../types/database';
 
 type Tab = 'today' | 'upcoming' | 'history';
@@ -160,14 +161,6 @@ function Bookings({ businessId }: { businessId: string }) {
   );
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  confirmed: 'Potvrzeno',
-  completed: 'Dorazil',
-  no_show: 'Nedorazil',
-  cancelled_by_customer: 'Zrušil zákazník',
-  cancelled_by_merchant: 'Zrušeno vámi',
-};
-
 function BookingRow({
   booking,
   now,
@@ -186,14 +179,16 @@ function BookingRow({
           {clockTime(booking.end_at_snapshot)}
         </p>
         <p className="text-base font-bold text-ink">{booking.service_name_snapshot}</p>
-        <p className="text-sm text-muted">
-          {booking.customer_label} · {money(booking.price_cents)}
-          {booking.payment_status === 'paid' ? (
-            <span className="ml-2 font-bold text-positive">{' '}Zaplaceno předem</span>
-          ) : booking.payment_status === 'refunded' ? (
-            <span className="ml-2 font-bold text-muted">Vráceno</span>
+        <p className="text-sm text-muted">{booking.customer_label} · {money(booking.price_cents)}</p>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          <StatusBadge status={booking.status} />
+          {booking.payment_status ? (
+            <StatusBadge
+              status={booking.payment_status}
+              label={booking.payment_status === 'pending' ? 'Čeká na platbu' : undefined}
+            />
           ) : null}
-        </p>
+        </div>
         <p className="tnum mt-1 font-mono text-sm font-bold tracking-[0.1em] text-ink">{booking.reservation_code}</p>
         {showContact && detail.phone ? (
           <p className="mt-1 text-sm text-muted">
@@ -203,7 +198,6 @@ function BookingRow({
             </a>
           </p>
         ) : null}
-        <p className="mt-1 text-xs font-bold text-muted">{STATUS_LABEL[booking.status] ?? booking.status}</p>
       </div>
       {booking.status === 'confirmed' ? <ResolveButtons booking={booking} /> : null}
     </div>

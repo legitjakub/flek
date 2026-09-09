@@ -19,6 +19,7 @@ import type {
   OfferDetail,
   Payment,
   Profile,
+  PublicBusiness,
   ReferralClaim,
   ReferralStats,
   SearchRow,
@@ -163,6 +164,23 @@ export async function listServicePhotos(): Promise<ServicePhoto[]> {
     (await result<ServicePhoto[]>(
       supabase.from('service_photos').select('*').order('category_slug').order('sort_order'),
     )) ?? []
+  );
+}
+
+/**
+ * A venue's own page. Public on purpose: a link handed to someone who has never opened FLEK
+ * has to render before they sign in.
+ */
+export async function businessPublic(id: string): Promise<PublicBusiness | null> {
+  return await result<PublicBusiness | null>(supabase.rpc('business_public', { p_business_id: id }));
+}
+
+/** Every bookable offer at one venue, soonest first, shaped exactly like a search row. */
+export async function businessOffers(id: string, at: { lat: number; lng: number } | null): Promise<SearchRow[]> {
+  return withClock(
+    (await result<SearchRow[]>(
+      supabase.rpc('business_offers', { p_business_id: id, p_lat: at?.lat ?? null, p_lng: at?.lng ?? null }),
+    )) ?? [],
   );
 }
 

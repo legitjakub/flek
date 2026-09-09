@@ -13,12 +13,14 @@ import { SignOutButton } from './SignOutButton';
 import { CustomerFlekStats } from '../profile/CustomerFlekStats';
 import { ReferralInvite } from '../profile/ReferralInvite';
 import { InstallPrompt } from '../pwa/InstallPrompt';
+import { useMyBusinesses } from '../merchant/useBusiness';
 
 type ProfileValues = z.infer<typeof profileSchema>;
 
 export function ProfilePage() {
   const { userId, profile, session, admin } = useSession();
   const queryClient = useQueryClient();
+  const businesses = useMyBusinesses();
   const [saved, setSaved] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
 
@@ -119,12 +121,14 @@ export function ProfilePage() {
       ) : null}
 
       <div className="mt-8 flex flex-col gap-2">
-        <Link
-          to="/partner"
-          className="inline-flex min-h-11 items-center rounded-xl border border-line bg-card px-4 text-sm font-bold text-ink"
-        >
-          FLEK Partner — správa provozovny
-        </Link>
+        {(businesses.data?.length ?? 0) > 0 ? (
+          <Link
+            to="/partner"
+            className="inline-flex min-h-11 items-center rounded-xl border border-line bg-card px-4 text-sm font-bold text-ink"
+          >
+            FLEK Partner — správa provozovny
+          </Link>
+        ) : null}
         {admin ? (
           <Link
             to="/admin"
@@ -133,7 +137,7 @@ export function ProfilePage() {
             Administrace
           </Link>
         ) : null}
-        <p className="tnum text-base text-muted">
+        <p className="tnum mt-2 text-xs text-muted">
           Verze aplikace <span className="font-bold text-ink">{import.meta.env.VITE_BUILD_ID ?? 'dev'}</span>
         </p>
         <div className="self-start">

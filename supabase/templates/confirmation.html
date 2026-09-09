@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Potvrď svůj e-mail pro FLEK</title>
+  </head>
+  <body style="margin:0;background:#faf7f2;color:#22282b;font-family:Arial,sans-serif">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:32px 16px">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:520px;background:#fff;border-radius:24px;padding:32px">
+            <tr><td style="font-size:34px;font-weight:800;letter-spacing:-1.5px">flek<span style="color:#8cc63f">′</span></td></tr>
+            <tr><td style="padding-top:28px;font-size:24px;font-weight:800">Potvrď svůj e-mail</td></tr>
+            <tr><td style="padding-top:12px;font-size:16px;line-height:1.55;color:#5a554c">Jedním kliknutím aktivuješ svůj účet a můžeš pokračovat tam, kde jsi skončil/a.</td></tr>
+            <tr>
+              <td style="padding-top:24px">
+                <a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&amp;type=email" style="display:block;border-radius:14px;background:#22282b;padding:15px 20px;color:#fff;text-align:center;font-size:16px;font-weight:700;text-decoration:none">Potvrdit e-mail</a>
+              </td>
+            </tr>
+            <tr><td style="padding-top:20px;font-size:13px;line-height:1.5;color:#5a554c">Pokud jsi účet nezakládal/a, e-mail můžeš ignorovat.</td></tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

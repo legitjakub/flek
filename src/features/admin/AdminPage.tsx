@@ -20,6 +20,7 @@ import { SignOutButton } from '../auth/SignOutButton';
 import { Link, useRouter } from '../../app/router';
 import { useSession } from '../auth/session';
 import { LazyMap } from '../offers/LazyMap';
+import { StatusBadge } from '../../components/StatusBadge';
 import type { AdminBusiness } from '../../types/database';
 
 const NAV = [
@@ -126,10 +127,10 @@ export function AdminBusinessesPage() {
           <li key={business.id} className="rounded-2xl bg-card shadow-card p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-base font-bold text-ink">
-                  {business.display_name}{' '}
-                  <span className="text-xs font-bold text-muted uppercase">{business.status}</span>
-                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-base font-bold text-ink">{business.display_name}</p>
+                  <StatusBadge status={business.status} />
+                </div>
                 <p className="text-sm text-muted">
                   {business.address_line}, {business.postal_code} {business.city}
                 </p>
@@ -141,7 +142,7 @@ export function AdminBusinessesPage() {
                   {business.services.length} služeb · {business.upcoming_offers} nadcházejících nabídek
                 </p>
                 {business.status_reason ? (
-                  <p className="mt-1 text-sm text-accent">Důvod: {business.status_reason}</p>
+                  <p className="mt-1 text-sm text-danger">Důvod: {business.status_reason}</p>
                 ) : null}
                 <GooglePlaceConnector business={business} />
               </div>
@@ -298,9 +299,10 @@ export function AdminOffersPage() {
       {offers.isError ? <ErrorState error={offers.error} onRetry={() => offers.refetch()} /> : null}
       <ul className="mt-4 flex flex-col gap-2">
         {(offers.data ?? []).map((offer) => (
-          <li key={offer.id} className="tnum rounded-xl border border-line bg-card p-3 text-sm">
-            {dayLabel(offer.start_at, now)} {clockTime(offer.start_at)} · {offer.service_name} ·{' '}
-            {money(offer.deal_price_cents)} · {offer.booked}/{offer.capacity_total} · {offer.status}
+          <li key={offer.id} className="tnum flex flex-wrap items-center gap-x-1.5 gap-y-2 rounded-xl border border-line bg-card p-3 text-sm">
+            <span>{dayLabel(offer.start_at, now)} {clockTime(offer.start_at)} · {offer.service_name} ·{' '}
+            {money(offer.deal_price_cents)} · {offer.booked}/{offer.capacity_total}</span>
+            <StatusBadge status={offer.status} />
           </li>
         ))}
       </ul>
@@ -325,10 +327,10 @@ export function AdminBookingsPage() {
       {bookings.isError ? <ErrorState error={bookings.error} onRetry={() => bookings.refetch()} /> : null}
       <ul className="mt-4 flex flex-col gap-2">
         {(bookings.data ?? []).map((booking) => (
-          <li key={booking.id} className="tnum rounded-xl border border-line bg-card p-3 text-sm">
-            {booking.reservation_code} · {dayLabel(booking.start_at_snapshot, now)}{' '}
-            {clockTime(booking.start_at_snapshot)} · {booking.business_name_snapshot} · {money(booking.price_cents)} ·{' '}
-            {booking.status}
+          <li key={booking.id} className="tnum flex flex-wrap items-center gap-x-1.5 gap-y-2 rounded-xl border border-line bg-card p-3 text-sm">
+            <span>{booking.reservation_code} · {dayLabel(booking.start_at_snapshot, now)}{' '}
+            {clockTime(booking.start_at_snapshot)} · {booking.business_name_snapshot} · {money(booking.price_cents)}</span>
+            <StatusBadge status={booking.status} />
           </li>
         ))}
       </ul>

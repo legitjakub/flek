@@ -3,7 +3,7 @@ import { Map } from 'lucide-react';
 import { Link, useRouter } from '../../app/router';
 import { listCategories } from '../../lib/api';
 import { useServerNow } from '../../lib/clock';
-import { Banner, Button, CardSkeleton, EmptyState, ErrorState } from '../../components/ui';
+import { Button, CardSkeleton, EmptyState, ErrorState } from '../../components/ui';
 import { OfferCard } from './OfferCard';
 import { buildSections } from './sections';
 import { DEFAULT_FILTERS, SORT_LABELS, activeCount } from './filters';
@@ -26,10 +26,11 @@ export function DiscoveryPage() {
     : buildSections(rows, now), [rows, now, customized]);
   return (
     <main className="page-container py-5 sm:py-8">
-      <LocationChip point={point} onChange={setPoint} />
-      <h1 className="mt-3 max-w-2xl text-xl leading-tight font-extrabold tracking-tight sm:text-2xl">Volné termíny poblíž</h1>
-      <p className="mt-2 text-base text-muted">Zaplatíš rovnou, v podniku ukážeš kód.</p>
-      <div className="mt-6"><FilterBar filters={filters} onChange={setFilters} categories={categories.data ?? []} resultCount={rows.length} pending={discovery.isFetching} /></div>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+        <h1 className="text-xl leading-tight font-extrabold tracking-tight sm:text-2xl">Volné termíny</h1>
+        <LocationChip point={point} onChange={setPoint} />
+      </div>
+      <div className="mt-3"><FilterBar filters={filters} onChange={setFilters} categories={categories.data ?? []} resultCount={rows.length} pending={discovery.isFetching} /></div>
       <p className="sr-only" aria-live="polite">
         {discovery.isPending
           ? 'Hledáme volné termíny…'
@@ -38,7 +39,11 @@ export function DiscoveryPage() {
             : 'Nabídky se nepodařilo načíst'}
       </p>
       {discovery.isError ? <div className="mt-4"><ErrorState error={discovery.error} onRetry={() => discovery.refetch()} /></div> : null}
-      {discovery.data?.note ? <div className="mt-4"><Banner tone="warning">{discovery.data.note}</Banner></div> : null}
+      {discovery.data?.note ? (
+        <p className="mt-3 rounded-xl border border-warning/20 bg-warning-soft px-3 py-2 text-sm text-ink">
+          {discovery.data.note}
+        </p>
+      ) : null}
       {discovery.isSuccess && rows.length === 0 ? <div className="mt-4"><EmptyState title="V okolí teď nic volného není." body="Zkus jiný den nebo větší okolí. Nové termíny přibývají během dne." action={<Button variant="secondary" onClick={() => setFilters({ ...DEFAULT_FILTERS, when: 'week', radius_m: 25000 })}>Hledat v celém týdnu</Button>} /></div> : null}
       {discovery.isPending ? (
         <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3" role="status" aria-label="Načítáme volné termíny">
@@ -46,7 +51,7 @@ export function DiscoveryPage() {
         </div>
       ) : null}
       {sections.map((section, sectionIndex) => (
-        <section key={section.key} className="mt-7 first:mt-5" aria-labelledby={`sekce-${section.key}`}>
+        <section key={section.key} className={sectionIndex === 0 ? 'mt-5' : 'mt-7'} aria-labelledby={`sekce-${section.key}`}>
           <div className="mb-3 flex items-baseline justify-between gap-3">
             <h2 id={`sekce-${section.key}`} className="text-lg font-extrabold tracking-tight">
               {section.title}
