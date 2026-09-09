@@ -88,3 +88,34 @@ Před doplněním fotografií měly obě stránky výkon 88–93. S fotografiemi
 - `npm test` (integrační sada přes lokální Supabase) — chybí Docker. Obsahově ji pokrývá `npm run test:acceptance`.
 - Ruční klikací průchod celým UI ve dvou prohlížečích. Prohlížeč v tomto prostředí běží na skryté kartě, kde nejde spolehlivě klikat; ověřeno bylo vykreslení, filtry a čtení stromu stránky.
 - Měření času „pod 30 sekund" u zveřejnění nabídky.
+
+---
+
+## Růstová smyčka a skenování QR (9. 9. 2026)
+
+### Ověřené měřením
+
+| Co | Čím |
+| --- | --- |
+| Pravidla proti zneužití doporučení | Přímo proti hostované databázi: pokus o self-referral skončil `check_violation`, druhý referrer na tentýž účet `unique_violation`, druhá kvalifikace toutéž rezervací `unique_violation`. Všechny tři jsou vynucené constraintem, ne aplikačním kódem. |
+| Oprávnění nových RPC | `has_function_privilege` proti `pg_proc`: `set_favorite`, `my_customer_metrics`, `my_referral_code`, `claim_referral`, `my_referral_stats` jen pro `authenticated` a `service_role`; `resolve_referral_code` navíc pro `anon` (vstupní stránka pozvánky musí fungovat před přihlášením); `private.qualify_referral` jen pro `service_role`. |
+| Pojmenování důvodu nedostupnosti | 9 jednotkových testů, včetně případů, kdy platí víc faktů zároveň. Helper nikdy neodporuje `bookable` a nikdy netvrdí „chytil", když termín vypršel. |
+| Parsování QR | 5 jednotkových testů: celá URL voucheru, holý kód, kód mezi jinými parametry, cizí QR (Wi-Fi, náhodná URL) a podobné, ale neplatné tvary. |
+| Vykreslení všech nových stavů | Playwright proti produkčnímu buildu, 390×844: dostupná nabídka, vyprodaná („Tenhle FLEK už někdo chytil."), proběhlá („Tenhle FLEK už proběhl."), platná pozvánka („Jakub tě zve na FLEK."), neplatná pozvánka. Žádná chyba v konzoli. |
+| Rozvržení | 375×667, 390×844, 430×932 a 1280×900: nikde vodorovné přetečení, nikde ovládací prvek bez popisku. |
+| Zrušená nabídka | Anonymní návštěvník ji nevidí vůbec — `get_offer_detail` ji vrací jen členovi podniku, administrátorovi nebo tomu, kdo na ni má rezervaci. Text o zrušení se proto zobrazí jen tomu, kdo na něj má nárok; to je správné chování RLS, ne chyba. |
+| Jednotkové testy | 24/24. `tsc --noEmit` a `vite build` bez chyby. |
+
+### Opraveno během ověřování
+
+- Sekce „Zrušení" se u nerezervovatelné nabídky tvářila, že lhůta pořád platí.
+- Rozbalovací „Proč je to levnější?" mělo 20 px místo minimálních 44; po opravě naměřeno 44.
+- `find()` v partnerských rezervacích četl kód ze stavu, takže kód doručený a hledaný ve stejném ticku — což je právě sken — by hledal předchozí hodnotu.
+
+### Co ověřené není
+
+- **Akceptační sada.** Rozšířena z 54 na **76 kontrol** (idempotentní sledování, veřejný detail nedostupné nabídky, zákaznické metriky proti `my_bookings`, atribuce doporučení včetně pokusu zavedeného účtu, počet sledujících). **Spuštěná nebyla** — vyžaduje demo hesla po rotaci, která nejsou na tomto počítači. Syntax ověřena `node --check`.
+- **Živý průchod kamerou.** Skener nebyl vyzkoušen na skutečném zařízení; partnerská část vyžaduje přihlášení demo hesly.
+- **Kvalifikace doporučení od konce ke konci.** Databázová pravidla ověřená jsou, celý průchod „pozvánka → registrace → první proběhlá rezervace" ne, protože vyžaduje dokončení rezervace partnerem.
+- **Lighthouse** na nových obrazovkách. Dřívější měření (přístupnost 100) se týkalo starší podoby detailu.
+

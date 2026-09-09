@@ -252,6 +252,89 @@ check('Vyhledávání nese průměr hodnocení a jeho počet',
   (search.data ?? []).some((r) => r.rating_count > 0),
   `${(search.data ?? []).filter((r) => r.rating_count > 0).length} nabídek s hodnocením`);
 
+/* ------------------------------------------------------------------ growth loop ---
+ * Everything below runs through real JWTs and real RLS, like the rest of this file. The
+ * rules being checked are enforced in the database, so a passing browser is not evidence.
+ */
+{
+
+const BUSINESS_ID = (await customer.client.rpc('get_offer_detail', { p_offer_id: created[0] })).data?.business_id;
+
+// --- following must be idempotent, because the auth replay calls it again ---
+const wasFavorite = ((await customer.client.rpc('my_favorites')).data ?? []).some((f) => f.id === BUSINESS_ID);
+await customer.client.rpc('set_favorite', { p_business_id: BUSINESS_ID, p_value: true });
+await customer.client.rpc('set_favorite', { p_business_id: BUSINESS_ID, p_value: true });
+check('Dvojí „sledovat" nechá podnik sledovaný',
+  ((await customer.client.rpc('my_favorites')).data ?? []).some((f) => f.id === BUSINESS_ID));
+
+await customer.client.rpc('set_favorite', { p_business_id: BUSINESS_ID, p_value: false });
+await customer.client.rpc('set_favorite', { p_business_id: BUSINESS_ID, p_value: false });
+check('Dvojí „přestat sledovat" nechá podnik nesledovaný',
+  !((await customer.client.rpc('my_favorites')).data ?? []).some((f) => f.id === BUSINESS_ID));
+
+const anonFollow = await anon.rpc('set_favorite', { p_business_id: BUSINESS_ID, p_value: true });
+check('Nepřihlášený nemůže sledovat', /AUTH_REQUIRED/.test(err(anonFollow.error)));
+
+const ghostFollow = await customer.client.rpc('set_favorite', {
+  p_business_id: '00000000-0000-0000-0000-000000000000', p_value: true,
+});
+check('Neexistující podnik nelze sledovat', /NOT_FOUND/.test(err(ghostFollow.error)));
+if (wasFavorite) await customer.client.rpc('set_favorite', { p_business_id: BUSINESS_ID, p_value: true });
+
+// --- an unavailable offer must still be readable, and still not bookable ---
+const soldOut = await anon.rpc('get_offer_detail', { p_offer_id: offerA, p_lat: null, p_lng: null });
+check('Vyprodaná nabídka má stále veřejný detail', Boolean(soldOut.data?.id));
+check('Vyprodaná nabídka není rezervovatelná', soldOut.data?.bookable === false);
+check('Vyprodaná nabídka hlásí nulovou kapacitu', soldOut.data?.capacity_remaining === 0);
+
+// --- customer metrics: value that can be defended ---
+const myMetrics = (await customer.client.rpc('my_customer_metrics')).data;
+check('Zákaznické metriky vracejí všechna pole',
+  myMetrics && ['month_completed','month_saved_cents','all_time_completed','all_time_saved_cents','best_discount_pct']
+    .every((k) => k in metrics));
+const completedRows = ((await customer.client.rpc('my_bookings')).data ?? []).filter((b) => b.status === 'completed');
+check('Počet započtených rezervací odpovídá skutečně proběhlým',
+  myMetrics?.all_time_completed === completedRows.length,
+  `${myMetrics?.all_time_completed} vs ${completedRows.length}`);
+check('Úspora se počítá ze snapshotů rezervace',
+  myMetrics?.all_time_saved_cents ===
+    completedRows.reduce((sum, b) => sum + (b.original_price_cents_snapshot - b.price_cents), 0));
+check('Zrušené ani nedostavené rezervace se do hodnoty nepočítají',
+  ((await customer.client.rpc('my_bookings')).data ?? [])
+    .filter((b) => b.status !== 'completed').length > 0 &&
+  myMetrics?.all_time_completed === completedRows.length);
+check('Nepřihlášený se k metrikám nedostane',
+  /AUTH_REQUIRED/.test(err((await anon.rpc('my_customer_metrics')).error)));
+
+// --- referral attribution ---
+const refCode = (await customer.client.rpc('my_referral_code')).data;
+check('Doporučující kód se vytvoří', typeof refCode === 'string' && refCode.length === 6);
+check('Doporučující kód je stabilní', (await customer.client.rpc('my_referral_code')).data === refCode);
+check('Platný kód jde přeložit i bez přihlášení',
+  (await anon.rpc('resolve_referral_code', { p_code: refCode })).data?.valid === true);
+check('Neexistující kód se netváří jako platný',
+  (await anon.rpc('resolve_referral_code', { p_code: 'ZZZZZZ' })).data?.valid === false);
+check('Sám sebe doporučit nelze',
+  (await customer.client.rpc('claim_referral', { p_code: refCode })).data?.reason === 'self');
+// The demo customer has bookings and an old account, which is exactly the case that must
+// never be convertible into a "new referred user".
+const otherUser = await signIn('demo-5@flek.test');
+const claimOld = await otherUser.client.rpc('claim_referral', { p_code: refCode });
+check('Zavedený účet se nestane nově doporučeným',
+  claimOld.data?.claimed === false && claimOld.data?.reason === 'not_a_new_account');
+check('Nepřihlášený nemůže atribuci uplatnit',
+  /AUTH_REQUIRED/.test(err((await anon.rpc('claim_referral', { p_code: refCode })).error)));
+check('Cizí atribuční data nejsou čitelná',
+  ((await otherUser.client.from('referrals').select('*')).data ?? []).length === 0);
+const refStats = (await customer.client.rpc('my_referral_stats')).data;
+check('Statistika doporučení vrací obě čísla',
+  refStats && typeof refStats.invited === 'number' && typeof refStats.qualified === 'number');
+
+// --- merchant follower count ---
+const mMetrics = (await merchant.client.rpc('merchant_metrics', { p_business_id: BUSINESS_ID })).data;
+check('Metriky podniku nesou počet sledujících', typeof mMetrics?.followers === 'number');
+}
+
 // Cancelling the offers releases every booking this run created, so the demo seed is left
 // as it was found and the next run starts from a clean three-booking allowance.
 for (const id of created) await merchant.client.rpc('merchant_cancel_offer', { p_offer_id: id, p_reason: 'Úklid po akceptačním běhu.' });

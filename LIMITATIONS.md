@@ -6,7 +6,7 @@ Poctivý seznam. Nic z toho není obejité mockem ani vydávané za hotové.
 
 Na tomto počítači není Docker ani PostgreSQL (`docker`, `colima`, `podman`, `limactl` ani `brew` nejsou k dispozici), takže lokální Supabase nešlo spustit a sada `tests/integration.test.ts` neběžela.
 
-Migrace, seed i chování aplikace ale **jsou** ověřené proti skutečnému hostovanému PostgreSQL 17 s PostGIS — viz `npm run test:acceptance`, 27/27 prošlo, včetně souběžných rezervací a RLS. Obsahově se obě sady překrývají; lokální varianta navíc sahá přímo do databáze (`pg`), což hostovaná cesta neumí.
+Migrace, seed i chování aplikace ale **jsou** ověřené proti skutečnému hostovanému PostgreSQL 17 s PostGIS — viz `npm run test:acceptance` (sada má nyní 76 kontrol), včetně souběžných rezervací a RLS. Obsahově se obě sady překrývají; lokální varianta navíc sahá přímo do databáze (`pg`), což hostovaná cesta neumí.
 
 Na počítači s Dockerem stačí `npm ci && npm run db:start && npm run db:types && npm test`.
 
@@ -54,6 +54,18 @@ Kdo v tom bude pokračovat: nejvíc přinese nahrazení Temporalu v zobrazovací
 
 ## 11. Vědomě mimo V1
 
-Platby, zálohy, výplaty · předplatné · věrnostní programy a kupony · recenze · chat · push a SMS · dynamické ceny · integrace na rezervační systémy · vícejazyčné rozhraní · nativní aplikace · fakturace · QR skenování.
+Předplatné · psané recenze a jejich moderace · chat · push a SMS · dynamické ceny · integrace na rezervační systémy · vícejazyčné rozhraní · nativní aplikace · fakturace · výplaty podnikům.
 
-Z P2 je hotový jen export do kalendáře (.ics u potvrzení). Zbytek ne: e-mailová oznámení, oblíbené podniky ani zakládání provozovny administrátorem s pozvánkou vlastníka. P0 a P1 mají přednost a P2 se nebude vydávat za hotové.
+Tenhle seznam byl zastaralý a je opravený. Mezitím **přibylo**: platba předem (demo poskytovatel, viz níže), hodnocení hvězdičkami z proběhlých rezervací, oblíbené podniky s odvozeným upozorněním, export do kalendáře, skenování QR u partnera a atribuce doporučení.
+
+## 12. Doporučení nemají odměnu
+
+Atribuce je hotová a měřitelná: kdo koho přivedl a jestli ten člověk opravdu absolvoval svůj první FLEK. Kredit k utracení hotový **není** a záměrně se nikde nezobrazuje.
+
+Důvod je architektonický, ne časový. `create_booking` přijímá jen vypořádanou platbu, jejíž částka odpovídá ceně nabídky. Prosté `profiles.credit_cents += 5000` by tenhle invariant obešlo. Utratitelný kredit vyžaduje, aby platilo „externí vypořádané peníze + atomicky spotřebovaný kredit = cena rezervace", a aby to zvládlo souběžné utrácení, dvojklik, selhání rezervace po rezervaci kredibitu, selhání platby, změnu ceny, vrácení odměny a idempotenci. Do té doby je poctivější měřit atribuci než ukazovat částku, kterou nejde uplatnit.
+
+## 13. Upozornění na nový FLEK není push
+
+„Upozornit na další FLEK" zapne sledování podniku. Nové termíny se pak objeví v Oblíbených a na odznaku v navigaci. Do zařízení nic nedorazí — web push není implementovaný a aplikace proto **nežádá o povolení oznámení**, protože by ho nemohla využít. Texty to říkají doslova: „Nové FLEKy uvidíš v Oblíbených."
+
+Stejně tak dashboard podniku říká, že provozovnu někdo sleduje — nikdy, že jim bylo něco odesláno.
