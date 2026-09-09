@@ -70,10 +70,12 @@ Důvod je architektonický, ne časový. `create_booking` přijímá jen vypoř�
 
 Stejně tak dashboard podniku říká, že provozovnu někdo sleduje — nikdy, že jim bylo něco odesláno.
 
-## 14. Fotografie v katalogu jsou právní riziko, ne jen malý výběr
+## 14. Katalog má 36 činností, ale jen 8 fotografií
 
-`public.service_photos` má 36 činností, ale jen **12 fotografií** — ověřených tak, že se každá skutečně načte. Uvnitř kategorie proto několik činností sdílí jeden snímek.
+Podmínky Unsplash říkají doslova, že licence **nezahrnuje** právo užít „People's images if they are recognizable in the Images", a služba se poskytuje „AS-IS" **bez záruky neporušení práv třetích stran**. Čtyři z dvanácti původních snímků ukazovaly viditelnou tvář (holič holící zákazníka, kosmetické ošetření obličeje, posilovna, cvičení na podložce). Byly vyřazeny migrací `202609090017`; ověřeno, že se nevyskytují v katalogu, u služeb ani u provozoven.
 
-Podstatnější je ale licence. Podmínky Unsplash říkají doslova, že licence **nezahrnuje** právo užít „People's images if they are recognizable in the Images", a služba se poskytuje „AS-IS" **bez záruky neporušení práv třetích stran**. Na našich snímcích rozpoznatelní lidé jsou. Pro demo to projde, pro ostrý provoz, kde fotka propaguje službu konkrétního podniku, je to riziko na straně provozovatele FLEKu.
+Zbylých osm žádnou rozpoznatelnou tvář nemá. Důsledek je menší pestrost: **vlasy, krása, sport a jóga mají jednu fotografii pro všech šest svých činností.** To je vědomá volba — pestrost koupená cizí podobiznou za to nestojí.
 
-Nahrávání vlastních fotek partnerem bylo zvažováno a **zamítnuto z bezpečnostních důvodů** (obsah bez moderace ve veřejném bucketu). Politika úložiště pro buckety `logos` a `covers` z migrace 202609070005 v databázi ale nadále existuje a dovoluje přihlášenému členovi provozovny zapisovat do složky své provozovny. Aplikace ji nevyužívá; pokud má zůstat zavřená i na úrovni databáze, je potřeba ty INSERT/UPDATE politiky odebrat samostatnou migrací.
+Cesta dál je jedna z těchto: licencované snímky s model release (Shutterstock, Adobe Stock), vlastní fotografie z podniků dodané provozovatelem, nebo vlastní ilustrace ke každé činnosti. Přidání se dělá řádky v `service_photos`, ne zásahem do kódu.
+
+Nahrávání vlastních fotek partnerem bylo **zamítnuto z bezpečnostních důvodů** (neomoderovaný obsah ve veřejném bucketu). Politika úložiště pro `logos` a `covers` z migrace 202609070005 v databázi ale dál existuje a dovoluje přihlášenému členovi provozovny zapsat do složky své provozovny. Aplikace ji nevyužívá; pokud má být zavřená i v databázi, chce to samostatnou migraci.
