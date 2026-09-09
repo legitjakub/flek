@@ -23,8 +23,13 @@ export const FALLBACK_ATTRIBUTION = '© Esri, HERE, Garmin, © OpenStreetMap';
 /**
  * A URL, not an object. MapLibre fetches and owns it, so there is nothing of ours for it to
  * mutate — which is why the structuredClone below guards only the fallback.
+ *
+ * "Bright" out of the five styles OpenFreeMap publishes. Rendered side by side over Prague:
+ * liberty runs cool and muddy green, positron is near-monochrome (the desaturated look this
+ * change exists to escape) and fiord is a dark theme. Bright keeps warm beige built-up areas
+ * and a soft blue river, which sits with the app's cream ground instead of fighting it.
  */
-export const MAP_STYLE: MapOptions['style'] = 'https://tiles.openfreemap.org/styles/liberty';
+export const MAP_STYLE: MapOptions['style'] = 'https://tiles.openfreemap.org/styles/bright';
 
 /**
  * OpenFreeMap is donated infrastructure with no service agreement, so there has to be a way
