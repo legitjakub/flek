@@ -44,7 +44,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
 
   if (query.isPending) {
     return (
-      <main className="mx-auto w-full max-w-2xl px-4 py-4">
+      <main className="page-container py-4">
         <Skeleton className="h-52 w-full" />
         <Skeleton className="mt-4 h-8 w-2/3" />
         <Skeleton className="mt-2 h-5 w-1/2" />
@@ -53,14 +53,14 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
   }
   if (query.isError) {
     return (
-      <main className="mx-auto w-full max-w-2xl px-4 py-6">
+      <main className="page-container py-6">
         <ErrorState error={query.error} onRetry={() => query.refetch()} />
       </main>
     );
   }
   if (!offer) {
     return (
-      <main className="mx-auto w-full max-w-2xl px-4 py-10 text-center">
+      <main className="page-container py-10 text-center">
         <p className="text-base font-bold text-ink">Tento termín už bohužel není volný.</p>
         <Link to="/" className="mt-4 inline-block text-base font-bold underline underline-offset-4">
           Zpět na nabídky
@@ -116,7 +116,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             ) : null}
           </div>
         </div>
-        <aside className="rounded-2xl border border-line bg-card p-5 shadow-card md:sticky md:top-24 md:col-start-2 md:row-start-1 md:row-span-2 lg:p-6" aria-label="Vybraný termín">
+        <aside className="rounded-2xl bg-card p-5 shadow-card md:sticky md:top-24 md:col-start-2 md:row-start-1 md:row-span-2 lg:p-6" aria-label="Vybraný termín">
           <h2 className="text-lg font-extrabold">Tvůj termín</h2>
           <div className="mt-4 flex items-start gap-3 rounded-xl bg-accent-soft p-4 text-accent">
             <CalendarDays size={22} aria-hidden="true" className="mt-0.5 shrink-0" />
@@ -204,7 +204,7 @@ function BookingSuccess({
       </p>
       <div className="mt-6 flex flex-col gap-2">
         <a
-          className="inline-flex min-h-13 w-full items-center justify-center rounded-xl bg-action px-5 text-base font-bold text-accent-ink"
+          className="btn-primary"
           href={`https://www.openstreetmap.org/?mlat=${offer.latitude}&mlon=${offer.longitude}#map=17/${offer.latitude}/${offer.longitude}`}
           target="_blank"
           rel="noreferrer"

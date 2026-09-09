@@ -27,12 +27,12 @@ export function MerchantShell({ children }: { children: (business: Business) => 
   if (ready && !userId) {
     return (
       <MerchantFrame>
-        <div className="rounded-2xl border border-line bg-card p-5">
+        <div className="rounded-2xl bg-card shadow-card p-5">
           <h1 className="text-lg font-extrabold text-ink">Přihlaste se jako partner</h1>
           <p className="mt-1 text-sm text-muted">Účtem partnera spravujete provozovnu a volné termíny.</p>
           <Link
             to="/prihlaseni?role=merchant&returnTo=%2Fpartner"
-            className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-bold text-accent-ink"
+            className="btn-primary"
           >
             Přihlásit se
           </Link>
@@ -60,14 +60,14 @@ export function MerchantShell({ children }: { children: (business: Business) => 
   if (!business) {
     return (
       <MerchantFrame>
-        <div className="rounded-2xl border border-line bg-card p-5">
+        <div className="rounded-2xl bg-card shadow-card p-5">
           <h1 className="text-lg font-extrabold text-ink">Zaregistrujte provozovnu</h1>
           <p className="mt-1 text-sm text-muted">
             Vyplníte základní údaje, my je do 24 hodin zkontrolujeme a pak můžete zveřejňovat volné termíny.
           </p>
           <Link
             to="/partner/registrace"
-            className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-bold text-accent-ink"
+            className="btn-primary"
           >
             Přidat provozovnu
           </Link>

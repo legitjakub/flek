@@ -26,7 +26,7 @@ export function Voucher({ code }: { code: string }) {
   }, [target]);
 
   return (
-    <div className="rounded-2xl border border-line bg-card p-5">
+    <div className="rounded-2xl bg-card shadow-card p-5">
       <p className="text-sm text-muted">Rezervační kód</p>
       <p className="tnum mt-1 font-mono text-2xl font-extrabold tracking-[0.12em] text-ink">{code}</p>
       <div className="mx-auto mt-4 w-44">

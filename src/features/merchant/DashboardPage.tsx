@@ -58,7 +58,7 @@ function Dashboard({ businessId, approved }: { businessId: string; approved: boo
         <Stat label="Volná místa" value={metrics.data?.free_seats} />
       </div>
 
-      <section className="rounded-2xl border border-line bg-card p-5 sm:p-6">
+      <section className="rounded-2xl bg-card shadow-card p-5 sm:p-6">
         <h2 className="text-base font-bold text-ink">Nejbližší rezervace</h2>
         {today.isPending ? <LoadingList rows={1} /> : null}
         {today.isError ? <ErrorState error={today.error} onRetry={() => today.refetch()} /> : null}
@@ -78,7 +78,7 @@ function Dashboard({ businessId, approved }: { businessId: string; approved: boo
         ) : null}
       </section>
 
-      <section className="rounded-2xl border border-line bg-card p-5 sm:p-6">
+      <section className="rounded-2xl bg-card shadow-card p-5 sm:p-6">
         <h2 className="text-base font-bold text-ink">Čeká na vyřízení</h2>
         {toResolve.length === 0 ? (
           <p className="mt-2 text-sm text-muted">Nic nečeká. Docházku potvrdíte až po začátku termínu.</p>
@@ -108,7 +108,7 @@ function Dashboard({ businessId, approved }: { businessId: string; approved: boo
           action={
             <Link
               to="/partner/sluzby"
-              className="inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-bold text-accent-ink"
+              className="btn-primary"
             >
               Přidat službu
             </Link>
@@ -123,7 +123,7 @@ function Dashboard({ businessId, approved }: { businessId: string; approved: boo
 
 function Stat({ label, value }: { label: string; value: number | undefined }) {
   return (
-    <div className="rounded-2xl border border-line bg-card px-3 py-4 sm:p-5">
+    <div className="rounded-2xl bg-card shadow-card px-3 py-4 sm:p-5">
       <p className="tnum text-xl font-extrabold text-ink">{value ?? '—'}</p>
       <p className="mt-1 text-sm leading-snug text-muted">{label}</p>
     </div>

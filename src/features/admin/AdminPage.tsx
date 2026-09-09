@@ -70,7 +70,7 @@ export function AdminFrame({ children }: { children: ReactNode }) {
             action={
               <Link
                 to="/prihlaseni?returnTo=%2Fadmin"
-                className="inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-bold text-accent-ink"
+                className="btn-primary"
               >
                 Přihlásit se
               </Link>
@@ -113,7 +113,7 @@ export function AdminBusinessesPage() {
 
       <ul className="mt-4 flex flex-col gap-3">
         {(query.data ?? []).map((business) => (
-          <li key={business.id} className="rounded-2xl border border-line bg-card p-4">
+          <li key={business.id} className="rounded-2xl bg-card shadow-card p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-base font-bold text-ink">
@@ -307,7 +307,7 @@ export function AdminUsersPage() {
 
       <ul className="mt-4 flex flex-col gap-3">
         {(users.data ?? []).map((user) => (
-          <li key={user.id} className="rounded-2xl border border-line bg-card p-4">
+          <li key={user.id} className="rounded-2xl bg-card shadow-card p-4">
             <p className="text-base font-bold text-ink">
               {user.first_name} {user.last_name}
             </p>
@@ -374,7 +374,7 @@ function MetricsBody({ data }: { data: NonNullable<Awaited<ReturnType<typeof adm
         <Metric label="Odhad provize" value={money(Math.round(data.commission_cents / 100) * 100)} />
       </dl>
 
-      <section className="rounded-2xl border border-line bg-card p-4">
+      <section className="rounded-2xl bg-card shadow-card p-4">
         <h2 className="text-base font-bold text-ink">Naplněnost podle kategorie</h2>
         <ul className="mt-2 flex flex-col gap-1 text-sm">
           {data.fill_rate_by_category.map((row) => (
@@ -389,7 +389,7 @@ function MetricsBody({ data }: { data: NonNullable<Awaited<ReturnType<typeof adm
         </ul>
       </section>
 
-      <section className="rounded-2xl border border-line bg-card p-4">
+      <section className="rounded-2xl bg-card shadow-card p-4">
         <h2 className="text-base font-bold text-ink">Trychtýř</h2>
         <ul className="tnum mt-2 flex flex-col gap-1 text-sm">
           <li className="flex justify-between">
@@ -422,7 +422,7 @@ function MetricsBody({ data }: { data: NonNullable<Awaited<ReturnType<typeof adm
 
 function Metric({ label, value }: { label: string; value: number | string }) {
   return (
-    <div className="rounded-2xl border border-line bg-card p-4">
+    <div className="rounded-2xl bg-card shadow-card p-4">
       <dt className="text-xs text-muted">{label}</dt>
       <dd className="tnum mt-1 text-xl font-extrabold text-ink">{value}</dd>
     </div>

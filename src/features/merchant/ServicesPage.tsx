@@ -45,7 +45,7 @@ function Services({ businessId, categorySlug }: { businessId: string; categorySl
 
       <ul className="flex flex-col gap-3">
         {(services.data ?? []).map((service) => (
-          <li key={service.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-card p-4">
+          <li key={service.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-card shadow-card p-4">
             <div>
               <p className="text-base font-bold text-ink">{service.name}</p>
               <p className="tnum text-sm text-muted">

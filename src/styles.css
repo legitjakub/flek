@@ -10,33 +10,35 @@
      only for headlines and the wordmark — that is where the brand gets a voice. */
   --font-sans: 'Instrument Sans Variable', ui-sans-serif, system-ui, sans-serif;
 
-  /* Cool off-white ground, deep slate ink, the FLEK teal. The brand teal draws the mark;
-     the darker accent is reserved for the primary CTA so the two never compete. */
-  /* Derived from the wordmark: charcoal and lime, nothing else invented.
+  /* Warm cream ground, charcoal ink, the logo's lime. Cream is not decoration: it lifts
+     the gap between page and card from 3.5 % to 6.7 % of luminance, which is what lets a
+     card stand on its own without a hairline border around it.
      Every pair below was measured against WCAG AA before being written down. */
-  --color-surface: #f6f7f6;
+  --color-surface: #faf7f2;
   --color-card: #ffffff;
   --color-ink: #22282b;
-  /* Strong enough to read as text, not as something disabled: 7.4:1 on the surface.
-     The lighter tone made whole paragraphs look washed out. */
-  --color-muted: #4b534e;
-  --color-line: #e1e6e2;
+  /* Warm to match the ground; 6.9:1 on cream, 7.4:1 on a card. */
+  --color-muted: #5a554c;
+  /* Only a divider now, never an outline — hence far fewer of them. */
+  --color-line: #ece5da;
 
-  /* The bright lime is the logo and decoration only: on white it measures 2.2:1, so it
-     never carries text. It appears as a fill with ink on top, or as a marker. */
+  /* The lime finally does the job it was made for: it fills the time chip, which is the
+     loudest thing on a card. On white it measures 2.2:1, so it never carries text —
+     ink sits on top of it. */
   --color-brand: #8cc63f;
 
-  /* The primary action is the darkest thing on the screen — one loud element per view.
-     The deep lime marks everything else that is interactive and still passes AA on white. */
+  /* The primary action is the darkest thing on screen: one loud element per view.
+     The deep lime marks everything else interactive and passes AA on both grounds. */
   --color-accent: #4f7a16;
   --color-accent-ink: #ffffff;
-  --color-accent-soft: #f2f9e6;
-  --color-action: #22282b;
+  --color-accent-soft: #f1f6e3;
 
-  /* Money settled or returned. Deliberately blue-green so it cannot be read as the brand. */
+  /* Money settled or returned. Blue-green on purpose, so it never reads as the brand. */
   --color-positive: #12705a;
   --color-warning: #8a5a00;
+  --color-warning-soft: #fdf4e3;
   --color-danger: #a12d36;
+  --color-danger-soft: #fceeef;
 
   /* The whole scale. Roles, so a new screen does not invent a thirteenth combination:
      2xl/800 page heading · xl/800 price and time · lg/800 section heading ·
@@ -49,11 +51,18 @@
   --text-xl: 1.5rem;
   --text-2xl: 2rem;
 
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.5rem;
+  /* The whole scale, so it cannot invert again: only md/lg/xl were overridden before,
+     which left rounded-xl (24px) larger than rounded-2xl (16px) — a 44px button was
+     rounder than the card it sat on. Rule: the bigger the surface, the bigger the radius. */
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
 
-  --shadow-card: 0 1px 2px rgb(20 18 16 / 0.04), 0 8px 24px -12px rgb(20 18 16 / 0.18);
+  /* Depth used to come from a hairline. These are what separate a card from the ground now. */
+  --shadow-card: 0 1px 2px rgb(34 40 43 / 0.05), 0 6px 16px -8px rgb(34 40 43 / 0.12);
+  --shadow-lift: 0 2px 4px rgb(34 40 43 / 0.06), 0 14px 32px -12px rgb(34 40 43 / 0.2);
 }
 
 @layer base {
@@ -108,6 +117,24 @@
 }
 
 @layer components {
+  /* The primary action as a link. It was hand-copied at seven call sites, so every change
+     to the button had to be made seven times. */
+  .btn-primary {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: var(--radius-xl);
+    background: var(--color-ink);
+    padding-inline: 1rem;
+    font-weight: 700;
+    color: var(--color-accent-ink);
+  }
+  .btn-primary:hover {
+    background: #11161a;
+  }
+
   /* Price pins are the content of the map, so they read as buttons rather than markers. */
   .map-pin {
     display: inline-flex;
@@ -133,8 +160,8 @@
     border-color: var(--color-accent);
   }
   .map-pin--selected {
-    background: var(--color-action);
-    border-color: var(--color-action);
+    background: var(--color-ink);
+    border-color: var(--color-ink);
     color: var(--color-accent-ink);
     z-index: 1;
   }
@@ -161,6 +188,24 @@
 }
 
 @layer components {
+  /* The primary action as a link. It was hand-copied at seven call sites, so every change
+     to the button had to be made seven times. */
+  .btn-primary {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: var(--radius-xl);
+    background: var(--color-ink);
+    padding-inline: 1rem;
+    font-weight: 700;
+    color: var(--color-accent-ink);
+  }
+  .btn-primary:hover {
+    background: #11161a;
+  }
+
   .map-page { height: calc(100dvh - 132px - env(safe-area-inset-bottom)); min-height: 660px; }
   @media (min-width: 768px) { .map-page { height: calc(100dvh - 69px); min-height: 640px; } }
   .map-pin-count { margin-left: 6px; display: inline-grid; place-items: center; min-width: 22px; height: 22px; border-radius: 50%; background: var(--color-accent-soft); color: var(--color-accent); font-size: 12px; }

@@ -71,7 +71,7 @@ function Bookings({ businessId }: { businessId: string }) {
       <h1 className="text-2xl font-extrabold tracking-tight text-ink">Rezervace</h1>
 
       <form
-        className="rounded-2xl border border-line bg-card p-4"
+        className="rounded-2xl bg-card shadow-card p-4"
         onSubmit={(event) => {
           event.preventDefault();
           void find();
@@ -132,7 +132,7 @@ function Bookings({ businessId }: { businessId: string }) {
 
       <ul className="flex flex-col gap-3">
         {rows.map((booking) => (
-          <li key={booking.id} className="rounded-2xl border border-line bg-card p-4">
+          <li key={booking.id} className="rounded-2xl bg-card shadow-card p-4">
             <BookingRow booking={booking} now={now} />
           </li>
         ))}

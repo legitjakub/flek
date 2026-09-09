@@ -94,7 +94,7 @@ function Offers({ businessId, approved }: { businessId: string; approved: boolea
 
       <ul className="flex flex-col gap-3">
         {rows.map((offer) => (
-          <li key={offer.id} className="rounded-2xl border border-line bg-card p-5 xl:grid xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center xl:gap-6">
+          <li key={offer.id} className="rounded-2xl bg-card shadow-card p-5 xl:grid xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center xl:gap-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-base font-bold text-ink">{offer.service_name}</p>

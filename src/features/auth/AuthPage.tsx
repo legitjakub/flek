@@ -86,7 +86,7 @@ export function AuthPage() {
       </p>
 
       {confirmSent ? (
-        <div className="mt-6 rounded-2xl border border-line bg-card p-5 sm:p-6">
+        <div className="mt-6 rounded-2xl bg-card shadow-card p-5 sm:p-6">
           <h2 className="text-lg font-extrabold">Potvrď svůj e-mail</h2>
           <p className="mt-2 text-base leading-relaxed text-muted">
             Poslali jsme odkaz na <strong className="text-ink">{form.getValues('email')}</strong>. Otevři ho a účet se
@@ -105,7 +105,7 @@ export function AuthPage() {
         </div>
       ) : null}
 
-      <form hidden={confirmSent} className="mt-6 flex flex-col gap-4 rounded-2xl border border-line bg-card p-5 sm:p-6" onSubmit={form.handleSubmit(submit)} noValidate>
+      <form hidden={confirmSent} className="mt-6 flex flex-col gap-4 rounded-2xl bg-card shadow-card p-5 sm:p-6" onSubmit={form.handleSubmit(submit)} noValidate>
         {isSignup ? (
           <div className="grid grid-cols-2 gap-3">
             <Field id="first_name" label="Jméno" error={form.formState.errors.first_name?.message}>

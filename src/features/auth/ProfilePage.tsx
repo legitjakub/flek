@@ -52,13 +52,13 @@ export function ProfilePage() {
           action={
             <Link
               to="/prihlaseni?returnTo=%2Fprofil"
-              className="inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-bold text-accent-ink"
+              className="btn-primary"
             >
               Přihlásit se
             </Link>
           }
         />
-        <div className="mt-6 rounded-2xl border border-line bg-card p-4">
+        <div className="mt-6 rounded-2xl bg-card shadow-card p-4">
           <h2 className="text-base font-bold text-ink">Máte podnik?</h2>
           <p className="mt-1 text-sm text-muted">Nabídněte volné termíny a naplňte je i na poslední chvíli.</p>
           <Link
@@ -77,7 +77,7 @@ export function ProfilePage() {
       <h1 className="text-2xl font-extrabold tracking-tight text-ink">Profil</h1>
       <p className="mt-1 text-sm text-muted">{session?.user.email}</p>
 
-      <form className="mt-6 flex flex-col gap-4 rounded-2xl border border-line bg-card p-5 sm:p-6" onSubmit={form.handleSubmit((values) => save.mutate(values))} noValidate>
+      <form className="mt-6 flex flex-col gap-4 rounded-2xl bg-card shadow-card p-5 sm:p-6" onSubmit={form.handleSubmit((values) => save.mutate(values))} noValidate>
         <div className="grid grid-cols-2 gap-3">
           <Field id="p-first" label="Jméno" error={form.formState.errors.first_name?.message}>
             <Input id="p-first" autoComplete="given-name" {...form.register('first_name')} />

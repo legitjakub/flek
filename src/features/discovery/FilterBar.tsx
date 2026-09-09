@@ -38,9 +38,9 @@ export function FilterBar({
 }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<Filters>(filters);
-  const count = activeCount({ ...filters, category: null });
+  const count = activeCount(filters);
   const label = (slug: string) => categories.find((c) => c.slug === slug)?.label_cs ?? slug;
-  const chips = activeChips(filters, label).filter((chip) => chip.key !== 'category');
+  const chips = activeChips(filters, label);
 
   function openSheet() {
     setDraft(filters);
@@ -51,8 +51,8 @@ export function FilterBar({
     <div className="flex flex-col gap-3">
       <div className="flex items-end gap-3">
         <div className="min-w-0 flex-1">
-          <p id="kdy-label" className="mb-2 text-sm font-bold">Kdy máš čas?</p>
-          <div role="radiogroup" aria-labelledby="kdy-label" className="rail rail-fade -mx-1 flex gap-2 px-1 pb-1">
+          {/* The six labelled pills say this themselves; the heading only cost height. */}
+          <div role="radiogroup" aria-label="Kdy máš čas" className="rail rail-fade -mx-1 flex gap-2 px-1 pb-1">
             {TIME_INTENTS.map((intent) => {
               const active = intentOf(filters) === intent.key;
               return (
@@ -62,7 +62,7 @@ export function FilterBar({
                   role="radio"
                   aria-checked={active}
                   onClick={() => onChange(applyIntent(filters, intent.key))}
-                  className={`min-h-11 shrink-0 rounded-full border px-4 text-sm font-bold whitespace-nowrap transition-colors ${active ? 'border-action bg-action text-accent-ink' : 'border-line bg-card text-ink hover:border-accent'}`}
+                  className={`min-h-11 shrink-0 rounded-full border px-4 text-sm font-bold whitespace-nowrap transition-colors ${active ? 'border-ink bg-ink text-accent-ink' : 'border-line bg-card text-ink hover:border-accent'}`}
                 >
                   {intent.label}
                 </button>
@@ -79,12 +79,6 @@ export function FilterBar({
             </span>
           ) : null}
         </button>
-      </div>
-      <div className="rail rail-fade flex max-w-full gap-1 border-b border-line" aria-label="Kategorie">
-        {[{ slug: '', label_cs: 'Vše' }, ...categories].map((category) => {
-          const active = (filters.category ?? '') === category.slug;
-          return <button key={category.slug} type="button" aria-pressed={active} onClick={() => onChange({ ...filters, category: category.slug || null })} className={`min-h-12 shrink-0 border-b-2 px-3 text-sm font-bold transition-colors ${active ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-ink'}`}>{category.label_cs}</button>;
-        })}
       </div>
       {chips.length ? <div className="flex flex-wrap items-center gap-x-3 text-sm text-muted">
         <span>{chips.map((chip) => chip.label).join(' · ')}</span>
@@ -117,6 +111,27 @@ export function FilterBar({
         }
       >
         <div className="flex flex-col gap-5">
+          <Group title="Obor">
+            <div className="flex flex-wrap gap-2">
+              {[{ slug: '', label_cs: 'Vše' }, ...categories].map((category) => {
+                const active = (draft.category ?? '') === category.slug;
+                return (
+                  <button
+                    key={category.slug}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => setDraft({ ...draft, category: category.slug || null })}
+                    className={`min-h-11 rounded-xl px-3.5 text-base font-bold transition-colors ${
+                      active ? 'bg-ink text-card' : 'bg-surface text-ink hover:bg-line/60'
+                    }`}
+                  >
+                    {category.label_cs}
+                  </button>
+                );
+              })}
+            </div>
+          </Group>
+
           <Group title="Denní doba">
             <Segmented
               label="Denní doba"

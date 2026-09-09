@@ -45,7 +45,7 @@ export function FavoritesPage() {
             action={
               <Link
                 to="/prihlaseni?returnTo=%2Foblibene"
-                className="inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-bold text-accent-ink"
+                className="btn-primary"
               >
                 Přihlásit se
               </Link>
@@ -75,7 +75,7 @@ export function FavoritesPage() {
             action={
               <Link
                 to="/"
-                className="inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-bold text-accent-ink"
+                className="btn-primary"
               >
                 Objevit nabídky
               </Link>
@@ -105,7 +105,7 @@ export function FavoritesPage() {
             {places.map((place) => (
               <li
                 key={place.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-card p-4"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-card shadow-card p-4"
               >
                 <div className="min-w-0">
                   <p className="text-base font-bold">{place.display_name}</p>

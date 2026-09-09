@@ -82,7 +82,7 @@ export function Button({ variant = 'primary', size = 'md', loading, className, c
       className={cx(
         'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-55',
         size === 'lg' ? 'min-h-13 px-5 text-base' : 'text-sm',
-        variant === 'primary' && 'bg-action text-accent-ink hover:bg-[#11161a]',
+        variant === 'primary' && 'bg-ink text-accent-ink hover:bg-[#11161a]',
         variant === 'secondary' && 'border border-line bg-card text-ink hover:bg-surface',
         variant === 'ghost' && 'text-ink hover:bg-line/50',
         variant === 'danger' && 'border border-danger/25 bg-card text-danger hover:bg-danger/5',
@@ -189,7 +189,7 @@ export function LoadingList({ rows = 3 }: { rows?: number }) {
 
 export function EmptyState({ title, body, action }: { title: string; body?: string; action?: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-line bg-card px-5 py-10 text-center">
+    <div className="rounded-2xl bg-card shadow-card px-5 py-10 text-center">
       <p className="text-base font-bold text-ink">{title}</p>
       {body ? <p className="mx-auto mt-1 max-w-xs text-sm text-muted">{body}</p> : null}
       {action ? <div className="mt-4 flex justify-center">{action}</div> : null}
@@ -210,15 +210,22 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
   );
 }
 
-export function Banner({ tone = 'info', children }: { tone?: 'info' | 'warning' | 'success'; children: ReactNode }) {
+export function Banner({
+  tone = 'info',
+  children,
+}: {
+  tone?: 'info' | 'warning' | 'success' | 'danger';
+  children: ReactNode;
+}) {
   return (
     <div
       role="status"
       className={cx(
         'rounded-xl border px-4 py-3 text-sm',
         tone === 'info' && 'border-line bg-card text-ink',
-        tone === 'warning' && 'border-accent/25 bg-accent-soft text-ink',
+        tone === 'warning' && 'border-warning/25 bg-warning-soft text-ink',
         tone === 'success' && 'border-positive/25 bg-positive/8 text-positive',
+        tone === 'danger' && 'border-danger/25 bg-danger-soft text-ink',
       )}
     >
       {children}
@@ -349,7 +356,7 @@ export function Segmented<T extends string | number | null>({
             onClick={() => onChange(option.value)}
             className={cx(
               'min-h-11 rounded-lg px-1.5 text-sm font-bold transition-colors',
-              active ? 'bg-action text-card shadow-sm' : 'text-muted hover:text-ink',
+              active ? 'bg-ink text-card shadow-sm' : 'text-muted hover:text-ink',
             )}
           >
             {option.label}
@@ -380,8 +387,17 @@ export function FilterPill({ label, onRemove }: { label: string; onRemove: () =>
 /** Skeleton shaped like an offer card, so loading does not reflow into content. */
 export function CardSkeleton() {
   return (
-    <div className="flex min-h-56 flex-col gap-3 rounded-2xl border border-line bg-card p-5" role="status" aria-label="Načítáme nabídku">
-      <Skeleton className="h-5 w-2/3" /><Skeleton className="h-4 w-1/2" /><Skeleton className="mt-3 h-10 w-32" /><Skeleton className="mt-auto h-6 w-24" />
+    <div className="overflow-hidden rounded-2xl bg-card shadow-card" role="status" aria-label="Načítáme nabídku">
+      {/* Same aspect ratio as the card's photo, so the grid does not jump when it lands. */}
+      <div className="aspect-[8/5] w-full animate-pulse bg-line/60" />
+      <div className="flex flex-col gap-3 p-4">
+        <Skeleton className="h-5 w-2/3" />
+        <Skeleton className="h-4 w-1/2" />
+        <div className="flex items-end justify-between pt-1">
+          <Skeleton className="h-9 w-28" />
+          <Skeleton className="h-7 w-20" />
+        </div>
+      </div>
     </div>
   );
 }

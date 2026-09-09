@@ -46,14 +46,14 @@ export function MyBookingsPage() {
 
   if (!userId) {
     return (
-      <main className="mx-auto w-full max-w-2xl px-4 py-10">
+      <main className="page-container py-10">
         <EmptyState
           title="Rezervace uvidíš po přihlášení."
           body="Prohlížet nabídky můžeš i bez účtu."
           action={
             <Link
               to="/prihlaseni?returnTo=%2Frezervace"
-              className="inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-bold text-accent-ink"
+              className="btn-primary"
             >
               Přihlásit se
             </Link>
@@ -69,7 +69,7 @@ export function MyBookingsPage() {
   const rows = tab === 'upcoming' ? upcoming : history;
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 pt-8 pb-6">
+    <main className="page-container pt-8 pb-6">
       <h1 className="text-2xl font-extrabold tracking-tight text-ink">Moje rezervace</h1>
       <div className="mt-4">
         <Tabs
@@ -93,7 +93,7 @@ export function MyBookingsPage() {
             action={
               <Link
                 to="/"
-                className="inline-flex min-h-11 items-center rounded-xl bg-action px-4 font-bold text-accent-ink"
+                className="btn-primary"
               >
                 Objevit nabídky
               </Link>
@@ -106,7 +106,7 @@ export function MyBookingsPage() {
           return (
             <article
               key={booking.id}
-              className={`rounded-2xl border bg-card p-4 ${today && booking.status === 'confirmed' ? 'border-accent' : 'border-line'}`}
+              className={`rounded-2xl bg-card shadow-card p-4 ${today && booking.status === 'confirmed' ? 'border-accent' : 'border-line'}`}
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">

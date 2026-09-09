@@ -60,7 +60,7 @@ export function MapPage() {
       {discovery.isPending ? <Skeleton className="min-h-80 flex-1" /> : null}
       {discovery.isSuccess && !rows?.length ? <EmptyState title="V okolí teď nic volného není." body="Zkus změnit místo nebo filtry nad mapou." /> : null}
       {discovery.isSuccess && rows?.length ? (
-        <div className="grid min-h-80 flex-1 overflow-hidden rounded-2xl border border-line bg-card lg:grid-cols-[340px_minmax(0,1fr)]">
+        <div className="grid min-h-80 flex-1 overflow-hidden rounded-2xl bg-card shadow-card lg:grid-cols-[340px_minmax(0,1fr)]">
           <section className="hidden min-h-0 flex-col border-r border-line lg:flex" aria-label="Nabídky na mapě">
             <div className="border-b border-line px-5 py-4"><h2 className="text-base font-extrabold">{rows.length} {plural(rows.length)} v okolí</h2><p className="mt-1 text-sm text-muted">Vyber si aktivitu a svůj čas.</p></div>
             <ul className="min-h-0 flex-1 divide-y divide-line overflow-y-auto overscroll-contain">

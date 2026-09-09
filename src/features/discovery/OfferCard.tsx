@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowUpRight, Clock3, MapPin } from 'lucide-react';
+import { Clock3, MapPin } from 'lucide-react';
 import { Link, useRouter } from '../../app/router';
 import { money, distance as formatDistance } from '../../lib/format';
 import { clockTime, dayLabel, duration } from '../../lib/time';
@@ -8,9 +8,12 @@ import { Rating } from '../../components/ui';
 import type { SearchRow } from '../../types/database';
 
 /**
- * The card the whole product is read through. Time leads, price follows, the discount
- * supports — the offer is an opportunity, not a coupon. Urgency is only ever the real
- * clock: no invented scarcity, no countdown that is not true.
+ * The card the whole product is read through. Time leads, price closes, the discount only
+ * supports — this is an opportunity, not a coupon. Urgency is never invented: the only
+ * countdown shown is the real clock.
+ *
+ * The venue's identity sits on the photograph rather than in a text row, so the block
+ * underneath can be facts alone.
  */
 export function OfferCard({
   offer,
@@ -20,14 +23,16 @@ export function OfferCard({
 }: {
   offer: SearchRow;
   now: string;
+  /** Drops the photograph — for the preview card floating over the map. */
   compact?: boolean;
   /** The one card above the fold: fetched eagerly so it is not the slow LCP element. */
   priority?: boolean;
 }) {
-  const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
   const { path, search } = useRouter();
+  const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
   const origin = `${path}${search.size ? `?${search}` : ''}`;
   const photo = offer.image_url ?? offer.cover_url;
+  const showPhoto = Boolean(photo) && photo !== failedPhoto && !compact;
   const minutesAway = Math.round((Date.parse(offer.start_at) - Date.parse(now)) / 60000);
   const startingSoon = minutesAway > 0 && minutesAway <= 120;
   const lastSeat = offer.capacity_remaining === 1 && offer.capacity_total > 1;
@@ -35,60 +40,47 @@ export function OfferCard({
   return (
     <Link
       to={`/nabidka/${offer.id}?from=${encodeURIComponent(origin)}`}
-      className="offer-card group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-card transition duration-150 hover:border-accent/40 hover:shadow-card"
+      className="group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl bg-card shadow-card transition-shadow duration-150 hover:shadow-lift"
     >
-      {photo && photo !== failedPhoto && !compact ? (
-        <img
-          src={photo}
-          onError={() => setFailedPhoto(photo)}
-          alt=""
-          loading={priority ? 'eager' : 'lazy'}
-          fetchPriority={priority ? 'high' : 'auto'}
-          decoding="async"
-          width={800}
-          height={400}
-          className="aspect-[2/1] w-full bg-line/40 object-cover"
-        />
-      ) : null}
-
-      <div className="flex flex-1 flex-col p-4 sm:p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h3 className="text-base leading-snug font-extrabold text-ink [overflow-wrap:anywhere]">
-              {offer.service_name}
-            </h3>
-            {/* The venue is identity, not metadata: it gets its own line in ink. Glued to
-                the district in grey it read as one unbroken string. */}
-            <p className="mt-1 text-base leading-snug font-bold text-ink [overflow-wrap:anywhere]">
-              {offer.business_name}
-            </p>
-          </div>
-          <ArrowUpRight
-            aria-hidden="true"
-            size={18}
-            className="mt-0.5 shrink-0 text-muted transition-colors group-hover:text-accent"
+      <div className="relative">
+        {showPhoto ? (
+          <img
+            src={photo as string}
+            onError={() => setFailedPhoto(photo as string)}
+            alt=""
+            loading={priority ? 'eager' : 'lazy'}
+            fetchPriority={priority ? 'high' : 'auto'}
+            decoding="async"
+            width={800}
+            height={500}
+            className="aspect-[8/5] w-full object-cover"
           />
-        </div>
+        ) : (
+          // A missing photograph keeps the same height, so a mixed grid stays even.
+          <div className="aspect-[8/5] w-full bg-accent-soft" aria-hidden="true" />
+        )}
 
-        <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2">
-          <p className="tnum rounded-lg bg-accent-soft px-3 py-2 text-base font-extrabold text-accent">
-            {dayLabel(offer.start_at, now)} {clockTime(offer.start_at)}
-          </p>
-          {startingSoon ? (
-            <span className="tnum text-base font-bold text-ink">Začíná {relativeTime(offer.start_at, now)}</span>
-          ) : null}
+        {/* Identity on the image: the scrim exists so white text survives a pale photo. */}
+        <div className="absolute inset-x-0 bottom-0 flex items-center gap-2 bg-gradient-to-t from-ink/75 to-transparent px-3 pt-8 pb-3">
+          <VenueMark name={offer.business_name} logo={offer.logo_url} />
+          <span className="truncate text-base font-bold text-card">{offer.business_name}</span>
         </div>
+      </div>
 
-        {/* Everything that merely describes the offer sits together, at one size. */}
-        <p className="tnum mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
+      <div className="flex flex-1 flex-col gap-3 p-4">
+        <h3 className="text-base leading-snug font-extrabold text-ink [overflow-wrap:anywhere]">
+          {offer.service_name}
+        </h3>
+
+        <p className="tnum flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
           {offer.district ? <span>{offer.district}</span> : null}
           {offer.district ? <span aria-hidden="true">·</span> : null}
-          <span className="inline-flex items-center gap-1.5">
+          <span className="inline-flex items-center gap-1">
             <MapPin size={14} aria-hidden="true" />
             {formatDistance(offer.distance_m)}
           </span>
           <span aria-hidden="true">·</span>
-          <span className="inline-flex items-center gap-1.5">
+          <span className="inline-flex items-center gap-1">
             <Clock3 size={14} aria-hidden="true" />
             {duration(offer.start_at, offer.end_at)} min
           </span>
@@ -102,12 +94,53 @@ export function OfferCard({
           ) : null}
         </p>
 
-        <div className="mt-auto flex flex-wrap items-baseline gap-2 pt-4">
-          <span className="tnum text-xl font-extrabold tracking-tight">{money(offer.deal_price_cents)}</span>
-          <s className="tnum text-base text-muted">{money(offer.original_price_cents)}</s>
-          <span className="tnum ml-auto text-base font-bold text-accent">−{offer.discount_pct} %</span>
+        {/* Time on the left in the brand colour, price on the right: the two things the
+            decision is made on, at opposite ends so neither has to be hunted for. */}
+        <div className="mt-auto flex flex-wrap items-end justify-between gap-x-3 gap-y-2 pt-1">
+          <div className="min-w-0">
+            <span className="tnum inline-block rounded-lg bg-brand px-2.5 py-1.5 text-base font-extrabold text-ink">
+              {dayLabel(offer.start_at, now)} {clockTime(offer.start_at)}
+            </span>
+            {startingSoon ? (
+              <span className="tnum mt-1 block text-sm font-bold text-ink">
+                Začíná {relativeTime(offer.start_at, now)}
+              </span>
+            ) : null}
+          </div>
+          <div className="text-right">
+            <p className="tnum text-xl leading-none font-extrabold text-ink">{money(offer.deal_price_cents)}</p>
+            <p className="tnum mt-1 text-sm text-muted">
+              <s>{money(offer.original_price_cents)}</s>
+              <span className="ml-1.5 font-bold text-accent">−{offer.discount_pct} %</span>
+            </p>
+          </div>
         </div>
       </div>
     </Link>
+  );
+}
+
+/** Every seeded venue has an empty logo_url, so the initial is the normal case, not a fallback. */
+function VenueMark({ name, logo }: { name: string; logo?: string | null }) {
+  const [broken, setBroken] = useState(false);
+  if (logo && !broken) {
+    return (
+      <img
+        src={logo}
+        onError={() => setBroken(true)}
+        alt=""
+        width={56}
+        height={56}
+        className="size-7 shrink-0 rounded-full bg-card object-cover"
+      />
+    );
+  }
+  return (
+    <span
+      aria-hidden="true"
+      className="grid size-7 shrink-0 place-items-center rounded-full bg-card text-sm font-bold text-ink"
+    >
+      {name.trim().charAt(0).toUpperCase()}
+    </span>
   );
 }
