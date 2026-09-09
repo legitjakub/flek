@@ -137,3 +137,81 @@ from public.payments p
 where k.payment_id is null and p.provider_reference='demo-seed'
   and p.customer_id=k.customer_id and p.offer_id=k.offer_id and p.amount_cents=k.price_cents
   and not exists (select 1 from public.bookings x where x.payment_id=p.id);
+
+-- Rolling inventory across the whole bookable window.
+--
+-- The fixtures above (flek-offer-1..38) exist to exercise specific states — cancelled,
+-- booked, no-show, past — and are pinned near "now" on purpose. That made the demo look
+-- alive on the day it was seeded and empty the morning after: every slot had passed and
+-- nothing was bookable. These offers fill all seven days the schema allows
+-- (private.validate_offer caps start_at at now() + 7 days).
+--
+-- Written so the same block can be pasted into the SQL editor to refresh a live demo, not
+-- only run on a fresh reset; it owns the flek-roll- ids and touches nothing else.
+delete from public.bookings where offer_id in (select md5('flek-roll-'||g)::uuid from generate_series(1,400) g);
+delete from public.offers where id in (select md5('flek-roll-'||g)::uuid from generate_series(1,400) g);
+
+do $$
+declare
+ v record; s public.services;
+ d integer; k integer; n integer; i integer := 0;
+ hr integer; st timestamptz; price integer; cap integer; pct integer;
+ -- Opening hours a Prague venue actually sells; the index is derived per venue and day so
+ -- two businesses rarely free up the same slot, the way a real market looks.
+ hours integer[] := array[8,9,10,11,12,13,14,15,16,17,18,19,20];
+begin
+ for v in select b.id, b.category_slug, row_number() over (order by b.slug)::integer rn
+          from public.businesses b where b.status = 'approved' loop
+  for d in 0..6 loop
+   -- A venue does not have a gap every day. Roughly a quarter of days sell out entirely.
+   n := case (v.rn + d) % 4 when 0 then 0 when 1 then 1 else 2 end;
+   for k in 1..n loop
+    i := i + 1;
+    hr := hours[((v.rn * 3 + d * 2 + k * 5) % 13) + 1];
+    st := (date_trunc('day', now() at time zone 'Europe/Prague')
+           + make_interval(days => d, hours => hr)) at time zone 'Europe/Prague';
+    -- Slots already gone, or inside the booking cutoff, would be dead on arrival.
+    continue when st < now() + interval '40 minutes';
+    continue when st > now() + interval '7 days';
+
+    select * into s from public.services
+     where business_id = v.id and is_active
+     order by md5(id::text || k::text) limit 1;
+    continue when s.id is null;
+
+    -- The dead hours get cut hardest; prime evening barely needs a discount to sell.
+    pct := case when hr <= 10 then 55 when hr between 13 and 15 then 50
+                when hr between 17 and 19 then 75 else 65 end;
+    price := (s.normal_price_cents * pct / 10000) * 100;
+    -- Mostly a single free chair. Group formats (yoga, sport) legitimately hold more.
+    cap := case when v.category_slug in ('joga','sport') and i % 3 = 0 then 8
+                when i % 7 = 0 then 4 when i % 5 = 0 then 2 else 1 end;
+
+    insert into public.offers(id,business_id,service_id,start_at,end_at,booking_cutoff_at,
+      original_price_cents,deal_price_cents,capacity_total,capacity_remaining,status,published_at)
+    values(md5('flek-roll-'||i)::uuid,v.id,s.id,st,st+make_interval(mins=>s.duration_minutes),
+      st-interval '15 minutes',s.normal_price_cents,price,cap,cap,'published',
+      now()-make_interval(mins=>i));
+   end loop;
+  end loop;
+ end loop;
+
+ -- Whatever the hour, "Teď" and "Do 2 h" have to show something: those tabs are the whole
+ -- premise of the product, and a day-grid alone leaves them empty every evening.
+ for k in 1..8 loop
+  i := i + 1;
+  select sv.* into s from public.services sv
+   join public.businesses bb on bb.id = sv.business_id
+   where bb.status = 'approved' and sv.is_active
+   order by md5(sv.id::text || 'now' || k::text) limit 1;
+  continue when s.id is null;
+  st := date_trunc('minute', now()) + make_interval(mins => 45 + k * 22);
+  price := (s.normal_price_cents * 50 / 10000) * 100;  -- steepest cuts: it starts within hours
+  insert into public.offers(id,business_id,service_id,start_at,end_at,booking_cutoff_at,
+    original_price_cents,deal_price_cents,capacity_total,capacity_remaining,status,published_at)
+  values(md5('flek-roll-'||i)::uuid,s.business_id,s.id,st,st+make_interval(mins=>s.duration_minutes),
+    st-interval '15 minutes',s.normal_price_cents,price,
+    case when k % 4 = 0 then 3 else 1 end,case when k % 4 = 0 then 3 else 1 end,
+    'published',now()-make_interval(mins=>k));
+ end loop;
+end $$;
