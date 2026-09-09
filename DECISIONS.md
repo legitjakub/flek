@@ -59,7 +59,8 @@ Jeden řádek na rozhodnutí, chronologicky. Kde bylo zadání nejednoznačné, 
 - Výzva k instalaci se ukáže až po rezervaci nebo v Profilu, nikdy na první návštěvě, a odmítnutí se pamatuje. `beforeinstallprompt` se zachytává při startu aplikace, protože se spouští jednou a brzy — komponenta, která se připojí až po rezervaci, by ho nikdy neviděla.
 - Počet sledujících se podniku ukazuje až od pěti a je formulovaný jako publikum, ne jako doručené oznámení. Žádné push doručování neexistuje a tvrdit opak by znamenalo, že tu větu podnik zopakuje zákazníkům.
 - Fotku služby vybírá partner ze seznamu činností, ne algoritmus z kategorie. Do teď `services.image_url` nenastavovala **žádná** partnerská obrazovka — sloupec existoval a `save_service` ho přijímal, ale nebylo ho čím naplnit, takže se fotka dědila podle otisku ID. Navíc tři z dvanácti ukázkových snímků byly zařazené ve špatné kategorii: jóga mohla ukazovat kosmetiku, sauna posilovnu, manikúra bazén resortu. Katalog je pojmenovaný podle toho, co na fotce **je**, ne podle kategorie, do které byla založená.
-- Několik činností v kategorii sdílí jeden snímek záměrně. Jedna pravdivá fotografie je lepší než dvě, z nichž jedna je špatně; kdo chce vlastní prostředí, nahraje si vlastní fotku.
+- Několik činností v kategorii sdílí jeden snímek záměrně. Jedna pravdivá fotografie je lepší než dvě, z nichž jedna je špatně.
+- Nahrávání vlastních fotek partnerem zamítnuto z bezpečnostních důvodů: neomoderovaný obsah ve veřejném bucketu. Politika úložiště v databázi zůstává z dřívější migrace, aplikace ji nepoužívá.
 - Výběr se sleduje podle činnosti, ne podle fotky. Porovnávání přes `image_url` rozsvítilo všechny dlaždice, které snímek sdílejí — výběr „Dámský střih" vypadal, jako by bylo vybráno čtvero.
 - Název doplněný výběrem jde opravit dalším výběrem, název napsaný rukou ne. Partner, který se překlikne, potřebuje opravit obojí; partner, který prodává „Pánský střih s mytím", chce jen tu fotku.
 

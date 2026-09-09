@@ -70,10 +70,10 @@ Důvod je architektonický, ne časový. `create_booking` přijímá jen vypoř�
 
 Stejně tak dashboard podniku říká, že provozovnu někdo sleduje — nikdy, že jim bylo něco odesláno.
 
-## 14. Fotoaparát katalogu činností je malý
+## 14. Fotografie v katalogu jsou právní riziko, ne jen malý výběr
 
-`public.service_photos` má 36 činností, ale jen **12 fotografií** — ověřených tak, že se každá skutečně načte v prohlížeči. Uvnitř kategorie proto několik činností sdílí jeden snímek: čtyři ze šesti kadeřnických dlaždic ukazují tentýž interiér holičství.
+`public.service_photos` má 36 činností, ale jen **12 fotografií** — ověřených tak, že se každá skutečně načte. Uvnitř kategorie proto několik činností sdílí jeden snímek.
 
-Vymýšlet další identifikátory na Unsplash bez ověření by znamenalo riskovat mrtvé odkazy, a rozbitá fotka je horší než opakovaná. Pro pilot je správná cesta vlastní fotka provozovny — nahrávání je hotové (tlačítko „Nahrát vlastní fotku" u služby, soubor jde do bucketu `covers` do složky pojmenované po provozovně, což je přesně to, co dovoluje politika úložiště).
+Podstatnější je ale licence. Podmínky Unsplash říkají doslova, že licence **nezahrnuje** právo užít „People's images if they are recognizable in the Images", a služba se poskytuje „AS-IS" **bez záruky neporušení práv třetích stran**. Na našich snímcích rozpoznatelní lidé jsou. Pro demo to projde, pro ostrý provoz, kde fotka propaguje službu konkrétního podniku, je to riziko na straně provozovatele FLEKu.
 
-Doplnit katalog o vlastní, licencované snímky je práce na zdroj fotografií, ne na kód: stačí přidat řádky do `service_photos`.
+Nahrávání vlastních fotek partnerem bylo zvažováno a **zamítnuto z bezpečnostních důvodů** (obsah bez moderace ve veřejném bucketu). Politika úložiště pro buckety `logos` a `covers` z migrace 202609070005 v databázi ale nadále existuje a dovoluje přihlášenému členovi provozovny zapisovat do složky své provozovny. Aplikace ji nevyužívá; pokud má zůstat zavřená i na úrovni databáze, je potřeba ty INSERT/UPDATE politiky odebrat samostatnou migrací.

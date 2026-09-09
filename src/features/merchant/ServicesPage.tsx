@@ -146,7 +146,6 @@ function ServiceSheet({
       <div className="flex flex-col gap-3">
         {/* Before the name, because picking the activity fills the name in. */}
         <ActivityPicker
-          businessId={businessId}
           categorySlug={category}
           value={imageUrl}
           onPick={({ label, imageUrl: url }) => {

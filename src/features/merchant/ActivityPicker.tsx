@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Check, Upload } from 'lucide-react';
-import { listServicePhotos, uploadServiceImage } from '../../lib/api';
-import { errorMessage } from '../../lib/errors';
+import { Check } from 'lucide-react';
+import { listServicePhotos } from '../../lib/api';
 import { cx, Skeleton } from '../../components/ui';
 
 /**
@@ -15,12 +14,10 @@ import { cx, Skeleton } from '../../components/ui';
  * rather than an accident.
  */
 export function ActivityPicker({
-  businessId,
   categorySlug,
   value,
   onPick,
 }: {
-  businessId: string;
   categorySlug: string;
   /** The currently attached image_url, so a service being edited shows what it already has. */
   value: string | null;
@@ -32,8 +29,6 @@ export function ActivityPicker({
    * "Dámský střih" appeared to select four things at once.
    */
   const [pickedSlug, setPickedSlug] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const photos = useQuery({
     queryKey: ['service-photos'],
     queryFn: listServicePhotos,
@@ -87,51 +82,6 @@ export function ActivityPicker({
         })}
       </div>
 
-      {/*
-        The stock set is small and several activities share a picture, so a venue that wants
-        its own room in the photograph must be able to say so. Uploads land in the folder
-        named after the business, which is exactly what the storage policy allows.
-      */}
-      <label className="mt-3 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-line bg-card px-3 text-sm font-bold text-ink hover:border-accent">
-        <Upload size={16} aria-hidden="true" />
-        {uploading ? 'Nahrávám…' : 'Nahrát vlastní fotku'}
-        <input
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          className="sr-only"
-          disabled={uploading}
-          onChange={async (event) => {
-            const file = event.target.files?.[0];
-            // Clearing the input lets the same file be chosen again after a failure.
-            event.target.value = '';
-            if (!file) return;
-            setUploading(true);
-            setUploadError(null);
-            try {
-              const url = await uploadServiceImage(businessId, file);
-              setPickedSlug(null);
-              onPick({ label: '', imageUrl: url });
-            } catch (error) {
-              setUploadError(errorMessage(error));
-            } finally {
-              setUploading(false);
-            }
-          }}
-        />
-      </label>
-      {uploadError ? (
-        <p role="alert" className="mt-2 text-sm font-medium text-danger">
-          {uploadError}
-        </p>
-      ) : null}
-
-      {/* Own photograph in use: no tile is lit, so show what was actually uploaded. */}
-      {value && currentSlug === null ? (
-        <div className="mt-3 flex items-center gap-3">
-          <img src={value} alt="" className="size-16 rounded-lg object-cover" />
-          <p className="text-sm text-muted">Vlastní fotka služby.</p>
-        </div>
-      ) : null}
     </div>
   );
 }
