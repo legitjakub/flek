@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { resolveBooking } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
+import { StatusBadge } from '../../components/StatusBadge';
 import { Banner, Button, Sheet } from '../../components/ui';
 import type { MerchantBooking, MerchantBookingDetail } from '../../types/database';
 
@@ -22,9 +23,12 @@ export function ResolveButtons({ booking }: { booking: MerchantBooking | Merchan
   });
 
   if (booking.status !== 'confirmed') {
+    // The merchant's own wording, but carried by the shared badge so a resolved booking is
+    // the same colour here as everywhere else. This was the last of three separate status
+    // vocabularies, and the only one still rendering as flat grey text.
     const label =
-      booking.status === 'completed' ? 'Zákazník dorazil' : booking.status === 'no_show' ? 'Nedorazil' : 'Zrušeno';
-    return <span className="text-sm font-bold text-muted">{label}</span>;
+      booking.status === 'completed' ? 'Zákazník dorazil' : booking.status === 'no_show' ? 'Nedorazil' : undefined;
+    return <StatusBadge status={booking.status} label={label} />;
   }
 
   return (
