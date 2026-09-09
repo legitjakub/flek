@@ -64,3 +64,8 @@ Jeden řádek na rozhodnutí, chronologicky. Kde bylo zadání nejednoznačné, 
 - Nahrávání vlastních fotek partnerem zamítnuto z bezpečnostních důvodů: neomoderovaný obsah ve veřejném bucketu. Politika úložiště v databázi zůstává z dřívější migrace, aplikace ji nepoužívá.
 - Výběr se sleduje podle činnosti, ne podle fotky. Porovnávání přes `image_url` rozsvítilo všechny dlaždice, které snímek sdílejí — výběr „Dámský střih" vypadal, jako by bylo vybráno čtvero.
 - Název doplněný výběrem jde opravit dalším výběrem, název napsaný rukou ne. Partner, který se překlikne, potřebuje opravit obojí; partner, který prodává „Pánský střih s mytím", chce jen tu fotku.
+- QR kód rezervace je dostupný i po zavření potvrzovací obrazovky. Do teď existoval jen tam a pak zbyl holý šestiznakový kód k přečtení nahlas; přitom právě QR je to, co člověk u pultu ukazuje. Otevírá se v panelu, ne inline v seznamu — kodér se načítá až na vyžádání a jeden náhled na řádek by ho stáhl pro každou rezervaci.
+- Formulář služby sleduje uvažování partnera: co prodávám, jak tomu říkám, jak dlouho to trvá, co to běžně stojí. Kategorie z něj zmizela doprostřed cesty — je skoro vždy ta, kterou má provozovna, a navíc filtrovala výběr činnosti nad sebou, takže její změna tiše zneplatnila už vybranou fotku. Teď je až na konci pod rozbalovátkem spolu s popisem.
+- Délka služby se vybírá z přednastavených hodnot. Volné číselné pole zve k překlepu, na kterém záleží: „6" místo „60" zveřejní šestiminutovou masáž.
+- Činnost, ke které nemáme poctivou fotku, se v katalogu zobrazí jako „Bez fotky". Půjčit si obrázek něčeho jiného je horší než přiznat, že snímek nemáme.
+

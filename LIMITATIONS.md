@@ -76,7 +76,7 @@ Stejně tak dashboard podniku říká, že provozovnu někdo sleduje — nikdy, 
 
 Podmínky Unsplash říkají doslova, že licence **nezahrnuje** právo užít „People's images if they are recognizable in the Images", a služba se poskytuje „AS-IS" **bez záruky neporušení práv třetích stran**. Čtyři z dvanácti původních snímků ukazovaly viditelnou tvář (holič holící zákazníka, kosmetické ošetření obličeje, posilovna, cvičení na podložce). Byly vyřazeny migrací `202609090017`; ověřeno, že se nevyskytují v katalogu, u služeb ani u provozoven.
 
-Zbylých osm žádnou rozpoznatelnou tvář nemá. Důsledek je menší pestrost: **vlasy, krása, sport a jóga mají jednu fotografii pro všech šest svých činností.** To je vědomá volba — pestrost koupená cizí podobiznou za to nestojí.
+Zbylých osm žádnou rozpoznatelnou tvář nemá. Revize všech 36 činností proti tomu, **co je na fotce doopravdy**, pak našla pět, které lhaly: nalakované nehty ilustrovaly kosmetiku obličeje, obočí i řasy, a tenisový kurt ilustroval osobní trénink a skupinovou lekci. První tři přešly na zátiší s ručníky, které je poctivě kosmetickým prostředím. Poslední dvě **nemají fotku žádnou** — v bezpečné sadě pro ně pravdivý snímek není a nabídka s fotkou provozovny je lepší než nabídka, která ukáže kurt a prodá trenéra. Důsledek je menší pestrost: **vlasy, krása, sport a jóga mají jednu fotografii pro všech šest svých činností.** To je vědomá volba — pestrost koupená cizí podobiznou za to nestojí.
 
 Cesta dál je jedna z těchto: licencované snímky s model release (Shutterstock, Adobe Stock), vlastní fotografie z podniků dodané provozovatelem, nebo vlastní ilustrace ke každé činnosti. Přidání se dělá řádky v `service_photos`, ne zásahem do kódu.
 

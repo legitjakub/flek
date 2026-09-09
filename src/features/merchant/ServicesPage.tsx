@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { listCategories, saveService } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
-import { Banner, Button, EmptyState, Field, Input, LoadingList, Select, Sheet, Textarea } from '../../components/ui';
+import { Banner, Button, Chip, EmptyState, Field, Input, LoadingList, Select, Sheet, Textarea } from '../../components/ui';
 import { MerchantShell } from './MerchantShell';
 import { ActivityPicker } from './ActivityPicker';
 import { useServices } from './useBusiness';
@@ -143,8 +143,14 @@ function ServiceSheet({
         </Button>
       }
     >
-      <div className="flex flex-col gap-3">
-        {/* Before the name, because picking the activity fills the name in. */}
+      <div className="flex flex-col gap-4">
+        {/*
+          Order follows the merchant's own thinking: what am I selling, what do I call it,
+          how long does it take, what does it normally cost. The category used to sit in the
+          middle of that as a full field, even though it is almost always the venue's own —
+          and worse, it filtered the picker above it, so changing it silently invalidated a
+          photograph already chosen. It now sits at the end, behind a disclosure.
+        */}
         <ActivityPicker
           categorySlug={category}
           value={imageUrl}
@@ -159,7 +165,7 @@ function ServiceSheet({
           }}
         />
 
-        <Field id="s-name" label="Název">
+        <Field id="s-name" label="Název" hint="Takhle se služba ukáže zákazníkovi.">
           <Input
             id="s-name"
             data-autofocus
@@ -170,36 +176,81 @@ function ServiceSheet({
             }}
           />
         </Field>
-        <Field id="s-category" label="Kategorie">
-          <Select id="s-category" value={category} onChange={(event) => setCategory(event.target.value)}>
-            {(categories.data ?? []).map((item) => (
-              <option key={item.slug} value={item.slug}>
-                {item.label_cs}
-              </option>
+
+        {/* Presets, because a free number field invites the typo that matters: "6" for "60"
+            would publish a six-minute massage. Anything unusual is still typeable. */}
+        <fieldset>
+          <legend className="mb-2 text-sm font-bold text-ink">Jak dlouho trvá</legend>
+          <div className="flex flex-wrap items-center gap-2">
+            {[15, 30, 45, 60, 90, 120].map((preset) => (
+              <Chip
+                key={preset}
+                active={Number(minutes) === preset}
+                onClick={() => setMinutes(String(preset))}
+              >
+                {preset} min
+              </Chip>
             ))}
-          </Select>
+            <label className="inline-flex items-center gap-2 text-sm text-muted">
+              <span className="sr-only">Jiná délka v minutách</span>
+              <span className="inline-block w-20">
+                <Input
+                  aria-label="Jiná délka v minutách"
+                  inputMode="numeric"
+                  value={minutes}
+                  onChange={(event) => setMinutes(event.target.value.replace(/\D/g, ''))}
+                />
+              </span>
+              min
+            </label>
+          </div>
+          {minutes && Number(minutes) < 5 ? (
+            <p className="mt-2 text-sm font-medium text-danger">Nejkratší možná služba je 5 minut.</p>
+          ) : null}
+        </fieldset>
+
+        <Field
+          id="s-price"
+          label="Běžná cena"
+          hint="Cena bez slevy. Z ní se počítá, kolik zákazník u FLEKu ušetří."
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-32">
+              <Input
+                id="s-price"
+                inputMode="numeric"
+                value={price}
+                onChange={(event) => setPrice(event.target.value.replace(/\D/g, ''))}
+              />
+            </div>
+            <span className="text-base font-bold text-ink">Kč</span>
+          </div>
         </Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field id="s-minutes" label="Délka (min)">
-            <Input
-              id="s-minutes"
-              inputMode="numeric"
-              value={minutes}
-              onChange={(event) => setMinutes(event.target.value.replace(/\D/g, ''))}
-            />
-          </Field>
-          <Field id="s-price" label="Běžná cena (Kč)">
-            <Input
-              id="s-price"
-              inputMode="numeric"
-              value={price}
-              onChange={(event) => setPrice(event.target.value.replace(/\D/g, ''))}
-            />
-          </Field>
-        </div>
-        <Field id="s-description" label="Popis" hint="Nepovinné. Uvidí ho zákazník u nabídky.">
-          <Textarea id="s-description" value={description} onChange={(event) => setDescription(event.target.value)} />
-        </Field>
+
+        <details className="rounded-xl border border-line px-3 py-2">
+          <summary className="inline-flex min-h-11 cursor-pointer list-none items-center text-sm font-bold text-muted">
+            Popis a kategorie — nepovinné
+          </summary>
+          <div className="mt-3 flex flex-col gap-3 pb-1">
+            <Field id="s-description" label="Popis" hint="Uvidí ho zákazník u nabídky.">
+              <Textarea id="s-description" value={description} onChange={(event) => setDescription(event.target.value)} />
+            </Field>
+            <Field
+              id="s-category"
+              label="Kategorie"
+              hint="Předvyplněná podle vaší provozovny. Měňte jen u služby, která do ní nepatří."
+            >
+              <Select id="s-category" value={category} onChange={(event) => setCategory(event.target.value)}>
+                {(categories.data ?? []).map((item) => (
+                  <option key={item.slug} value={item.slug}>
+                    {item.label_cs}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+        </details>
+
         {service ? (
           <label className="flex min-h-11 items-center gap-2 text-sm font-bold text-ink">
             <input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} className="size-5" />

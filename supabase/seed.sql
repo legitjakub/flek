@@ -83,17 +83,22 @@ end $$;
 -- service id from a per-category pair, and three of the twelve images had been filed under
 -- the wrong category — a yoga class could be illustrated with a facial treatment, a sauna
 -- with a gym floor. Matching on the service name keeps it honest inside a category too.
+-- An activity with no honest photograph carries NULL, so the fallback must skip those or a
+-- service would silently inherit "no picture" from an unrelated entry.
 update public.services s
 set image_url = coalesce(
  (select p.image_url from public.service_photos p
-  where p.category_slug=s.category_slug and lower(s.name) like '%'||lower(p.label_cs)||'%'
+  where p.category_slug=s.category_slug and p.image_url is not null
+    and lower(s.name) like '%'||lower(p.label_cs)||'%'
   order by length(p.label_cs) desc, p.sort_order limit 1),
  (select p.image_url from public.service_photos p
-  where p.category_slug=s.category_slug order by p.sort_order limit 1));
+  where p.category_slug=s.category_slug and p.image_url is not null
+  order by p.sort_order limit 1));
 
 update public.businesses b
 set cover_url=(select p.image_url from public.service_photos p
- where p.category_slug=b.category_slug order by p.sort_order desc limit 1);
+ where p.category_slug=b.category_slug and p.image_url is not null
+ order by p.sort_order desc limit 1);
 
 -- Ratings come from attendance, so the demo needs past bookings that were actually
 -- completed. Venues 9-15 stay unrated, which is what a new venue looks like.

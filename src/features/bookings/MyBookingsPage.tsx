@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { QrCode } from 'lucide-react';
 import { cancelBooking, myBookings } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
@@ -8,6 +9,7 @@ import { useServerNow } from '../../lib/clock';
 import { Banner, Button, EmptyState, ErrorState, LoadingList, Sheet, Tabs } from '../../components/ui';
 import { Link } from '../../app/router';
 import { useSession } from '../auth/session';
+import { Voucher } from './Voucher';
 import type { BookingStatus, CustomerBooking } from '../../types/database';
 
 const STATUS_LABEL: Record<BookingStatus, string> = {
@@ -24,6 +26,7 @@ export function MyBookingsPage() {
   const now = useServerNow();
   const queryClient = useQueryClient();
   const [toCancel, setToCancel] = useState<CustomerBooking | null>(null);
+  const [voucherFor, setVoucherFor] = useState<CustomerBooking | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
 
   const query = useQuery({
@@ -146,6 +149,17 @@ export function MyBookingsPage() {
 
               {booking.status === 'confirmed' ? (
                 <div className="mt-3 flex flex-wrap items-center gap-2">
+                  {/*
+                    The QR is the thing you actually hold up at the counter, and until now it
+                    existed only on the confirmation screen — once that was dismissed there was
+                    no way back to it and the reservation was six characters to read aloud.
+                    It opens in a sheet rather than inline: the encoder is a lazy import and
+                    rendering one per row would fetch it for every booking in the list.
+                  */}
+                  <Button onClick={() => setVoucherFor(booking)}>
+                    <QrCode size={17} aria-hidden="true" />
+                    Ukázat QR kód
+                  </Button>
                   <a
                     className="inline-flex min-h-11 items-center rounded-xl border border-line px-3 text-sm font-bold text-ink"
                     href={`tel:${booking.business_phone}`}
@@ -170,6 +184,22 @@ export function MyBookingsPage() {
           );
         })}
       </div>
+
+      <Sheet
+        open={Boolean(voucherFor)}
+        onClose={() => setVoucherFor(null)}
+        title="Rezervační kód"
+      >
+        {voucherFor ? (
+          <>
+            <p className="tnum mb-4 text-base font-bold text-ink">
+              {voucherFor.service_name_snapshot} · {dayLabel(voucherFor.start_at_snapshot, now)}{' '}
+              {clockTime(voucherFor.start_at_snapshot)}
+            </p>
+            <Voucher code={voucherFor.reservation_code} />
+          </>
+        ) : null}
+      </Sheet>
 
       <Sheet
         open={Boolean(toCancel)}

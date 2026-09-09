@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Check } from 'lucide-react';
+import { Check, ImageOff } from 'lucide-react';
 import { listServicePhotos } from '../../lib/api';
 import { cx, Skeleton } from '../../components/ui';
 
@@ -21,7 +21,7 @@ export function ActivityPicker({
   categorySlug: string;
   /** The currently attached image_url, so a service being edited shows what it already has. */
   value: string | null;
-  onPick: (photo: { label: string; imageUrl: string }) => void;
+  onPick: (photo: { label: string; imageUrl: string | null }) => void;
 }) {
   /*
    * Selection is tracked by activity, not by photograph. Several activities deliberately
@@ -65,12 +65,21 @@ export function ActivityPicker({
                 active ? 'ring-2 ring-ink' : 'ring-1 ring-line hover:ring-accent',
               )}
             >
-              <img
-                src={photo.image_url}
-                alt=""
-                loading="lazy"
-                className="aspect-[4/3] w-full object-cover"
-              />
+              {photo.image_url ? (
+                <img
+                  src={photo.image_url}
+                  alt=""
+                  loading="lazy"
+                  className="aspect-[4/3] w-full object-cover"
+                />
+              ) : (
+                /* Some activities have no photograph we may honestly use. Saying so beats
+                   borrowing a picture of something else. */
+                <span className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-1 bg-surface text-muted">
+                  <ImageOff size={20} aria-hidden="true" />
+                  <span className="text-xs">Bez fotky</span>
+                </span>
+              )}
               {active ? (
                 <span className="absolute top-1.5 right-1.5 grid size-6 place-items-center rounded-full bg-ink text-accent-ink">
                   <Check size={14} aria-hidden="true" />

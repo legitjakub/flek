@@ -276,6 +276,7 @@ export type ServicePhoto = {
   slug: string;
   category_slug: string;
   label_cs: string;
-  image_url: string;
+  /** Null for an activity we have no photograph we may honestly use for. */
+  image_url: string | null;
   sort_order: number;
 };
