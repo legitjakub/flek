@@ -22,13 +22,18 @@
   /* Only a divider now, never an outline — hence far fewer of them. */
   --color-line: #ece5da;
 
-  /* The lime finally does the job it was made for: it fills the time chip, which is the
-     loudest thing on a card. On white it measures 2.2:1, so it never carries text —
-     ink sits on top of it. */
+  /* The logo's green, and the one the product is recognised by. On white it measures
+     2.2:1, so it never carries text and never draws a small icon — it is a FILL, with ink
+     on top of it at 6.9:1. That is the whole rule, and for a long time the code did not
+     follow it: the lime appeared four times in the entire app while the deep accent
+     appeared sixty-three, so everything read as olive and nothing read as FLEK.
+     It now fills the loudest recurring element there is, the discount badge. */
   --color-brand: #8cc63f;
 
-  /* The primary action is the darkest thing on screen: one loud element per view.
-     The deep lime marks everything else interactive and passes AA on both grounds. */
+  /* The same hue as the lime (86°), dark enough to be read. There is no headroom to
+     brighten it: at this hue anything lighter than this drops under 4.5:1 on white
+     (#55871a measures 4.32:1), which is why the vivid green has to arrive as a fill
+     rather than as brighter text. Text, icons and outlines — never a loud surface. */
   --color-accent: #4f7a16;
   --color-accent-ink: #ffffff;
   --color-accent-soft: #f1f6e3;

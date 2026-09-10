@@ -22,14 +22,18 @@ export function savings(originalCents: number, dealCents: number): number {
 }
 
 /**
- * Filled, not tinted. On white the accent measures well past AA against white text, and a
- * solid block is the one thing on a card that survives being seen from arm's length.
+ * The badge is where the brand's actual green lives.
+ *
+ * It was white on the deep accent, which is the same dark olive as every icon and every
+ * link in the app — so the loudest, most repeated element in a discount marketplace was
+ * also its least distinctive. Ink on the lime measures 6.9:1, comfortably past AA, and it
+ * is the one colour a person already associates with FLEK from the logo.
  */
 export function DiscountBadge({ pct, className = '' }: { pct: number; className?: string }) {
   if (pct <= 0) return null;
   return (
     <span
-      className={`tnum inline-flex items-center rounded-lg bg-accent px-2 py-0.5 text-xs font-extrabold text-accent-ink ${className}`}
+      className={`tnum inline-flex items-center rounded-lg bg-brand px-2 py-0.5 text-xs font-extrabold text-ink ${className}`}
     >
       −{pct} %
     </span>

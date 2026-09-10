@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronRight, Crosshair, List, MapPin, X } from 'lucide-react';
+import { Crosshair, List, MapPin, X } from 'lucide-react';
 import { Link, useRouter } from '../../app/router';
 import { listCategories } from '../../lib/api';
 import { money, distance } from '../../lib/format';
-import { Price } from '../../components/Price';
+import { DiscountBadge } from '../../components/Price';
 import { clockTime, dayLabel, duration } from '../../lib/time';
 import { useServerNow } from '../../lib/clock';
 import { Banner, EmptyState, ErrorState, Skeleton } from '../../components/ui';
@@ -118,9 +118,15 @@ export function MapPage() {
               <section className="absolute inset-x-2 bottom-2 z-20 rounded-2xl border border-line bg-card/95 p-2 shadow-lift backdrop-blur-sm sm:inset-x-3 sm:bottom-3" aria-label="Vybrané termíny">
                 <div className="flex items-center gap-2 px-2 pb-1">
                   <MapPin size={16} className="shrink-0 text-accent" aria-hidden="true" />
-                  <p className="min-w-0 flex-1 truncate text-sm font-bold text-ink">
-                    {oneBusiness ? selectedOffers[0].business_name : 'Termíny v této části mapy'}
-                    <span className="ml-1 font-normal text-muted">· {selectedOffers.length} {plural(selectedOffers.length)}</span>
+                  {/* Only the name truncates. The count used to be inside the truncating
+                      paragraph, so the header read "… · 5 nabíd…" — the one number in it. */}
+                  <p className="flex min-w-0 flex-1 items-baseline gap-1 text-sm font-bold text-ink">
+                    <span className="min-w-0 truncate">
+                      {oneBusiness ? selectedOffers[0].business_name : 'V této části mapy'}
+                    </span>
+                    <span className="tnum shrink-0 font-normal text-muted">
+                      · {selectedOffers.length} {plural(selectedOffers.length)}
+                    </span>
                   </p>
                   <button type="button" onClick={() => setOpenGroup([])} aria-label="Zavřít výběr" className="grid size-10 shrink-0 place-items-center rounded-xl text-muted hover:bg-surface hover:text-ink">
                     <X size={18} aria-hidden="true" />
@@ -145,29 +151,40 @@ export function MapPage() {
 /**
  * One appointment in the list beside the map and in the sheet a pin opens.
  *
- * It used to stand about 190 px tall and carry three separate invitations to the same place:
- * an arrow in the top corner, the row itself being a link, and a "Zobrazit aktivitu" line at
- * the bottom. Five appointments therefore buried the map completely — on a screen whose whole
- * purpose is showing where things are. Now it is three lines and one chevron, so the sheet
- * stays short enough to leave the map in view.
+ * The card is about 330 px wide and had six facts, a three-line price column and a chevron
+ * fighting over it — the venue, the district and the whole time line all ended in an
+ * ellipsis while the price column ran to three lines in the corner. A card nobody can read
+ * is not information.
+ *
+ * Three lines, each one using both edges: name and price, then the venue, then the time and
+ * the discount. The chevron is gone — the entire card is the link, and in a horizontal
+ * carousel that arrow only ever cost the width the names needed.
  */
 function MapOffer({ offer, now, to }: { offer: SearchRow; now: string; to: string }) {
   return (
     <Link
       to={to}
-      className="group flex items-center gap-3 p-3 transition-colors hover:bg-surface focus-visible:bg-accent-soft"
+      className="group flex flex-col gap-1 p-3 transition-colors hover:bg-surface focus-visible:bg-accent-soft"
     >
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-base leading-snug font-extrabold text-ink">
+      {/* Name and price on one baseline, at the two ends of the card. */}
+      <span className="flex items-baseline gap-3">
+        <span className="min-w-0 flex-1 truncate text-base leading-snug font-extrabold text-ink">
           {offer.service_name}
         </span>
-        <span className="block truncate text-sm text-muted">
-          {offer.business_name}
-          {offer.district ? ` · ${offer.district}` : ''}
+        <span className="tnum shrink-0 text-base leading-snug font-extrabold text-ink">
+          {money(offer.deal_price_cents)}
         </span>
-        {/* Time first and in ink: on a last-minute marketplace it is the fact people scan
-            for. The rest of the row is context, so it stays muted. */}
-        <span className="tnum mt-1 block truncate text-sm">
+      </span>
+
+      <span className="block truncate text-sm text-muted">
+        {offer.business_name}
+        {offer.district ? ` · ${offer.district}` : ''}
+      </span>
+
+      {/* Time first and in ink: on a last-minute marketplace it is the fact people scan
+          for. The discount closes the row at the other edge. */}
+      <span className="flex items-baseline gap-3">
+        <span className="tnum min-w-0 flex-1 truncate text-sm">
           <span className="font-bold text-ink">
             {dayLabel(offer.start_at, now)} {clockTime(offer.start_at)}
           </span>
@@ -177,19 +194,9 @@ function MapOffer({ offer, now, to }: { offer: SearchRow; now: string; to: strin
             {distance(offer.distance_m) ? ` · ${distance(offer.distance_m)}` : ''}
           </span>
         </span>
+        <DiscountBadge pct={offer.discount_pct} className="shrink-0" />
       </span>
-      {/* The map list showed the deal price alone — no struck original, no percentage —
-          so the one screen where a customer compares venues side by side was the one that
-          hid what makes them worth comparing. */}
-      <Price
-        className="shrink-0 text-right"
-        align="right"
-        variant="card"
-        dealCents={offer.deal_price_cents}
-        originalCents={offer.original_price_cents}
-        discountPct={offer.discount_pct}
-      />
-      <ChevronRight size={18} className="shrink-0 text-muted group-hover:text-accent" aria-hidden="true" />
     </Link>
   );
 }
+
