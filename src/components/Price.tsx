@@ -22,18 +22,19 @@ export function savings(originalCents: number, dealCents: number): number {
 }
 
 /**
- * The badge is where the brand's actual green lives.
+ * Filled, and in the deep accent rather than the logo's lime.
  *
- * It was white on the deep accent, which is the same dark olive as every icon and every
- * link in the app — so the loudest, most repeated element in a discount marketplace was
- * also its least distinctive. Ink on the lime measures 6.9:1, comfortably past AA, and it
- * is the one colour a person already associates with FLEK from the logo.
+ * The lime was tried here — ink on it measures 7.3:1, so legibility was never the question.
+ * It simply read as too loud for something that repeats on every card in the feed, on the
+ * map and on the detail page at once. White on the accent measures 5.1:1 and is the same
+ * green the rest of the interface already speaks in, which is the point: the badge is a
+ * fact about the price, not a second logo.
  */
 export function DiscountBadge({ pct, className = '' }: { pct: number; className?: string }) {
   if (pct <= 0) return null;
   return (
     <span
-      className={`tnum inline-flex items-center rounded-lg bg-brand px-2 py-0.5 text-xs font-extrabold text-ink ${className}`}
+      className={`tnum inline-flex items-center rounded-lg bg-accent px-2 py-0.5 text-xs font-extrabold text-accent-ink ${className}`}
     >
       −{pct} %
     </span>
