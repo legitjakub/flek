@@ -97,28 +97,41 @@ export const PRICE_LABELS: [number | null, string][] = [
 export type TimeIntent = 'now' | 'soon' | 'today' | 'afternoon' | 'evening' | 'tomorrow' | 'week';
 
 /*
- * Narrowest to widest, and the set is closed: every state the rail can be in has a pill, so
- * exactly one is always lit.
+ * Widest first, then narrowest to widest, and the set is closed: every state the rail can be
+ * in lights exactly one pill.
  *
- * Two gaps this closes. The default (today, no daypart) matched no pill at all, so the rail
- * opened with nothing selected and looked broken — hence "Dnes". And once a pill was pressed
- * there was no way back to everything, because the widest option was labelled "Týden", which
- * reads as one more narrow slice rather than as "no limit". It is in fact everything the
- * marketplace can hold: private.validate_offer refuses any start_at beyond now + 7 days.
+ * "Vše" leads because it is the way back. Once a pill is pressed, the escape from a slice
+ * that holds nothing has to be the first thing the thumb reaches, not the last — and on a
+ * phone the rail scrolls, so the last chip is off-screen exactly when it is needed. The
+ * app still OPENS on "Dnes" (DEFAULT_FILTERS.when): FLEK sells the last free hour, and a
+ * week-wide first screen would say the opposite.
+ *
+ * "Vše" is everything the marketplace can hold: private.validate_offer refuses any start_at
+ * beyond now + 7 days.
  */
 export const TIME_INTENTS: { key: TimeIntent; label: string; when: When; daypart: Daypart | null }[] = [
+  { key: 'week', label: 'Vše', when: 'week', daypart: null },
   { key: 'now', label: 'Teď', when: 'now', daypart: null },
   { key: 'soon', label: 'Do 2 h', when: 'soon', daypart: null },
   { key: 'today', label: 'Dnes', when: 'today', daypart: null },
   { key: 'afternoon', label: 'Odpoledne', when: 'today', daypart: 'afternoon' },
   { key: 'evening', label: 'Večer', when: 'today', daypart: 'evening' },
   { key: 'tomorrow', label: 'Zítra', when: 'tomorrow', daypart: null },
-  { key: 'week', label: 'Vše', when: 'week', daypart: null },
 ];
 
-/** Which intent the current filters read as, or null for a combination only the sheet can make. */
+/**
+ * Which intent the current filters read as.
+ *
+ * The sheet sets `daypart` on its own, so thirteen of the twenty reachable (when, daypart)
+ * pairs match no pill exactly — (Dnes + Ráno), (Vše + Večer) and so on — and the rail used
+ * to go dark on all of them while the filter was plainly applied. Falling back to the pill
+ * for the same window with no daypart keeps the promise above: something is always lit, and
+ * the daypart itself stays visible as its own chip.
+ */
 export function intentOf(filters: Filters): TimeIntent | null {
-  return TIME_INTENTS.find((i) => i.when === filters.when && i.daypart === filters.daypart)?.key ?? null;
+  const exact = TIME_INTENTS.find((i) => i.when === filters.when && i.daypart === filters.daypart);
+  if (exact) return exact.key;
+  return TIME_INTENTS.find((i) => i.when === filters.when && i.daypart === null)?.key ?? null;
 }
 
 export function applyIntent(filters: Filters, key: TimeIntent): Filters {
@@ -180,16 +193,36 @@ export function activeChips(filters: Filters, categoryLabel: (slug: string) => s
  */
 export type Widening = { radius_m: number; when: When; note: string | null };
 
-export function wideningSteps(filters: Filters): Widening[] {
+export function wideningSteps(filters: Filters, now: string): Widening[] {
   const radii = [filters.radius_m, 5000, 10000, 25000].filter(
     (r, i, all) => all.indexOf(r) === i && r >= filters.radius_m,
   );
-  const whens: When[] =
+  /*
+   * Every rung has to contain the one below it, and two of them did not.
+   *
+   * windowFor('tomorrow') starts at tomorrow 00:00, so widening "Dnes" to it REPLACED today's
+   * thin results with tomorrow's instead of adding to them — a search for today answered with
+   * nothing from today. Today now widens straight to the whole week, which does contain it.
+   *
+   * And "today" is not always wider than "Teď": at nine in the evening the next four hours
+   * run past midnight while today ends at midnight. So the ladder is filtered against the
+   * clock rather than assumed, which is why this takes `now` at all.
+   */
+  const asked = windowFor(filters.when, now);
+  const contains = (when: When) => {
+    const step = windowFor(when, now);
+    return Date.parse(step.from ?? now) <= Date.parse(asked.from ?? now)
+      && Date.parse(step.until ?? now) >= Date.parse(asked.until ?? now);
+  };
+  const ladder: When[] =
     filters.when === 'week'
       ? ['week']
-      : [filters.when, filters.when === 'now' || filters.when === 'soon' ? 'today' : 'tomorrow', 'week'];
+      : filters.when === 'tomorrow'
+        ? ['tomorrow', 'week']
+        : [filters.when, 'today', 'week'];
+  const whens = ladder.filter((w, i, all) => all.indexOf(w) === i && (i === 0 || contains(w)));
   const steps: Widening[] = [];
-  for (const when of whens.filter((w, i, all) => all.indexOf(w) === i)) {
+  for (const when of whens) {
     for (const radius of radii) {
       const widerRadius = radius !== filters.radius_m;
       const widerWhen = when !== filters.when;

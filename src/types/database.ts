@@ -299,3 +299,17 @@ export type PublicBusiness = {
   longitude: number;
   open_offers: number;
 };
+
+/** business_billing_get returns `{}` before anything has been entered, so every field is optional. */
+export type BusinessBilling = {
+  ico?: string | null;
+  dic?: string | null;
+  legal_name?: string | null;
+  bank_account?: string | null;
+  billing_address_line?: string | null;
+  billing_city?: string | null;
+  billing_postal_code?: string | null;
+  contact_person?: string | null;
+  contact_phone?: string | null;
+  terms_accepted_at?: string | null;
+};

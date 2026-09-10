@@ -5,6 +5,7 @@ import { getOfferDetail, setFavorite } from '../../lib/api';
 import { track } from '../../lib/analytics';
 import { relativeTime, useServerNow } from '../../lib/clock';
 import { money, distance as formatDistance } from '../../lib/format';
+import { OriginalPrice, Price } from '../../components/Price';
 import { clockTime, dayLabel, duration } from '../../lib/time';
 import { DEFAULT_POINT, storedPoint } from '../../lib/geo';
 import { Button, ErrorState, Skeleton, cx } from '../../components/ui';
@@ -256,17 +257,17 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             <p className="tnum mt-2 text-sm text-muted">Rezervovat lze ještě <span className="font-bold text-ink">{cutoffMinutes} min</span></p>
           ) : null}
 
-          <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 border-t border-line pt-3">
-            {/* The scale in styles.css assigns xl/800 to prices and times and 2xl/800 to the
-                page heading. At 2xl the price was the largest thing on the screen, louder
-                than the title of the thing being bought. */}
-            <span className="tnum text-xl font-extrabold tracking-tight">{money(offer.deal_price_cents)}</span>
-            <s className="tnum text-sm text-muted">{money(offer.original_price_cents)}</s>
-            <span className="tnum rounded-lg bg-accent-soft px-2 py-0.5 text-sm font-extrabold text-accent">
-              −{offer.discount_pct} %
-            </span>
-          </div>
-          <p className="tnum mt-0.5 text-sm text-muted">Ušetříš <span className="font-bold text-positive">{money(savings)}</span></p>
+          {/* The scale in styles.css assigns xl/800 to prices and times and 2xl/800 to the
+              page heading. At 2xl the price was the largest thing on the screen, louder
+              than the title of the thing being bought. */}
+          <Price
+            className="mt-3 border-t border-line pt-3"
+            dealCents={offer.deal_price_cents}
+            originalCents={offer.original_price_cents}
+            discountPct={offer.discount_pct}
+            variant="detail"
+            showSaving
+          />
 
           {/* An unusually low price invites suspicion, and suspicion is what stops a first
               booking. Progressive disclosure: one line, opened only by someone who wondered. */}
@@ -293,10 +294,14 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
               price, so only the button remains.
             */}
             <div className="flex items-center gap-4">
+              {/* The bar is the last thing read before paying, so the saving belongs here
+                  too — it was the one screen that showed a struck price with no number
+                  attached to what it saves. */}
               <div className="min-w-0 md:hidden">
                 <p className="tnum text-lg leading-none font-extrabold">{money(offer.deal_price_cents)}</p>
-                <p className="tnum mt-1 text-xs text-muted">
-                  místo <s>{money(offer.original_price_cents)}</s>
+                <p className="tnum mt-1 flex flex-wrap items-center gap-x-1.5 text-xs">
+                  <OriginalPrice cents={offer.original_price_cents} className="text-xs" />
+                  <span className="font-bold text-positive">ušetříš {money(savings)}</span>
                 </p>
               </div>
               <Button size="lg" className="flex-1" onClick={() => setSheetOpen(true)}>

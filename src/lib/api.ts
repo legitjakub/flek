@@ -26,6 +26,7 @@ import type {
   ServicePhoto,
   Service,
   SortKey,
+  BusinessBilling,
 } from '../types/database';
 
 /** Records the server clock carried by any payload that exposes it. */
@@ -212,6 +213,21 @@ export async function myBusinesses(): Promise<Business[]> {
 
 export async function createBusiness(data: Record<string, unknown>): Promise<Business> {
   return await result<Business>(supabase.rpc('create_business', { p_data: data }));
+}
+
+/**
+ * Billing details live in their own table, not on businesses: `grant select on businesses to
+ * anon` plus a policy that admits every approved venue means anything stored there is public.
+ */
+export async function businessBilling(businessId: string): Promise<BusinessBilling> {
+  return await result(supabase.rpc('business_billing_get', { p_business_id: businessId }));
+}
+
+export async function saveBusinessBilling(
+  businessId: string,
+  data: Record<string, unknown>,
+): Promise<BusinessBilling> {
+  return await result(supabase.rpc('business_billing_save', { p_business_id: businessId, p_data: data }));
 }
 
 export async function updateBusiness(businessId: string, data: Record<string, unknown>): Promise<Business> {

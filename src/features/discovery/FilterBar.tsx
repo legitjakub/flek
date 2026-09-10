@@ -1,4 +1,4 @@
-import { SlidersHorizontal } from 'lucide-react';
+import { SlidersHorizontal, X } from 'lucide-react';
 import { useState } from 'react';
 import { Button, Field, Input, Segmented, Sheet } from '../../components/ui';
 import type { Category, SortKey } from '../../types/database';
@@ -16,6 +16,7 @@ import {
   TIME_INTENTS,
   type Daypart,
   type Filters,
+  type When,
 } from './filters';
 
 /**
@@ -29,18 +30,30 @@ export function FilterBar({
   categories,
   resultCount,
   pending,
+  applied,
 }: {
   filters: Filters;
   onChange: (next: Filters) => void;
   categories: Category[];
   resultCount: number;
   pending: boolean;
+  /**
+   * What the search actually ran with after the cold-start ladder had its say. The rail is
+   * lit from this, not from `filters`: a pill that says "Teď" above a week's worth of cards
+   * is the whole reason the filters read as broken.
+   */
+  applied?: { when: When; radius_m: number };
 }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<Filters>(filters);
   const count = activeCount(filters);
   const label = (slug: string) => categories.find((c) => c.slug === slug)?.label_cs ?? slug;
   const chips = activeChips(filters, label);
+  const lit = intentOf({ ...filters, when: applied?.when ?? filters.when });
+  // The ladder can search at 25 km while the radius chip still reads 5 km and the Filtry
+  // badge reads zero. Say it, and give it no cross — it is not the customer's choice to undo.
+  const widened =
+    applied && applied.radius_m !== filters.radius_m ? `Rozšířeno na ${applied.radius_m / 1000} km` : null;
 
   function openSheet() {
     setDraft(filters);
@@ -54,7 +67,7 @@ export function FilterBar({
           {/* The six labelled pills say this themselves; the heading only cost height. */}
           <div role="radiogroup" aria-label="Kdy máš čas" className="rail rail-fade -mx-1 -my-1 flex gap-2 px-1 py-1">
             {TIME_INTENTS.map((intent) => {
-              const active = intentOf(filters) === intent.key;
+              const active = lit === intent.key;
               return (
                 <button
                   key={intent.key}
@@ -80,10 +93,41 @@ export function FilterBar({
           ) : null}
         </button>
       </div>
-      {chips.length ? <div className="flex flex-wrap items-center gap-x-3 text-sm text-muted">
-        <span>{chips.map((chip) => chip.label).join(' · ')}</span>
-        <button type="button" onClick={() => onChange({ ...DEFAULT_FILTERS, when: filters.when, category: filters.category })} className="min-h-11 font-bold text-accent underline underline-offset-4">Zrušit omezení</button>
-      </div> : null}
+      {chips.length || widened ? (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          {/*
+            These were a joined string of labels while every chip carried a `clear` nobody
+            called — the toolbar showed what was narrowing the results and gave no way to
+            stop it. One tap, one filter gone.
+          */}
+          {chips.map((chip) => (
+            <button
+              key={chip.key}
+              type="button"
+              onClick={() => onChange(chip.clear(filters))}
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-line bg-card py-1 pr-2 pl-3 font-bold text-ink transition-colors hover:border-accent"
+            >
+              {chip.label}
+              <X size={15} aria-hidden="true" className="text-muted" />
+              <span className="sr-only">Zrušit filtr</span>
+            </button>
+          ))}
+          {widened ? (
+            <span className="inline-flex min-h-9 items-center rounded-full bg-warning-soft px-3 py-1 font-bold text-warning">
+              {widened}
+            </span>
+          ) : null}
+          {chips.length ? (
+            <button
+              type="button"
+              onClick={() => onChange({ ...DEFAULT_FILTERS, when: filters.when })}
+              className="min-h-9 font-bold text-accent underline underline-offset-4"
+            >
+              Zrušit vše
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       <Sheet
         open={open}

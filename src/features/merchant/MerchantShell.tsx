@@ -24,6 +24,7 @@ export function MerchantShell({ children }: { children: (business: Business) => 
   const { path } = useRouter();
   const { userId, ready } = useSession();
   const businesses = useMyBusinesses();
+  const [selectedId, setSelectedId] = useState(storedBusinessId);
 
   if (ready && !userId) {
     return (
@@ -57,7 +58,13 @@ export function MerchantShell({ children }: { children: (business: Business) => 
     );
   }
 
-  const business = businesses.data?.[0];
+  /*
+   * my_businesses() returns a set, and the console read [0] and nothing else — a partner
+   * with two venues could not reach the second one at all. The choice is remembered so it
+   * survives navigating between the six pages, each of which mounts this shell afresh.
+   */
+  const all = businesses.data ?? [];
+  const business = all.find((item) => item.id === selectedId) ?? all[0];
   if (!business) {
     return (
       <MerchantFrame>
@@ -78,7 +85,16 @@ export function MerchantShell({ children }: { children: (business: Business) => 
   }
 
   return (
-    <MerchantFrame nav business={business} path={path}>
+    <MerchantFrame
+      nav
+      business={business}
+      businesses={all}
+      onSwitch={(id) => {
+        rememberBusinessId(id);
+        setSelectedId(id);
+      }}
+      path={path}
+    >
       {business.status !== 'approved' ? (
         <div className="mb-4">
           <Banner tone="warning">
@@ -95,15 +111,37 @@ export function MerchantShell({ children }: { children: (business: Business) => 
   );
 }
 
+const BUSINESS_KEY = 'flek.merchant.business';
+
+function storedBusinessId(): string | null {
+  try {
+    return window.localStorage.getItem(BUSINESS_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function rememberBusinessId(id: string) {
+  try {
+    window.localStorage.setItem(BUSINESS_KEY, id);
+  } catch {
+    /* private mode: the console simply falls back to the first venue */
+  }
+}
+
 function MerchantFrame({
   children,
   nav,
   business,
+  businesses = [],
+  onSwitch,
   path,
 }: {
   children: ReactNode;
   nav?: boolean;
   business?: Business;
+  businesses?: Business[];
+  onSwitch?: (id: string) => void;
   path?: string;
 }) {
   const [menu, setMenu] = useState(false);
@@ -116,7 +154,22 @@ function MerchantFrame({
         <div className="mx-auto flex min-h-18 max-w-[1440px] items-center justify-between gap-3 px-4 lg:px-8">
           <Link to="/partner" aria-label="FLEK Partner" className="inline-flex min-h-11 items-center"><Wordmark suffix="Partner" /></Link>
           <div className="flex min-w-0 items-center gap-2 sm:gap-6">
-            {business ? <span className="hidden max-w-sm truncate text-sm font-bold text-muted sm:inline">{business.display_name}</span> : null}
+            {business && businesses.length > 1 ? (
+              <select
+                aria-label="Provozovna"
+                value={business.id}
+                onChange={(event) => onSwitch?.(event.target.value)}
+                className="min-h-11 max-w-[12rem] truncate rounded-xl border border-line bg-card px-3 text-sm font-bold text-ink"
+              >
+                {businesses.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.display_name}
+                  </option>
+                ))}
+              </select>
+            ) : business ? (
+              <span className="hidden max-w-sm truncate text-sm font-bold text-muted sm:inline">{business.display_name}</span>
+            ) : null}
             <Link
               to="/"
               aria-label="Přejít do zákaznické části"

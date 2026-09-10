@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { CalendarDays, Clock3, MapPin } from 'lucide-react';
 import { Link, useRouter } from '../../app/router';
-import { money, distance as formatDistance } from '../../lib/format';
+import { distance as formatDistance } from '../../lib/format';
+import { DiscountBadge, Price } from '../../components/Price';
 import { clockTime, dayLabel, duration } from '../../lib/time';
 import { relativeTime } from '../../lib/clock';
 import { GooglePlaceRating } from '../ratings/GooglePlaceRating';
@@ -61,6 +62,13 @@ export function OfferCard({
             // A missing photograph keeps the same height, so a mixed grid stays even.
             <div className="aspect-[8/5] w-full bg-accent-soft" aria-hidden="true" />
           )}
+
+          {/*
+            The discount belongs on the picture, in the corner the identity scrim leaves free.
+            In the price column it was 12 px in the same accent as the calendar glyph — the
+            single most important number in a discount marketplace, rendered as a footnote.
+          */}
+          <DiscountBadge pct={offer.discount_pct} className="absolute top-3 left-3 shadow-card" />
 
           {/* Identity on the image: the scrim exists so white text survives a pale photo. */}
           <div className="absolute inset-x-0 bottom-0 flex items-center gap-2 bg-gradient-to-t from-ink/75 to-transparent px-3 pt-8 pb-3">
@@ -128,13 +136,19 @@ export function OfferCard({
             ) : null}
             </div>
           </div>
-          <div className="shrink-0 text-right">
-            <p className="tnum text-xl leading-none font-extrabold text-ink">{money(offer.deal_price_cents)}</p>
-            <p className="tnum mt-1 text-xs text-muted">
-              <s>{money(offer.original_price_cents)}</s>
-              <span className="ml-1.5 rounded-md bg-accent-soft px-1.5 py-0.5 font-bold text-accent">−{offer.discount_pct} %</span>
-            </p>
-          </div>
+          {/*
+            The badge is on the photo already, so repeating it here would only crowd the two
+            numbers that have to be compared. A compact card has no photo, so it keeps it.
+          */}
+          <Price
+            className="shrink-0 text-right"
+            align="right"
+            dealCents={offer.deal_price_cents}
+            originalCents={offer.original_price_cents}
+            discountPct={offer.discount_pct}
+            showBadge={Boolean(compact)}
+            showSaving
+          />
         </div>
       </div>
     </Link>

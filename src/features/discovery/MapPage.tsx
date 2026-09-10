@@ -4,6 +4,7 @@ import { ChevronRight, Crosshair, List, MapPin, X } from 'lucide-react';
 import { Link, useRouter } from '../../app/router';
 import { listCategories } from '../../lib/api';
 import { money, distance } from '../../lib/format';
+import { Price } from '../../components/Price';
 import { clockTime, dayLabel, duration } from '../../lib/time';
 import { useServerNow } from '../../lib/clock';
 import { Banner, EmptyState, ErrorState, Skeleton } from '../../components/ui';
@@ -81,7 +82,7 @@ export function MapPage() {
         <Link to={`/${search.size ? `?${search}` : ''}`} className="inline-flex min-h-11 items-center gap-2 text-sm font-bold text-accent"><List size={18} aria-hidden="true" />Seznam</Link>
       </div>
       <h1 className="sr-only">Volné termíny na mapě</h1>
-      <FilterBar filters={filters} onChange={setFilters} categories={categories.data ?? []} resultCount={rows?.length ?? 0} pending={discovery.isFetching} />
+      <FilterBar filters={filters} onChange={setFilters} categories={categories.data ?? []} resultCount={rows?.length ?? 0} pending={discovery.isFetching} applied={discovery.data?.applied} />
       {discovery.isError ? <ErrorState error={discovery.error} onRetry={() => discovery.refetch()} /> : null}
       {discovery.data?.note ? <Banner tone="warning">{discovery.data.note}</Banner> : null}
       {discovery.isPending ? <Skeleton className="min-h-80 flex-1" /> : null}
@@ -177,9 +178,17 @@ function MapOffer({ offer, now, to }: { offer: SearchRow; now: string; to: strin
           </span>
         </span>
       </span>
-      <span className="tnum shrink-0 text-base font-extrabold text-ink">
-        {money(offer.deal_price_cents)}
-      </span>
+      {/* The map list showed the deal price alone — no struck original, no percentage —
+          so the one screen where a customer compares venues side by side was the one that
+          hid what makes them worth comparing. */}
+      <Price
+        className="shrink-0 text-right"
+        align="right"
+        variant="card"
+        dealCents={offer.deal_price_cents}
+        originalCents={offer.original_price_cents}
+        discountPct={offer.discount_pct}
+      />
       <ChevronRight size={18} className="shrink-0 text-muted group-hover:text-accent" aria-hidden="true" />
     </Link>
   );

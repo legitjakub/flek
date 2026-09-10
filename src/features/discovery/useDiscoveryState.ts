@@ -18,7 +18,9 @@ export function readDiscoveryState(search: URLSearchParams, fallback: Point = DE
     daypart: part && Object.hasOwn(DAYPART_LABELS, part) ? part as Filters['daypart'] : null,
     sort: sort && Object.hasOwn(SORT_LABELS, sort) ? sort as Filters['sort'] : DEFAULT_FILTERS.sort,
     radius_m: numberIn(search.get('radius_m'), 5000, 100, 25000),
-    category: search.get('category')?.slice(0, 80) || null,
+    // A slug shape, not any 80 characters: an unrecognised category filters to nothing
+    // for good — the widening ladder never touches it — so at least keep junk out of it.
+    category: /^[a-z0-9-]{1,40}$/.test(search.get('category') ?? '') ? search.get('category') : null,
     min_discount_pct: numberIn(search.get('min_discount_pct'), 0, 0, 100),
     max_price_cents: numberIn(search.get('max_price_cents'), 0, 0, 100_000_000) || null,
   };

@@ -30,7 +30,7 @@ export function DiscoveryPage() {
         <h1 className="text-xl leading-tight font-extrabold tracking-tight sm:text-2xl">Volné termíny</h1>
         <LocationChip point={point} onChange={setPoint} />
       </div>
-      <div className="mt-3"><FilterBar filters={filters} onChange={setFilters} categories={categories.data ?? []} resultCount={rows.length} pending={discovery.isFetching} /></div>
+      <div className="mt-3"><FilterBar filters={filters} onChange={setFilters} categories={categories.data ?? []} resultCount={rows.length} pending={discovery.isFetching} applied={discovery.data?.applied} /></div>
       <p className="sr-only" aria-live="polite">
         {discovery.isPending
           ? 'Hledáme volné termíny…'

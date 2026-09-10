@@ -13,10 +13,28 @@ import { useMerchantMetrics, useServices } from './useBusiness';
 import { ResolveButtons } from './ResolveButtons';
 
 export function MerchantDashboardPage() {
-  return <MerchantShell>{(business) => <Dashboard businessId={business.id} approved={business.status === 'approved'} />}</MerchantShell>;
+  return (
+    <MerchantShell>
+      {(business) => (
+        <Dashboard
+          businessId={business.id}
+          approved={business.status === 'approved'}
+          commissionRate={business.commission_rate}
+        />
+      )}
+    </MerchantShell>
+  );
 }
 
-function Dashboard({ businessId, approved }: { businessId: string; approved: boolean }) {
+function Dashboard({
+  businessId,
+  approved,
+  commissionRate,
+}: {
+  businessId: string;
+  approved: boolean;
+  commissionRate: number;
+}) {
   const now = useServerNow();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [published, setPublished] = useState<string | null>(null);
@@ -126,7 +144,7 @@ function Dashboard({ businessId, approved }: { businessId: string; approved: boo
         />
       ) : null}
 
-      {sheetOpen ? <CreateOfferSheet onPublished={setPublished} open onClose={() => setSheetOpen(false)} services={services.data ?? []} /> : null}
+      {sheetOpen ? <CreateOfferSheet onPublished={setPublished} open onClose={() => setSheetOpen(false)} services={services.data ?? []} commissionRate={commissionRate} /> : null}
     </div>
   );
 }
