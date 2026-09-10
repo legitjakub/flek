@@ -10,7 +10,7 @@ import { Banner, Button, Chip, Field, Input, Sheet } from '../../components/ui';
 import { Link } from '../../app/router';
 import type { Service } from '../../types/database';
 
-export type OfferDraft = { service_id: string; deal_price_cents: number; start_at?: string } | null;
+export type OfferDraft = { service_id: string; original_price_cents: number; deal_price_cents: number; start_at?: string } | null;
 
 /** Server bounds, mirrored so a merchant is told before the round trip, not after it. */
 const MIN_DISCOUNT_PCT = 10;
@@ -20,6 +20,23 @@ const MAX_DAYS_AHEAD = 7;
 /** publish_offer wants a cutoff at least five minutes out, so the start needs headroom. */
 const MIN_MINUTES_AHEAD = 10;
 const CUTOFF_MINUTES = 15;
+
+export function offerDiscountPct(originalCents: number, dealCents: number): number {
+  return originalCents > 0 && dealCents > 0
+    ? Math.floor(((originalCents - dealCents) * 100) / originalCents)
+    : 0;
+}
+
+/** Mirrors the database's integer arithmetic so the client and RPC accept the same prices. */
+export function offerDiscountError(originalCents: number, dealCents: number): string | undefined {
+  if (dealCents * 100 > originalCents * (100 - MIN_DISCOUNT_PCT)) {
+    return `Sleva musí být aspoň ${MIN_DISCOUNT_PCT} %, tedy nejvýš ${money(Math.floor((originalCents * (100 - MIN_DISCOUNT_PCT)) / 100 / 100) * 100)}.`;
+  }
+  if (dealCents * 100 < originalCents * (100 - MAX_DISCOUNT_PCT)) {
+    return `Sleva nesmí přesáhnout ${MAX_DISCOUNT_PCT} %, tedy aspoň ${money(Math.ceil((originalCents * (100 - MAX_DISCOUNT_PCT)) / 100 / 100) * 100)}.`;
+  }
+  return undefined;
+}
 
 /**
  * The flow that decides whether this company exists: one screen, no wizard.
@@ -55,8 +72,10 @@ export function CreateOfferSheet({
   const queryClient = useQueryClient();
   const active = useMemo(() => services.filter((s) => s.is_active), [services]);
   const [serviceId, setServiceId] = useState<string | null>(draft?.service_id ?? active[0]?.id ?? null);
+  const initialService = active.find((s) => s.id === draft?.service_id) ?? active[0] ?? null;
   const [start, setStartValue] = useState<string>(() => (draft?.start_at ? repeatSlot(draft.start_at, serverNow()) : nextSlot(serverNow())));
-  const [price, setPriceValue] = useState<string>(draft ? String(draft.deal_price_cents / 100) : '');
+  const [originalPrice, setOriginalPriceValue] = useState<string>(() => String((draft?.original_price_cents ?? initialService?.normal_price_cents ?? 0) / 100 || ''));
+  const [dealPrice, setDealPriceValue] = useState<string>(draft ? String(draft.deal_price_cents / 100) : '');
   const [capacity, setCapacity] = useState(1);
   const [attempted, setAttempted] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
@@ -71,25 +90,30 @@ export function CreateOfferSheet({
     setOverlap(false);
     setStartValue(value);
   }
-  function setPrice(value: string) {
+  function setOriginalPrice(value: string) {
     setOverlap(false);
-    setPriceValue(value);
+    setOriginalPriceValue(value);
+  }
+  function setDealPrice(value: string) {
+    setOverlap(false);
+    setDealPriceValue(value);
   }
 
   const service = active.find((s) => s.id === serviceId) ?? active[0] ?? null;
-  const normal = service?.normal_price_cents ?? 0;
-  const dealCents = /^\d+$/.test(price) ? Number(price) * 100 : 0;
-  const discount = normal > 0 && dealCents > 0 ? Math.floor(((normal - dealCents) * 100) / normal) : 0;
+  const originalCents = /^\d+$/.test(originalPrice) ? Number(originalPrice) * 100 : 0;
+  const dealCents = /^\d+$/.test(dealPrice) ? Number(dealPrice) * 100 : 0;
+  const discount = offerDiscountPct(originalCents, dealCents);
   const startInstant = parseStart(start);
 
+  const originalPriceError = !/^\d+$/.test(originalPrice) || originalCents <= 0
+    ? 'Zadejte běžnou cenu v celých korunách.'
+    : undefined;
   const priceError =
-    !/^\d+$/.test(price) || dealCents <= 0
-      ? 'Zadejte cenu v celých korunách.'
-      : discount < MIN_DISCOUNT_PCT
-        ? `Sleva musí být aspoň ${MIN_DISCOUNT_PCT} %, tedy nejvýš ${money(Math.floor((normal * (100 - MIN_DISCOUNT_PCT)) / 100 / 100) * 100)}.`
-        : discount > MAX_DISCOUNT_PCT
-          ? `Sleva nesmí přesáhnout ${MAX_DISCOUNT_PCT} %, tedy aspoň ${money(Math.ceil((normal * (100 - MAX_DISCOUNT_PCT)) / 100 / 100) * 100)}.`
-          : undefined;
+    !/^\d+$/.test(dealPrice) || dealCents <= 0
+      ? 'Zadejte cenu na FLEKu v celých korunách.'
+      : originalPriceError
+        ? undefined
+        : offerDiscountError(originalCents, dealCents);
 
   const startError = !startInstant
     ? 'Vyberte datum a čas začátku.'
@@ -99,7 +123,7 @@ export function CreateOfferSheet({
         ? `Termín může být nejdál ${MAX_DAYS_AHEAD} dní dopředu.`
         : undefined;
 
-  const valid = Boolean(service) && !priceError && !startError;
+  const valid = Boolean(service) && !originalPriceError && !priceError && !startError;
 
   // Whole crowns on both lines: money() throws on anything else, and a merchant reading a
   // payout wants the two numbers to add back up to what the customer paid.
@@ -113,7 +137,8 @@ export function CreateOfferSheet({
       return publishOffer({
         service_id: service.id,
         start_at: startInstant,
-        deal_price_cents: czkToCents(price),
+        original_price_cents: czkToCents(originalPrice),
+        deal_price_cents: czkToCents(dealPrice),
         capacity_total: capacity,
         booking_cutoff_at: cutoffFor(startInstant, serverNow()),
         confirm_overlap: confirmOverlap,
@@ -150,7 +175,7 @@ export function CreateOfferSheet({
     setAttempted(true);
     setFailure(null);
     if (!valid) {
-      const first = startError ? 'offer-start' : 'offer-price';
+      const first = startError ? 'offer-start' : originalPriceError ? 'offer-original-price' : 'offer-price';
       window.setTimeout(() => document.getElementById(first)?.focus(), 0);
       return;
     }
@@ -193,6 +218,8 @@ export function CreateOfferSheet({
                   onClick={() => {
                     setOverlap(false);
                     setServiceId(item.id);
+                    setOriginalPriceValue(String(item.normal_price_cents / 100));
+                    setDealPriceValue('');
                   }}
                 >
                   {item.name} · {item.duration_minutes} min
@@ -274,30 +301,35 @@ export function CreateOfferSheet({
 
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-2 text-base font-bold text-ink">Cena</legend>
-            {service ? (
-              <div className="flex flex-wrap gap-2">
-                {[20, 30, 40].map((pct) => (
-                  <Chip
-                    key={pct}
-                    active={discount === pct}
-                    onClick={() => setPrice(String(Math.round((normal * (100 - pct)) / 100 / 100)))}
-                  >
-                    −{pct} %
-                  </Chip>
-                ))}
-              </div>
-            ) : null}
-            <Field id="offer-price" label="Cena v korunách" error={attempted ? priceError : undefined}>
-              <Input
-                id="offer-price"
-                inputMode="numeric"
-                placeholder="Cena v Kč"
-                className="tnum min-h-14 text-xl font-extrabold"
-                value={price}
-                onChange={(event) => setPrice(event.target.value.replace(/\D/g, ''))}
-              />
-            </Field>
-            {service && dealCents > 0 && !priceError ? <Payout deal={dealCents} normal={normal} discount={discount} commission={commissionCents} payout={payoutCents} rate={rate} /> : null}
+            <div className="grid grid-cols-2 gap-2.5">
+              <Field id="offer-original-price" label="Běžná cena" error={attempted ? originalPriceError : undefined}>
+                <div className="relative">
+                  <Input
+                    id="offer-original-price"
+                    inputMode="numeric"
+                    placeholder="650"
+                    className="tnum min-h-14 pr-9 text-lg font-extrabold"
+                    value={originalPrice}
+                    onChange={(event) => setOriginalPrice(event.target.value.replace(/\D/g, ''))}
+                  />
+                  <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-bold text-muted">Kč</span>
+                </div>
+              </Field>
+              <Field id="offer-price" label="Cena na FLEKu" error={attempted ? priceError : undefined}>
+                <div className="relative">
+                  <Input
+                    id="offer-price"
+                    inputMode="numeric"
+                    placeholder="520"
+                    className="tnum min-h-14 pr-9 text-lg font-extrabold"
+                    value={dealPrice}
+                    onChange={(event) => setDealPrice(event.target.value.replace(/\D/g, ''))}
+                  />
+                  <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-bold text-muted">Kč</span>
+                </div>
+              </Field>
+            </div>
+            {service && originalCents > 0 && dealCents > 0 && !originalPriceError && !priceError ? <Payout deal={dealCents} normal={originalCents} discount={discount} commission={commissionCents} payout={payoutCents} rate={rate} /> : null}
           </fieldset>
 
           {/*

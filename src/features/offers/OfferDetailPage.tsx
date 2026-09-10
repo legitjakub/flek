@@ -244,23 +244,6 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
               {duration(offer.start_at, offer.end_at)} min
             </span>
           </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 empty:hidden">
-            {minutesAway > 0 && minutesAway <= 120 ? (
-              <span className="tnum mt-2 text-sm font-bold text-accent">Začíná {relativeTime(offer.start_at, now)}</span>
-            ) : null}
-            {/* Scarcity belongs next to the time it applies to, not on a row of its own
-                three screens away from the button. */}
-            {lastSeat ? (
-              <span className="mt-2 rounded-lg bg-warning-soft px-2 py-1 text-sm font-bold text-warning">
-                Poslední místo
-              </span>
-            ) : null}
-          </div>
-
-          {offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60 ? (
-            <p className="tnum mt-2 text-sm text-muted">Rezervovat lze ještě <span className="font-bold text-ink">{cutoffMinutes} min</span></p>
-          ) : null}
-
           {/*
             One row, two ends. The two numbers a person compares stay together on the left
             and the percentage goes to the right edge, so the row spans the card instead of
@@ -279,25 +262,16 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
               {savings > 0 ? <OriginalPrice cents={offer.original_price_cents} className="text-sm" /> : null}
               {savings > 0 ? <DiscountBadge pct={offer.discount_pct} className="ml-auto" /> : null}
             </div>
-            {savings > 0 ? (
-              <p className="tnum mt-1.5 text-sm text-muted">
-                Ušetříš <span className="font-bold text-positive">{money(savings)}</span>
-              </p>
-            ) : null}
           </div>
 
-          {/* An unusually low price invites suspicion, and suspicion is what stops a first
-              booking. Progressive disclosure: one line, opened only by someone who wondered. */}
-          <details className="group mt-1">
-            <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-sm font-bold text-muted hover:text-accent">
-              Proč je to levnější?
-              <ChevronDown size={15} aria-hidden="true" className="transition-transform group-open:rotate-180" />
-            </summary>
-            <p className="mt-2 text-sm leading-relaxed text-muted">
-              Podniku zůstal volný termín, který by jinak propadl. Přes FLEK ho proto může nabídnout za
-              výhodnější cenu. Dostaneš úplně stejnou službu jako za plnou cenu.
+          {(minutesAway > 0 && minutesAway <= 120) || (offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60) || lastSeat ? (
+            <p className="tnum mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-line pt-3 text-sm text-muted">
+              {minutesAway > 0 && minutesAway <= 120 ? <span className="font-bold text-accent">Začíná {relativeTime(offer.start_at, now)}</span> : null}
+              {minutesAway > 0 && minutesAway <= 120 && offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60 ? <span aria-hidden="true">·</span> : null}
+              {offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60 ? <span>Rezervovat ještě <strong className="text-ink">{cutoffMinutes} min</strong></span> : null}
+              {lastSeat ? <span className="font-bold text-warning">{(minutesAway > 0 && minutesAway <= 120) || (offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60) ? '· ' : ''}Poslední místo</span> : null}
             </p>
-          </details>
+          ) : null}
 
           {/* No sticky bar when there is nothing to book: a permanently disabled button is a
               dead end, and the recovery block below offers what is actually still possible. */}
@@ -347,6 +321,16 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           ) : null}
         </aside>
         <div className="min-w-0 md:col-start-1">
+          <details className="group mb-5 rounded-xl border border-line bg-card px-3">
+            <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-sm font-bold text-muted hover:text-accent">
+              Proč je to levnější?
+              <ChevronDown size={15} aria-hidden="true" className="transition-transform group-open:rotate-180" />
+            </summary>
+            <p className="border-t border-line py-3 text-sm leading-relaxed text-muted">
+              Podniku zůstal volný termín, který by jinak propadl. Přes FLEK ho proto může nabídnout za
+              výhodnější cenu. Dostaneš úplně stejnou službu jako za plnou cenu.
+            </p>
+          </details>
           {!offer.bookable && reason ? (
             <div className="mb-8">
               <UnavailableOfferRecovery offer={offer} reason={reason} now={now} point={point} />

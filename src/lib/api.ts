@@ -255,6 +255,7 @@ export async function saveService(
 export async function publishOffer(input: {
   service_id: string;
   start_at: string;
+  original_price_cents: number;
   deal_price_cents: number;
   capacity_total: number;
   booking_cutoff_at: string | null;
@@ -264,6 +265,7 @@ export async function publishOffer(input: {
     supabase.rpc('publish_offer', {
       p_service_id: input.service_id,
       p_start_at: input.start_at,
+      p_original_price_cents: input.original_price_cents,
       p_deal_price_cents: input.deal_price_cents,
       p_capacity_total: input.capacity_total,
       p_booking_cutoff_at: input.booking_cutoff_at,

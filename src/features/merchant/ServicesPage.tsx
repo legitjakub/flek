@@ -115,7 +115,7 @@ function ServiceSheet({
   const [price, setPrice] = useState(service ? String(service.normal_price_cents / 100) : '');
   const [active, setActive] = useState(service?.is_active ?? true);
   const [imageUrl, setImageUrl] = useState<string | null>(service?.image_url ?? null);
-  const [template, setTemplate] = useState<string | null>(null);
+  const [template, setTemplate] = useState<string | null>(service?.template_slug ?? null);
   const [advanced, setAdvanced] = useState(Boolean(service?.description));
   const [attempted, setAttempted] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
@@ -144,6 +144,7 @@ function ServiceSheet({
           normal_price_cents: priceNumber * 100,
           is_active: active,
           image_url: imageUrl,
+          template_slug: template === 'custom' ? null : template,
         },
         service?.id ?? null,
       ),
@@ -214,7 +215,6 @@ function ServiceSheet({
               aria-invalid={attempted && Boolean(nameError) || undefined}
               onChange={(event) => {
                 setName(event.target.value);
-                if (!service) setTemplate('custom');
               }}
             />
           </Field>
@@ -222,7 +222,7 @@ function ServiceSheet({
 
         <fieldset>
           <legend className="text-sm font-bold text-ink">Délka služby</legend>
-          <div className="rail -mx-1 mt-2 flex gap-2 px-1 py-1">
+          <div className="mt-2 grid grid-cols-3 gap-2">
             {DURATION_PRESETS.map((preset) => (
               <Chip
                 key={preset}
@@ -235,15 +235,17 @@ function ServiceSheet({
                 {preset} min
               </Chip>
             ))}
-            <Chip
-              active={customDuration}
-              onClick={() => {
-                if (!customDuration) setMinutes('');
-                setCustomDuration(true);
-              }}
-            >
-              Jiná délka
-            </Chip>
+            <div className="col-span-3 [&>button]:w-full">
+              <Chip
+                active={customDuration}
+                onClick={() => {
+                  if (!customDuration) setMinutes('');
+                  setCustomDuration(true);
+                }}
+              >
+                Jiná délka
+              </Chip>
+            </div>
           </div>
           {customDuration ? (
             <div className="relative mt-3 max-w-48">
@@ -284,6 +286,8 @@ function ServiceSheet({
 
         <ServicePhotoPicker
           categorySlug={category}
+          templateSlug={template}
+          serviceName={trimmedName}
           value={imageUrl}
           venueCover={business.cover_url}
           onPick={setImageUrl}

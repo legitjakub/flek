@@ -61,6 +61,8 @@ export type Service = {
   duration_minutes: number;
   normal_price_cents: number;
   image_url: string | null;
+  /** Prepared activity used to keep the photo gallery relevant; null for a custom service. */
+  template_slug: string | null;
   is_active: boolean;
   created_at: string;
 };

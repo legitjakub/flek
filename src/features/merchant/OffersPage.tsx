@@ -8,7 +8,7 @@ import { serverNow, useServerNow } from '../../lib/clock';
 import { Banner, Button, EmptyState, ErrorState, Field, Input, LoadingList, Sheet, Tabs } from '../../components/ui';
 import { MerchantShell } from './MerchantShell';
 import { Plus } from 'lucide-react';
-import { CreateOfferSheet, cutoffFor, type OfferDraft } from './CreateOfferSheet';
+import { CreateOfferSheet, cutoffFor, offerDiscountError, offerDiscountPct, type OfferDraft } from './CreateOfferSheet';
 import { Price } from '../../components/Price';
 import { localInput, localToInstant } from '../../lib/time';
 import { useServices } from './useBusiness';
@@ -168,7 +168,12 @@ function Offers({
                 <Button
                   variant="secondary"
                   onClick={() => {
-                    setDraft({ service_id: offer.service_id, deal_price_cents: offer.deal_price_cents, start_at: offer.start_at });
+                    setDraft({
+                      service_id: offer.service_id,
+                      original_price_cents: offer.original_price_cents,
+                      deal_price_cents: offer.deal_price_cents,
+                      start_at: offer.start_at,
+                    });
                     setSheetOpen(true);
                   }}
                 >
@@ -261,16 +266,23 @@ function CancelOfferSheet({ offer, onClose }: { offer: MerchantOffer | null; onC
 function EditOfferSheet({ offer, onClose }: { offer: MerchantOffer; onClose: () => void }) {
   const queryClient = useQueryClient();
   const [capacity, setCapacity] = useState(String(offer.capacity_total));
-  const [price, setPrice] = useState(String(offer.deal_price_cents / 100));
+  const [originalPrice, setOriginalPrice] = useState(String(offer.original_price_cents / 100));
+  const [dealPrice, setDealPrice] = useState(String(offer.deal_price_cents / 100));
   const [start, setStart] = useState(localInput(offer.start_at));
   const [failure, setFailure] = useState<string | null>(null);
   const locked = offer.booked > 0 || offer.capacity_remaining < offer.capacity_total;
+  const originalCents = /^\d+$/.test(originalPrice) ? Number(originalPrice) * 100 : 0;
+  const dealCents = /^\d+$/.test(dealPrice) ? Number(dealPrice) * 100 : 0;
+  const priceFailure = originalCents <= 0 || dealCents <= 0
+    ? 'Vyplňte obě ceny v celých korunách.'
+    : offerDiscountError(originalCents, dealCents);
 
   const save = useMutation({
     mutationFn: () => {
       const data: Record<string, unknown> = {};
       if (capacity) data.capacity_total = Number(capacity);
-      if (!locked && price) data.deal_price_cents = Number(price) * 100;
+      if (!locked && originalPrice) data.original_price_cents = Number(originalPrice) * 100;
+      if (!locked && dealPrice) data.deal_price_cents = Number(dealPrice) * 100;
       // Moving a slot was possible on the server all along — update_offer accepts start_at —
       // and impossible in the form, so a merchant running late had to cancel and republish.
       // The cutoff travels with it, clamped, or the server derives start−15 min and rejects
@@ -294,13 +306,22 @@ function EditOfferSheet({ offer, onClose }: { offer: MerchantOffer; onClose: () 
     onError: (error) => setFailure(errorMessage(error)),
   });
 
+  function submit() {
+    if (!locked && priceFailure) {
+      setFailure(priceFailure);
+      return;
+    }
+    setFailure(null);
+    save.mutate();
+  }
+
   return (
     <Sheet
       open
       onClose={onClose}
       title="Upravit nabídku"
       footer={
-        <Button className="w-full" loading={save.isPending} onClick={() => save.mutate()}>
+        <Button className="w-full" loading={save.isPending} onClick={submit}>
           Uložit změny
         </Button>
       }
@@ -322,14 +343,29 @@ function EditOfferSheet({ offer, onClose }: { offer: MerchantOffer; onClose: () 
         </Field>
         {!locked ? (
           <>
-            <Field id="edit-price" label="Cena v Kč" hint={`Nyní ${money(offer.deal_price_cents)}`}>
-              <Input
-                id="edit-price"
-                inputMode="numeric"
-                value={price}
-                onChange={(event) => setPrice(event.target.value.replace(/\D/g, ''))}
-              />
-            </Field>
+            <div className="grid grid-cols-2 gap-2.5">
+              <Field id="edit-original-price" label="Běžná cena" hint={`Nyní ${money(offer.original_price_cents)}`}>
+                <Input
+                  id="edit-original-price"
+                  inputMode="numeric"
+                  value={originalPrice}
+                  onChange={(event) => setOriginalPrice(event.target.value.replace(/\D/g, ''))}
+                />
+              </Field>
+              <Field id="edit-price" label="Cena na FLEKu" hint={`Nyní ${money(offer.deal_price_cents)}`}>
+                <Input
+                  id="edit-price"
+                  inputMode="numeric"
+                  value={dealPrice}
+                  onChange={(event) => setDealPrice(event.target.value.replace(/\D/g, ''))}
+                />
+              </Field>
+            </div>
+            {!priceFailure ? (
+              <p className="tnum text-sm font-bold text-positive">
+                Sleva −{offerDiscountPct(originalCents, dealCents)} %
+              </p>
+            ) : null}
             <Field id="edit-start" label="Začátek">
               <Input
                 id="edit-start"
