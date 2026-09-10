@@ -9,6 +9,8 @@ import { MerchantShell } from './MerchantShell';
 import { ActivitySuggestions, ServicePhotoPicker } from './ActivityPicker';
 import { useServices } from './useBusiness';
 import type { Business, Service } from '../../types/database';
+import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
+import { serviceIllustration } from '../../lib/serviceIllustrations';
 
 const DURATION_PRESETS = [15, 30, 45, 60, 90, 120] as const;
 
@@ -47,7 +49,7 @@ function Services({ business }: { business: Business }) {
 
       <ul className="grid gap-3 md:grid-cols-2">
         {(services.data ?? []).map((service) => {
-          const image = service.image_url ?? business.cover_url;
+          const image = serviceIllustration(service.name, service.image_url ?? business.cover_url);
           return (
             <li key={service.id}>
               <button
@@ -59,7 +61,10 @@ function Services({ business }: { business: Business }) {
                 className="flex min-h-24 w-full items-center gap-3 rounded-2xl bg-card p-3 text-left shadow-card transition-transform hover:-translate-y-0.5"
               >
                 {image ? (
-                  <img src={image} alt="" className="size-20 shrink-0 rounded-xl object-cover" />
+                  <span className="relative size-20 shrink-0 overflow-hidden rounded-xl">
+                    <img src={image} alt="" className="size-full object-cover" />
+                    <IllustrativePhotoLabel compact className="right-1 bottom-1" />
+                  </span>
                 ) : (
                   <span className="grid size-20 shrink-0 place-items-center rounded-xl bg-surface text-muted">
                     <ImageOff size={22} aria-hidden="true" />
@@ -167,7 +172,7 @@ function ServiceSheet({
     save.mutate();
   }
 
-  const previewImage = imageUrl ?? business.cover_url;
+  const previewImage = serviceIllustration(trimmedName, imageUrl ?? business.cover_url);
 
   return (
     <Sheet
@@ -297,7 +302,10 @@ function ServiceSheet({
           <h2 id="service-preview-title" className="text-sm font-bold text-ink">Náhled pro zákazníka</h2>
           <div className="mt-2 flex overflow-hidden rounded-2xl bg-surface ring-1 ring-line">
             {previewImage ? (
-              <img src={previewImage} alt="" className="h-28 w-28 shrink-0 object-cover" />
+              <span className="relative h-28 w-28 shrink-0">
+                <img src={previewImage} alt="" className="size-full object-cover" />
+                <IllustrativePhotoLabel compact className="right-1.5 bottom-1.5" />
+              </span>
             ) : (
               <span className="grid h-28 w-28 shrink-0 place-items-center bg-line/50 text-muted"><ImageOff size={22} aria-hidden="true" /></span>
             )}

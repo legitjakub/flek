@@ -4,6 +4,7 @@ import { Check, ChevronLeft, ChevronRight, Image, PenLine, Store } from 'lucide-
 import { listServicePhotos } from '../../lib/api';
 import { cx, Skeleton } from '../../components/ui';
 import { useSnapCarousel } from '../../components/useSnapCarousel';
+import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
 
 function usePhotos() {
   return useQuery({
@@ -168,7 +169,10 @@ export function ServicePhotoPicker({
 
       <div className="relative mt-3 overflow-hidden rounded-2xl bg-line/45">
         {selected?.imageUrl ? (
-          <img src={selected.imageUrl} alt="" className="aspect-[16/9] max-h-52 w-full object-cover" />
+          <>
+            <img src={selected.imageUrl} alt="" className="aspect-[16/9] max-h-52 w-full object-cover" />
+            <IllustrativePhotoLabel className="top-2 left-2" />
+          </>
         ) : (
           <span className="flex aspect-[16/9] max-h-52 items-center justify-center text-muted">{selected?.fallback ?? <Image size={28} aria-hidden="true" />}</span>
         )}
@@ -221,7 +225,10 @@ function PhotoChoice({ active, label, imageUrl, fallback, onClick }: {
       )}
     >
       {imageUrl ? (
-        <img src={imageUrl} alt="" loading="lazy" className="aspect-square w-full object-cover" />
+        <>
+          <img src={imageUrl} alt="" loading="lazy" className="aspect-square w-full object-cover" />
+          <IllustrativePhotoLabel compact className="bottom-[2.05rem] left-1" />
+        </>
       ) : (
         <span className="flex aspect-square items-center justify-center bg-line/45 text-muted">{fallback ?? <Image size={22} aria-hidden="true" />}</span>
       )}

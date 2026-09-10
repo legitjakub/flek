@@ -22,6 +22,8 @@ import { ShareOfferButton } from './ShareOfferButton';
 import { UnavailableOfferRecovery } from './UnavailableOfferRecovery';
 import { unavailableReason } from './unavailable';
 import { GooglePlaceRating } from '../ratings/GooglePlaceRating';
+import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
+import { serviceIllustration } from '../../lib/serviceIllustrations';
 
 export function OfferDetailPage({ offerId }: { offerId: string }) {
   const { search, navigate } = useRouter();
@@ -110,7 +112,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
     return <BookingSuccess code={code} offer={offer} now={now} />;
   }
 
-  const image = offer.image_url ?? offer.cover_url;
+  const image = serviceIllustration(offer.service_name, offer.image_url ?? offer.cover_url);
   const savings = offer.original_price_cents - offer.deal_price_cents;
   const minutesAway = Math.round((Date.parse(offer.start_at) - Date.parse(now)) / 60000);
   const lastSeat = offer.capacity_remaining === 1 && offer.capacity_total > 1;
@@ -156,6 +158,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
                   businessName={offer.business_name}
                 />
               </div>
+              <IllustrativePhotoLabel className="right-3 bottom-3" />
             </div>
           ) : null}
           {/*

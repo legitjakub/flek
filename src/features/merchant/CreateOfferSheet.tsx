@@ -9,6 +9,8 @@ import { serverNow } from '../../lib/clock';
 import { Banner, Button, Chip, Field, Input, Sheet } from '../../components/ui';
 import { Link } from '../../app/router';
 import type { Service } from '../../types/database';
+import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
+import { serviceIllustration } from '../../lib/serviceIllustrations';
 
 export type OfferDraft = { service_id: string; original_price_cents: number; deal_price_cents: number; start_at?: string } | null;
 
@@ -234,15 +236,18 @@ export function CreateOfferSheet({
             */}
             {service ? (
               <div className="mt-3 flex items-center gap-3 rounded-xl bg-surface p-3">
-                {service.image_url ? (
-                  <img src={service.image_url} alt="" className="size-16 shrink-0 rounded-lg object-cover" />
+                {serviceIllustration(service.name, service.image_url) ? (
+                  <span className="relative size-16 shrink-0 overflow-hidden rounded-lg">
+                    <img src={serviceIllustration(service.name, service.image_url)!} alt="" className="size-full object-cover" />
+                    <IllustrativePhotoLabel compact className="right-1 bottom-1" />
+                  </span>
                 ) : (
                   <span className="grid size-16 shrink-0 place-items-center rounded-lg bg-line text-muted">
                     <ImageOff size={20} aria-hidden="true" />
                   </span>
                 )}
                 <p className="text-sm text-muted">
-                  {service.image_url ? (
+                  {serviceIllustration(service.name, service.image_url) ? (
                     <>
                       Takhle nabídku uvidí zákazník. Fotku změníte{' '}
                       <Link to="/partner/sluzby" className="font-bold text-accent underline underline-offset-2">
