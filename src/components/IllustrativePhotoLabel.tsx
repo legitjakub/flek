@@ -5,12 +5,12 @@ export function IllustrativePhotoLabel({ compact = false, className }: { compact
   return (
     <span
       className={cx(
-        'pointer-events-none absolute z-[1] rounded-md bg-ink/72 font-bold leading-none tracking-wide text-card shadow-sm backdrop-blur-sm',
-        compact ? 'px-1 py-0.5 text-[8px]' : 'px-1.5 py-1 text-[10px]',
+        'pointer-events-none absolute z-[1] font-medium leading-none text-white/90 [text-shadow:0_1px_3px_rgb(0_0_0/0.9)]',
+        compact ? 'text-[8px]' : 'text-[10px]',
         className,
       )}
     >
-      Ilustrační foto
+      ilustrační foto
     </span>
   );
 }
