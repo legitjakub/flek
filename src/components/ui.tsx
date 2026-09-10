@@ -30,12 +30,34 @@ export function Mark({ className = 'size-6' }: { className?: string }) {
 }
 
 /** Two dashes leaving the k — the only decorative part of the identity. */
-function Dashes({ className }: { className?: string }) {
+/**
+ * The mark: a map pin with a clock in it, and three rays coming off it. A place and a time
+ * at it — which is the entire product — where the wordmark used to carry two bare dashes
+ * that meant nothing on their own.
+ *
+ * The pin keeps its own colours rather than inheriting `currentColor`: the white clock face
+ * and the ink hands have to hold whichever ground the wordmark sits on.
+ */
+function PinMark({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false" className={className}>
-      <g fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round">
-        <path d="M6 12 14 3" />
-        <path d="M11.5 17 18.5 13.5" />
+    <svg viewBox="0 0 36 32" aria-hidden="true" focusable="false" className={className}>
+      <path
+        d="M12 30.6s11-11.8 11-17.6a11 11 0 1 0-22 0c0 5.8 11 17.6 11 17.6z"
+        className="fill-brand"
+      />
+      <circle cx="12" cy="13" r="6.6" className="fill-card" />
+      <path
+        d="M12 8.4v4.6l3.5 2"
+        fill="none"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="stroke-ink"
+      />
+      <g fill="none" strokeWidth="3.2" strokeLinecap="round" className="stroke-brand">
+        <path d="M26.2 7.6 30.8 2.8" />
+        <path d="M28.4 13 34.2 10.6" />
+        <path d="M28.6 18.6 34.6 18" />
       </g>
     </svg>
   );
@@ -58,7 +80,8 @@ export function Wordmark({ tone = 'ink', suffix }: { tone?: 'ink' | 'invert'; su
         >
           flek
         </span>
-        <Dashes className="mt-[-3px] ml-0.5 size-3.5 shrink-0 text-brand" />
+        {/* Overlapping the k on purpose: the pin is part of the word, not an icon beside it. */}
+        <PinMark className="mt-[-0.26em] ml-[-0.26em] h-[1.2em] w-[1.35em] shrink-0" />
       </span>
       {suffix ? <span className="text-xs font-bold tracking-wide text-muted uppercase">{suffix}</span> : null}
     </span>

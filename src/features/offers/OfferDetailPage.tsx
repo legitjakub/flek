@@ -5,7 +5,7 @@ import { getOfferDetail, setFavorite } from '../../lib/api';
 import { track } from '../../lib/analytics';
 import { relativeTime, useServerNow } from '../../lib/clock';
 import { money, distance as formatDistance } from '../../lib/format';
-import { OriginalPrice, Price } from '../../components/Price';
+import { OriginalPrice } from '../../components/Price';
 import { clockTime, dayLabel, duration } from '../../lib/time';
 import { DEFAULT_POINT, storedPoint } from '../../lib/geo';
 import { Button, ErrorState, Skeleton, cx } from '../../components/ui';
@@ -226,19 +226,23 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
         >
           <h2 className="sr-only md:not-sr-only md:mb-3 md:block md:text-base md:font-extrabold">Tvůj termín</h2>
 
-          <div className="flex items-start gap-3">
+          {/*
+            The duration sits at the far end of the row rather than under the time. Every
+            line in this card used to start at the same left edge and stop well short of the
+            right one — six stacked rows in the left third of a full-width box, with the
+            other two thirds empty. Two facts, two ends of one line.
+          */}
+          <div className="flex items-center gap-3">
             <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
               <CalendarDays size={18} aria-hidden="true" />
             </span>
-            <div className="min-w-0">
-              <p className="tnum text-base leading-5 font-bold">
-                {dayLabel(offer.start_at, now)} · {clockTime(offer.start_at)}–{clockTime(offer.end_at)}
-              </p>
-              <p className="tnum mt-1 flex items-center gap-1.5 text-sm leading-5 text-muted">
-                <Clock3 size={14} aria-hidden="true" />
-                {duration(offer.start_at, offer.end_at)} min
-              </p>
-            </div>
+            <p className="tnum min-w-0 flex-1 text-base leading-5 font-bold">
+              {dayLabel(offer.start_at, now)} · {clockTime(offer.start_at)}–{clockTime(offer.end_at)}
+            </p>
+            <span className="tnum inline-flex shrink-0 items-center gap-1.5 text-sm text-muted">
+              <Clock3 size={14} aria-hidden="true" />
+              {duration(offer.start_at, offer.end_at)} min
+            </span>
           </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 empty:hidden">
             {minutesAway > 0 && minutesAway <= 120 ? (
@@ -257,17 +261,30 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             <p className="tnum mt-2 text-sm text-muted">Rezervovat lze ještě <span className="font-bold text-ink">{cutoffMinutes} min</span></p>
           ) : null}
 
-          {/* The scale in styles.css assigns xl/800 to prices and times and 2xl/800 to the
-              page heading. At 2xl the price was the largest thing on the screen, louder
-              than the title of the thing being bought. */}
-          <Price
-            className="mt-3 border-t border-line pt-3"
-            dealCents={offer.deal_price_cents}
-            originalCents={offer.original_price_cents}
-            discountPct={offer.discount_pct}
-            variant="detail"
-            showSaving
-          />
+          {/*
+            Price left, discount right, on one line instead of three stacked ones. The scale
+            in styles.css assigns xl/800 to prices and times and 2xl/800 to the page heading:
+            at 2xl the price was the largest thing on the screen, louder than the title of
+            the thing being bought.
+          */}
+          <div className="mt-3 flex items-end justify-between gap-4 border-t border-line pt-3">
+            <div className="min-w-0">
+              <p className="tnum text-xl leading-none font-extrabold tracking-tight">
+                {money(offer.deal_price_cents)}
+              </p>
+              {savings > 0 ? (
+                <p className="mt-1.5 text-sm">
+                  <OriginalPrice cents={offer.original_price_cents} />
+                </p>
+              ) : null}
+            </div>
+            {savings > 0 ? (
+              <div className="shrink-0 rounded-xl bg-accent-soft px-3 py-2 text-right">
+                <p className="tnum text-lg leading-none font-extrabold text-accent">−{offer.discount_pct} %</p>
+                <p className="tnum mt-1 text-sm font-bold text-positive">ušetříš {money(savings)}</p>
+              </div>
+            ) : null}
+          </div>
 
           {/* An unusually low price invites suspicion, and suspicion is what stops a first
               booking. Progressive disclosure: one line, opened only by someone who wondered. */}

@@ -1,11 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="FLEK">
-  <rect width="64" height="64" fill="#f6f7f6"/>
-  <g fill="none" stroke="#22282b" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M39 21c-6.9 0-11.6 4.5-11.6 11.2V46"/>
-    <path d="M20 34h15.2"/>
-  </g>
-  <g fill="none" stroke="#8cc63f" stroke-width="5.6" stroke-linecap="round">
-    <path d="M44 25.5 49 20"/>
-    <path d="M47.5 35.5 53 32.5"/>
+  <!-- Maskable: the launcher crops to an inner circle, so the pin sits inside the safe zone. -->
+  <rect width="64" height="64" fill="#22282b"/>
+  <g transform="translate(32 32) scale(0.74) translate(-32 -32)">
+    <path d="M32 53.4s17-17.2 17-25.4a17 17 0 1 0-34 0c0 8.2 17 25.4 17 25.4z" fill="#8cc63f"/>
+  <circle cx="32" cy="28" r="10.8" fill="#ffffff"/>
+  <path d="M32 20.6v7.4l5.3 3" fill="none" stroke="#22282b" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 </svg>
