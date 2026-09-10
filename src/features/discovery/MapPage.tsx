@@ -4,7 +4,7 @@ import { Crosshair, List, MapPin, X } from 'lucide-react';
 import { Link, useRouter } from '../../app/router';
 import { listCategories } from '../../lib/api';
 import { money, distance } from '../../lib/format';
-import { DiscountBadge } from '../../components/Price';
+import { DiscountBadge, OriginalPrice } from '../../components/Price';
 import { clockTime, dayLabel, duration } from '../../lib/time';
 import { useServerNow } from '../../lib/clock';
 import { Banner, EmptyState, ErrorState, Skeleton } from '../../components/ui';
@@ -166,7 +166,12 @@ function MapOffer({ offer, now, to }: { offer: SearchRow; now: string; to: strin
       to={to}
       className="group flex flex-col gap-1 p-3 transition-colors hover:bg-surface focus-visible:bg-accent-soft"
     >
-      {/* Name and price on one baseline, at the two ends of the card. */}
+      {/*
+        Two columns of three. On the left what the appointment is, on the right what it
+        costs — deal, list price, discount, stacked and right-aligned so the eye reads the
+        price as one thing instead of hunting it among the facts. Cramming all three into
+        one corner is what made this card unreadable in the first place.
+      */}
       <span className="flex items-baseline gap-3">
         <span className="min-w-0 flex-1 truncate text-base leading-snug font-extrabold text-ink">
           {offer.service_name}
@@ -176,13 +181,18 @@ function MapOffer({ offer, now, to }: { offer: SearchRow; now: string; to: strin
         </span>
       </span>
 
-      <span className="block truncate text-sm text-muted">
-        {offer.business_name}
-        {offer.district ? ` · ${offer.district}` : ''}
+      <span className="flex items-baseline gap-3">
+        <span className="min-w-0 flex-1 truncate text-sm text-muted">
+          {offer.business_name}
+          {offer.district ? ` · ${offer.district}` : ''}
+        </span>
+        {offer.original_price_cents > offer.deal_price_cents ? (
+          <OriginalPrice cents={offer.original_price_cents} className="shrink-0 text-sm" />
+        ) : null}
       </span>
 
       {/* Time first and in ink: on a last-minute marketplace it is the fact people scan
-          for. The discount closes the row at the other edge. */}
+          for. The discount closes the column at the other edge. */}
       <span className="flex items-baseline gap-3">
         <span className="tnum min-w-0 flex-1 truncate text-sm">
           <span className="font-bold text-ink">
