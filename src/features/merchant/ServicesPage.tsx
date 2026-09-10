@@ -40,7 +40,7 @@ function Services({ business }: { business: Business }) {
       {services.isSuccess && services.data.length === 0 ? (
         <EmptyState
           title="Zatím nemáte žádnou službu"
-          body="Začněte vlastním názvem. Například Pánský střih, 45 minut, 650 Kč."
+          body="Vyberte připravený typ služby, nebo si vytvořte vlastní."
           action={<Button onClick={add}>+ Přidat službu</Button>}
         />
       ) : null}
@@ -115,6 +115,7 @@ function ServiceSheet({
   const [price, setPrice] = useState(service ? String(service.normal_price_cents / 100) : '');
   const [active, setActive] = useState(service?.is_active ?? true);
   const [imageUrl, setImageUrl] = useState<string | null>(service?.image_url ?? null);
+  const [template, setTemplate] = useState<string | null>(null);
   const [advanced, setAdvanced] = useState(Boolean(service?.description));
   const [attempted, setAttempted] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
@@ -182,31 +183,41 @@ function ServiceSheet({
       }
     >
       <div className="flex flex-col gap-5">
+        {!service ? (
+          <ActivitySuggestions
+            categorySlug={category}
+            selected={template}
+            onPick={(choice) => {
+              setTemplate(choice.slug);
+              setName(choice.label);
+              if (choice.imageUrl) setImageUrl(choice.imageUrl);
+            }}
+            onCustom={() => {
+              setTemplate('custom');
+              setName('');
+              window.setTimeout(() => document.getElementById('s-name')?.focus(), 0);
+            }}
+          />
+        ) : null}
         <div>
           <Field
             id="s-name"
-            label="Název služby"
-            hint="Zákazník ho uvidí na kartě nabídky. Název můžete napsat úplně vlastní."
+            label="Název pro zákazníka"
+            hint="Připravený název můžete upravit tak, jak službu skutečně nabízíte."
             error={attempted ? nameError : undefined}
           >
             <Input
               id="s-name"
-              data-autofocus
+              data-autofocus={service ? '' : undefined}
               placeholder="Např. Pánský střih s mytím"
               value={name}
               aria-invalid={attempted && Boolean(nameError) || undefined}
-              onChange={(event) => setName(event.target.value)}
-            />
-          </Field>
-          <div className="mt-3">
-            <ActivitySuggestions
-              categorySlug={category}
-              onPick={(template) => {
-                setName(template.label);
-                if (template.imageUrl) setImageUrl(template.imageUrl);
+              onChange={(event) => {
+                setName(event.target.value);
+                if (!service) setTemplate('custom');
               }}
             />
-          </div>
+          </Field>
         </div>
 
         <fieldset>
@@ -318,6 +329,7 @@ function ServiceSheet({
                   onChange={(event) => {
                     setCategory(event.target.value);
                     setImageUrl(null);
+                    setTemplate(null);
                   }}
                 >
                   {(categories.data ?? []).map((item) => <option key={item.slug} value={item.slug}>{item.label_cs}</option>)}

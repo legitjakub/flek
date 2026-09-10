@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Crosshair, List, MapPin, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Crosshair, List, MapPin, X } from 'lucide-react';
 import { Link, useRouter } from '../../app/router';
 import { listCategories } from '../../lib/api';
 import { money, distance } from '../../lib/format';
@@ -15,6 +15,7 @@ import { useDiscoveryState } from './useDiscoveryState';
 import { useDiscovery } from './useDiscovery';
 import { groupMapOffers } from './mapOffers';
 import { locate } from '../../lib/geo';
+import { useSnapCarousel } from '../../components/useSnapCarousel';
 import type { SearchRow } from '../../types/database';
 
 const markerTime = new Intl.DateTimeFormat('cs-CZ', {
@@ -37,6 +38,7 @@ export function MapPage() {
   const rows = discovery.data?.rows;
   const groups = useMemo(() => groupMapOffers(rows ?? []), [rows]);
   const selectedOffers = groups.filter((group) => openGroup.includes(group.id)).flatMap((group) => group.offers).sort((a, b) => a.start_at.localeCompare(b.start_at));
+  const carousel = useSnapCarousel<HTMLUListElement>(selectedOffers.length, openGroup.join(':'));
   const oneBusiness = new Set(selectedOffers.map((offer) => offer.business_id)).size === 1;
   const origin = `/mapa${search.size ? `?${search}` : ''}`;
   const detailHref = (id: string) => `/nabidka/${id}?from=${encodeURIComponent(origin)}`;
@@ -128,13 +130,48 @@ export function MapPage() {
                       · {selectedOffers.length} {plural(selectedOffers.length)}
                     </span>
                   </p>
+                  {selectedOffers.length > 1 ? (
+                    <span className="tnum shrink-0 text-xs font-bold text-muted" aria-live="polite">
+                      {carousel.index + 1} / {selectedOffers.length}
+                    </span>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => carousel.goTo(carousel.index - 1)}
+                    disabled={!carousel.canGoBack}
+                    aria-label="Předchozí termín"
+                    className="grid size-9 shrink-0 place-items-center rounded-xl text-muted hover:bg-surface hover:text-ink disabled:opacity-30"
+                  >
+                    <ChevronLeft size={18} aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => carousel.goTo(carousel.index + 1)}
+                    disabled={!carousel.canGoForward}
+                    aria-label="Další termín"
+                    className="grid size-9 shrink-0 place-items-center rounded-xl text-muted hover:bg-surface hover:text-ink disabled:opacity-30"
+                  >
+                    <ChevronRight size={18} aria-hidden="true" />
+                  </button>
                   <button type="button" onClick={() => setOpenGroup([])} aria-label="Zavřít výběr" className="grid size-10 shrink-0 place-items-center rounded-xl text-muted hover:bg-surface hover:text-ink">
                     <X size={18} aria-hidden="true" />
                   </button>
                 </div>
-                <ul className="rail rail-fade flex snap-x gap-2 overflow-x-auto pb-1">
+                <ul
+                  ref={carousel.viewportRef}
+                  tabIndex={selectedOffers.length > 1 ? 0 : -1}
+                  onScroll={carousel.onScroll}
+                  onKeyDown={carousel.onKeyDown}
+                  className="rail rail-fade flex snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-contain pb-1 touch-pan-x"
+                  aria-label="Termíny na vybraném místě"
+                >
                   {selectedOffers.map((offer) => (
-                    <li key={offer.id} className="w-[min(82vw,330px)] shrink-0 snap-start overflow-hidden rounded-xl border border-line bg-card">
+                    <li
+                      key={offer.id}
+                      data-snap-item
+                      aria-label={`Termín ${selectedOffers.indexOf(offer) + 1} z ${selectedOffers.length}`}
+                      className="w-[calc(100%_-_2.5rem)] max-w-[330px] shrink-0 snap-start snap-always overflow-hidden rounded-xl border border-line bg-card"
+                    >
                       <MapOffer offer={offer} now={now} to={detailHref(offer.id)} />
                     </li>
                   ))}
@@ -209,4 +246,3 @@ function MapOffer({ offer, now, to }: { offer: SearchRow; now: string; to: strin
     </Link>
   );
 }
-

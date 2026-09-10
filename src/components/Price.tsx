@@ -22,19 +22,14 @@ export function savings(originalCents: number, dealCents: number): number {
 }
 
 /**
- * Filled, and in the deep accent rather than the logo's lime.
- *
- * The lime was tried here — ink on it measures 7.3:1, so legibility was never the question.
- * It simply read as too loud for something that repeats on every card in the feed, on the
- * map and on the detail page at once. White on the accent measures 5.1:1 and is the same
- * green the rest of the interface already speaks in, which is the point: the badge is a
- * fact about the price, not a second logo.
+ * The exact logo lime is the promotional highlight; dark ink keeps it comfortably readable.
+ * Text links and status labels use the darker tone of the same green family.
  */
 export function DiscountBadge({ pct, className = '' }: { pct: number; className?: string }) {
   if (pct <= 0) return null;
   return (
     <span
-      className={`tnum inline-flex items-center rounded-lg bg-accent px-2 py-0.5 text-xs font-extrabold text-accent-ink ${className}`}
+      className={`tnum inline-flex items-center rounded-lg bg-brand px-2 py-0.5 text-xs font-extrabold text-ink ${className}`}
     >
       −{pct} %
     </span>

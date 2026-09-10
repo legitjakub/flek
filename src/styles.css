@@ -37,8 +37,9 @@
   --color-accent-ink: #ffffff;
   --color-accent-soft: #f1f6e3;
 
-  /* Money settled or returned. Blue-green on purpose, so it never reads as the brand. */
-  --color-positive: #12705a;
+  /* Success is a role, not a second green identity. It shares the readable dark tone of
+     the logo family; the exact lime remains the brighter highlight above it. */
+  --color-positive: #4f7a16;
   --color-warning: #8a5a00;
   --color-warning-soft: #fdf4e3;
   --color-danger: #a12d36;
