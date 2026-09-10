@@ -14,6 +14,15 @@ export function useSnapCarousel<T extends HTMLElement>(
   const viewportRef = useRef<T>(null);
   const frame = useRef<number | null>(null);
   const changeHandler = useRef(onIndexChange);
+  /*
+   * Where a button press is taking the carousel, while the smooth scroll is still on its
+   * way. Without it the scroll handler reported the item the viewport happened to be
+   * nearest to mid-flight — the one being left — so a single press on "Dále" set step 2,
+   * dropped back to step 1 at 40 ms and returned to step 2 at 123 ms. Every control bound
+   * to the index jumped three times, and the footer button changed width twice.
+   */
+  const target = useRef<number | null>(null);
+  const settle = useRef<number | null>(null);
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
@@ -28,6 +37,11 @@ export function useSnapCarousel<T extends HTMLElement>(
     const item = items[next];
     if (!item) return;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    target.current = next;
+    // A safety net for browsers without `scrollend`, and for a swipe that interrupts the
+    // animation: the lock never outlives a smooth scroll by much.
+    if (settle.current !== null) window.clearTimeout(settle.current);
+    settle.current = window.setTimeout(() => { target.current = null; }, 700);
     viewport.scrollTo({
       left: item.offsetLeft - viewport.offsetLeft,
       behavior: reduced ? 'auto' : behavior,
@@ -53,6 +67,12 @@ export function useSnapCarousel<T extends HTMLElement>(
           distance = current;
         }
       });
+      // Mid-flight towards a pressed item, the only nearest item worth reporting is the
+      // destination itself.
+      if (target.current !== null) {
+        if (nearest !== target.current) return;
+        target.current = null;
+      }
       setIndex((current) => {
         if (current !== nearest) changeHandler.current?.(nearest);
         return nearest;
@@ -86,6 +106,7 @@ export function useSnapCarousel<T extends HTMLElement>(
 
   useEffect(() => () => {
     if (frame.current !== null) window.cancelAnimationFrame(frame.current);
+    if (settle.current !== null) window.clearTimeout(settle.current);
   }, []);
 
   return {
