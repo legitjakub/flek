@@ -137,8 +137,11 @@ export function OfferCard({
             </div>
           </div>
           {/*
-            The badge is on the photo already, so repeating it here would only crowd the two
-            numbers that have to be compared. A compact card has no photo, so it keeps it.
+            Two lines, and deliberately not three. The saving in crowns was tried here and
+            made this column a line taller than the time column beside it, which reopened
+            the hole under the time that `items-center` exists to close. The discount is on
+            the photograph, the saving is on the detail page, and the card compares two
+            numbers — which is all a card has room to do.
           */}
           <Price
             className="shrink-0 text-right"
@@ -147,7 +150,6 @@ export function OfferCard({
             originalCents={offer.original_price_cents}
             discountPct={offer.discount_pct}
             showBadge={Boolean(compact)}
-            showSaving
           />
         </div>
       </div>

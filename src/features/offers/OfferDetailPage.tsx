@@ -5,7 +5,7 @@ import { getOfferDetail, setFavorite } from '../../lib/api';
 import { track } from '../../lib/analytics';
 import { relativeTime, useServerNow } from '../../lib/clock';
 import { money, distance as formatDistance } from '../../lib/format';
-import { OriginalPrice } from '../../components/Price';
+import { DiscountBadge, OriginalPrice } from '../../components/Price';
 import { clockTime, dayLabel, duration } from '../../lib/time';
 import { DEFAULT_POINT, storedPoint } from '../../lib/geo';
 import { Button, ErrorState, Skeleton, cx } from '../../components/ui';
@@ -262,27 +262,27 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           ) : null}
 
           {/*
-            Price left, discount right, on one line instead of three stacked ones. The scale
-            in styles.css assigns xl/800 to prices and times and 2xl/800 to the page heading:
-            at 2xl the price was the largest thing on the screen, louder than the title of
-            the thing being bought.
+            One row, two ends. The two numbers a person compares stay together on the left
+            and the percentage goes to the right edge, so the row spans the card instead of
+            bunching in its left third — without a tinted block that ends up shouting louder
+            than the price it is describing.
+
+            The scale in styles.css assigns xl/800 to prices and times and 2xl/800 to the
+            page heading: at 2xl the price was the largest thing on the screen, louder than
+            the title of the thing being bought.
           */}
-          <div className="mt-3 flex items-end justify-between gap-4 border-t border-line pt-3">
-            <div className="min-w-0">
-              <p className="tnum text-xl leading-none font-extrabold tracking-tight">
+          <div className="mt-3 border-t border-line pt-3">
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+              <span className="tnum text-xl leading-none font-extrabold tracking-tight">
                 {money(offer.deal_price_cents)}
-              </p>
-              {savings > 0 ? (
-                <p className="mt-1.5 text-sm">
-                  <OriginalPrice cents={offer.original_price_cents} />
-                </p>
-              ) : null}
+              </span>
+              {savings > 0 ? <OriginalPrice cents={offer.original_price_cents} className="text-sm" /> : null}
+              {savings > 0 ? <DiscountBadge pct={offer.discount_pct} className="ml-auto" /> : null}
             </div>
             {savings > 0 ? (
-              <div className="shrink-0 rounded-xl bg-accent-soft px-3 py-2 text-right">
-                <p className="tnum text-lg leading-none font-extrabold text-accent">−{offer.discount_pct} %</p>
-                <p className="tnum mt-1 text-sm font-bold text-positive">ušetříš {money(savings)}</p>
-              </div>
+              <p className="tnum mt-1.5 text-sm text-muted">
+                Ušetříš <span className="font-bold text-positive">{money(savings)}</span>
+              </p>
             ) : null}
           </div>
 
