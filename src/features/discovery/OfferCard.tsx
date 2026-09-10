@@ -7,6 +7,8 @@ import { clockTime, dayLabel, duration } from '../../lib/time';
 import { relativeTime } from '../../lib/clock';
 import { GooglePlaceRating } from '../ratings/GooglePlaceRating';
 import type { SearchRow } from '../../types/database';
+import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
+import { serviceIllustration } from '../../lib/serviceIllustrations';
 
 /**
  * The card the whole product is read through. Time leads, price closes, the discount only
@@ -32,7 +34,7 @@ export function OfferCard({
   const { path, search } = useRouter();
   const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
   const origin = `${path}${search.size ? `?${search}` : ''}`;
-  const photo = offer.image_url ?? offer.cover_url;
+  const photo = serviceIllustration(offer.service_name, offer.image_url ?? offer.cover_url);
   const showPhoto = Boolean(photo) && photo !== failedPhoto && !compact;
   const minutesAway = Math.round((Date.parse(offer.start_at) - Date.parse(now)) / 60000);
   const startingSoon = minutesAway > 0 && minutesAway <= 120;
@@ -62,6 +64,8 @@ export function OfferCard({
             // A missing photograph keeps the same height, so a mixed grid stays even.
             <div className="aspect-[8/5] w-full bg-accent-soft" aria-hidden="true" />
           )}
+
+          {showPhoto ? <IllustrativePhotoLabel className="top-3 right-3" /> : null}
 
           {/*
             The discount belongs on the picture, in the corner the identity scrim leaves free.

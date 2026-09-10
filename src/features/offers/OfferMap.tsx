@@ -208,7 +208,7 @@ export function MapCanvas({
       drawn.current.forEach((marker) => marker.remove());
       const projected = markers.map((marker, index) => {
         const point = instance.project([marker.lng, marker.lat]);
-        return { x: point.x, y: point.y, width: Math.max(76, marker.label.length * 9 + 24 + ((marker.count ?? 1) > 1 ? 28 : 0)), indexes: [index] };
+        return { x: point.x, y: point.y, width: Math.max(96, marker.label.length * 8 + 54 + ((marker.count ?? 1) > 1 ? 28 : 0)), indexes: [index] };
       });
       const clusters = groupRef.current ? clusterPins(projected) : projected;
       drawn.current = clusters.map((cluster) => {
@@ -219,10 +219,17 @@ export function MapCanvas({
         const label = multiple ? `od ${money(Math.min(...entries.map((entry) => entry.price ?? 0)))}` : entries[0].label;
         const el = document.createElement(selectable ? 'button' : 'span');
         if (el instanceof HTMLButtonElement) el.type = 'button';
-        el.textContent = label;
         el.dataset.mapIds = JSON.stringify(ids);
         el.setAttribute('aria-label', multiple ? `${count} ${count < 5 ? 'termíny' : 'termínů'} v této oblasti, ${label}. Vybrat aktivitu.` : entries[0].description ?? label);
         el.className = 'map-pin';
+        const glyph = document.createElement('span');
+        glyph.className = 'map-pin-glyph';
+        glyph.setAttribute('aria-hidden', 'true');
+        glyph.innerHTML = '<svg viewBox="0 0 36 34" focusable="false"><path d="M12 31s11-11.8 11-17.8a11 11 0 1 0-22 0C1 19.2 12 31 12 31z" class="map-pin-shape"/><circle cx="12" cy="13.2" r="6.5" class="map-pin-face"/><path d="M12 8.8v4.5l3.4 2" class="map-pin-hands"/><path d="M26.2 7.7 31 3M28.4 13.1l5.5-2.3M28.6 18.7l5.7-.6" class="map-pin-rays"/></svg>';
+        const price = document.createElement('span');
+        price.className = 'map-pin-price';
+        price.textContent = label;
+        el.append(glyph, price);
         const active = ids.includes(selectedRef.current ?? '');
         el.classList.toggle('map-pin--selected', active);
         if (selectable) el.setAttribute('aria-pressed', String(active));
@@ -231,7 +238,7 @@ export function MapCanvas({
           badge.className = 'map-pin-count';
           badge.textContent = String(count);
           badge.setAttribute('aria-hidden', 'true');
-          el.append(badge);
+          price.append(badge);
         }
         if (selectable) el.addEventListener('click', () => multiple ? groupRef.current?.(ids) : selectRef.current?.(ids[0]));
         const pin = new Marker({ element: el }).setLngLat(instance.unproject([cluster.x, cluster.y])).addTo(instance);

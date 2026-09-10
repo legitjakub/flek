@@ -140,36 +140,61 @@
     background: #11161a;
   }
 
-  /* Price pins are the content of the map, so they read as buttons rather than markers. */
+  /* A clock pin and an ink price ticket are FLEK's map language. White pills read as a
+     generic accommodation marketplace and disappear into the pale map. */
   .map-pin {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 0;
     min-height: 44px;
-    padding-inline: 10px;
-    border-radius: 999px;
-    border: 1px solid var(--color-line);
-    background: var(--color-card);
-    color: var(--color-ink);
+    padding: 2px 3px;
+    border: 0;
+    background: transparent;
     font-size: 0.875rem;
     font-weight: 800;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
-    box-shadow: 0 1px 2px rgb(20 18 16 / 0.14), 0 4px 12px -4px rgb(20 18 16 / 0.24);
     cursor: pointer;
-    transition:
-      background-color 150ms,
-      color 150ms;
+    filter: drop-shadow(0 2px 3px rgb(20 18 16 / 0.18));
+    transition: transform 150ms, filter 150ms;
   }
   .map-pin:hover {
-    border-color: var(--color-accent);
+    transform: translateY(-1px);
+    filter: drop-shadow(0 4px 5px rgb(20 18 16 / 0.22));
+  }
+  .map-pin-glyph {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 34px;
+    height: 36px;
+    flex: none;
+  }
+  .map-pin-glyph svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .map-pin-shape { fill: var(--color-brand); }
+  .map-pin-face { fill: var(--color-card); }
+  .map-pin-hands { fill: none; stroke: var(--color-ink); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  .map-pin-rays { fill: none; stroke: var(--color-brand); stroke-width: 3; stroke-linecap: round; }
+  .map-pin-price {
+    display: inline-flex;
+    min-height: 32px;
+    align-items: center;
+    margin-left: -5px;
+    padding: 0 10px 0 11px;
+    border-radius: 0 10px 10px 0;
+    background: var(--color-ink);
+    color: var(--color-card);
+    box-shadow: inset 3px 0 0 var(--color-brand);
   }
   .map-pin--selected {
-    background: var(--color-ink);
-    border-color: var(--color-ink);
-    color: var(--color-accent-ink);
     z-index: 1;
+    transform: translateY(-2px) scale(1.06);
+    filter: drop-shadow(0 0 0.45rem rgb(140 198 63 / 0.55));
   }
+  .map-pin--selected .map-pin-price { background: var(--color-brand); color: var(--color-ink); box-shadow: inset 3px 0 0 var(--color-ink); }
+  .map-pin--selected .map-pin-shape { fill: var(--color-ink); }
+  .map-pin--selected .map-pin-rays { stroke: var(--color-ink); }
 
   /* Horizontal filter rails scroll, but the scrollbar itself is visual noise. */
   .rail {
@@ -213,6 +238,7 @@
 
   .map-page { height: calc(100dvh - 132px - env(safe-area-inset-bottom)); min-height: 660px; }
   @media (min-width: 768px) { .map-page { height: calc(100dvh - 69px); min-height: 640px; } }
-  .map-pin-count { margin-left: 6px; display: inline-grid; place-items: center; min-width: 22px; height: 22px; border-radius: 50%; background: var(--color-accent-soft); color: var(--color-accent); font-size: 12px; }
+  .map-pin-count { margin-left: 7px; display: inline-grid; place-items: center; min-width: 21px; height: 21px; border-radius: 50%; background: var(--color-brand); color: var(--color-ink); font-size: 11px; }
+  .map-pin--selected .map-pin-count { background: var(--color-ink); color: var(--color-card); }
   .maplibregl-ctrl-group button { width: 44px; height: 44px; }
 }

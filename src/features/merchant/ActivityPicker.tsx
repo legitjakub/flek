@@ -4,6 +4,7 @@ import { Check, ChevronLeft, ChevronRight, Image, PenLine, Store } from 'lucide-
 import { listServicePhotos } from '../../lib/api';
 import { cx, Skeleton } from '../../components/ui';
 import { useSnapCarousel } from '../../components/useSnapCarousel';
+import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
 
 function usePhotos() {
   return useQuery({
@@ -43,7 +44,11 @@ export function ActivitySuggestions({
                 role="radio"
                 aria-checked={active}
                 data-autofocus={index === 0 ? '' : undefined}
-                onClick={() => onPick({ slug: option.slug, label: option.label_cs, imageUrl: option.image_url })}
+                onClick={() => onPick({
+                  slug: option.slug,
+                  label: option.label_cs,
+                  imageUrl: ACTIVITY_GALLERIES[option.slug]?.[0] ?? option.image_url,
+                })}
                 className={cx(
                   'relative flex min-h-14 items-center rounded-xl border px-3 py-2 text-left text-sm font-bold transition-colors',
                   active ? 'border-ink bg-ink text-card' : 'border-line bg-card text-ink hover:border-accent',
@@ -82,34 +87,58 @@ type PhotoOption = {
   value: string | null;
 };
 
+/** Local, activity-specific imagery. Category-wide rails caused unrelated sports to mix. */
+const ACTIVITY_GALLERIES: Record<string, string[]> = {
+  'sport-padel': ['/images/services/padel-prague.jpg'],
+  'sport-tenis': ['/images/services/tennis-prague.jpg'],
+  'sport-squash': ['/images/services/squash-prague.jpg'],
+  'sport-badminton': ['/images/services/badminton-prague.jpg'],
+  'sport-osobni-trenink': ['/images/services/personal-training-prague.jpg'],
+  'sport-skupinova-lekce': ['/images/services/group-class-prague.jpg'],
+};
+
 /** One selected preview and a carousel that always settles on a whole thumbnail. */
 export function ServicePhotoPicker({
   categorySlug,
+  templateSlug,
+  serviceName,
   value,
   venueCover,
   onPick,
 }: {
   categorySlug: string;
+  templateSlug: string | null;
+  serviceName: string;
   value: string | null;
   venueCover: string | null;
   onPick: (imageUrl: string | null) => void;
 }) {
   const photos = usePhotos();
   const choices = useMemo<PhotoOption[]>(() => {
-    const seen = new Set<string>();
-    const category = (photos.data ?? []).filter((photo) => {
-      if (photo.category_slug !== categorySlug || !photo.image_url || seen.has(photo.image_url)) return false;
-      seen.add(photo.image_url);
-      return true;
-    });
-    return [
+    const catalogue = photos.data ?? [];
+    const inferred = [...catalogue]
+      .filter((photo) => photo.category_slug === categorySlug && serviceName.toLocaleLowerCase('cs-CZ').includes(photo.label_cs.toLocaleLowerCase('cs-CZ')))
+      .sort((a, b) => b.label_cs.length - a.label_cs.length)[0]?.slug;
+    const activity = templateSlug && templateSlug !== 'custom' ? templateSlug : inferred;
+    const reference = catalogue.find((photo) => photo.slug === activity);
+    const gallery = activity ? (ACTIVITY_GALLERIES[activity] ?? (reference?.image_url ? [reference.image_url] : [])) : [];
+    const options: PhotoOption[] = [
       { key: 'venue', label: 'Fotka provozovny', imageUrl: venueCover, fallback: <Store size={26} aria-hidden="true" />, value: null },
-      ...category.map((choice) => ({ key: choice.slug, label: choice.label_cs, imageUrl: choice.image_url, value: choice.image_url })),
     ];
-  }, [photos.data, categorySlug, venueCover]);
+    gallery.forEach((imageUrl, index) => options.push({
+      key: `${activity}-${index}`,
+      label: reference?.label_cs ?? (serviceName || 'Fotka služby'),
+      imageUrl,
+      value: imageUrl,
+    }));
+    if (!activity && value && !gallery.includes(value)) {
+      options.push({ key: 'current', label: 'Současná fotka', imageUrl: value, value });
+    }
+    return options;
+  }, [photos.data, categorySlug, serviceName, templateSlug, value, venueCover]);
   const selectedIndex = Math.max(0, choices.findIndex((choice) => choice.value === value));
   const selected = choices[selectedIndex] ?? choices[0];
-  const carousel = useSnapCarousel<HTMLDivElement>(choices.length, categorySlug, (nextIndex) => {
+  const carousel = useSnapCarousel<HTMLDivElement>(choices.length, `${categorySlug}:${templateSlug ?? serviceName}`, (nextIndex) => {
     const next = choices[nextIndex];
     if (next && next.value !== value) onPick(next.value);
   });
@@ -140,7 +169,10 @@ export function ServicePhotoPicker({
 
       <div className="relative mt-3 overflow-hidden rounded-2xl bg-line/45">
         {selected?.imageUrl ? (
-          <img src={selected.imageUrl} alt="" className="aspect-[16/9] max-h-52 w-full object-cover" />
+          <>
+            <img src={selected.imageUrl} alt="" className="aspect-[16/9] max-h-52 w-full object-cover" />
+            <IllustrativePhotoLabel className="top-2 left-2" />
+          </>
         ) : (
           <span className="flex aspect-[16/9] max-h-52 items-center justify-center text-muted">{selected?.fallback ?? <Image size={28} aria-hidden="true" />}</span>
         )}
@@ -193,7 +225,10 @@ function PhotoChoice({ active, label, imageUrl, fallback, onClick }: {
       )}
     >
       {imageUrl ? (
-        <img src={imageUrl} alt="" loading="lazy" className="aspect-square w-full object-cover" />
+        <>
+          <img src={imageUrl} alt="" loading="lazy" className="aspect-square w-full object-cover" />
+          <IllustrativePhotoLabel compact className="bottom-[2.05rem] left-1" />
+        </>
       ) : (
         <span className="flex aspect-square items-center justify-center bg-line/45 text-muted">{fallback ?? <Image size={22} aria-hidden="true" />}</span>
       )}
