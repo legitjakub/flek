@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState, type R
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 import { isAdmin, myProfile, serverClock } from '../../lib/api';
+import { bookingAlerts } from '../merchant/bookingAlertStore';
 import type { Profile } from '../../types/database';
 
 type SessionValue = {
@@ -37,7 +38,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setSession(next);
       setReady(true);
       const nextUser = next?.user.id ?? null;
-      if (knownUser.current !== undefined && knownUser.current !== nextUser) queryClient.clear();
+      if (knownUser.current !== nextUser) {
+        bookingAlerts.reset();
+        if (knownUser.current !== undefined) queryClient.clear();
+      }
       knownUser.current = nextUser;
     };
     supabase.auth.getSession().then(({ data }) => apply(data.session));

@@ -131,7 +131,7 @@ export function ServicePhotoPicker({
       imageUrl,
       value: imageUrl,
     }));
-    if (!activity && value && !gallery.includes(value)) {
+    if (value && !gallery.includes(value)) {
       options.push({ key: 'current', label: 'Současná fotka', imageUrl: value, value });
     }
     return options;

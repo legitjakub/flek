@@ -1,6 +1,6 @@
 # FLEK — předání
 
-Stav k 7. 9. 2026. Projekt je verzovaný v Gitu v této složce.
+> Historické předání z 7. 9. 2026. Níže uvedené počty migrací a neověřené body popisují tehdejší stav. Aktuální stav k 13. 9. 2026 je v [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md) a poslední sekci [VERIFICATION.md](VERIFICATION.md). Projekt je verzovaný v Gitu v této složce.
 
 ## Co je hotové
 

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
-import { confirmDemoPayment, createBooking, saveProfile, startPayment } from '../../lib/api';
+import { confirmDemoPayment, createBooking, releaseUnbookedPayment, saveProfile, startPayment } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
 import { profileSchema } from '../../lib/schemas';
@@ -15,6 +15,13 @@ import { useRouter } from '../../app/router';
 import type { OfferDetail } from '../../types/database';
 
 type ProfileValues = z.infer<typeof profileSchema>;
+
+/** The booking failed after the money had moved — and the money has already gone back. */
+class PaymentReturned extends Error {
+  constructor(readonly original: unknown) {
+    super(original instanceof Error ? original.message : 'BOOKING_FAILED');
+  }
+}
 
 /**
  * Confirmation sheet. Phone capture happens here — in flow, not at signup — because the
@@ -61,8 +68,27 @@ export function BookingSheet({
       // Money first, seat second: the booking RPC refuses anything but a settled payment,
       // and the amount it checks comes from the offer row rather than from here.
       const payment = await startPayment(offer.id);
+      // A merchant may have edited the price after this sheet opened. Never settle
+      // a higher (or different) amount without the customer reviewing it first.
+      if (payment.amount_cents !== offer.deal_price_cents) {
+        if (payment.status === 'paid') await releaseUnbookedPayment(payment.id);
+        throw new Error('PRICE_CHANGED');
+      }
       const settled = payment.status === 'paid' ? payment : await confirmDemoPayment(payment.id);
-      return createBooking(offer.id, settled.id);
+      try {
+        return await createBooking(offer.id, settled.id);
+      } catch (error) {
+        /*
+         * Paid, but no seat — the last one went to someone else, or the price moved. Give the
+         * money back now rather than leave it "paid" with nothing behind it. If the server
+         * says the payment already has a booking, the first answer was only lost on the way:
+         * asking again returns that same booking, so the customer gets their code.
+         */
+        const released = await releaseUnbookedPayment(settled.id).catch(() => null);
+        if (released?.status === 'paid') return await createBooking(offer.id, settled.id);
+        if (released?.status === 'refunded') throw new PaymentReturned(error);
+        throw error;
+      }
     },
     onSuccess: async (booking) => {
       await queryClient.invalidateQueries();
@@ -71,7 +97,11 @@ export function BookingSheet({
     onError: (error) => {
       const code = error instanceof Error ? error.message : 'UNKNOWN';
       track('booking_failed', { offer_id: offer.id, code: code.slice(0, 80) });
-      setFailure(errorMessage(error));
+      setFailure(
+        error instanceof PaymentReturned
+          ? `${errorMessage(error.original)} Platbu jsme ti hned vrátili.`
+          : errorMessage(error),
+      );
       // Availability may have changed under us; refresh what the customer is looking at.
       void queryClient.invalidateQueries({ queryKey: ['offer', offer.id] });
       void queryClient.invalidateQueries({ queryKey: ['discovery'] });
@@ -123,10 +153,30 @@ export function BookingSheet({
           label="Kdy"
           value={`${dayLabel(offer.start_at, now)} ${clockTime(offer.start_at)}–${clockTime(offer.end_at)}`}
         />
-        <Row label="Zaplatíš teď" value={money(offer.deal_price_cents)} />
-        <Row label="Ušetříš" value={money(savings)} />
-        <Row label="Zrušit můžeš zdarma do" value={clockTime(cancellationDeadline(offer.start_at, offer.cancellation_window_minutes))} />
+        <Row label="Zrušení zdarma" value={Date.parse(cancellationDeadline(offer.start_at, offer.cancellation_window_minutes)) <= Date.parse(now) ? '10 minut od rezervace' : `do ${clockTime(cancellationDeadline(offer.start_at, offer.cancellation_window_minutes))}`} />
       </dl>
+
+      {/*
+        The same number the customer has seen on every screen since the feed — deal_price_cents
+        is the all-in price. The split underneath is disclosure, not a surprise: nothing is
+        added here that was not already in the price on the card.
+      */}
+      <div className="mt-4 rounded-xl bg-surface px-3 py-3">
+        <div className="flex items-baseline justify-between gap-4">
+          <span className="text-base font-bold text-ink">Celkem</span>
+          <span className="tnum text-xl font-extrabold text-ink">{money(offer.deal_price_cents)}</span>
+        </div>
+        {offer.service_fee_cents > 0 ? (
+          <p className="tnum mt-1 text-sm text-muted">
+            Cena služby {money(offer.merchant_price_cents)} · Servisní poplatek FLEK {money(offer.service_fee_cents)}
+          </p>
+        ) : null}
+        {savings > 0 ? (
+          <p className="tnum mt-1 text-sm text-muted">
+            Běžně {money(offer.original_price_cents)} · <span className="font-bold text-ink">ušetříš {money(savings)}</span>
+          </p>
+        ) : null}
+      </div>
       {Date.parse(cancellationDeadline(offer.start_at, offer.cancellation_window_minutes)) <= Date.parse(now) ? (
         <p className="mt-2 text-sm text-muted">
           Termín je blízko, takže na bezplatné zrušení máš 10 minut od rezervace.

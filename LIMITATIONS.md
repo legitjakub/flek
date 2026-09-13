@@ -1,83 +1,43 @@
-# Co není hotové
+# Omezení pilotu
 
-Poctivý seznam. Nic z toho není obejité mockem ani vydávané za hotové.
+Aktualizováno 13. 9. 2026. Aktuální implementaci shrnuje [přehled projektu](docs/PROJECT_STATUS.md); důkazy ověření jsou v [VERIFICATION.md](VERIFICATION.md).
 
-## 1. `npm test` (lokální integrační sada) nespuštěná
+## Platby a výplaty
 
-Na tomto počítači není Docker ani PostgreSQL (`docker`, `colima`, `podman`, `limactl` ani `brew` nejsou k dispozici), takže lokální Supabase nešlo spustit a sada `tests/integration.test.ts` neběžela.
+Platby používají `provider=demo`. Potvrzení a vrácení mění databázový stav; skutečné peníze se nestrhávají ani neposílají. Checkout to výslovně uvádí. Nový cenový model a neměnné finanční snímky jsou implementované, ale napojení skutečné brány, refund API, skutečné výplaty a účetní doklady zůstávají mimo pilot.
 
-Migrace, seed i chování aplikace ale **jsou** ověřené proti skutečnému hostovanému PostgreSQL 17 s PostGIS — viz `npm run test:acceptance` (sada má nyní 76 kontrol), včetně souběžných rezervací a RLS. Obsahově se obě sady překrývají; lokální varianta navíc sahá přímo do databáze (`pg`), což hostovaná cesta neumí.
+## Testy a zařízení
 
-Na počítači s Dockerem stačí `npm ci && npm run db:start && npm run db:types && npm test`.
+77 jednotkových testů a 100 API akceptačních kontrol prošlo. Databázový test údržby, časových hranic a neměnnosti cen prošel v transakci s rollbackem. Lokální sada `npm test` vyžaduje běžící Docker/Supabase; lokální backend nyní neběží. Docker CLI je dostupné, dřívější tvrzení, že na počítači vůbec není Docker, už neplatí.
 
-## 2. `src/types/database.ts` je psaný ručně
+Mobilní rozměry systémového Chrome ověřují responzivní rozhraní, nenahrazují fyzický iPhone/Safari a test skeneru kamerou. Aktuální průchod a jeho limity uvádí poslední sekce VERIFICATION.md. Kompletní nový audit všech rolí, barev a konkurence je samostatný odložený úkol.
 
-Zadání chce typy generované ze schématu. Soubor je zatím ruční, ale byl **porovnán položku po položce s výstupem generátoru ze živého schématu** — názvy, typy i nullabilita sedí, u `cover_url` a spol. je ruční verze přísnější (`string | null`) než generátor. `npm run db:types` ho kdykoli přepíše skutečně vygenerovanou verzí.
+## Typy a historie migrací
 
-## 3. Ruční klikací průchod UI neproveden
+`src/types/database.ts` obsahuje aplikační typy spravované ručně. Výstup generátoru Supabase má jinou strukturu; starý skript `db:types` by bez navazující migrace importů aplikaci rozbil. Není součástí postupu pro běžné spuštění.
 
-Prohlížeč v tomto prostředí běží na skryté kartě, kde klikání spolehlivě nefunguje. Ověřené je vykreslení všech tras, filtry end-to-end a čtení stromu stránky; sekvence „dva prohlížeče vedle sebe" ze sekce 17 zadání ruční kontrolu ještě potřebuje. Také čas „pod 30 sekund" u zveřejnění nabídky zůstává nezměřený.
+Migrace aplikované přes MCP mají v hostované historii čas aplikace odlišný od lokálního názvu souboru. Mapování je v PROJECT_STATUS.md. Před prvním CLI `db push` je nutné ověřit a sladit historii podle názvu a obsahu, aby se již aplikované DDL neopakovalo.
 
-## 4. Demo účty v hostované databázi
+## Demo data a účty
 
-Do hostovaného projektu je nahraný vývojový seed včetně účtů `demo-*@flek.test` se **společným heslem uvedeným v README**. Pro pilot s reálnými lidmi je potřeba seed odstranit a demo hesla neponechat. V nastavení projektu je také vypnutá ochrana proti prolomeným heslům (Supabase Auth → leaked password protection); před ostrým provozem ji zapněte.
+Veřejná ukázka obsahuje fiktivní podniky a účty `demo-*@flek.test`. Hesla jsou mimo repozitář, administrátor má vlastní heslo. Skutečný pilot musí oddělit reálná data od ukázkového seedu. Akceptační skript je určen demo prostředí: založené nabídky ruší, ale zanechá zrušenou historii rezervací a plateb. Neběží proti skutečným zákaznickým účtům.
 
-## 5. Fotografie nabídek
+Supabase advisor nadále hlásí vypnutou ochranu proti prolomeným heslům. Oprávnění RPC, finanční a kapacitní změny se ověřují na serveru. Zpráva advisoru o endpointu `security definer` sama neznamená chybu: tyto RPC tvoří úmyslné rozhraní pro autorizované operace.
 
-Karty i detail počítají s `image_url` a `cover_url`, ale repozitář žádné fotografie neobsahuje a seed je nemá vyplněné. Bez nich se vykreslí neutrální plocha se značkou. Pro pilot je potřeba doplnit skutečné fotky provozoven.
+## Fotografie a Google hodnocení
 
-## 6. Fotografie jsou demo obsah z cizího hostitele
+Lokální ilustrační fotografie existují v `public/images/services` a mají rozlišení podle aktivity; dřívější tvrzení, že sport nemá fotky, už neplatí. Některá ukázková data stále odkazují na Unsplash. Vybraná fotografie podniku má přednost před odvozenou ilustrací. Nahrávání vlastních fotografií přes UI není implementované; historické Storage politiky zůstávají samostatnou oblastí pro kontrolu před ostrým provozem.
 
-Seed ilustruje fiktivní provozovny stock fotkami z `images.unsplash.com`. Pro demo je to v pořádku, pro pilot ne: je to závislost na cizí službě a stojí to zhruba deset bodů výkonu v Lighthouse. Aplikace i Storage buckety jsou připravené na vlastní fotky provozoven — je to obsahová práce, ne vývojová.
+Google hodnocení se zobrazí jen pro správně přiřazené Place ID a funkční serverové Places API s billingem. Chybějící odpověď se nenahrazuje fiktivními hvězdičkami. Aktuální test rezervací neověřuje billing ani konfiguraci Google Cloud.
 
-## 7. Google hodnocení potřebuje provozní konfiguraci
+## Upozornění a obsluha podniku
 
-Veřejné rozhraní už nepoužívá demo hvězdičky z rezervací FLEK. Zobrazuje jen hodnocení načtené přímo přes Places API a označené `Google Maps`. Kód, databázová migrace, administrátorské přiřazení Place ID i serverová Edge Function jsou připravené.
+Upozornění podniku funguje přes Realtime s 30sekundovým pollingem v otevřené aplikaci. Zvuk závisí na povolení přehrávání prohlížečem. Při zavřené aplikaci se neposílá web push, SMS ani e-mail. Zákaznické sledování podniku znamená nové nabídky v Oblíbených a odznak navigace, nikoliv push oznámení.
 
-V nasazeném prostředí je ještě potřeba zapnout Places API (New) s billingem, nastavit serverový secret `GOOGLE_MAPS_API_KEY`, nasadit `google-place-rating` a ke každé reálné provozovně přiřadit správné Place ID. Google dovoluje trvale uložit Place ID, ne samotné hodnocení; funkce proto odpověď necachuje. Před ostrým použitím musí být na veřejném webu také finální podmínky služby a zásady ochrany soukromí zahrnující podmínky a zásady Google.
+Více provozoven na účet je podporováno přepínačem v partnerské části. Pozvánky personálu a detailnější týmová oprávnění zůstávají mimo tento pilot. Schválení provozovny se oznámí v aplikaci; potvrzovací e-maily registrace účtu zajišťuje Supabase Auth.
 
-## 8. Jeden účet = jedna provozovna
+## Další vědomé hranice
 
-Partnerská část pracuje s první provozovnou účtu. Datový model víc provozoven na účet unese (`business_members`), ale přepínač mezi nimi v rozhraní není. Pro pilot s ručním onboardingem to stačí; jakmile bude mít někdo dvě pobočky, je potřeba ho doplnit.
-
-## 9. Veřejná ukázka a její hranice
-
-<https://flek-nine.vercel.app> je veřejně dostupná bez hesla. Data jsou fiktivní a RLS drží, ale je potřeba vědět:
-
-- Demo účty mají vygenerovaná hesla mimo repozitář; administrátorský účet má vlastní, nesdílené. Před dalším sdílením je vhodné je znovu otočit.
-- V Supabase je stále **vypnutá ochrana proti prolomeným heslům** (Auth → leaked password protection). Pro cokoli s reálnými uživateli ji zapněte.
-- Kdokoli s odkazem si může založit účet a rezervovat. Pro pilot s reálnými podniky je potřeba ukázku buď zaheslovat (Vercel to umí přes Deployment Protection), nebo oddělit demo data od ostrých.
-
-## 10. Výkon po doplnění fotografií a plateb
-
-Lighthouse na objevování se drží kolem 80. Hlavní zátěž není v písmech (ověřeno: subsetting nepomohl), ale v JavaScriptu a v obrázcích z cizího hostitele. Partnerská část a administrace už se načítají odděleně; další velký kus je polyfill Temporalu, který je potřeba hned kvůli pražským dnům a letnímu času.
-
-Kdo v tom bude pokračovat: nejvíc přinese nahrazení Temporalu v zobrazovací cestě (`Intl` to umí nativně) a přesun fotografií do Storage. Měřit se to má na produkci, ne na lokálním `vite preview` — čísla se tam liší i o pět bodů mezi běhy.
-
-## 11. Vědomě mimo V1
-
-Předplatné · psané recenze a jejich moderace · chat · push a SMS · dynamické ceny · integrace na rezervační systémy · vícejazyčné rozhraní · nativní aplikace · fakturace · výplaty podnikům.
-
-Tenhle seznam byl zastaralý a je opravený. Mezitím **přibylo**: platba předem (demo poskytovatel, viz níže), připravené živé hodnocení z Google Places, oblíbené podniky s odvozeným upozorněním, export do kalendáře, skenování QR u partnera a atribuce doporučení.
-
-## 12. Doporučení nemají odměnu
-
-Atribuce je hotová a měřitelná: kdo koho přivedl a jestli ten člověk opravdu absolvoval svůj první FLEK. Kredit k utracení hotový **není** a záměrně se nikde nezobrazuje.
-
-Důvod je architektonický, ne časový. `create_booking` přijímá jen vypořádanou platbu, jejíž částka odpovídá ceně nabídky. Prosté `profiles.credit_cents += 5000` by tenhle invariant obešlo. Utratitelný kredit vyžaduje, aby platilo „externí vypořádané peníze + atomicky spotřebovaný kredit = cena rezervace", a aby to zvládlo souběžné utrácení, dvojklik, selhání rezervace po rezervaci kredibitu, selhání platby, změnu ceny, vrácení odměny a idempotenci. Do té doby je poctivější měřit atribuci než ukazovat částku, kterou nejde uplatnit.
-
-## 13. Upozornění na nový FLEK není push
-
-„Upozornit na další FLEK" zapne sledování podniku. Nové termíny se pak objeví v Oblíbených a na odznaku v navigaci. Do zařízení nic nedorazí — web push není implementovaný a aplikace proto **nežádá o povolení oznámení**, protože by ho nemohla využít. Texty to říkají doslova: „Nové FLEKy uvidíš v Oblíbených."
-
-Stejně tak dashboard podniku říká, že provozovnu někdo sleduje — nikdy, že jim bylo něco odesláno.
-
-## 14. Katalog má 36 činností, ale jen 8 fotografií
-
-Podmínky Unsplash říkají doslova, že licence **nezahrnuje** právo užít „People's images if they are recognizable in the Images", a služba se poskytuje „AS-IS" **bez záruky neporušení práv třetích stran**. Čtyři z dvanácti původních snímků ukazovaly viditelnou tvář (holič holící zákazníka, kosmetické ošetření obličeje, posilovna, cvičení na podložce). Byly vyřazeny migrací `202609090017`; ověřeno, že se nevyskytují v katalogu, u služeb ani u provozoven.
-
-Zbylých osm žádnou rozpoznatelnou tvář nemá. Revize všech 36 činností proti tomu, **co je na fotce doopravdy**, pak našla pět, které lhaly: nalakované nehty ilustrovaly kosmetiku obličeje, obočí i řasy, a tenisový kurt ilustroval osobní trénink a skupinovou lekci. První tři přešly na zátiší s ručníky, které je poctivě kosmetickým prostředím. Poslední dvě **nemají fotku žádnou** — v bezpečné sadě pro ně pravdivý snímek není a nabídka s fotkou provozovny je lepší než nabídka, která ukáže kurt a prodá trenéra. Důsledek je menší pestrost: **vlasy, krása, sport a jóga mají jednu fotografii pro všech šest svých činností.** To je vědomá volba — pestrost koupená cizí podobiznou za to nestojí.
-
-Cesta dál je jedna z těchto: licencované snímky s model release (Shutterstock, Adobe Stock), vlastní fotografie z podniků dodané provozovatelem, nebo vlastní ilustrace ke každé činnosti. Přidání se dělá řádky v `service_photos`, ne zásahem do kódu.
-
-Nahrávání vlastních fotek partnerem bylo **zamítnuto z bezpečnostních důvodů** (neomoderovaný obsah ve veřejném bucketu). Politika úložiště pro `logos` a `covers` z migrace 202609070005 v databázi ale dál existuje a dovoluje přihlášenému členovi provozovny zapsat do složky své provozovny. Aplikace ji nevyužívá; pokud má být zavřená i v databázi, chce to samostatnou migraci.
+- Mapový JavaScript je velký; Vite hlásí upozornění na chunk nad 500 kB. Nové měření Lighthouse zatím neproběhlo.
+- Doporučení měří atribuci a dokončenou první rezervaci; nevytváří utratitelný kredit.
+- Předplatné, chat, dynamická cenotvorba, účetnictví, integrace na externí rezervační systémy a automatické výplaty nejsou součástí V1.

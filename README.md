@@ -28,7 +28,6 @@ Potřebujete Node.js ≥ 22.12.
 ```sh
 npm ci
 npm run db:start   # spustí lokální Supabase a zapíše veřejné klíče do .env.local
-npm run db:types   # vygeneruje src/types/database.ts ze živé databáze
 npm run dev
 ```
 
@@ -119,7 +118,7 @@ V administraci u každé reálné provozovny doplňte její Google Place ID. Dok
 
 ## Jak se rozhoduje o dostupnosti
 
-`sold_out` ani `expired` nejsou uložené stavy. `offer_status` nese jen administrativní záměr; dostupnost se **vždy odvozuje v dotazu** funkcí `offer_is_bookable(...)`, kterou používá vyhledávání, detail i rezervační RPC. Neexistuje druhá definice v TypeScriptu. Žádný cron není potřeba ke správnosti.
+`sold_out` ani `expired` nejsou uložené stavy. `offer_status` nese jen administrativní záměr; dostupnost se **vždy odvozuje v dotazu** funkcí `offer_is_bookable(...)`, kterou používá vyhledávání, detail i rezervační RPC. Neexistuje druhá definice v TypeScriptu. Cron není potřeba k odvození dostupnosti; samostatný job ale dokončuje staré rezervace a vrací osiřelé demo platby.
 
 Kapacitu mění výhradně `security definer` funkce jediným podmíněným `UPDATE`. Klient nemá právo zapisovat do `offers.capacity_remaining`. Částečný unikátní index `bookings_one_active_per_customer_offer` dělá z dvojitého klepnutí, obnovení stránky i dvou panelů neškodnou operaci.
 
@@ -129,6 +128,25 @@ Peníze jsou celočíselné haléře od databáze až po formátování. Čas je
 
 Aktuální stav ověření a to, co ještě není hotové, je v [VERIFICATION.md](VERIFICATION.md) a [LIMITATIONS.md](LIMITATIONS.md). Rozhodnutí učiněná při stavbě jsou v [DECISIONS.md](DECISIONS.md).
 
-V1 vědomě neobsahuje platby, předplatné, věrnostní programy, recenze, chat, notifikace push a SMS, dynamické ceny ani integrace na rezervační systémy.
+### Živý přehled pro tým a Notion
 
-Rozšíření jsou připravená na čtyřech místech: `bookings.price_cents` plus budoucí sloupec s platebním záměrem umožní zálohy; `publish_offer` je místo, kam se zapojí automatické pravidlo („tři hodiny před začátkem stále prázdné → zveřejnit se slevou 25 %"); `analytics_events` jsou vstup pro dynamické ceny; notifikace mají být rozhraní s in-app implementací.
+Souhrnný stav produktu, rolí, doménových pravidel, posledních migrací a otevřených bodů je v [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md). Tento soubor je kanonický export z repozitáře. Pokud chcete jeho obsah zobrazit v Notionu, vytvořte interní Notion integration, sdílejte s ní vyhrazenou stránku a spusťte:
+
+```sh
+NOTION_TOKEN=... NOTION_PAGE_ID=... NOTION_DRY_RUN=1 node scripts/sync-notion.mjs
+NOTION_TOKEN=... NOTION_PAGE_ID=... NOTION_REPLACE=1 node scripts/sync-notion.mjs
+```
+
+Skript archivuje pouze bloky cílové stránky a nahraje aktuální Markdown; token se čte jen z prostředí a do repozitáře se neukládá. Pro pravidelnou synchronizaci ho lze spouštět v CI po změně `docs/PROJECT_STATUS.md`.
+
+V1 obsahuje ukázkovou platbu předem a vratky, in-app upozornění podniku, oblíbené a hodnocení z Google. Skutečná platební brána, automatické výplaty, účetnictví, předplatné, utratitelný kredit, chat, push/SMS a integrace na rezervační systémy zůstávají mimo pilot.
+
+### Cena a rezervace v pilotu
+
+Podnik zadává svou částku. Server přidá 5 % zaokrouhlených na celé koruny (min. 25 Kč, max. 149 Kč). Zákazník od první karty vidí konečnou cenu, ze které se počítá minimální úspora 10 %. Běžně 1 000 Kč / podnik 750 Kč → poplatek 38 Kč → zákazník 788 Kč / úspora 21 %.
+
+`publish_flek` nahradil klientské `publish_offer`. Rezervace ukládá neměnný finanční snímek; opakování stejné platby vrací stejný kód. Job `flek-maintenance` každých 15 minut dokončí rezervace 24 hodin po konci a vrátí demo platby bez rezervace starší než 30 minut. Podnik pouze případně označí „Nedorazil“; i tehdy se jeho sjednaná částka zachová.
+
+Ověření: `npm run test:unit`, `npm run build`, `npm run test:acceptance`. Poslední příkaz používá pouze veřejný klíč a demo účty a mění demo data; nespouštět proti skutečným účtům. `tests/pilot-maintenance.sql` vyžaduje privilegovaný přístup, běží v transakci a své změny vrací zpět. Historie nasazených migrací a omezení ověření jsou v [přehledu projektu](docs/PROJECT_STATUS.md).
+
+`src/types/database.ts` obsahuje ručně spravované aplikační typy. Výstup generátoru Supabase má jinou strukturu; nesmí je bez úpravy importů přepsat. Příkaz `db:types` je starý pomocný skript, nikoli povinný krok pro spuštění aplikace.

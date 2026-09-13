@@ -34,7 +34,7 @@ export function OfferCard({
   const { path, search } = useRouter();
   const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
   const origin = `${path}${search.size ? `?${search}` : ''}`;
-  const photo = serviceIllustration(offer.service_name, offer.image_url ?? offer.cover_url);
+  const photo = serviceIllustration(offer.service_name, offer.image_url, offer.cover_url);
   const showPhoto = Boolean(photo) && photo !== failedPhoto && !compact;
   const minutesAway = Math.round((Date.parse(offer.start_at) - Date.parse(now)) / 60000);
   const startingSoon = minutesAway > 0 && minutesAway <= 120;

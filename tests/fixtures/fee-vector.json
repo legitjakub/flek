@@ -1,0 +1,21 @@
+{
+  "_": "FLEK fee policy v1. Checked against src/lib/pricing.ts (tests/pricing.test.ts) and against private.flek_service_fee_cents through flek_price_quote (scripts/acceptance.mjs). Amounts in crowns.",
+  "policy": 1,
+  "cases": [
+    { "merchant": 100, "fee": 25, "customer": 125 },
+    { "merchant": 200, "fee": 25, "customer": 225 },
+    { "merchant": 250, "fee": 25, "customer": 275 },
+    { "merchant": 300, "fee": 25, "customer": 325 },
+    { "merchant": 350, "fee": 25, "customer": 375 },
+    { "merchant": 499, "fee": 25, "customer": 524 },
+    { "merchant": 500, "fee": 25, "customer": 525 },
+    { "merchant": 501, "fee": 25, "customer": 526 },
+    { "merchant": 510, "fee": 26, "customer": 536 },
+    { "merchant": 750, "fee": 38, "customer": 788 },
+    { "merchant": 1000, "fee": 50, "customer": 1050 },
+    { "merchant": 2000, "fee": 100, "customer": 2100 },
+    { "merchant": 2980, "fee": 149, "customer": 3129 },
+    { "merchant": 3000, "fee": 149, "customer": 3149 },
+    { "merchant": 5000, "fee": 149, "customer": 5149 }
+  ]
+}

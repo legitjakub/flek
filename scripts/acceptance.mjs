@@ -4,8 +4,9 @@
 //
 //   SUPABASE_URL=... SUPABASE_ANON_KEY=... node scripts/acceptance.mjs
 //
-// The script provisions its own offers through publish_offer and cancels them afterwards,
-// so it leaves the demo seed as it found it.
+// The script provisions its own offers through publish_flek and cancels them afterwards,
+// leaving cancelled demo history (bookings/payments), not active test inventory.
+// Run only in the demo environment, never against real customer accounts.
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
 
@@ -57,6 +58,8 @@ if (missing.length) {
   );
 }
 const SERVICE_ID = '11d06bdf-8e9c-63c3-6bd3-3774c2773965'; // md5('flek-service-1'), Pánský střih
+const MERCHANT_PRICE = 36500;
+const CUSTOMER_PRICE = 39000;
 
 const results = [];
 const check = (name, pass, detail = '') => {
@@ -82,17 +85,20 @@ async function signIn(email) {
 
 const merchant = await signIn('demo-merchant@flek.test');
 const created = [];
+try {
 async function publish(capacity, minutesAhead = 180) {
   const start = new Date(Date.now() + minutesAhead * 60_000).toISOString();
-  const { data, error } = await merchant.client.rpc('publish_offer', {
+  // 365 Kč for the merchant + the 25 Kč minimum fee = the 390 Kč customer price the rest of
+  // this suite was written against.
+  const { data, error } = await merchant.client.rpc('publish_flek', {
     p_service_id: SERVICE_ID,
     p_start_at: start,
-    p_deal_price_cents: 39000,
+    p_merchant_price_cents: MERCHANT_PRICE,
     p_capacity_total: capacity,
     p_booking_cutoff_at: new Date(Date.now() + (minutesAhead - 15) * 60_000).toISOString(),
     p_confirm_overlap: true,
   });
-  if (error) throw new Error(`publish_offer: ${error.message}`);
+  if (error) throw new Error(`publish_flek: ${error.message}`);
   created.push(data.id);
   return data.id;
 }
@@ -104,7 +110,9 @@ async function book(client, offerId) {
   if (started.error) return started;
   const settled = await client.rpc('demo_confirm_payment', { p_payment_id: started.data.id });
   if (settled.error) return settled;
-  return client.rpc('create_booking', { p_offer_id: offerId, p_payment_id: settled.data.id });
+  const result = await client.rpc('create_booking', { p_offer_id: offerId, p_payment_id: settled.data.id });
+  if (result.error) await client.rpc('release_unbooked_payment', { p_payment_id: settled.data.id });
+  return result;
 }
 
 const users = await Promise.all(
@@ -116,7 +124,7 @@ check('Přihlášení 10 účtů skutečnými JWT', users.length === 10);
 const offerA = await publish(1);
 const offerB = await publish(5);
 const offerC = await publish(1);
-check('Partner zveřejní nabídku přes publish_offer', created.length === 3);
+check('Partner zveřejní nabídku přes publish_flek', created.length === 3);
 
 // --- concurrency: the failure that would destroy merchant trust permanently
 const raceA = await Promise.all(users.map((u) => book(u.client, offerA)));
@@ -137,7 +145,7 @@ const dbl = await Promise.all([
   book(tapper.client, offerC),
 ]);
 const okC = dbl.filter((r) => !r.error);
-check('Dvojité klepnutí téhož uživatele: jedna rezervace', okC.length === 1,
+check('Dvojité klepnutí téhož uživatele: jedna rezervace', okC.length >= 1 && new Set(okC.map((r) => r.data?.[0]?.booking_id)).size === 1,
   dbl.map((r) => (r.error ? err(r.error) : 'ok')).join(' / '));
 
 const anon = createClient(URL_, ANON, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -189,8 +197,12 @@ const adminUser = await signIn('demo-admin@flek.test');
 const adminMetrics = await adminUser.client.rpc('admin_metrics');
 check('admin_metrics odpoví adminovi', typeof adminMetrics.data?.published_capacity === 'number',
   `kapacita ${adminMetrics.data?.published_capacity}, dokončeno ${adminMetrics.data?.completed}`);
-check('admin_businesses vrátí frontu ke schválení',
-  ((await adminUser.client.rpc('admin_businesses', { p_status: 'pending' })).data ?? []).length > 0);
+// The queue may legitimately be empty; what must hold is that the admin can read it and
+// nobody else can. (This used to assert "at least one pending venue" — a fact about the data.)
+const queue = await adminUser.client.rpc('admin_businesses', { p_status: 'pending' });
+check('admin_businesses vrátí frontu ke schválení', !queue.error && Array.isArray(queue.data), `${queue.data?.length ?? '?'} čeká`);
+check('admin_businesses odmítne běžného uživatele',
+  refused(await users[0].client.rpc('admin_businesses', { p_status: 'pending' })));
 
 // --- cancellation puts the seat back on the market with no job running
 const before = await anon.rpc('get_offer_detail', { p_offer_id: offerC, p_lat: null, p_lng: null });
@@ -206,15 +218,16 @@ check('Zrušení vrátí kapacitu a nabídku do prodeje',
 const payer = tapper;
 const payOffer = await publish(1, 200);
 const attempt = await payer.client.rpc('start_payment', { p_offer_id: payOffer });
-check('Platba se otevře s částkou z nabídky', !attempt.error && attempt.data.amount_cents === 39000,
+check('Platba se otevře s konečnou cenou z nabídky', !attempt.error && attempt.data.amount_cents === CUSTOMER_PRICE,
   `${attempt.data?.amount_cents} h, stav ${attempt.data?.status}`);
 check('Nezaplacená rezervace je odmítnuta',
   err((await payer.client.rpc('create_booking', { p_offer_id: payOffer, p_payment_id: attempt.data.id })).error).includes('PAYMENT_REQUIRED'));
 const settledPay = await payer.client.rpc('demo_confirm_payment', { p_payment_id: attempt.data.id });
-check('Po zaplacení rezervace projde',
-  !(await payer.client.rpc('create_booking', { p_offer_id: payOffer, p_payment_id: settledPay.data.id })).error);
-check('Tutéž platbu nelze použít podruhé',
-  err((await payer.client.rpc('create_booking', { p_offer_id: payOffer, p_payment_id: settledPay.data.id })).error).length > 0);
+const paidBooking = await payer.client.rpc('create_booking', { p_offer_id: payOffer, p_payment_id: settledPay.data.id });
+check('Po zaplacení rezervace projde', !paidBooking.error);
+const replay = await payer.client.rpc('create_booking', { p_offer_id: payOffer, p_payment_id: settledPay.data.id });
+check('Opakování platby vrací původní rezervaci bez dalšího místa',
+  !replay.error && replay.data?.[0]?.booking_id === paidBooking.data?.[0]?.booking_id);
 check('Cizí platbu nelze potvrdit',
   err((await users[2].client.rpc('demo_confirm_payment', { p_payment_id: settledPay.data.id })).error).includes('FORBIDDEN'));
 const payerBooking = ((await payer.client.rpc('my_bookings')).data ?? []).find((b) => b.offer_id === payOffer);
@@ -366,7 +379,7 @@ check('Sám sebe doporučit nelze',
   (await customer.client.rpc('claim_referral', { p_code: refCode })).data?.reason === 'self');
 // The demo customer has bookings and an old account, which is exactly the case that must
 // never be convertible into a "new referred user".
-const otherUser = await signIn('demo-5@flek.test');
+const otherUser = users[0];
 const claimOld = await otherUser.client.rpc('claim_referral', { p_code: refCode });
 check('Zavedený účet se nestane nově doporučeným',
   claimOld.data?.claimed === false && claimOld.data?.reason === 'not_a_new_account');
@@ -383,9 +396,142 @@ const mMetrics = (await merchant.client.rpc('merchant_metrics', { p_business_id:
 check('Metriky podniku nesou počet sledujících', typeof mMetrics?.followers === 'number');
 }
 
-// Cancelling the offers releases every booking this run created, so the demo seed is left
-// as it was found and the next run starts from a clean three-booking allowance.
-for (const id of created) await merchant.client.rpc('merchant_cancel_offer', { p_offer_id: id, p_reason: 'Úklid po akceptačním běhu.' });
+
+// ------------------------------------------------------------------------------------------
+// Pricing v1: the merchant names their price, the server adds the fee, the customer pays the
+// sum from the first screen to the booking — and nothing on the client can change the fee.
+{
+const vector = JSON.parse(readFileSync(new URL('../tests/fixtures/fee-vector.json', import.meta.url), 'utf8'));
+const quotes = await Promise.all(vector.cases.map((c) => anon.rpc('flek_price_quote', { p_merchant_cents: c.merchant * 100 })));
+const drift = vector.cases.filter((c, i) =>
+  quotes[i].error || quotes[i].data.service_fee_cents !== c.fee * 100 || quotes[i].data.customer_price_cents !== c.customer * 100);
+check('SQL a src/lib/pricing.ts dávají stejný poplatek pro celou tabulku', drift.length === 0,
+  drift.length ? `liší se: ${drift.map((c) => c.merchant).join(', ')} Kč` : `${vector.cases.length} případů`);
+
+const detail = (await anon.rpc('get_offer_detail', { p_offer_id: created[0], p_lat: null, p_lng: null })).data;
+check('Nabídka nese rozpad a konečnou cenu',
+  detail?.merchant_price_cents === MERCHANT_PRICE && detail?.service_fee_cents === 2500
+  && detail?.deal_price_cents === CUSTOMER_PRICE && detail?.fee_policy_version === 1,
+  `${detail?.merchant_price_cents} + ${detail?.service_fee_cents} = ${detail?.deal_price_cents}`);
+check('Sleva se počítá z konečné ceny',
+  detail?.discount_pct === Math.floor(((detail.original_price_cents - CUSTOMER_PRICE) * 100) / detail.original_price_cents),
+  `${detail?.discount_pct} %`);
+
+const regular = detail.original_price_cents;
+const pubArgs = (merchantCents, extra = {}) => ({
+  p_service_id: SERVICE_ID, p_start_at: new Date(Date.now() + 300 * 60_000).toISOString(),
+  p_merchant_price_cents: merchantCents, p_capacity_total: 1,
+  p_booking_cutoff_at: new Date(Date.now() + 285 * 60_000).toISOString(), p_confirm_overlap: true, ...extra,
+});
+check('Klient nemá jak poslat vlastní poplatek',
+  refused(await merchant.client.rpc('publish_flek', pubArgs(MERCHANT_PRICE, { p_service_fee_cents: 100 }))));
+check('Stará publish_offer je pro partnera zamčená',
+  refused(await merchant.client.rpc('publish_offer', {
+    p_service_id: SERVICE_ID, p_start_at: new Date(Date.now() + 300 * 60_000).toISOString(), p_deal_price_cents: 39000,
+    p_capacity_total: 1, p_booking_cutoff_at: new Date(Date.now() + 285 * 60_000).toISOString(), p_confirm_overlap: true })));
+check('Cena stejná nebo vyšší než běžná je odmítnuta',
+  err((await merchant.client.rpc('publish_flek', pubArgs(regular))).error).includes('NO_CUSTOMER_SAVING'));
+check('Úspora pod 10 % je odmítnuta',
+  err((await merchant.client.rpc('publish_flek', pubArgs(regular - 5000))).error).includes('SAVING_TOO_SMALL'));
+check('update_offer nepřijme zákaznickou cenu',
+  err((await merchant.client.rpc('update_offer', { p_offer_id: created[1], p_data: { deal_price_cents: 10000 } })).error).includes('VALIDATION_ERROR'));
+
+// One booking, followed through every surface that shows or charges its price.
+const otherUser = users[0];
+for (const id of created) await merchant.client.rpc('merchant_cancel_offer', { p_offer_id: id, p_reason: 'Úklid mezi testovacími scénáři.' });
+const priced = await publish(2, 240);
+const buyer = users.find((u) => u !== customer && u !== otherUser) ?? users[3];
+const pay = await buyer.client.rpc('start_payment', { p_offer_id: priced });
+const paid = await buyer.client.rpc('demo_confirm_payment', { p_payment_id: pay.data?.id });
+const simultaneous = await Promise.all(Array.from({ length: 8 }, () => buyer.client.rpc('create_booking', { p_offer_id: priced, p_payment_id: paid.data?.id })));
+const first = simultaneous[0];
+check('8 souběžných pokusů se stejnou platbou vrátí stejnou rezervaci', simultaneous.every(r => !r.error) && new Set(simultaneous.map(r => r.data?.[0]?.booking_id)).size === 1);
+check('Souběžné opakování odečte jen jedno místo', (await anon.rpc('get_offer_detail', { p_offer_id: priced })).data?.capacity_remaining === 1);
+const again = await buyer.client.rpc('create_booking', { p_offer_id: priced, p_payment_id: paid.data?.id });
+check('Opakovaná rezervace se stejnou platbou vrátí stejný kód',
+  !first.error && !again.error && first.data?.[0]?.reservation_code === again.data?.[0]?.reservation_code,
+  `${first.data?.[0]?.reservation_code ?? err(first.error)} / ${again.data?.[0]?.reservation_code ?? err(again.error)}`);
+const row = ((await merchant.client.rpc('merchant_bookings', { p_business_id: businessId, p_from: null, p_until: null })).data ?? [])
+  .find((b) => b.id === first.data?.[0]?.booking_id);
+check('Stejná cena od nabídky přes platbu po rezervaci',
+  pay.data?.amount_cents === CUSTOMER_PRICE && row?.price_cents === CUSTOMER_PRICE
+  && row?.merchant_payout_cents === MERCHANT_PRICE && row?.service_fee_cents === 2500,
+  `platba ${pay.data?.amount_cents}, rezervace ${row?.price_cents}, podnik ${row?.merchant_payout_cents}`);
+check('Klient nemůže přepsat finanční snímek rezervace',
+  ((await merchant.client.from('bookings').update({ merchant_payout_cents: 1 }).eq('id', row?.id ?? '').select()).data ?? []).length === 0);
+check('Platba s rezervací se „vrátit“ nedá',
+  (await buyer.client.rpc('release_unbooked_payment', { p_payment_id: paid.data?.id })).data?.status === 'paid');
+
+// Paid, then the last seat went to someone else: the money comes straight back.
+const lastSeat = await publish(1, 260);
+const loser = users.find((u) => u !== buyer && u !== customer && u !== otherUser && u !== users[0]) ?? users[4];
+const loserPay = await loser.client.rpc('start_payment', { p_offer_id: lastSeat });
+const loserPaid = await loser.client.rpc('demo_confirm_payment', { p_payment_id: loserPay.data?.id });
+await book(otherUser.client, lastSeat);
+const lost = await loser.client.rpc('create_booking', { p_offer_id: lastSeat, p_payment_id: loserPaid.data?.id });
+const released = await loser.client.rpc('release_unbooked_payment', { p_payment_id: loserPaid.data?.id });
+check('Zaplaceno bez místa: platba se hned vrátí',
+  err(lost.error).includes('OFFER_UNAVAILABLE') && released.data?.status === 'refunded', `${err(lost.error)} → ${released.data?.status}`);
+check('Cizí platbu vrátit nejde', refused(await buyer.client.rpc('release_unbooked_payment', { p_payment_id: loserPaid.data?.id })));
+
+// Realtime: the venue hears about its booking; another venue listening for it hears nothing.
+const merchant2 = users[9]; // demo-merchant2, a member of a different venue
+const heard = { own: [], foreign: [] };
+const listen = async (client, bucket) => {
+  await client.realtime.setAuth();
+  return new Promise((resolve) => {
+  let timer;
+  const channel = client.channel(`acceptance-${bucket}-${Date.now()}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bookings', filter: `business_id=eq.${businessId}` },
+      (payload) => heard[bucket].push(payload.new.id))
+    .subscribe((status, error) => {
+      if (status === 'SUBSCRIBED') {
+        clearTimeout(timer);
+        check(`Realtime: ${bucket} odběr je připojen`, true);
+        resolve(channel);
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        clearTimeout(timer);
+        check(`Realtime: ${bucket} odběr je připojen`, false, error?.message ?? status);
+        resolve(channel);
+      }
+    });
+  timer = setTimeout(() => {
+    check(`Realtime: ${bucket} odběr je připojen`, false, 'Časový limit 15 sekund');
+    resolve(channel);
+  }, 15_000);
+  });
+};
+const channels = [await listen(merchant.client, 'own'), await listen(merchant2.client, 'foreign')];
+const live = await publish(1, 280);
+const liveBuyer = users.find((u) => u !== buyer && u !== loser && u !== otherUser && u !== customer) ?? users[5];
+const liveBooking = await book(liveBuyer.client, live);
+await new Promise((resolve) => setTimeout(resolve, 6000));
+const liveId = liveBooking.data?.[0]?.booking_id;
+check('Realtime: podnik se o nové rezervaci dozví bez obnovení', Boolean(liveId) && heard.own.includes(liveId),
+  `přijato ${heard.own.length}`);
+check('Realtime: cizí podnik nedostane nic', heard.foreign.length === 0, `přijato ${heard.foreign.length}`);
+for (const channel of channels) await channel.unsubscribe();
+
+const metricsV1 = (await merchant.client.rpc('merchant_metrics', { p_business_id: businessId })).data;
+check('Metriky podniku nesou výdělek a nadcházející výplaty',
+  typeof metricsV1?.earned_cents === 'number' && metricsV1?.upcoming_payout_cents >= MERCHANT_PRICE,
+  `vyděláno ${metricsV1?.earned_cents}, čeká ${metricsV1?.upcoming_payout_cents}`);
+const adminV1 = (await adminUser.client.rpc('admin_metrics')).data;
+check('Admin rozlišuje výplaty podnikům a výnos FLEK',
+  typeof adminV1?.merchant_payout_cents === 'number' && typeof adminV1?.service_fee_cents === 'number'
+  && adminV1.realized_cents === adminV1.merchant_payout_cents + adminV1.service_fee_cents,
+  `${adminV1?.realized_cents} = ${adminV1?.merchant_payout_cents} + ${adminV1?.service_fee_cents}`);
+check('Nedorazil před začátkem je pořád odmítnut',
+  err((await merchant.client.rpc('merchant_resolve_booking', { p_booking_id: liveId, p_outcome: 'no_show' })).error).includes('TOO_EARLY'));
+}
+
+} finally {
+  // Cleanup runs after a thrown assertion or a network error as well.
+  for (const id of created) {
+    const result = await merchant.client.rpc('merchant_cancel_offer', { p_offer_id: id, p_reason: 'Úklid po akceptačním běhu.' });
+    if (result.error) console.error(`Cleanup ${id}: ${result.error.message}`);
+  }
+}
 
 const passed = results.filter((r) => r.pass).length;
 console.log(`\n${passed}/${results.length} prošlo`);

@@ -1,10 +1,15 @@
-import { LayoutDashboard, CalendarDays, Ticket, Scissors, Store, ChartNoAxesColumn, Ellipsis, ArrowUpRight } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { LayoutDashboard, CalendarDays, Ticket, Scissors, Store, ChartNoAxesColumn, Ellipsis, ArrowUpRight, Eye, BellRing, X } from 'lucide-react';
+import { Fragment, useEffect, useState, type ReactNode } from 'react';
 import { Banner, LoadingList, ErrorState, Wordmark, Sheet } from '../../components/ui';
 import { SignOutButton } from '../auth/SignOutButton';
 import { Link, useRouter } from '../../app/router';
 import { useSession } from '../auth/session';
 import { useMyBusinesses } from './useBusiness';
+import { PartnerLanding } from './PartnerLanding';
+import { useBookingAlerts, useUnreadBookings, type BookingAlert } from './useBookingAlerts';
+import { money } from '../../lib/format';
+import { clockTime, dayLabel } from '../../lib/time';
+import { serverNow } from '../../lib/clock';
 import type { Business } from '../../types/database';
 
 const NAV = [
@@ -29,16 +34,7 @@ export function MerchantShell({ children }: { children: (business: Business) => 
   if (ready && !userId) {
     return (
       <MerchantFrame>
-        <div className="rounded-2xl bg-card shadow-card p-5">
-          <h1 className="text-lg font-extrabold text-ink">Přihlaste se jako partner</h1>
-          <p className="mt-1 text-sm text-muted">Účtem partnera spravujete provozovnu a volné termíny.</p>
-          <Link
-            to="/prihlaseni?role=merchant&returnTo=%2Fpartner"
-            className="btn-primary"
-          >
-            Přihlásit se
-          </Link>
-        </div>
+        <PartnerLanding />
       </MerchantFrame>
     );
   }
@@ -95,19 +91,114 @@ export function MerchantShell({ children }: { children: (business: Business) => 
       }}
       path={path}
     >
-      {business.status !== 'approved' ? (
-        <div className="mb-4">
-          <Banner tone="warning">
-            {business.status === 'pending'
-              ? 'Vaši provozovnu kontrolujeme. Ozveme se do 24 hodin.'
-              : business.status === 'rejected'
-                ? `Registrace byla zamítnuta. ${business.status_reason ?? ''}`
-                : `Provozovna je pozastavená. ${business.status_reason ?? ''}`}
-          </Banner>
+      {business.status === 'approved' ? <ApprovedFrame key={`alerts:${userId}:${business.id}`} business={business} path={path} /> : null}
+      {business.status !== 'approved' ? <PendingNotice business={business} /> : null}
+      <Fragment key={`content:${userId}:${business.id}`}>{children(business)}</Fragment>
+    </MerchantFrame>
+  );
+}
+
+/*
+ * Approval sends no e-mail — the app has no mail provider and adding one only for this is out
+ * of scope — so the promise the pending screen makes is kept where the merchant will see it:
+ * the first time an approved venue is opened after this browser saw it pending, it says so.
+ */
+const PENDING_SEEN = 'flek.merchant.pendingSeen.';
+
+function PendingNotice({ business }: { business: Business }) {
+  useEffect(() => {
+    if (business.status !== 'pending') return;
+    try {
+      window.localStorage.setItem(PENDING_SEEN + business.id, '1');
+    } catch {
+      /* private mode: the celebration is simply skipped */
+    }
+  }, [business.id, business.status]);
+  return (
+    <div className="mb-4">
+      <Banner tone="warning">
+        {business.status === 'pending'
+          ? 'Vaši provozovnu kontrolujeme. Schválení obvykle trvá do 24 hodin a uvidíte ho tady. Mezitím si můžete připravit služby.'
+          : business.status === 'rejected'
+            ? `Registrace byla zamítnuta. ${business.status_reason ?? ''}`
+            : `Provozovna je pozastavená. ${business.status_reason ?? ''}`}
+      </Banner>
+    </div>
+  );
+}
+
+function ApprovedFrame({ business, path }: { business: Business; path: string }) {
+  const { alerts, unread, markRead, dismiss } = useBookingAlerts(business.id);
+  const [celebrate, setCelebrate] = useState(() => {
+    try {
+      return window.localStorage.getItem(PENDING_SEEN + business.id) === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  // Opening the bookings page is reading them.
+  useEffect(() => {
+    if (path === '/partner/rezervace') markRead();
+  }, [path, unread]);
+
+  function closeCelebration() {
+    setCelebrate(false);
+    try {
+      window.localStorage.removeItem(PENDING_SEEN + business.id);
+    } catch {
+      /* nothing to forget */
+    }
+  }
+
+  return (
+    <>
+      {celebrate ? (
+        <div className="mb-4 flex items-start justify-between gap-3 rounded-2xl bg-accent px-4 py-3 text-accent-ink" role="status">
+          <div>
+            <p className="text-base font-extrabold">Provozovna byla schválena 🎉</p>
+            <p className="text-sm">Teď můžete vystavit první FLEK.</p>
+          </div>
+          <button type="button" onClick={closeCelebration} aria-label="Zavřít" className="grid size-10 shrink-0 place-items-center rounded-xl hover:bg-card/15">
+            <X size={18} aria-hidden="true" />
+          </button>
         </div>
       ) : null}
-      {children(business)}
-    </MerchantFrame>
+      <div aria-live="polite" className="empty:hidden mb-4 flex flex-col gap-2">
+        {alerts.map((alert) => (
+          <NewBookingBanner key={alert.id} alert={alert} onDismiss={() => dismiss(alert.id)} />
+        ))}
+      </div>
+    </>
+  );
+}
+
+function NewBookingBanner({ alert, onDismiss }: { alert: BookingAlert; onDismiss: () => void }) {
+  const { navigate } = useRouter();
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-ink px-4 py-3 text-card shadow-lift">
+      <BellRing size={20} aria-hidden="true" className="shrink-0 text-brand" />
+      <div className="min-w-0 flex-1">
+        <p className="text-base font-extrabold">Nová rezervace</p>
+        <p className="tnum text-sm text-card/85">
+          {alert.service} · {dayLabel(alert.startAt, serverNow()).toLocaleLowerCase('cs-CZ')} {clockTime(alert.startAt)} · Vy dostanete{' '}
+          <span className="font-bold text-card">{money(alert.payoutCents)}</span>
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={() => {
+          onDismiss();
+          navigate('/partner/rezervace');
+        }}
+        className="min-h-11 shrink-0 rounded-xl bg-card px-3 text-sm font-bold text-ink hover:bg-surface"
+      >
+        Zobrazit
+      </button>
+      <button type="button" onClick={() => onDismiss()} aria-label="Skrýt" className="grid size-10 shrink-0 place-items-center rounded-xl text-card/80 hover:bg-card/10">
+        <X size={18} aria-hidden="true" />
+      </button>
+    </div>
   );
 }
 
@@ -147,6 +238,13 @@ function MerchantFrame({
   const [menu, setMenu] = useState(false);
   const { navigate } = useRouter();
   const { userId } = useSession();
+  const unread = useUnreadBookings(business?.id);
+  const badge = (to: string) =>
+    to === '/partner/rezervace' && unread > 0 ? (
+      <span className="tnum ml-auto grid min-h-5 min-w-5 place-items-center rounded-full bg-brand px-1.5 text-xs font-extrabold text-ink" aria-label={`${unread} nových`}>
+        {unread}
+      </span>
+    ) : null;
   return (
     <div className="min-h-dvh bg-surface">
       <a href="#partner-obsah" className="sr-only focus:not-sr-only focus:fixed focus:z-50 focus:bg-ink focus:p-3 focus:text-card">Přeskočit na obsah</a>
@@ -170,6 +268,21 @@ function MerchantFrame({
             ) : business ? (
               <span className="hidden max-w-sm truncate text-sm font-bold text-muted sm:inline">{business.display_name}</span>
             ) : null}
+            {/* The venue exactly as customers find it — the public page, in a new tab so the
+                console stays where it was. Only approved venues have a public page. */}
+            {business?.status === 'approved' ? (
+              <a
+                href={`/podnik/${business.id}`}
+                target="_blank"
+                rel="noreferrer"
+                title="Zobrazit jako zákazník"
+                className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 text-sm font-bold sm:min-w-0"
+              >
+                <Eye size={17} aria-hidden="true" />
+                <span className="hidden sm:inline">Zobrazit jako zákazník</span>
+                <span className="sr-only sm:hidden">Zobrazit jako zákazník</span>
+              </a>
+            ) : null}
             <Link
               to="/"
               aria-label="Přejít do zákaznické části"
@@ -184,10 +297,10 @@ function MerchantFrame({
         </div>
       </header>
       <div className={`mx-auto max-w-[1440px] ${nav ? 'lg:grid lg:grid-cols-[224px_minmax(0,1fr)]' : ''}`}>
-        {nav ? <aside className="hidden min-h-[calc(100dvh-73px)] border-r border-line bg-card px-4 py-6 lg:block"><nav aria-label="Partner" className="sticky top-24"><ul className="flex flex-col gap-2">{NAV.map(({ to, label, icon: Icon }) => <li key={to}><Link to={to} aria-current={path === to ? 'page' : undefined} className={`flex min-h-12 items-center gap-3 rounded-xl px-4 text-sm font-bold ${path === to ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-surface hover:text-ink'}`}><Icon size={20} aria-hidden="true" />{label}</Link></li>)}</ul></nav></aside> : null}
+        {nav ? <aside className="hidden min-h-[calc(100dvh-73px)] border-r border-line bg-card px-4 py-6 lg:block"><nav aria-label="Partner" className="sticky top-24"><ul className="flex flex-col gap-2">{NAV.map(({ to, label, icon: Icon }) => <li key={to}><Link to={to} aria-current={path === to ? 'page' : undefined} className={`flex min-h-12 items-center gap-3 rounded-xl px-4 text-sm font-bold ${path === to ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-surface hover:text-ink'}`}><Icon size={20} aria-hidden="true" />{label}{badge(to)}</Link></li>)}</ul></nav></aside> : null}
         <main id="partner-obsah" className="min-w-0 px-4 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6 lg:p-8">{children}</main>
       </div>
-      {nav ? <nav aria-label="Partner" className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card pb-[env(safe-area-inset-bottom)] lg:hidden"><ul className="flex">{NAV.slice(0, 3).map(({ to, label, icon: Icon }) => <li key={to} className="flex-1"><Link to={to} aria-current={path === to ? 'page' : undefined} className={`flex min-h-16 flex-col items-center justify-center gap-1 text-xs font-bold ${path === to ? 'text-accent' : 'text-muted'}`}><Icon size={22} aria-hidden="true" />{label}</Link></li>)}<li className="flex-1"><button type="button" onClick={() => setMenu(true)} aria-haspopup="dialog" className={`flex min-h-16 w-full flex-col items-center justify-center gap-1 text-xs font-bold ${NAV.slice(3).some((item) => item.to === path) ? 'text-accent' : 'text-muted'}`}><Ellipsis size={22} aria-hidden="true" />Další</button></li></ul></nav> : null}
+      {nav ? <nav aria-label="Partner" className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card pb-[env(safe-area-inset-bottom)] lg:hidden"><ul className="flex">{NAV.slice(0, 3).map(({ to, label, icon: Icon }) => <li key={to} className="flex-1"><Link to={to} aria-current={path === to ? 'page' : undefined} className={`relative flex min-h-16 flex-col items-center justify-center gap-1 text-xs font-bold ${path === to ? 'text-accent' : 'text-muted'}`}><span className="relative inline-flex"><Icon size={22} aria-hidden="true" />{to === '/partner/rezervace' && unread > 0 ? <span className="tnum absolute -top-1.5 -right-2.5 grid min-h-4 min-w-4 place-items-center rounded-full bg-brand px-1 text-[10px] font-extrabold text-ink" aria-label={`${unread} nových`}>{unread}</span> : null}</span>{label}</Link></li>)}<li className="flex-1"><button type="button" onClick={() => setMenu(true)} aria-haspopup="dialog" className={`flex min-h-16 w-full flex-col items-center justify-center gap-1 text-xs font-bold ${NAV.slice(3).some((item) => item.to === path) ? 'text-accent' : 'text-muted'}`}><Ellipsis size={22} aria-hidden="true" />Další</button></li></ul></nav> : null}
       <Sheet open={menu} onClose={() => setMenu(false)} title="Správa provozovny"><div className="flex flex-col gap-2">{NAV.slice(3).map(({ to, label, icon: Icon }) => <button key={to} type="button" onClick={() => { setMenu(false); navigate(to); }} className={`flex min-h-13 items-center gap-3 rounded-xl px-4 text-base font-bold ${path === to ? 'bg-accent-soft text-accent' : 'hover:bg-surface'}`}><Icon size={20} aria-hidden="true" />{label}</button>)}</div></Sheet>
     </div>
   );

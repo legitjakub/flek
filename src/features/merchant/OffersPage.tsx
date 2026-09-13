@@ -9,49 +9,24 @@ import { Banner, Button, EmptyState, ErrorState, Field, Input, LoadingList, Shee
 import { MerchantShell } from './MerchantShell';
 import { Plus } from 'lucide-react';
 import { CreateOfferSheet, cutoffFor, type OfferDraft } from './CreateOfferSheet';
-import { Price } from '../../components/Price';
 import { localInput, localToInstant } from '../../lib/time';
 import { useServices } from './useBusiness';
+import { discountPct, priceProblem, quote } from '../../lib/pricing';
 import type { MerchantOffer } from '../../types/database';
 
 type Tab = 'active' | 'upcoming' | 'ended';
-
-/**
- * What is left after FLEK's cut. Rounded to whole crowns first: money() refuses anything
- * else, and the two lines have to add back up to what the customer paid.
- */
-export function payout(dealCents: number, rate: number): number {
-  return dealCents - Math.round((dealCents * rate) / 100) * 100;
-}
-
-/** merchant_offer_rows carries no discount_pct; floor() to match what offer_details computes. */
-function discountPct(originalCents: number, dealCents: number): number {
-  return originalCents > 0 ? Math.floor(((originalCents - dealCents) * 100) / originalCents) : 0;
-}
 
 export function MerchantOffersPage() {
   return (
     <MerchantShell>
       {(business) => (
-        <Offers
-          businessId={business.id}
-          approved={business.status === 'approved'}
-          commissionRate={business.commission_rate}
-        />
+        <Offers businessId={business.id} approved={business.status === 'approved'} />
       )}
     </MerchantShell>
   );
 }
 
-function Offers({
-  businessId,
-  approved,
-  commissionRate,
-}: {
-  businessId: string;
-  approved: boolean;
-  commissionRate: number;
-}) {
+function Offers({ businessId, approved }: { businessId: string; approved: boolean }) {
   const now = useServerNow();
   const [tab, setTab] = useState<Tab>('active');
   const [draft, setDraft] = useState<OfferDraft>(null);
@@ -134,17 +109,12 @@ function Offers({
                 <p className="tnum text-sm text-muted">
                   {dayLabel(offer.start_at, now)} {clockTime(offer.start_at)}–{clockTime(offer.end_at)}
                 </p>
-                <Price
-                  className="mt-1"
-                  variant="row"
-                  dealCents={offer.deal_price_cents}
-                  originalCents={offer.original_price_cents}
-                  discountPct={discountPct(offer.original_price_cents, offer.deal_price_cents)}
-                />
-                {/* The number the merchant is actually paid. It existed only as a column on
-                    businesses that no partner screen had ever rendered. */}
+                {/* The merchant's number first — what they are paid per booked seat — and the
+                    price customers actually see beside it, so neither is a surprise later. */}
                 <p className="tnum mt-1 text-sm text-muted">
-                  Vám zůstane <span className="font-bold text-ink">{money(payout(offer.deal_price_cents, commissionRate))}</span> za obsazené místo
+                  Vy dostanete <span className="text-base font-extrabold text-ink">{money(offer.merchant_price_cents)}</span>
+                  {' · '}zákazník platí <span className="font-bold text-ink">{money(offer.deal_price_cents)}</span>
+                  {' · '}ušetří {discountPct(offer.original_price_cents, offer.deal_price_cents)} %
                 </p>
               </div>
               <div className="text-right">
@@ -168,7 +138,12 @@ function Offers({
                 <Button
                   variant="secondary"
                   onClick={() => {
-                    setDraft({ service_id: offer.service_id, deal_price_cents: offer.deal_price_cents, start_at: offer.start_at });
+                    setDraft({
+                      service_id: offer.service_id,
+                      merchant_price_cents: offer.merchant_price_cents,
+                      start_at: offer.start_at,
+                      capacity_total: offer.capacity_total,
+                    });
                     setSheetOpen(true);
                   }}
                 >
@@ -196,7 +171,6 @@ function Offers({
         onClose={() => setSheetOpen(false)}
         services={services.data ?? []}
         draft={draft}
-        commissionRate={commissionRate}
       /> : null}
       <CancelOfferSheet offer={toCancel} onClose={() => setToCancel(null)} />
       {/*
@@ -222,7 +196,7 @@ function CancelOfferSheet({ offer, onClose }: { offer: MerchantOffer | null; onC
       onClose();
       await queryClient.invalidateQueries();
     },
-    onError: (error) => setFailure(errorMessage(error)),
+    onError: (error) => setFailure(errorMessage(error, 'merchant')),
   });
 
   return (
@@ -257,20 +231,41 @@ function CancelOfferSheet({ offer, onClose }: { offer: MerchantOffer | null; onC
   );
 }
 
+/** Live "zákazník uvidí" under the edited merchant price, the same preview as publishing. */
+function editHint(price: string, offer: MerchantOffer): string {
+  if (Number(price) * 100 === offer.merchant_price_cents) return `Zákazník uvidí ${money(offer.deal_price_cents)} · ušetří ${discountPct(offer.original_price_cents, offer.deal_price_cents)} %`;
+  const q = /^\d+$/.test(price) ? quote(Number(price) * 100, offer.original_price_cents) : null;
+  if (!q) return `Nyní dostáváte ${money(offer.merchant_price_cents)}`;
+  const problem = priceProblem(q);
+  return problem ? (problem === 'price_too_low' ? 'Částka je nezvykle nízká. Zkontrolujte ji.' : 'Zákazník by ušetřil méně než 10 %. Snižte částku.') : `Zákazník uvidí ${money(q.customerCents)} · ušetří ${q.discountPct} %`;
+}
+
 /** Once a booking exists only capacity may rise; price, time and service stay immutable. */
 function EditOfferSheet({ offer, onClose }: { offer: MerchantOffer; onClose: () => void }) {
   const queryClient = useQueryClient();
   const [capacity, setCapacity] = useState(String(offer.capacity_total));
-  const [price, setPrice] = useState(String(offer.deal_price_cents / 100));
+  const [price, setPrice] = useState(String(offer.merchant_price_cents / 100));
   const [start, setStart] = useState(localInput(offer.start_at));
   const [failure, setFailure] = useState<string | null>(null);
-  const locked = offer.booked > 0 || offer.capacity_remaining < offer.capacity_total;
+  const locked = offer.has_bookings || offer.booked > 0 || offer.capacity_remaining < offer.capacity_total;
 
   const save = useMutation({
     mutationFn: () => {
+      if (!/^\d+$/.test(capacity) || Number(capacity) < 1 || Number(capacity) > 50 || (locked && Number(capacity) < offer.capacity_total)) throw new Error('INVALID_CAPACITY');
+      if (!locked) {
+        const preview = quote(Number(price) * 100, offer.original_price_cents);
+        if (!/^\d+$/.test(price) || !preview) throw new Error('VALIDATION_ERROR');
+        if (Number(price) * 100 !== offer.merchant_price_cents) {
+          const problem = priceProblem(preview);
+          if (problem) throw new Error(problem === 'price_too_low' ? 'PRICE_TOO_LOW' : problem === 'no_saving' ? 'NO_CUSTOMER_SAVING' : 'SAVING_TOO_SMALL');
+        }
+        if (!start) throw new Error('INVALID_START');
+      }
       const data: Record<string, unknown> = {};
       if (capacity) data.capacity_total = Number(capacity);
-      if (!locked && price) data.deal_price_cents = Number(price) * 100;
+      // Only the merchant's own price is sent; the server adds the fee. Sending it unchanged
+      // would also move a legacy offer onto the current fee policy, so only a real change goes.
+      if (!locked && price && Number(price) * 100 !== offer.merchant_price_cents) data.merchant_price_cents = Number(price) * 100;
       // Moving a slot was possible on the server all along — update_offer accepts start_at —
       // and impossible in the form, so a merchant running late had to cancel and republish.
       // The cutoff travels with it, clamped, or the server derives start−15 min and rejects
@@ -291,7 +286,7 @@ function EditOfferSheet({ offer, onClose }: { offer: MerchantOffer; onClose: () 
         queryClient.invalidateQueries({ queryKey: ['discovery'] }),
       ]);
     },
-    onError: (error) => setFailure(errorMessage(error)),
+    onError: (error) => setFailure(errorMessage(error, 'merchant')),
   });
 
   return (
@@ -322,7 +317,7 @@ function EditOfferSheet({ offer, onClose }: { offer: MerchantOffer; onClose: () 
         </Field>
         {!locked ? (
           <>
-            <Field id="edit-price" label="Cena v Kč" hint={`Nyní ${money(offer.deal_price_cents)}`}>
+            <Field id="edit-price" label="Kolik chcete dostat (Kč)" hint={editHint(price, offer)}>
               <Input
                 id="edit-price"
                 inputMode="numeric"

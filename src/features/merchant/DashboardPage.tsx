@@ -10,47 +10,42 @@ import { Link } from '../../app/router';
 import { MerchantShell } from './MerchantShell';
 import { CreateOfferSheet } from './CreateOfferSheet';
 import { useMerchantMetrics, useServices } from './useBusiness';
+import { SetupChecklist } from './SetupChecklist';
+import type { Business } from '../../types/database';
 import { ResolveButtons } from './ResolveButtons';
 
 export function MerchantDashboardPage() {
   return (
     <MerchantShell>
       {(business) => (
-        <Dashboard
-          businessId={business.id}
-          approved={business.status === 'approved'}
-          commissionRate={business.commission_rate}
-        />
+        <Dashboard business={business} />
       )}
     </MerchantShell>
   );
 }
 
-function Dashboard({
-  businessId,
-  approved,
-  commissionRate,
-}: {
-  businessId: string;
-  approved: boolean;
-  commissionRate: number;
-}) {
+function Dashboard({ business }: { business: Business }) {
+  const businessId = business.id;
+  const approved = business.status === 'approved';
   const now = useServerNow();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [published, setPublished] = useState<string | null>(null);
   const services = useServices(businessId);
   const metrics = useMerchantMetrics(businessId);
   const day = dayBounds(now);
+  // From yesterday: a booking stays open for "Nedorazil" until 24 h after its end, so an
+  // evening slot from yesterday still belongs on this screen this morning.
+  const windowStart = dayBounds(now, -2).from;
 
   const today = useQuery({
-    queryKey: ['merchant-bookings', businessId, 'dashboard'],
-    queryFn: () => merchantBookings(businessId, day.from),
+    queryKey: ['merchant-bookings', businessId, 'dashboard', windowStart],
+    queryFn: () => merchantBookings(businessId, windowStart),
     refetchOnWindowFocus: true,
   });
 
-  const upcoming = (today.data ?? []).filter((b) => b.status === 'confirmed');
+  const upcoming = (today.data ?? []).filter((b) => b.status === 'confirmed' && b.start_at_snapshot >= day.from);
   const next = upcoming.find((b) => Date.parse(b.start_at_snapshot) >= Date.parse(now));
-  const toResolve = (today.data ?? []).filter((b) => b.can_resolve && b.status === 'confirmed');
+  const toResolve = (today.data ?? []).filter((b) => Date.parse(b.end_at_snapshot) <= Date.parse(now) && b.can_resolve && b.status === 'confirmed');
 
   return (
     <div className="flex flex-col gap-6">
@@ -68,6 +63,8 @@ function Dashboard({
           <Plus size={20} aria-hidden="true" />Přidat volný termín
         </Button>
       </div>
+
+      <SetupChecklist business={business} />
 
       {metrics.isError ? <ErrorState error={metrics.error} onRetry={() => metrics.refetch()} /> : null}
       <div className="grid grid-cols-3 gap-2 sm:gap-4">
@@ -100,23 +97,28 @@ function Dashboard({
               {dayLabel(next.start_at_snapshot, now)} {clockTime(next.start_at_snapshot)} · {next.service_name_snapshot}
             </p>
             <p className="text-sm text-muted">
-              {next.customer_label} · {money(next.price_cents)}
+              {next.customer_label} · Vy dostanete <span className="tnum font-bold text-ink">{money(next.merchant_payout_cents)}</span>
             </p></div>
           </div>
         ) : null}
       </section>
 
       <section className="rounded-2xl bg-card shadow-card p-5 sm:p-6">
-        <h2 className="text-base font-bold text-ink">Čeká na vyřízení</h2>
+        {/* Renamed from "Čeká na vyřízení": nothing waits on the merchant any more. These are
+            the bookings still open for a no-show, and ignoring them is the correct default. */}
+        <h2 className="text-base font-bold text-ink">Proběhlé rezervace</h2>
+        <p className="mt-1 text-sm text-muted">
+          Pokud zákazník dorazil, nemusíte nic dělat. Pokud nedorazil, označte ho do 24 hodin po konci termínu.
+        </p>
         {toResolve.length === 0 ? (
-          <p className="mt-2 text-sm text-muted">Nic nečeká. Docházku potvrdíte až po začátku termínu.</p>
+          <p className="mt-2 text-sm text-muted">Teď tu nic není.</p>
         ) : (
           <ul className="mt-3 flex flex-col gap-3">
             {toResolve.map((booking) => (
               <li key={booking.id} className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-3 first:border-0 first:pt-0">
                 <div>
                   <p className="tnum text-sm font-bold text-ink">
-                    {clockTime(booking.start_at_snapshot)} · {booking.service_name_snapshot}
+                    {dayLabel(booking.start_at_snapshot, now)} {clockTime(booking.start_at_snapshot)} · {booking.service_name_snapshot}
                   </p>
                   <p className="text-sm text-muted">
                     {booking.customer_label} · {booking.reservation_code}
@@ -129,22 +131,8 @@ function Dashboard({
         )}
       </section>
 
-      {services.isSuccess && services.data.filter((s) => s.is_active).length === 0 ? (
-        <EmptyState
-          title="Přidejte první službu"
-          body="Nabídka je vždy volný termín na konkrétní službu."
-          action={
-            <Link
-              to="/partner/sluzby"
-              className="btn-primary"
-            >
-              Přidat službu
-            </Link>
-          }
-        />
-      ) : null}
 
-      {sheetOpen ? <CreateOfferSheet onPublished={setPublished} open onClose={() => setSheetOpen(false)} services={services.data ?? []} commissionRate={commissionRate} /> : null}
+      {sheetOpen ? <CreateOfferSheet onPublished={setPublished} open onClose={() => setSheetOpen(false)} services={services.data ?? []} /> : null}
     </div>
   );
 }

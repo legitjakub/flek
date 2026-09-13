@@ -5,10 +5,26 @@ import { errorMessage } from '../../lib/errors';
 import { StatusBadge } from '../../components/StatusBadge';
 import { Banner, Button, Sheet } from '../../components/ui';
 import type { MerchantBooking, MerchantBookingDetail } from '../../types/database';
+import { clockTime, dayLabel } from '../../lib/time';
+import { serverNow, useServerNow } from '../../lib/clock';
 
-/** Attendance can only be recorded after the appointment started; the RPC enforces it too. */
+/**
+ * Attendance is the exception, not a chore. A booking nobody marks completes on its own 24 h
+ * after the slot ends (private.flek_maintenance), so the happy path asks nothing — the only
+ * action offered is "Nedorazil", from the start of the slot until that deadline.
+ */
+function deadlineLabel(booking: MerchantBooking | MerchantBookingDetail): string {
+  const deadline = 'resolution_deadline' in booking && booking.resolution_deadline ? booking.resolution_deadline : null;
+  if (!deadline) return '24 hodin po konci termínu';
+  return `${dayLabel(deadline, serverNow()).toLocaleLowerCase('cs-CZ')} ${clockTime(deadline)}`;
+}
+
 export function ResolveButtons({ booking }: { booking: MerchantBooking | MerchantBookingDetail }) {
   const queryClient = useQueryClient();
+  const now = Date.parse(useServerNow());
+  const deadline = Date.parse(booking.resolution_deadline || new Date(Date.parse(booking.end_at_snapshot) + 86_400_000).toISOString());
+  const canResolve = now >= Date.parse(booking.start_at_snapshot) && now < deadline;
+  const awaitingCompletion = now >= deadline;
   const [failure, setFailure] = useState<string | null>(null);
   const [confirmNoShow, setConfirmNoShow] = useState(false);
 
@@ -17,9 +33,13 @@ export function ResolveButtons({ booking }: { booking: MerchantBooking | Merchan
     onSuccess: async () => {
       setFailure(null);
       setConfirmNoShow(false);
-      await queryClient.invalidateQueries();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['merchant-bookings'] }),
+        queryClient.invalidateQueries({ queryKey: ['merchant-metrics'] }),
+        queryClient.invalidateQueries({ queryKey: ['merchant-booking-lookup'] }),
+      ]);
     },
-    onError: (error) => setFailure(errorMessage(error)),
+    onError: (error) => setFailure(errorMessage(error, 'merchant')),
   });
 
   if (booking.status !== 'confirmed') {
@@ -33,28 +53,21 @@ export function ResolveButtons({ booking }: { booking: MerchantBooking | Merchan
 
   return (
     <div className="flex flex-col items-end gap-1">
-      <div className="flex flex-wrap justify-end gap-2">
+      {canResolve ? (
         <Button
-          size="lg"
-          disabled={!booking.can_resolve || resolve.isPending}
-          loading={resolve.isPending && resolve.variables === 'completed'}
-          onClick={() => resolve.mutate('completed')}
-        >
-          Zákazník dorazil
-        </Button>
-        <Button
-          size="lg"
           variant="danger"
-          disabled={!booking.can_resolve || resolve.isPending}
+          disabled={resolve.isPending}
           loading={resolve.isPending && resolve.variables === 'no_show'}
           onClick={() => setConfirmNoShow(true)}
         >
           Nedorazil
         </Button>
-      </div>
-      {!booking.can_resolve ? (
-        <p className="text-xs text-muted">Docházku potvrdíte až po začátku termínu.</p>
       ) : null}
+      <p className="max-w-64 text-right text-xs text-muted">
+        {canResolve
+          ? `Pokud zákazník dorazil, nemusíte nic dělat. Nedorazil? Označte do ${deadlineLabel(booking)}.`
+          : awaitingCompletion ? 'Rezervace se automaticky dokončuje. Nemusíte nic dělat.' : 'Nedorazil? Označit půjde od začátku termínu.'}
+      </p>
       {failure ? (
         <p role="alert" className="text-xs font-medium text-danger">
           {failure}

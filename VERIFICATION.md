@@ -1,5 +1,6 @@
 # Ověření FLEK
 
+> Aktuální ověření pilotu z 13. 9. 2026 je v poslední sekci tohoto dokumentu. Starší sekce zachycují tehdejší stav, nikoliv aktuální omezení.
 Stav k 8. 9. 2026. Každý řádek říká, čím je doložený.
 
 Migrace i seed byly aplikované na **skutečný hostovaný PostgreSQL 17 s PostGIS** (Supabase, eu-west-1) a akceptační průchod proti němu proběhl přes veřejné API se **skutečnými JWT a zapnutou RLS**, bez service-role klíče. Docker na tomto počítači není, takže `npm test` (integrační sada přes lokální Supabase) nespouštěné zůstává — jeho obsah ale pokrývá `npm run test:acceptance`, viz níže.
@@ -124,3 +125,41 @@ Před doplněním fotografií měly obě stránky výkon 88–93. S fotografiemi
 - **Živý průchod kamerou.** Skener nebyl vyzkoušen na skutečném zařízení; partnerská část vyžaduje přihlášení demo hesly.
 - **Kvalifikace doporučení od konce ke konci.** Databázová pravidla ověřená jsou, celý průchod „pozvánka → registrace → první proběhlá rezervace" ne, protože vyžaduje dokončení rezervace partnerem.
 - **Lighthouse** na nových obrazovkách. Dřívější měření (přístupnost 100) se týkalo starší podoby detailu.
+
+## Dokončení pilotu v1 — 13. 9. 2026
+
+### Co bylo skutečně ověřeno
+
+- `npm run test:unit`: **77/77**. Zahrnuje sdílené cenové vektory, hranice poplatku, ochranu před přetečením a izolaci/deduplikaci upozornění podle identity a provozovny. Testy shlukování mapy nebyly měněné.
+- `npm run build`: TypeScript i Vite prošly. Zůstává upozornění na velikost samostatného mapového balíčku.
+- `npm run test:acceptance`: **100/100** proti hostovanému Supabase, skutečné JWT demo uživatelů a reálné RLS. Deset souběžných zákazníků neobsadí stejné poslední místo; osm souběžných volání se stejnou platbou vrátí jedinou rezervaci a odečte jediné místo. Ověřeno vrácení platby bez místa a odmítnutí cizího přístupu.
+- `tests/pilot-maintenance.sql`: prošel na hostovaném PostgreSQL. Testuje přesnou hranici 24 h po konci, čerstvou a osiřelou platbu kolem 30 minut, neměnnost finančního snímku, zachování výplaty při nedostavení, idempotenci údržby, staré ceny a granty. Všechny změny se vracejí transakcí zpět.
+- Job `flek-maintenance` aktivní každých 15 minut; poslední tři kontrolované běhy `succeeded`. Kontrola před UI testy: nula zaplacených plateb bez rezervace, nula potvrzených rezervací po lhůtě dokončení.
+
+### Klikací průchod produkčním buildem
+
+Systémový Chrome přes Playwright, viditelné okno, `http://127.0.0.1:5175`. Browser plugin není dostupný; použitý existující Playwright 1.63 bez instalace další závislosti. Vývojové preview 5173 sloužilo prvnímu ladění, konečný běh 5175 neobsahuje HMR. Dočasné skripty a snímky jsou mimo repozitář v `/tmp/flek-pilot-*`.
+
+| Kontrola | Výsledek |
+| --- | --- |
+| Identita stránky, obsah, žádný framework overlay | PASS — ověřené nadpisy a trasy veřejného partnera, formulářů, detailu, rezervací a metrik |
+| Konzole | PASS — závěrečný hlavní průchod neměl chyby JavaScriptu ani chybové konzolové zprávy; očekávaná 400 při odmítnutí ceny se nezaměňuje za chybu vykreslení |
+| Mobil a desktop | PASS — 375/390/430/1365 px bez horizontálního přetečení |
+| Služba | PASS — zvolená kategorie a šablona, vlastní název, běžná cena, přednastavená i vlastní délka, změna fotky, uložení šablony; další nová služba začíná prázdným formulářem |
+| Nabídka | PASS — 980 Kč pro podnik odmítnuto u pole; 750 Kč uloží zákaznických 788 Kč a poplatek 38 Kč, úsporu 21 % |
+| Zákazník | PASS — stejných 788 Kč ve feedu, panelu mapy, detailu, checkoutu, potvrzení i rezervacích |
+| Podnik ve druhém okně | PASS — nová rezervace bez reloadu za 881 ms, odznak a titul `(1) FLEK Partner`; otevření rezervací odznak vynuluje |
+| Výpadek Realtime | PASS — WebSocket záměrně vypnutý, polling přinesl rezervaci za 29 013 ms |
+| Změna ceny před placením | PASS — při změně 788 → 735 Kč původní potvrzení nic nezaplatí, platba zůstane pending; až nové potvrzení 735 Kč vydá rezervaci |
+| Změna účtu | PASS — odhlášení vymaže upozornění; přihlášení jiného podniku přes skutečný formulář nepřevezme staré oznámení ani odznak |
+| Admin | PASS — metriky oddělují výnos FLEK a částky podniků |
+
+Během průchodu opraveno: chybná lhůta pro storno blízkého termínu, duplicitní React klíče odděleného rámce upozornění/obsahu, čistý formulář nové služby, zachování vlastní fotografie u známé šablony a soulad metrik s koncem + 24 hodin. První pokus o měření konzole zachytil chybu pomocného testovacího skriptu na `about:blank`; po omezení inicializace na původ aplikace čistý průchod prošel.
+
+### Nasazené databázové změny a zbývající hranice
+
+Cenový model a cron byly na serveru již od Claudea. Doplňující opravy byly aplikovány přídavnými migracemi; staré soubory nebyly přepsané. Mapování lokálních názvů a časů aplikace MCP je v PROJECT_STATUS.md. Současné metriky označují k automatickému dokončení až rezervace 24 h po konci, nikoliv 24 h po začátku.
+
+Všechny služby, nabídky, platby a rezervace vytvořené pouze klikacími testy byly odstraněny přes přesně zaznamenaná ID. API akceptační sada ruší své nabídky a zanechává zrušenou demo historii. SQL testy se vracejí rollbackem.
+
+Lokální Docker integrační sada, fyzický iPhone/Safari, skutečná kamera, nové měření Lighthouse a nově požadovaný úplný UX audit všech rolí nejsou součástí tohoto dokončeného průchodu. Platby a vratky jsou stále ukázkové; skutečné peníze se nepřevádějí.

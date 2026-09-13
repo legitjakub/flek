@@ -42,7 +42,7 @@ export function CustomerShell({ children }: { children: ReactNode }) {
         <div className="page-container flex min-h-17 items-center justify-between gap-3">
           <Link to="/" aria-label="FLEK — domů" className="inline-flex min-h-11 items-center"><Wordmark /></Link>
           <nav aria-label="Hlavní" className="hidden md:block"><ul className="flex gap-1">{navItems(false)}</ul></nav>
-          <Link to={userId ? '/partner' : '/prihlaseni?role=merchant&returnTo=%2Fpartner'} className="inline-flex min-h-11 shrink-0 items-center gap-1.5 text-sm font-bold text-ink">Pro podniky<ArrowUpRight size={16} aria-hidden="true" /></Link>
+          <Link to="/partner" className="inline-flex min-h-11 shrink-0 items-center gap-1.5 text-sm font-bold text-ink">Pro podniky<ArrowUpRight size={16} aria-hidden="true" /></Link>
         </div>
       </header>
       <div id="obsah" className={cx('min-w-0 flex-1', !detail && 'pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-8')}>{children}</div>

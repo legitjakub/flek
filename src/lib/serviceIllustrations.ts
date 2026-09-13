@@ -14,8 +14,22 @@ function searchable(value: string): string {
     .toLocaleLowerCase('cs-CZ');
 }
 
-/** Prepared activities always use their exact illustration, including older saved services. */
-export function serviceIllustration(serviceName: string, savedImage?: string | null): string | null {
+/**
+ * Which picture a service shows, in order of how specific it is to that service:
+ *   1. the photo the merchant chose for this service,
+ *   2. the prepared illustration of the activity, matched by name,
+ *   3. the venue's general cover.
+ *
+ * The illustration used to come first, matched on a fragment of the name, so a partner's own
+ * choice never showed for anything called "…tenis…" and a massage named "Tenisový loket" got
+ * a tennis court. It still beats the venue cover, which is not a picture of this service.
+ */
+export function serviceIllustration(
+  serviceName: string,
+  serviceImage?: string | null,
+  venueCover?: string | null,
+): string | null {
+  if (serviceImage) return serviceImage;
   const name = searchable(serviceName);
-  return PREPARED_ILLUSTRATIONS.find(([needle]) => name.includes(needle))?.[1] ?? savedImage ?? null;
+  return PREPARED_ILLUSTRATIONS.find(([needle]) => name.includes(needle))?.[1] ?? venueCover ?? null;
 }

@@ -40,7 +40,9 @@ async function book(a:Account,o:{id:string}){
  if(started.error)return started;
  const settled=await a.client.rpc('demo_confirm_payment',{p_payment_id:(started.data as {id:string}).id});
  if(settled.error)return settled;
- return a.client.rpc('create_booking',{p_offer_id:o.id,p_payment_id:(settled.data as {id:string}).id});
+ const result=await a.client.rpc('create_booking',{p_offer_id:o.id,p_payment_id:(settled.data as {id:string}).id});
+ if(result.error)await a.client.rpc('release_unbooked_payment',{p_payment_id:(settled.data as {id:string}).id});
+ return result;
 }
 async function stored(id:string){return (await db.query('select * from public.offers where id=$1',[id])).rows[0] as {capacity_remaining:number;capacity_total:number};}
 function code(error:{message:string}|null,expected:string){expect(error?.message).toContain(expected);}
@@ -55,6 +57,7 @@ beforeAll(async()=>{
 afterAll(async()=>{
  await db.query('delete from public.analytics_events where user_id=any($1::uuid[])',[users]);
  await db.query('delete from public.bookings where business_id=any($1::uuid[])',[businesses]);
+ await db.query('delete from public.payments where offer_id in(select id from public.offers where business_id=any($1::uuid[]))',[businesses]);
  await db.query('delete from public.offers where business_id=any($1::uuid[])',[businesses]);
  await db.query('delete from public.services where business_id=any($1::uuid[])',[businesses]);
  await db.query('delete from public.business_members where business_id=any($1::uuid[])',[businesses]);
@@ -75,9 +78,9 @@ describe('Concurrency against real Auth JWTs and PostgreSQL',()=>{
   const o=await offer(5),accounts=await Promise.all(Array.from({length:20},()=>user()));
   const r=await Promise.all(accounts.map(a=>book(a,o)));expect(r.filter(x=>!x.error)).toHaveLength(5);expect((await stored(o.id)).capacity_remaining).toBe(0);
  });
- it('same user concurrent double tap: ALREADY_BOOKED and one decrement',async()=>{
+ it('same user concurrent double tap: one booking and one decrement',async()=>{
   const o=await offer(2),a=await user();const r=await Promise.all([book(a,o),book(a,o)]);
-  expect(r.filter(x=>!x.error)).toHaveLength(1);code(r.find(x=>x.error)!.error,'ALREADY_BOOKED');expect((await stored(o.id)).capacity_remaining).toBe(1);
+  const successes=r.filter(x=>!x.error);expect(successes.length).toBeGreaterThanOrEqual(1);expect(new Set(successes.map(x=>x.data![0].booking_id)).size).toBe(1);expect((await stored(o.id)).capacity_remaining).toBe(1);
  });
  it('three-booking limit holds across simultaneous different offers',async()=>{
   const a=await user(),offers=await Promise.all(Array.from({length:5},()=>offer()));
@@ -145,16 +148,16 @@ describe('Authorization and RLS, real JWTs',()=>{
  it('every application table has RLS enabled',async()=>{const r=await db.query("select relname from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r' and not c.relrowsecurity and c.relname<>'spatial_ref_sys'");expect(r.rows).toEqual([]);});
 });
 describe('Domain invariants',()=>{
- it.each([59000,65000,9000])('invalid deal price %i rejected in RPC and table',async price=>{
-  code((await merchant.client.rpc('publish_offer',{p_service_id:service,p_start_at:new Date(Date.now()+4*3600000).toISOString(),p_deal_price_cents:price,p_confirm_overlap:true})).error,'INVALID_DISCOUNT');const o=await offer();await expect(db.query('update public.offers set deal_price_cents=$1 where id=$2',[price,o.id])).rejects.toThrow();
+ it.each([[59000,'SAVING_TOO_SMALL'],[65000,'NO_CUSTOMER_SAVING'],[5000,'PRICE_TOO_LOW']])('invalid merchant price %i rejected in RPC and table',async (price,expected)=>{
+  code((await merchant.client.rpc('publish_flek',{p_service_id:service,p_start_at:new Date(Date.now()+4*3600000).toISOString(),p_merchant_price_cents:price,p_confirm_overlap:true})).error,expected as string);const o=await offer();await expect(db.query('update public.offers set deal_price_cents=$1 where id=$2',[price,o.id])).rejects.toThrow();
  });
  it('end <= start rejected by constraint; beyond seven days rejected by RPC',async()=>{
-  const o=await offer();await expect(db.query('update public.offers set end_at=start_at where id=$1',[o.id])).rejects.toThrow();code((await merchant.client.rpc('publish_offer',{p_service_id:service,p_start_at:new Date(Date.now()+8*86400000).toISOString(),p_deal_price_cents:39000})).error,'INVALID_START');
+  const o=await offer();await expect(db.query('update public.offers set end_at=start_at where id=$1',[o.id])).rejects.toThrow();code((await merchant.client.rpc('publish_flek',{p_service_id:service,p_start_at:new Date(Date.now()+8*86400000).toISOString(),p_merchant_price_cents:39000})).error,'INVALID_START');
  });
- it('pending business cannot publish',async()=>{const s=(await db.query("insert into public.services(business_id,name,category_slug,duration_minutes,normal_price_cents) values($1,'Pending service','test',45,65000) returning id",[otherBiz])).rows[0].id;code((await other.client.rpc('publish_offer',{p_service_id:s,p_start_at:new Date(Date.now()+3600000).toISOString(),p_deal_price_cents:39000})).error,'BUSINESS_NOT_APPROVED');});
+ it('pending business cannot publish',async()=>{const s=(await db.query("insert into public.services(business_id,name,category_slug,duration_minutes,normal_price_cents) values($1,'Pending service','test',45,65000) returning id",[otherBiz])).rows[0].id;code((await other.client.rpc('publish_flek',{p_service_id:s,p_start_at:new Date(Date.now()+3600000).toISOString(),p_merchant_price_cents:39000})).error,'BUSINESS_NOT_APPROVED');});
  it('booked offer capacity only increases, snapshots immutable after service edit',async()=>{
   const o=await offer(2),r=await book(await user(),o);
-  code((await merchant.client.rpc('update_offer',{p_offer_id:o.id,p_data:{capacity_total:1}})).error,'INVALID_CAPACITY');code((await merchant.client.rpc('update_offer',{p_offer_id:o.id,p_data:{deal_price_cents:40000}})).error,'OFFER_HAS_BOOKINGS');
+  code((await merchant.client.rpc('update_offer',{p_offer_id:o.id,p_data:{capacity_total:1}})).error,'INVALID_CAPACITY');code((await merchant.client.rpc('update_offer',{p_offer_id:o.id,p_data:{merchant_price_cents:40000}})).error,'OFFER_HAS_BOOKINGS');
   expect((await merchant.client.rpc('update_offer',{p_offer_id:o.id,p_data:{capacity_total:3}})).error).toBeNull();expect((await stored(o.id)).capacity_remaining).toBe(2);
   const before=(await db.query('select service_name_snapshot from public.bookings where id=$1',[r.data![0].booking_id])).rows[0];await merchant.client.rpc('save_service',{p_business_id:biz,p_service_id:service,p_data:{name:'Nový název'}});expect((await db.query('select service_name_snapshot from public.bookings where id=$1',[r.data![0].booking_id])).rows[0]).toEqual(before);
  });
@@ -171,7 +174,7 @@ describe('Domain invariants',()=>{
   const expired=await offer(1,{start:-5,cutoff:-10}),sold=await offer();await book(await user(),sold);const args={p_lat:50.0755,p_lng:14.4378,p_category:'test',p_limit:100};const a=await anon.rpc('search_offers',args),b=await anon.rpc('search_offers',args);expect(a.error).toBeNull();expect(a.data?.map((x:{id:string})=>x.id)).toEqual(b.data?.map((x:{id:string})=>x.id));expect(a.data?.some((x:{id:string})=>[expired.id,sold.id].includes(x.id))).toBe(false);
  });
  it('overlap warning is server enforced and explicit confirmation permits it',async()=>{
-  const args={p_service_id:service,p_start_at:new Date(Date.now()+180*60000).toISOString(),p_deal_price_cents:39000};code((await merchant.client.rpc('publish_offer',args)).error,'OVERLAP_CONFIRMATION_REQUIRED');expect((await merchant.client.rpc('publish_offer',{...args,p_confirm_overlap:true})).error).toBeNull();
+  const args={p_service_id:service,p_start_at:new Date(Date.now()+180*60000).toISOString(),p_merchant_price_cents:39000};code((await merchant.client.rpc('publish_flek',args)).error,'OVERLAP_CONFIRMATION_REQUIRED');expect((await merchant.client.rpc('publish_flek',{...args,p_confirm_overlap:true})).error).toBeNull();
  });
  it('reservation code collision retries transparently without losing capacity',async()=>{
   const a=await user(),b=await user(),existing=await book(a,await offer());
@@ -192,7 +195,7 @@ describe('Domain invariants',()=>{
   expect((await anon.rpc('get_offer_detail',{p_offer_id:o.id})).data.bookable).toBe(false);
  });
  it('offer created with cutoff less than five minutes away is rejected',async()=>{
-  code((await merchant.client.rpc('publish_offer',{p_service_id:service,p_start_at:new Date(Date.now()+16*60000).toISOString(),p_deal_price_cents:39000})).error,'INVALID_CUTOFF');
+  code((await merchant.client.rpc('publish_flek',{p_service_id:service,p_start_at:new Date(Date.now()+16*60000).toISOString(),p_merchant_price_cents:39000})).error,'INVALID_CUTOFF');
  });
  it('manual booking block is admin-only and enforced by booking RPC',async()=>{
   const a=await user();code((await merchant.client.rpc('admin_set_booking_block',{p_user_id:a.id,p_blocked:true})).error,'FORBIDDEN');

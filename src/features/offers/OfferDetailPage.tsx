@@ -112,11 +112,15 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
     return <BookingSuccess code={code} offer={offer} now={now} />;
   }
 
-  const image = serviceIllustration(offer.service_name, offer.image_url ?? offer.cover_url);
+  const image = serviceIllustration(offer.service_name, offer.image_url, offer.cover_url);
   const savings = offer.original_price_cents - offer.deal_price_cents;
   const minutesAway = Math.round((Date.parse(offer.start_at) - Date.parse(now)) / 60000);
   const lastSeat = offer.capacity_remaining === 1 && offer.capacity_total > 1;
   const cutoffMinutes = Math.round((Date.parse(offer.booking_cutoff_at) - Date.parse(now)) / 60000);
+  const cancellationAt = cancellationDeadline(offer.start_at, offer.cancellation_window_minutes);
+  const cancellationCopy = Date.parse(cancellationAt) <= Date.parse(now)
+    ? '10 minut od rezervace'
+    : `do ${clockTime(cancellationAt)}`;
 
   const hasPhoto = Boolean(image) && image !== failedPhoto;
   const reason = unavailableReason(offer, now);
@@ -315,7 +319,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
                   <span aria-hidden="true">·</span>
                   <span className="inline-flex items-center gap-1.5 font-bold text-positive">
                     <Check size={15} aria-hidden="true" />
-                    Zrušení zdarma do {clockTime(cancellationDeadline(offer.start_at, offer.cancellation_window_minutes))}
+                    Zrušení zdarma {cancellationCopy}
                   </span>
                 </>
               ) : null}
@@ -352,7 +356,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           {offer.bookable ? (
             <>
               <h2 className="mt-6 text-lg font-extrabold">Zrušení</h2>
-              <p className="mt-2 text-base leading-relaxed text-muted">Zrušit můžeš zdarma do {clockTime(cancellationDeadline(offer.start_at, offer.cancellation_window_minutes))} a vrátíme ti celou částku. Když rezervuješ později, máš na zrušení 10 minut od rezervace.</p>
+              <p className="mt-2 text-base leading-relaxed text-muted">Zrušit můžeš zdarma {cancellationCopy} a vrátíme ti celou částku.{Date.parse(cancellationAt) > Date.parse(now) ? ' Když rezervuješ později, máš na zrušení 10 minut od rezervace.' : ''}</p>
             </>
           ) : null}
         </div>

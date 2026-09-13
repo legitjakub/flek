@@ -49,7 +49,7 @@ function Services({ business }: { business: Business }) {
 
       <ul className="grid gap-3 md:grid-cols-2">
         {(services.data ?? []).map((service) => {
-          const image = serviceIllustration(service.name, service.image_url ?? business.cover_url);
+          const image = serviceIllustration(service.name, service.image_url, business.cover_url);
           return (
             <li key={service.id}>
               <button
@@ -86,13 +86,13 @@ function Services({ business }: { business: Business }) {
         })}
       </ul>
 
-      <ServiceSheet
+      {open ? <ServiceSheet
         key={editing?.id ?? 'new'}
         open={open}
         onClose={() => setOpen(false)}
         business={business}
         service={editing}
-      />
+      /> : null}
     </div>
   );
 }
@@ -128,11 +128,11 @@ function ServiceSheet({
   const trimmedName = name.trim();
   const minutesNumber = Number(minutes);
   const priceNumber = Number(price);
-  const nameError = trimmedName.length < 2 ? 'Napište název alespoň o 2 znacích.' : undefined;
+  const nameError = trimmedName.length < 2 || trimmedName.length > 120 ? 'Napište název o 2 až 120 znacích.' : undefined;
   const durationError = !/^\d+$/.test(minutes) || minutesNumber < 5 || minutesNumber > 480
     ? 'Zadejte délku od 5 do 480 minut.'
     : undefined;
-  const priceError = !/^\d+$/.test(price) || priceNumber <= 0
+  const priceError = !/^\d+$/.test(price) || priceNumber <= 0 || priceNumber > 21_474_836
     ? 'Zadejte běžnou cenu v celých korunách.'
     : undefined;
   const valid = !nameError && !durationError && !priceError;
@@ -158,7 +158,7 @@ function ServiceSheet({
       onClose();
       await queryClient.invalidateQueries({ queryKey: ['services', business.id] });
     },
-    onError: (error) => setFailure(errorMessage(error)),
+    onError: (error) => setFailure(errorMessage(error, 'merchant')),
   });
 
   function submit() {
@@ -172,7 +172,7 @@ function ServiceSheet({
     save.mutate();
   }
 
-  const previewImage = serviceIllustration(trimmedName, imageUrl ?? business.cover_url);
+  const previewImage = serviceIllustration(trimmedName, imageUrl, business.cover_url);
 
   return (
     <Sheet
@@ -196,7 +196,7 @@ function ServiceSheet({
             onPick={(choice) => {
               setTemplate(choice.slug);
               setName(choice.label);
-              if (choice.imageUrl) setImageUrl(choice.imageUrl);
+              setImageUrl(choice.imageUrl);
             }}
             onCustom={() => {
               setTemplate('custom');
@@ -214,6 +214,7 @@ function ServiceSheet({
           >
             <Input
               id="s-name"
+              maxLength={120}
               data-autofocus={service ? '' : undefined}
               placeholder="Např. Pánský střih s mytím"
               value={name}
@@ -256,6 +257,7 @@ function ServiceSheet({
             <div className="relative mt-3 max-w-48">
               <Input
                 id="s-duration"
+                aria-label="Vlastní délka služby v minutách"
                 inputMode="numeric"
                 placeholder="Např. 75"
                 value={minutes}

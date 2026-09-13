@@ -4,7 +4,7 @@ import { useSession } from '../auth/session';
 
 export function useMyBusinesses() {
   const { userId } = useSession();
-  return useQuery({ queryKey: ['my-businesses', userId], queryFn: myBusinesses, enabled: Boolean(userId) });
+  return useQuery({ queryKey: ['my-businesses', userId], queryFn: myBusinesses, enabled: Boolean(userId), refetchInterval: 30_000 });
 }
 
 export function useServices(businessId: string | null) {

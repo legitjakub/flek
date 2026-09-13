@@ -9,20 +9,33 @@ const messages:Record<string,string>={
  PAYMENT_ALREADY_USED:'Tahle platba už je použitá u jiné rezervace.',PRICE_CHANGED:'Cena termínu se mezitím změnila. Načti nabídku znovu.',
  INVALID_CANCELLATION_WINDOW:'Lhůta pro bezplatné zrušení musí být 0 až 10 080 minut.',
  TOO_EARLY:'Docházku můžete potvrdit až po začátku termínu.',OFFER_STARTED:'Termín už začal. Nabídku nelze zrušit.',
- BUSINESS_NOT_APPROVED:'Nejdříve musíme schválit vaši provozovnu.',OVERLAP_CONFIRMATION_REQUIRED:'Ve stejnou dobu už máte jinou nabídku. Máte fleku kapacitu?',
+ BUSINESS_NOT_APPROVED:'Nejdříve musíme schválit vaši provozovnu.',OVERLAP_CONFIRMATION_REQUIRED:'Ve stejnou dobu už máte jinou nabídku. Máte dostatečnou kapacitu?',
  OFFER_HAS_BOOKINGS:'Nabídka už má rezervace. Můžete pouze zvýšit kapacitu.',INVALID_CAPACITY:'Kapacitu nelze snížit pod již rezervovaná místa. Nejvýše lze nabídnout 50 míst.',
  INVALID_DISCOUNT:'Sleva musí být aspoň 10 %. Cena nesmí klesnout pod 15 % původní ceny.',INVALID_START:'Vyberte budoucí čas nejvýše 7 dní dopředu.',
  INVALID_CUTOFF:'Uzávěrka rezervací musí být alespoň za 5 minut a nejpozději při začátku termínu.',VALIDATION_ERROR:'Zkontrolujte prosím vyplněné údaje.',
+ NO_CUSTOMER_SAVING:'Po připočtení servisního poplatku by zákazník zaplatil stejně nebo více než běžně. Snižte FLEK cenu.',
+ SAVING_TOO_SMALL:'Zákazník musí ušetřit aspoň 10 %. Snižte částku, kterou chcete dostat.',PRICE_TOO_LOW:'Tahle částka je nezvykle nízká. Zkontrolujte ji prosím.',
+ RESOLUTION_WINDOW_CLOSED:'„Nedorazil“ jde označit jen do 24 hodin po konci termínu. Rezervace se už počítá jako dokončená.',
+ FINANCIAL_SNAPSHOT_IMMUTABLE:'Cenu už uskutečněné rezervace nejde měnit.',CODE_GENERATION_FAILED:'Rezervaci se nepodařilo dokončit. Zkus to prosím znovu.',
  'Invalid login credentials':'E-mail nebo heslo nesouhlasí.','User already registered':'Tento e-mail už má účet. Přihlas se.',
  'Email not confirmed':'Nejdřív potvrď svůj e-mail.','Email rate limit exceeded':'Zkus to prosím znovu za chvíli.',
 };
-export function errorMessage(error:unknown){
+/*
+ * The customer app tyká and the merchant console vyká. Specific codes are already written for
+ * their audience; the generic fallbacks were customer-only, so a partner was told
+ * "Zkus to znovu" in the middle of a formal screen.
+ */
+const fallbacks={
+ customer:{network:'Spojení se nepodařilo. Zkontroluj internet a zkus to znovu.',session:'Přihlášení vypršelo. Přihlas se znovu a pokračuj.',other:'Něco se nepodařilo. Zkus to prosím znovu.'},
+ merchant:{network:'Spojení se nepodařilo. Zkontrolujte internet a zkuste to znovu.',session:'Přihlášení vypršelo. Přihlaste se znovu a pokračujte.',other:'Něco se nepodařilo. Zkuste to prosím znovu.'},
+};
+export function errorMessage(error:unknown,audience:'customer'|'merchant'='customer'){
  const message=error instanceof Error?error.message:typeof error==='object'&&error&&'message'in error?String(error.message):'';
  const mapped=Object.entries(messages).find(([code])=>message.includes(code));
  if(mapped)return mapped[1];
  if(message.includes('letní čas'))return message;
- if(/fetch|network|offline|timeout/i.test(message))return 'Spojení se nepodařilo. Zkontroluj internet a zkus to znovu.';
- if(/jwt|session|token.*expired/i.test(message))return 'Přihlášení vypršelo. Přihlas se znovu a pokračuj.';
- return 'Něco se nepodařilo. Zkus to prosím znovu.';
+ if(/fetch|network|offline|timeout/i.test(message))return fallbacks[audience].network;
+ if(/jwt|session|token.*expired/i.test(message))return fallbacks[audience].session;
+ return fallbacks[audience].other;
 }
 export async function result<T>(request:PromiseLike<{data:T|null;error:{message:string}|null}>):Promise<T>{const r=await request;if(r.error)throw new Error(r.error.message);return r.data as T;}

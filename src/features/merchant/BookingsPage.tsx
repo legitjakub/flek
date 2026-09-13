@@ -1,10 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { merchantBookings, merchantLookupBooking } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
 import { clockTime, dayBounds, dayLabel } from '../../lib/time';
-import { useServerNow } from '../../lib/clock';
+import { serverNow, useServerNow } from '../../lib/clock';
 import { Banner, Button, EmptyState, ErrorState, Field, Input, LoadingList, Tabs } from '../../components/ui';
 import { useRouter } from '../../app/router';
 import { MerchantShell } from './MerchantShell';
@@ -21,18 +21,26 @@ export function MerchantBookingsPage() {
 
 function Bookings({ businessId }: { businessId: string }) {
   const now = useServerNow();
+  const queryClient = useQueryClient();
   const [tab, setTab] = useState<Tab>('today');
   const { search } = useRouter();
   const scanned = (search.get('kod') ?? '').toUpperCase();
   const [code, setCode] = useState(scanned);
-  const [lookup, setLookup] = useState<MerchantBookingDetail | null>(null);
+  const [lookupCode, setLookupCode] = useState('');
+  const lookupQuery = useQuery({ queryKey: ['merchant-booking-lookup', businessId, lookupCode], queryFn: () => merchantLookupBooking(lookupCode), enabled: Boolean(lookupCode) });
+  const lookup = lookupQuery.data?.business_id === businessId ? lookupQuery.data : null;
   const [lookupState, setLookupState] = useState<'idle' | 'pending' | 'missing' | 'error'>('idle');
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [scanOpen, setScanOpen] = useState(false);
 
+  /*
+   * The last 90 days, not every booking the venue ever had: the list was fetched whole on each
+   * visit and each window focus, and filtered in the browser. Older history is one tap away.
+   */
+  const [historyDays, setHistoryDays] = useState(90);
   const query = useQuery({
-    queryKey: ['merchant-bookings', businessId, 'all'],
-    queryFn: () => merchantBookings(businessId),
+    queryKey: ['merchant-bookings', businessId, 'all', historyDays],
+    queryFn: () => merchantBookings(businessId, dayBounds(serverNow(), -historyDays).from),
     refetchOnWindowFocus: true,
   });
 
@@ -44,7 +52,7 @@ function Bookings({ businessId }: { businessId: string }) {
     if (tab === 'upcoming') return start >= Date.parse(day.until);
     return start < Date.parse(day.from);
   });
-  const unresolved = all.filter((booking) => booking.unresolved);
+  const unresolved = all.filter((booking) => booking.status === 'confirmed' && Date.parse(booking.resolution_deadline) <= Date.parse(now));
 
   // Arriving from a scanned voucher: look the code up straight away instead of making the
   // merchant press a button they never chose to see.
@@ -61,11 +69,13 @@ function Bookings({ businessId }: { businessId: string }) {
     setLookupState('pending');
     setLookupError(null);
     try {
-      const found = await merchantLookupBooking(searchFor);
-      setLookup(found);
+      setLookupCode('');
+      const found = await queryClient.fetchQuery({ queryKey: ['merchant-booking-lookup', businessId, searchFor], queryFn: () => merchantLookupBooking(searchFor), staleTime: 0 });
+      setLookupCode(searchFor);
+
       setLookupState(found ? 'idle' : 'missing');
     } catch (error) {
-      setLookupError(errorMessage(error));
+      setLookupError(errorMessage(error, 'merchant'));
       setLookupState('error');
     }
   }
@@ -128,8 +138,7 @@ function Bookings({ businessId }: { businessId: string }) {
 
       {unresolved.length > 0 ? (
         <Banner tone="warning">
-          {unresolved.length} rezervací čeká na vyřízení déle než 24 hodin. Dokud je nevyřídíte, nepočítají se do
-          statistik docházky.
+          {unresolved.length} rezervací se automaticky dokončuje. Nemusíte je ručně potvrzovat.
         </Banner>
       ) : null}
 
@@ -157,6 +166,11 @@ function Bookings({ businessId }: { businessId: string }) {
           </li>
         ))}
       </ul>
+      {tab === 'history' && query.isSuccess && historyDays < 730 ? (
+        <Button variant="secondary" className="self-center" loading={query.isFetching} onClick={() => setHistoryDays((days) => days * 4)}>
+          Načíst starší rezervace
+        </Button>
+      ) : null}
     </div>
   );
 }
@@ -179,7 +193,11 @@ function BookingRow({
           {clockTime(booking.end_at_snapshot)}
         </p>
         <p className="text-base font-bold text-ink">{booking.service_name_snapshot}</p>
-        <p className="text-sm text-muted">{booking.customer_label} · {money(booking.price_cents)}</p>
+        {/* The merchant's own amount — their price, fixed when the customer booked. What the
+            customer paid includes FLEK's fee and is not the merchant's number. */}
+        <p className="text-sm text-muted">
+          {booking.customer_label} · Vy dostanete <span className="tnum font-bold text-ink">{money(booking.merchant_payout_cents)}</span>
+        </p>
         <div className="mt-2 flex flex-wrap gap-1.5">
           <StatusBadge status={booking.status} />
           {booking.payment_status ? (

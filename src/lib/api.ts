@@ -121,6 +121,14 @@ export async function confirmDemoPayment(paymentId: string): Promise<Payment> {
   return await result<Payment>(supabase.rpc('demo_confirm_payment', { p_payment_id: paymentId }));
 }
 
+/**
+ * The payment went through but the booking did not. Returns the money at once instead of
+ * leaving it "paid" with nothing behind it; the scheduled sweep is only the safety net.
+ */
+export async function releaseUnbookedPayment(paymentId: string): Promise<Payment> {
+  return await result<Payment>(supabase.rpc('release_unbooked_payment', { p_payment_id: paymentId }));
+}
+
 export async function createBooking(
   offerId: string,
   paymentId: string,
@@ -252,19 +260,23 @@ export async function saveService(
   );
 }
 
-export async function publishOffer(input: {
+/**
+ * Publishes a FLEK. The merchant sends only what they want to receive; the server computes
+ * the service fee and the customer price, and no fee can be sent from here at all.
+ */
+export async function publishFlek(input: {
   service_id: string;
   start_at: string;
-  deal_price_cents: number;
+  merchant_price_cents: number;
   capacity_total: number;
   booking_cutoff_at: string | null;
   confirm_overlap?: boolean;
 }) {
   return await result(
-    supabase.rpc('publish_offer', {
+    supabase.rpc('publish_flek', {
       p_service_id: input.service_id,
       p_start_at: input.start_at,
-      p_deal_price_cents: input.deal_price_cents,
+      p_merchant_price_cents: input.merchant_price_cents,
       p_capacity_total: input.capacity_total,
       p_booking_cutoff_at: input.booking_cutoff_at,
       p_confirm_overlap: input.confirm_overlap ?? false,

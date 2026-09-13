@@ -5,6 +5,7 @@ import { errorMessage } from '../../lib/errors';
 import { Banner, Button, Field, Input, Segmented, Select, Textarea } from '../../components/ui';
 import { MerchantShell } from './MerchantShell';
 import { AddressField } from './AddressField';
+import { MoneyExplainer } from './MoneyExplainer';
 import { LazyMap } from '../offers/LazyMap';
 import { useRouter } from '../../app/router';
 import { DEFAULT_POINT } from '../../lib/geo';
@@ -29,7 +30,7 @@ type Values = {
 /**
  * Everything an invoice or a payout needs, and nothing the customer sees. None of it existed
  * before — no IČO, no DIČ, no account number, no contact person, no record of anyone having
- * accepted terms — while FLEK takes a commission from every booking.
+ * accepted terms — while FLEK collects every customer payment and pays the merchant out.
  */
 type Billing = {
   legal_name: string;
@@ -176,7 +177,7 @@ function BusinessForm({ business }: { business?: Business }) {
     },
     onError: (error) => {
       setSaved(false);
-      setFailure(errorMessage(error));
+      setFailure(errorMessage(error, 'merchant'));
     },
   });
 
@@ -208,9 +209,15 @@ function BusinessForm({ business }: { business?: Business }) {
         {business ? 'Provozovna' : 'Registrace provozovny'}
       </h1>
       {!business ? (
-        <p className="text-sm text-muted">
-          Po odeslání provozovnu zkontrolujeme. Ozveme se do 24 hodin, pak můžete zveřejňovat volné termíny.
-        </p>
+        <>
+          {/* No e-mail goes out on approval — the app has no mail provider — so the promise is
+              where the merchant will see it, not that someone will get in touch. */}
+          <p className="text-sm text-muted">
+            Po odeslání provozovnu zkontrolujeme. Schválení obvykle trvá do 24 hodin a uvidíte ho tady po přihlášení.
+            Mezitím si můžete připravit služby.
+          </p>
+          <MoneyExplainer />
+        </>
       ) : null}
 
       <Field id="b-name" label="Název provozovny" error={attempted ? errors['b-name'] : undefined}>
@@ -382,9 +389,8 @@ function BusinessForm({ business }: { business?: Business }) {
               className="mt-0.5 size-5 shrink-0 accent-[var(--color-accent)]"
             />
             <span>
-              Souhlasím s obchodními podmínkami FLEKu. Z každé rezervace si FLEK bere provizi{' '}
-              <span className="tnum font-bold">{Math.round((business?.commission_rate ?? 0.15) * 100)} %</span> z ceny,
-              kterou zákazník zaplatí. Zbytek vám vyplatíme.
+              Souhlasím s obchodními podmínkami FLEKu. Za každou uskutečněnou rezervaci dostanu celou částku,
+              kterou si u nabídky nastavím. Servisní poplatek FLEK platí zákazník navíc.
             </span>
           </label>
           {attempted && errors['b-terms'] ? (

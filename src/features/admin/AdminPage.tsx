@@ -439,10 +439,33 @@ function MetricsBody({ data }: { data: NonNullable<Awaited<ReturnType<typeof adm
         />
         <Metric label="Opakující se zákazníci" value={`${data.repeat_customers}/${data.customers}`} />
         <Metric label="Míra dostavení" value={`${showUp} %`} />
-        <Metric label="Nevyřízené" value={data.unresolved} />
-        <Metric label="Realizovaná hodnota" value={money(data.realized_cents)} />
-        <Metric label="Odhad provize" value={money(Math.round(data.commission_cents / 100) * 100)} />
+        <Metric label="Čeká na automatické dokončení" value={data.unresolved} />
+        {/* Three amounts that must never be read as one another: what customers paid,
+            what merchants are owed (their own prices) and what FLEK earned (service fees). */}
+        <Metric label="Zaplatili zákazníci" value={money(data.realized_cents)} />
+        <Metric label="Výplaty podnikům" value={money(data.merchant_payout_cents)} />
+        <Metric label="Výnos FLEK (poplatky)" value={money(data.service_fee_cents)} />
       </dl>
+
+      <section className="rounded-2xl bg-card shadow-card p-4">
+        <h2 className="text-base font-bold text-ink">Cesta podniku</h2>
+        <p className="mt-1 text-sm text-muted">Kde noví partneři končí, než mají prvního zákazníka.</p>
+        <ol className="tnum mt-3 flex flex-col gap-1 text-sm">
+          {[
+            ['Založená provozovna', data.merchant_funnel.business_created],
+            ['Schválená', data.merchant_funnel.business_approved],
+            ['Má službu', data.merchant_funnel.with_service],
+            ['Vystavila FLEK', data.merchant_funnel.with_offer],
+            ['Má rezervaci', data.merchant_funnel.with_booking],
+            ['Má dokončenou rezervaci', data.merchant_funnel.with_completed_booking],
+          ].map(([label, value]) => (
+            <li key={label} className="flex justify-between gap-3">
+              <span>{label}</span>
+              <span className="font-bold text-ink">{value}</span>
+            </li>
+          ))}
+        </ol>
+      </section>
 
       <section className="rounded-2xl bg-card shadow-card p-4">
         <h2 className="text-base font-bold text-ink">Naplněnost podle kategorie</h2>

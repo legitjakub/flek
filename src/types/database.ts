@@ -63,6 +63,9 @@ export type Service = {
   image_url: string | null;
   /** Prepared activity used to keep the photo gallery relevant; null for a custom service. */
   template_slug: string | null;
+  /** What the merchant asked for last time on this service — prefills the next FLEK. */
+  default_merchant_price_cents: number | null;
+  default_capacity: number | null;
   is_active: boolean;
   created_at: string;
 };
@@ -103,6 +106,10 @@ export type SearchRow = {
 };
 
 export type OfferDetail = SearchRow & {
+  /** The split behind deal_price_cents, which is always the all-in customer price. */
+  merchant_price_cents: number;
+  service_fee_cents: number;
+  fee_policy_version: number;
   status: OfferStatus;
   cancellation_window_minutes: number;
   business_description: string;
@@ -150,6 +157,11 @@ export type MerchantBooking = Omit<CustomerBooking, 'business_phone' | 'can_canc
   can_resolve: boolean;
   unresolved: boolean;
   server_now: string;
+  /** What the merchant is paid for this booking, snapshot at booking time. */
+  merchant_payout_cents: number;
+  service_fee_cents: number;
+  /** "Nedorazil" can be marked until then; after it the booking completes on its own. */
+  resolution_deadline: string;
 };
 
 export type MerchantBookingDetail = MerchantBooking & {
@@ -159,6 +171,7 @@ export type MerchantBookingDetail = MerchantBooking & {
 };
 
 export type MerchantOffer = {
+  has_bookings: boolean;
   id: string;
   business_id: string;
   service_id: string;
@@ -168,7 +181,12 @@ export type MerchantOffer = {
   end_at: string;
   booking_cutoff_at: string;
   original_price_cents: number;
+  /** The all-in customer price. */
   deal_price_cents: number;
+  /** What the merchant receives per booked seat. */
+  merchant_price_cents: number;
+  service_fee_cents: number;
+  fee_policy_version: number;
   capacity_total: number;
   capacity_remaining: number;
   status: OfferStatus;
@@ -180,15 +198,21 @@ export type MerchantOffer = {
   server_now: string;
 };
 
+/** Keys exactly as merchant_metrics() returns them. */
 export type MerchantMetrics = {
   published_offers: number;
   published_capacity: number;
   booked_capacity: number;
-  bookings: number;
   completed: number;
-  no_show: number;
+  no_shows: number;
+  cancelled: number;
   unresolved: number;
+  /** Customer-paid value of completed bookings — not what the merchant receives. */
   recovered_cents: number;
+  /** What the merchant earned this month: their own price, for completed and no-show bookings. */
+  earned_cents: number;
+  /** Merchant price of bookings still ahead. */
+  upcoming_payout_cents: number;
   active_offers: number;
   today_bookings: number;
   /** People following this venue. Counted from favorites — not a notification delivery. */
@@ -208,9 +232,21 @@ export type AdminMetrics = {
   completed: number;
   no_show: number;
   unresolved: number;
+  /** Customer price paid, completed and no-show bookings. */
   realized_cents: number;
-  commission_cents: number;
+  /** Paid out to merchants: their own prices. */
+  merchant_payout_cents: number;
+  /** FLEK's revenue: service fees. */
+  service_fee_cents: number;
   funnel: { offer_viewed: number; booking_started: number; booking_created: number };
+  merchant_funnel: {
+    business_created: number;
+    business_approved: number;
+    with_service: number;
+    with_offer: number;
+    with_booking: number;
+    with_completed_booking: number;
+  };
   failures: { code: string; count: number }[];
 };
 

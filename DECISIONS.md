@@ -39,7 +39,7 @@ Jeden řádek na rozhodnutí, chronologicky. Kde bylo zadání nejednoznačné, 
 - Platí se předem přes FLEK, ne na místě. Sedadlo se vydá až proti vypořádaným penězům: `create_booking` odmítne cokoli jiného než platbu ve stavu `paid` a částku porovná s cenou v nabídce, takže změna ceny mezi zaplacením a rezervací nemůže zákazníka přeplatit.
 - Poskytovatel platby je za tabulkou `payments`. Ukázka vypořádává přes `demo_confirm_payment`, skutečná brána bude tentýž řádek označovat z webhooku pod service role. Nic jiného ve schématu se tou výměnou nezmění.
 - Jedna vypořádaná platba koupí právě jedno sedadlo — hlídá to částečný unikátní index `bookings_one_per_payment`, ne aplikace.
-- Zrušení v bezplatném okně vrací celou částku. Storno po lhůtě je odmítnuté už dřív, takže „vrátit jen část" nemá kdy nastat. Výplaty podnikům a provize řeší pilot mimo aplikaci; Stripe Connect je mimo rozsah.
+- Zrušení v bezplatném okně vrací celou částku. Storno po lhůtě je odmítnuté už dřív, takže „vrátit jen část" nemá kdy nastat. Skutečné výplaty podnikům řeší pilot mimo aplikaci; Stripe Connect je mimo rozsah.
 - Ověřovacím artefaktem zůstává rezervační kód. QR je jen odkaz na partnerské vyhledání s předvyplněným kódem — partner tak ověřuje foťákem, ne přepisováním šesti znaků, a nepotřebuje k tomu žádnou čtečku v aplikaci.
 - Adresu provozovny hledá Photon nad OpenStreetMap: bez klíče a dost rychle na psaní. Souřadnice jsou důsledkem vybrané adresy, ne samostatné pole — obchodník nemá důvod vědět, co je zeměpisná šířka. Ruční úprava zůstává schovaná pro případ, kdy našeptávač mine.
 - Lhůta pro bezplatné zrušení patří provozovně, ne konstantě v kódu. Padelový kurt a tříhodinová procedura nenesou stejné riziko. Lhůta se navíc **snímkuje na rezervaci**: podnik, který si politiku později zpřísní, nesmí měnit podmínky, za kterých už někdo rezervoval.
@@ -69,3 +69,12 @@ Jeden řádek na rozhodnutí, chronologicky. Kde bylo zadání nejednoznačné, 
 - Délka služby se vybírá z přednastavených hodnot. Volné číselné pole zve k překlepu, na kterém záleží: „6" místo „60" zveřejní šestiminutovou masáž.
 - Činnost, ke které nemáme poctivou fotku, se v katalogu zobrazí jako „Bez fotky". Půjčit si obrázek něčeho jiného je horší než přiznat, že snímek nemáme.
 
+
+## Pilot v1 — 13. 9. 2026
+
+- Starou zobrazovanou 15% provizi nahrazuje poplatek placený zákazníkem: 5 %, min. 25 / max. 149 Kč. `deal_price_cents` je stále konečná zákaznická cena, `merchant_price_cents` částka podniku. U starých dat politika 0 nemění dohodnutou cenu.
+- Rezervace po zaplacení ukládá výplatu podniku, poplatek a verzi jako neměnný snímek. Stejná platba vrací stejný kód i při souběžných pokusech; kontrola musí proběhnout také po získání zámku profilu.
+- Při vytvoření rezervace je pořadí zámků profil → provozovna → nabídka → platba. Údržba vybírá zamčené platby přes SKIP LOCKED a existenci rezervace kontroluje samostatným dotazem až po zamčení. Vrácení platby nesmí použít zastaralý snímek dotazu, který čekal na jinou transakci.
+- Dokončení po 24 hodinách od konce řídí pg_cron, nikoli načtení stránky. Nedorazení lze označit pouze před koncem této lhůty; není důvodem k vrácení platby ani ke ztrátě výplaty podniku.
+- Realtime přenáší impuls k opětovnému načtení autorizovaného seznamu, nikoli důvěryhodný obsah banneru. Záložní dotaz běží každých 30 sekund. Stav upozornění se váže na uživatele i provozovnu a odhlášení jej vymaže.
+- Cenová validace probíhá před platbou i při serverové rezervaci. Změní-li se částka od otevření potvrzení, zákazník ji musí nejdřív znovu vidět. Blízký termín ukazuje 10minutovou možnost storna od rezervace místo už uplynulé hodiny.
