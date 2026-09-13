@@ -1,3 +1,4 @@
+import { ChevronDown } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { merchantBookings, merchantLookupBooking } from '../../lib/api';
@@ -155,17 +156,37 @@ function Bookings({ businessId }: { businessId: string }) {
 
       {query.isPending ? <LoadingList /> : null}
       {query.isError ? <ErrorState error={query.error} onRetry={() => query.refetch()} /> : null}
-      {query.isSuccess && rows.length === 0 ? (
-        <EmptyState title={tab === 'today' ? 'Dnes zatím nemáte žádnou rezervaci.' : 'Tady zatím nic není.'} />
+      {query.isSuccess && (tab === 'history' ? rows.length === 0 : !rows.some((booking) => !isCancelled(booking))) ? (
+        <EmptyState title={tab === 'today' ? 'Dnes zatím nemáte žádnou platnou rezervaci.' : tab === 'upcoming' ? 'Žádná nadcházející rezervace.' : 'Tady zatím nic není.'} />
       ) : null}
 
+      {/*
+        Live bookings first. A customer cancellation used to sit in the same list as the
+        people actually coming in, so on a busy day the next arrival was buried among rows
+        that need nothing from the merchant. History keeps every row in order.
+      */}
       <ul className="flex flex-col gap-3">
-        {rows.map((booking) => (
+        {(tab === 'history' ? rows : rows.filter((booking) => !isCancelled(booking))).map((booking) => (
           <li key={booking.id} className="rounded-2xl bg-card shadow-card p-4">
             <BookingRow booking={booking} now={now} />
           </li>
         ))}
       </ul>
+      {tab !== 'history' && rows.some(isCancelled) ? (
+        <details className="group rounded-2xl border border-line bg-card px-4">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between text-sm font-bold text-muted">
+            Zrušené ({rows.filter(isCancelled).length})
+            <ChevronDown size={16} aria-hidden="true" className="transition-transform group-open:rotate-180" />
+          </summary>
+          <ul className="flex flex-col gap-3 border-t border-line py-3">
+            {rows.filter(isCancelled).map((booking) => (
+              <li key={booking.id}>
+                <BookingRow booking={booking} now={now} />
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
       {tab === 'history' && query.isSuccess && historyDays < 730 ? (
         <Button variant="secondary" className="self-center" loading={query.isFetching} onClick={() => setHistoryDays((days) => days * 4)}>
           Načíst starší rezervace
@@ -173,6 +194,10 @@ function Bookings({ businessId }: { businessId: string }) {
       ) : null}
     </div>
   );
+}
+
+function isCancelled(booking: MerchantBooking): boolean {
+  return booking.status === 'cancelled_by_customer' || booking.status === 'cancelled_by_merchant';
 }
 
 function BookingRow({
@@ -195,8 +220,17 @@ function BookingRow({
         <p className="text-base font-bold text-ink">{booking.service_name_snapshot}</p>
         {/* The merchant's own amount — their price, fixed when the customer booked. What the
             customer paid includes FLEK's fee and is not the merchant's number. */}
+        {/* A cancelled booking was refunded in full, so it pays the merchant nothing — showing
+            "Vy dostanete 365 Kč" on it promised money that will never arrive. */}
         <p className="text-sm text-muted">
-          {booking.customer_label} · Vy dostanete <span className="tnum font-bold text-ink">{money(booking.merchant_payout_cents)}</span>
+          {booking.customer_label} ·{' '}
+          {booking.status === 'cancelled_by_customer' || booking.status === 'cancelled_by_merchant' ? (
+            'bez výplaty'
+          ) : (
+            <>
+              Vy dostanete <span className="tnum font-bold text-ink">{money(booking.merchant_payout_cents)}</span>
+            </>
+          )}
         </p>
         <div className="mt-2 flex flex-wrap gap-1.5">
           <StatusBadge status={booking.status} />

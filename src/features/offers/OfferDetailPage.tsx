@@ -178,8 +178,16 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             <ShareOfferButton offer={offer} now={now} compact />
           </div>
 
+          {/* The venue leads to the venue: its page lists every other free slot there. Every
+              comparable booking app makes this the next tap, and FLEK had the page with nothing
+              linking to it from here. */}
           <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-bold [overflow-wrap:anywhere]">
-            {offer.business_name}
+            <Link
+              to={`/podnik/${offer.business_id}?from=${encodeURIComponent(`/nabidka/${offer.id}`)}`}
+              className="inline-flex min-h-8 items-center underline decoration-line underline-offset-4 hover:text-accent hover:decoration-accent"
+            >
+              {offer.business_name}
+            </Link>
             <GooglePlaceRating
               businessId={offer.business_id}
               placeId={offer.google_place_id}
@@ -316,7 +324,9 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
               </span>
               {offer.bookable ? (
                 <>
-                  <span aria-hidden="true">·</span>
+                  {/* Hidden on a phone, where the two facts wrap onto separate lines and the dot
+                      was left hanging at the end of the first one. */}
+                  <span aria-hidden="true" className="hidden sm:inline">·</span>
                   <span className="inline-flex items-center gap-1.5 font-bold text-positive">
                     <Check size={15} aria-hidden="true" />
                     Zrušení zdarma {cancellationCopy}
@@ -350,7 +360,15 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           </div>
           <h2 id="kde-to-je" className="scroll-mt-24 text-lg font-extrabold">Kde to je</h2>
           <LazyMap className="mt-4 h-56 w-full overflow-hidden rounded-2xl border border-line" center={{ lat: offer.latitude, lng: offer.longitude }} zoom={14} interactive={false} markers={[{ id: offer.id, lat: offer.latitude, lng: offer.longitude, label: offer.business_name }]} ariaLabel={`Mapa: ${offer.business_name}, ${offer.address_line}`} />
-          <a className="mt-2 inline-flex min-h-11 items-center gap-2 text-base font-bold text-accent" href={navigationHref(offer)} target="_blank" rel="noreferrer"><MapPin size={17} aria-hidden="true" />Navigovat</a>
+          <div className="mt-2 flex flex-wrap gap-x-6">
+            <a className="inline-flex min-h-11 items-center gap-2 text-base font-bold text-accent" href={navigationHref(offer)} target="_blank" rel="noreferrer"><MapPin size={17} aria-hidden="true" />Navigovat</a>
+            <Link
+              to={`/podnik/${offer.business_id}?from=${encodeURIComponent(`/nabidka/${offer.id}`)}`}
+              className="inline-flex min-h-11 items-center text-base font-bold text-accent"
+            >
+              Další volné termíny v podniku
+            </Link>
+          </div>
           {/* Terms for a booking that can still be made. On a slot nobody can book any more
               they described a deadline that cannot be used — noise at best, misleading at worst. */}
           {offer.bookable ? (

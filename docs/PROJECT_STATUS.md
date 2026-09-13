@@ -99,6 +99,7 @@ Podrobné důkazy jsou v [VERIFICATION.md](../VERIFICATION.md), omezení v [LIMI
 
 | Datum | Změna | Stav |
 | --- | --- | --- |
+| 13. 9. 2026 | Audit rolí: zrušené rezervace u podniku bez „Vy dostanete“ a sbalené pod platnými, stav nabídky jako barevný štítek, detail nabídky vede na další termíny v podniku, jasnější prázdné stavy a větší dotykové plochy; migrace sladěné s hostovanou historií | ověřeno v prohlížeči, 77 testů, build |
 | 13. 9. 2026 | Dokončení Claudeova pilotu: cenový model, bezpečné opakování a vratky, automatické dokončení a upozornění podniku | implementováno; databáze a 100 API kontrol ověřeny |
 | 11. 9. 2026 | Partner, zákazník a admin zobrazují odděleně cenu zákazníka, výplatu podniku a výnos FLEK; přidané vysvětlení peněz při registraci podniku | implementováno, build prochází |
 | 9.–10. 9. 2026 | Intro pro první anonymní návštěvu, snap carousel na mapě a ve výběru fotek, galerie podle konkrétní aktivity, Google Places hodnocení a ilustrační fotografie | implementováno v repozitáři; akceptační průchod je stále ruční |

@@ -83,7 +83,7 @@ export function MyBookingsPage() {
         {query.isError ? <ErrorState error={query.error} onRetry={() => query.refetch()} /> : null}
         {query.isSuccess && rows.length === 0 ? (
           <EmptyState
-            title={tab === 'upcoming' ? 'Zatím nemáš žádnou rezervaci.' : 'Historie je zatím prázdná.'}
+            title={tab === 'upcoming' ? 'Nemáš žádnou nadcházející rezervaci.' : 'Historie je zatím prázdná.'}
             body="Najdi si volný termín na dnes."
             action={
               <Link

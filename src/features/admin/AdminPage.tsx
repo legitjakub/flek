@@ -266,7 +266,14 @@ function GooglePlaceConnector({ business }: { business: AdminBusiness }) {
             />
           </Field>
         </div>
-        <Button type="submit" variant="secondary" loading={save.isPending}>
+        {/* "Odebrat" on an empty field with nothing saved removed nothing — on every venue in
+            the list, since none has a Place ID yet. It only appears when there is one to drop. */}
+        <Button
+          type="submit"
+          variant="secondary"
+          loading={save.isPending}
+          disabled={!placeId.trim() && !business.google_place_id}
+        >
           {placeId.trim() ? 'Propojit' : 'Odebrat'}
         </Button>
       </div>
@@ -274,7 +281,7 @@ function GooglePlaceConnector({ business }: { business: AdminBusiness }) {
         href="https://developers.google.com/maps/documentation/places/web-service/place-id"
         target="_blank"
         rel="noreferrer"
-        className="mt-2 inline-flex min-h-8 items-center text-xs font-bold text-accent underline underline-offset-2"
+        className="mt-2 inline-flex min-h-11 items-center text-sm font-bold text-accent underline underline-offset-2"
       >
         Jak najít Place ID
       </a>

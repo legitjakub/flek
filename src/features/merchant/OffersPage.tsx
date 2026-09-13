@@ -11,6 +11,7 @@ import { Plus } from 'lucide-react';
 import { CreateOfferSheet, cutoffFor, type OfferDraft } from './CreateOfferSheet';
 import { localInput, localToInstant } from '../../lib/time';
 import { useServices } from './useBusiness';
+import { StatusBadge } from '../../components/StatusBadge';
 import { discountPct, priceProblem, quote } from '../../lib/pricing';
 import type { MerchantOffer } from '../../types/database';
 
@@ -117,13 +118,22 @@ function Offers({ businessId, approved }: { businessId: string; approved: boolea
                   {' · '}ušetří {discountPct(offer.original_price_cents, offer.deal_price_cents)} %
                 </p>
               </div>
-              <div className="text-right">
+              {/*
+                One row, and a badge in the shared colours. On a phone this column wrapped under
+                the price and its right-aligned "Aktivní" drifted to a stray indent; and
+                "Neaktivní" did not say why — sold out and closed for booking look the same.
+              */}
+              <div className="flex items-center gap-2">
                 <p className="tnum text-sm font-bold text-ink">
                   {offer.booked}/{offer.capacity_total} obsazeno
                 </p>
-                <p className="text-xs text-muted">
-                  {offer.status === 'cancelled' ? 'Zrušeno' : offer.bookable ? 'Aktivní' : 'Neaktivní'}
-                </p>
+                {offer.status === 'cancelled' ? (
+                  <StatusBadge status="cancelled" />
+                ) : offer.bookable ? (
+                  <StatusBadge status="published" label="Aktivní" />
+                ) : (
+                  <StatusBadge status="draft" label={offer.capacity_remaining === 0 ? 'Vyprodáno' : 'Uzavřeno'} />
+                )}
               </div>
             </div>
 

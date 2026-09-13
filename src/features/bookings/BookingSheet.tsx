@@ -177,11 +177,8 @@ export function BookingSheet({
           </p>
         ) : null}
       </div>
-      {Date.parse(cancellationDeadline(offer.start_at, offer.cancellation_window_minutes)) <= Date.parse(now) ? (
-        <p className="mt-2 text-sm text-muted">
-          Termín je blízko, takže na bezplatné zrušení máš 10 minut od rezervace.
-        </p>
-      ) : null}
+      {/* The "Zrušení zdarma" row above already says "10 minut od rezervace" for a slot this
+          close; repeating it as a paragraph was the third notice stacked in a short sheet. */}
 
       {needsPhone ? (
         <form className="mt-5 flex flex-col gap-3" noValidate>

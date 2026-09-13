@@ -62,7 +62,7 @@ export function DiscoveryPage() {
             {sectionIndex === 0 ? (
               <Link
                 to={`/mapa${search.size ? `?${search}` : ''}`}
-                className="inline-flex shrink-0 items-center gap-1.5 text-sm font-bold text-accent"
+                className="-my-3 inline-flex min-h-11 shrink-0 items-center gap-1.5 text-sm font-bold text-accent"
               >
                 <Map size={17} aria-hidden="true" />
                 Na mapě
