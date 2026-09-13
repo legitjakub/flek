@@ -130,16 +130,9 @@ Aktuální stav ověření a to, co ještě není hotové, je v [VERIFICATION.md
 
 ### Živý přehled pro tým a Notion
 
-Souhrnný stav produktu, rolí, doménových pravidel, posledních migrací a otevřených bodů je v [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md). Tento soubor je kanonický export z repozitáře. Pokud chcete jeho obsah zobrazit v Notionu, vytvořte interní Notion integration, sdílejte s ní vyhrazenou stránku a spusťte:
+Souhrnný stav produktu, rolí, doménových pravidel, posledních migrací a otevřených bodů je v [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md). Přehled pro Notion (todolist, fáze, jak to funguje, kde co běží) je v [docs/NOTION.md](docs/NOTION.md); v Notionu je jako stránka „FLEK — přehled projektu“ ve workspace Jacob's Notion.
 
-```sh
-NOTION_TOKEN=... NOTION_PAGE_ID=... NOTION_DRY_RUN=1 node scripts/sync-notion.mjs
-NOTION_TOKEN=... NOTION_PAGE_ID=... NOTION_REPLACE=1 node scripts/sync-notion.mjs
-```
-
-Skript archivuje pouze bloky cílové stránky a nahraje aktuální Markdown; token se čte jen z prostředí a do repozitáře se neukládá. Pro pravidelnou synchronizaci ho lze spouštět v CI po změně `docs/PROJECT_STATUS.md`.
-
-V1 obsahuje ukázkovou platbu předem a vratky, in-app upozornění podniku, oblíbené a hodnocení z Google. Skutečná platební brána, automatické výplaty, účetnictví, předplatné, utratitelný kredit, chat, push/SMS a integrace na rezervační systémy zůstávají mimo pilot.
+Automatická synchronizace přes Notion API je volitelná: vytvořte interní integraci, připojte ji ke stránce, zapište `NOTION_TOKEN` a `NOTION_PAGE_ID` do `.env.local` a spusťte `npm run notion` (nebo nejdřív `NOTION_DRY_RUN=1 npm run notion`). Skript archivuje veškerý obsah cílové stránky.
 
 ### Cena a rezervace v pilotu
 
