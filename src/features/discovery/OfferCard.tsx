@@ -8,7 +8,7 @@ import { relativeTime } from '../../lib/clock';
 import { GooglePlaceRating } from '../ratings/GooglePlaceRating';
 import type { SearchRow } from '../../types/database';
 import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
-import { serviceIllustration } from '../../lib/serviceIllustrations';
+import { SERVICE_PLACEHOLDER, serviceIllustration } from '../../lib/serviceIllustrations';
 
 /**
  * The card the whole product is read through. Time leads, price closes, the discount only
@@ -34,8 +34,9 @@ export function OfferCard({
   const { path, search } = useRouter();
   const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
   const origin = `${path}${search.size ? `?${search}` : ''}`;
-  const photo = serviceIllustration(offer.service_name, offer.image_url, offer.cover_url);
-  const showPhoto = Boolean(photo) && photo !== failedPhoto && !compact;
+  const source = serviceIllustration(offer.service_name, offer.image_url, offer.cover_url);
+  const photo = source === failedPhoto ? SERVICE_PLACEHOLDER : source;
+  const showPhoto = Boolean(photo) && !compact;
   const minutesAway = Math.round((Date.parse(offer.start_at) - Date.parse(now)) / 60000);
   const startingSoon = minutesAway > 0 && minutesAway <= 120;
   const lastSeat = offer.capacity_remaining === 1 && offer.capacity_total > 1;
@@ -51,7 +52,7 @@ export function OfferCard({
           {showPhoto ? (
             <img
               src={photo as string}
-              onError={() => setFailedPhoto(photo as string)}
+              onError={() => setFailedPhoto(source)}
               alt=""
               loading={priority ? 'eager' : 'lazy'}
               fetchPriority={priority ? 'high' : 'auto'}
@@ -65,7 +66,7 @@ export function OfferCard({
             <div className="aspect-[8/5] w-full bg-accent-soft" aria-hidden="true" />
           )}
 
-          {showPhoto ? <IllustrativePhotoLabel className="top-3 right-3" /> : null}
+          {showPhoto && photo !== SERVICE_PLACEHOLDER ? <IllustrativePhotoLabel className="top-3 right-3" /> : null}
 
           {/*
             The discount belongs on the picture, in the corner the identity scrim leaves free.

@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="FLEK">
   <!-- The mark is a map pin with a clock in it: a place, and a time at it. -->
-  <rect width="64" height="64" rx="15" fill="#22282b"/>
-  <path d="M32 53.4s17-17.2 17-25.4a17 17 0 1 0-34 0c0 8.2 17 25.4 17 25.4z" fill="#8cc63f"/>
+  <rect width="64" height="64" rx="15" fill="#11130e"/>
+  <path d="M32 53.4s17-17.2 17-25.4a17 17 0 1 0-34 0c0 8.2 17 25.4 17 25.4z" fill="#7a8450"/>
   <circle cx="32" cy="28" r="10.8" fill="#ffffff"/>
-  <path d="M32 20.6v7.4l5.3 3" fill="none" stroke="#22282b" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M32 20.6v7.4l5.3 3" fill="none" stroke="#11130e" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

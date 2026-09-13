@@ -1,3 +1,4 @@
+export const SERVICE_PLACEHOLDER = '/images/flek-placeholder.svg';
 const PREPARED_ILLUSTRATIONS: Array<[needle: string, imageUrl: string]> = [
   ['padel', '/images/services/padel-prague.jpg'],
   ['tenis', '/images/services/tennis-prague.jpg'],
@@ -18,18 +19,19 @@ function searchable(value: string): string {
  * Which picture a service shows, in order of how specific it is to that service:
  *   1. the photo the merchant chose for this service,
  *   2. the prepared illustration of the activity, matched by name,
- *   3. the venue's general cover.
+ *   3. FLEK's universal abstract placeholder.
  *
  * The illustration used to come first, matched on a fragment of the name, so a partner's own
  * choice never showed for anything called "…tenis…" and a massage named "Tenisový loket" got
- * a tennis court. It still beats the venue cover, which is not a picture of this service.
+ * a tennis court. A general venue cover is intentionally not an automatic fallback: it made
+ * unrelated services look like the same activity.
  */
 export function serviceIllustration(
   serviceName: string,
   serviceImage?: string | null,
-  venueCover?: string | null,
+  _venueCover?: string | null,
 ): string | null {
   if (serviceImage) return serviceImage;
   const name = searchable(serviceName);
-  return PREPARED_ILLUSTRATIONS.find(([needle]) => name.includes(needle))?.[1] ?? venueCover ?? null;
+  return PREPARED_ILLUSTRATIONS.find(([needle]) => name.includes(needle))?.[1] ?? SERVICE_PLACEHOLDER;
 }

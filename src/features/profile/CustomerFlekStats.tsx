@@ -40,7 +40,7 @@ export function CustomerFlekStats({ userId }: { userId: string }) {
         <p className="text-sm font-bold text-brand">Tvůj FLEK</p>
         <h2 className="mt-2 max-w-xs text-xl leading-snug font-extrabold tracking-tight">První FLEK na tebe čeká</h2>
         <p className="mt-2 max-w-xs text-base text-card/75">Chyť volný FLEK se slevou a tady uvidíš, kolik ušetříš.</p>
-        <Link to="/" className="relative mt-5 inline-flex min-h-11 items-center rounded-full bg-brand px-5 text-sm font-bold text-ink hover:bg-[#9dd052]">
+        <Link to="/" className="relative mt-5 inline-flex min-h-11 items-center rounded-full bg-brand px-5 text-sm font-bold text-ink hover:bg-sage">
           Objevit FLEKy
         </Link>
       </PromoCard>

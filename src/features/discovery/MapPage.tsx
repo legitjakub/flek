@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Crosshair, List } from 'lucide-react';
 import { Link, useRouter } from '../../app/router';
@@ -35,7 +35,7 @@ const markerTime = new Intl.DateTimeFormat('cs-CZ', {
 const PHONE_FRAME = { top: 170, right: 40, bottom: 120, left: 40 };
 const WIDE_FRAME = { top: 150, right: 72, bottom: 64, left: 72 };
 /* What the preview card and the controls cover while a pin is open, so the pin stays visible. */
-const PHONE_FOCUS = { top: 150, bottom: 450 };
+const PHONE_FOCUS = { top: 150, bottom: 250 };
 const WIDE_FOCUS = { top: 150, bottom: 400 };
 
 /**
@@ -44,6 +44,16 @@ const WIDE_FOCUS = { top: 150, bottom: 400 };
  * stays for wide screens, where there is room for both.
  */
 export function MapPage() {
+  const previewRef = useRef<HTMLDivElement>(null);
+  const [previewHeight, setPreviewHeight] = useState(132);
+  useEffect(() => {
+    const element = previewRef.current;
+    if (!element) return;
+    const observer = new ResizeObserver(() => setPreviewHeight(element.getBoundingClientRect().height));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
   const { point, setPoint, filters, setFilters } = useDiscoveryState();
   const { search } = useRouter();
   const [openGroup, setOpenGroup] = useState<string[]>([]);
@@ -146,7 +156,7 @@ export function MapPage() {
           fitToMarkers
           framePadding={phone ? PHONE_FRAME : WIDE_FRAME}
           focusId={openGroup.length === 1 ? openGroup[0] : undefined}
-          focusArea={phone ? PHONE_FOCUS : WIDE_FOCUS}
+          focusArea={phone ? { ...PHONE_FOCUS, bottom: previewHeight + 110 } : WIDE_FOCUS}
           onSelect={(id) => setOpenGroup([id])}
           onSelectGroup={setOpenGroup}
           ariaLabel="Mapa volných FLEKů. Fotka s cenou ukáže náhled, číslo přiblíží mapu."
@@ -196,7 +206,7 @@ export function MapPage() {
         </div>
 
         {/* Status and preview sit over the bottom, clear of the floating tab bar on a phone. */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-20 flex flex-col items-center md:bottom-4 md:items-start">
+        <div ref={previewRef} className="pointer-events-none absolute inset-x-0 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-20 flex flex-col items-center md:bottom-4 md:items-start">
           {discovery.isPending ? (
             <p role="status" className="pointer-events-auto mx-3 inline-flex min-h-11 items-center gap-2 rounded-full bg-card px-4 text-sm font-bold text-ink shadow-card">
               <Spinner /> Hledám volné FLEKy…

@@ -36,6 +36,10 @@ export function ForgotPasswordForm({ formal, initialEmail, onBack }: { formal: b
       setFailure(formal ? 'Další e-mail teď nejde odeslat. Chvíli počkejte a zkuste to znovu.' : 'Další e-mail teď nejde odeslat. Chvíli počkej a zkus to znovu.');
       return;
     }
+    if (error) {
+      setFailure(formal ? 'E-mail se nepodařilo odeslat. Zkuste to prosím za chvíli znovu.' : 'E-mail se nepodařilo odeslat. Zkus to prosím za chvíli znovu.');
+      return;
+    }
     setSent(email);
   }
 
@@ -45,7 +49,7 @@ export function ForgotPasswordForm({ formal, initialEmail, onBack }: { formal: b
         <h2 className="text-lg font-extrabold">{formal ? 'Zkontrolujte e-mail' : 'Zkontroluj e-mail'}</h2>
         <p className="mt-2 text-base leading-relaxed text-muted">
           Pokud k adrese <strong className="text-ink">{sent}</strong> existuje účet, přijde na ni odkaz pro nastavení nového hesla.{' '}
-          {formal ? 'Otevřete ho ve stejném prohlížeči a mrkněte i do nevyžádané pošty.' : 'Otevři ho ve stejném prohlížeči a mrkni i do nevyžádané pošty.'}
+          {formal ? 'Otevřete odkaz a podívejte se i do nevyžádané pošty.' : 'Otevři odkaz a mrkni i do nevyžádané pošty.'}
         </p>
         <Button variant="secondary" className="mt-4" onClick={onBack}>Zpět na přihlášení</Button>
       </div>

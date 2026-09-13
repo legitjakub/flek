@@ -1,15 +1,12 @@
 import { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Clock3, Navigation, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Link } from '../../app/router';
-import { buttonClass, cx } from '../../components/ui';
-import { DiscountBadge, OriginalPrice } from '../../components/Price';
-import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
+import { cx } from '../../components/ui';
 import { useSnapCarousel } from '../../components/useSnapCarousel';
-import { distance, money } from '../../lib/format';
-import { navigationHref } from '../../lib/maps';
-import { serviceIllustration } from '../../lib/serviceIllustrations';
+import { money } from '../../lib/format';
+import { SERVICE_PLACEHOLDER, serviceIllustration } from '../../lib/serviceIllustrations';
 import { thumbnail } from '../../lib/thumbnail';
-import { clockTime, dayLabel, duration } from '../../lib/time';
+import { clockTime, dayLabel } from '../../lib/time';
 import type { SearchRow } from '../../types/database';
 
 /**
@@ -107,91 +104,20 @@ function PreviewCard({
   position: string | null;
 }) {
   const source = serviceIllustration(offer.service_name, offer.image_url, offer.cover_url);
-  const photo = thumbnail(source, 720, false);
   const [failed, setFailed] = useState(false);
-  const away = distance(offer.distance_m);
-  const place = [offer.business_name, offer.district, away].filter(Boolean).join(' · ');
-
+  const photo = failed ? SERVICE_PLACEHOLDER : thumbnail(source, 176);
   return (
-    <article className="overflow-hidden rounded-3xl bg-card shadow-lift">
-      <div className="relative h-28 bg-accent-soft sm:h-32 [@media(max-height:720px)]:h-20">
-        {photo && !failed ? (
-          <img src={photo} alt="" decoding="async" onError={() => setFailed(true)} className="size-full object-cover" />
-        ) : null}
-        <div className="absolute inset-0 bg-gradient-to-t from-ink/35 to-transparent" aria-hidden="true" />
-        {photo && !failed ? <IllustrativePhotoLabel className="bottom-2.5 right-3" /> : null}
-        <div className="absolute top-2.5 left-3 flex items-center gap-2">
-          <DiscountBadge pct={offer.discount_pct} className="shadow-card" />
-          {position ? (
-            <span className="tnum rounded-full bg-card/90 px-2 py-0.5 text-xs font-bold text-ink" aria-hidden="true">
-              {position}
-            </span>
-          ) : null}
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Zavřít náhled"
-          className="absolute top-1.5 right-1.5 grid size-11 place-items-center rounded-full"
-        >
-          <span className="grid size-8 place-items-center rounded-full bg-card/95 text-ink shadow-card">
-            <X size={17} aria-hidden="true" />
-          </span>
-        </button>
-      </div>
-
-      <div className="relative px-4 pb-4">
-        <VenueBadge name={offer.business_name} logo={offer.logo_url} />
-        <h3 className="mt-2 truncate text-lg leading-snug font-extrabold tracking-tight text-ink">{offer.service_name}</h3>
-        <p className="truncate text-sm text-muted">{place}</p>
-
-        <div className="mt-3 flex items-end justify-between gap-3">
-          <p className="tnum flex min-w-0 items-center gap-1.5 text-sm">
-            <Clock3 size={15} aria-hidden="true" className="shrink-0 text-accent" />
-            <span className="truncate">
-              <span className="font-bold text-ink">
-                {dayLabel(offer.start_at, now)} {clockTime(offer.start_at)}
-              </span>
-              <span className="text-muted"> · {duration(offer.start_at, offer.end_at)} min</span>
-            </span>
-          </p>
-          <p className="tnum flex shrink-0 items-baseline gap-2">
-            {offer.original_price_cents > offer.deal_price_cents ? (
-              <OriginalPrice cents={offer.original_price_cents} className="text-sm" />
-            ) : null}
-            <span className="text-xl font-extrabold text-ink">{money(offer.deal_price_cents)}</span>
-          </p>
-        </div>
-
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <a
-            href={navigationHref(offer)}
-            target="_blank"
-            rel="noreferrer"
-            className={buttonClass({ variant: 'soft', shape: 'pill' })}
-          >
-            <Navigation size={16} aria-hidden="true" />
-            Navigovat
-          </a>
-          <Link to={to} className={buttonClass({ shape: 'pill' })}>
-            Detail
-          </Link>
-        </div>
-      </div>
+    <article className="relative rounded-2xl bg-card shadow-lift">
+      <button type="button" onClick={onClose} aria-label="Zavřít náhled" className="absolute right-0 top-0 z-10 grid size-11 place-items-center rounded-full text-muted hover:bg-accent-soft"><X size={17} /></button>
+      <Link to={to} aria-label={`${offer.service_name} — zobrazit detail`} className="flex min-h-[132px] items-center gap-3 rounded-2xl p-3 pr-11 focus-visible:outline-2 focus-visible:outline-accent">
+        <img src={photo ?? SERVICE_PLACEHOLDER} onError={() => setFailed(true)} alt="" className="size-20 shrink-0 rounded-xl object-cover" />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-base font-extrabold">{offer.service_name}</span>
+          <span className="block truncate text-sm text-muted">{offer.business_name}</span>
+          <span className="mt-1 block text-sm">{dayLabel(offer.start_at, now)} · {clockTime(offer.start_at)}</span>
+          <span className="mt-1 flex items-baseline justify-between gap-2"><strong className="tnum text-lg">{money(offer.deal_price_cents)}</strong>{position ? <span className="text-xs text-muted">{position}</span> : null}</span>
+        </span>
+      </Link>
     </article>
-  );
-}
-
-/** The venue's logo, or its initial, sitting across the edge of the photo. */
-function VenueBadge({ name, logo }: { name: string; logo: string | null }) {
-  const [broken, setBroken] = useState(false);
-  const ring = 'relative -mt-7 size-14 rounded-full border-4 border-card shadow-card';
-  if (logo && !broken) {
-    return <img src={logo} alt="" onError={() => setBroken(true)} className={cx(ring, 'bg-card object-cover')} />;
-  }
-  return (
-    <span aria-hidden="true" className={cx(ring, 'grid place-items-center bg-brand text-xl font-extrabold text-ink')}>
-      {name.trim().charAt(0).toLocaleUpperCase('cs-CZ')}
-    </span>
   );
 }

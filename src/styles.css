@@ -10,38 +10,24 @@
      only for headlines and the wordmark — that is where the brand gets a voice. */
   --font-sans: 'Instrument Sans Variable', ui-sans-serif, system-ui, sans-serif;
 
-  /* Warm cream ground, charcoal ink, the logo's lime. Cream is not decoration: it lifts
-     the gap between page and card from 3.5 % to 6.7 % of luminance, which is what lets a
-     card stand on its own without a hairline border around it.
-     Every pair below was measured against WCAG AA before being written down. */
-  --color-surface: #faf7f2;
+  /* FLEK: olive identity, sage/celadon surfaces, walnut emphasis.
+     Dark olive is the accessible text/button counterpart to brand olive. */
+  --color-surface: #f7f8f3;
   --color-card: #ffffff;
-  --color-ink: #22282b;
-  /* Warm to match the ground; 6.9:1 on cream, 7.4:1 on a card. */
-  --color-muted: #5a554c;
-  /* Only a divider now, never an outline — hence far fewer of them. */
-  --color-line: #ece5da;
-
-  /* The logo's green. On white it measures 2.2:1, so it never carries text and never draws
-     a small icon — it is a FILL, with ink on top of it at 7.3:1. It stays rare on purpose:
-     the wordmark, the app icon, and the two count bubbles. Filling the discount badge with
-     it was tried and pulled back — a mark that repeats on every card in the feed, on the
-     map and on the detail page at once stops being a mark. */
-  --color-brand: #8cc63f;
-
-  /* The interface green: text, icons, outlines, and the filled discount badge at 5.1:1
-     against white. Same hue as the lime (86°), dark enough to be read — and there is no
-     headroom to brighten it, because at this hue anything lighter drops under 4.5:1 on
-     white (#55871a measures 4.32:1). */
-  --color-accent: #4f7a16;
+  --color-ink: #11130e;
+  --color-muted: #5c6055;
+  --color-line: #dce1d3;
+  --color-brand: #7a8450;
+  --color-sage: #aebd93;
+  --color-celadon: #bee7b8;
+  --color-walnut: #4c2e05;
+  --color-granite: #95969d;
+  --color-accent: #596337;
   --color-accent-ink: #ffffff;
-  --color-accent-soft: #f1f6e3;
-
-  /* Success is a role, not a second green identity. It shares the readable dark tone of
-     the logo family; the exact lime remains the brighter highlight above it. */
-  --color-positive: #4f7a16;
-  --color-warning: #8a5a00;
-  --color-warning-soft: #fdf4e3;
+  --color-accent-soft: #eef2e7;
+  --color-positive: #496337;
+  --color-warning: #805700;
+  --color-warning-soft: #fbf2df;
   --color-danger: #a12d36;
   --color-danger-soft: #fceeef;
 
@@ -142,9 +128,8 @@
     background: #11161a;
   }
 
-  /* A pin is the service itself: its photo in a white ring over an ink price ticket. A clock
-     glyph stands in where a service has no picture. Several places that overlap at the
-     current zoom become an ink count with a lime halo, still carrying the lowest price. */
+  /* A pin is the service itself: its photo in a compact FLEK tile over a walnut price tab.
+     Several places that overlap become one branded count with the lowest price below. */
   .map-pin,
   .map-cluster {
     position: relative;
@@ -171,10 +156,10 @@
     height: 48px;
     flex: none;
     overflow: hidden;
-    border: 3px solid var(--color-card);
-    border-radius: 9999px;
+    border: 2px solid var(--color-card);
+    border-radius: 15px;
     background: var(--color-accent-soft);
-    box-shadow: 0 4px 10px -2px rgb(20 18 16 / 0.35);
+    box-shadow: 0 5px 12px -3px rgb(37 41 31 / 0.36);
     transition: border-color 150ms;
   }
   .map-pin-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
@@ -191,8 +176,8 @@
     min-height: 24px;
     margin-top: -8px;
     padding: 0 8px;
-    border-radius: 9999px;
-    background: var(--color-ink);
+    border-radius: 8px;
+    background: var(--color-walnut);
     color: var(--color-card);
     font-size: 0.8125rem;
     line-height: 1;
@@ -215,7 +200,7 @@
     box-shadow: 0 0 0 2px var(--color-card);
   }
   .map-pin.is-selected { z-index: 2; transform: translateY(-3px) scale(1.12); }
-  .map-pin.is-selected .map-pin-photo { border-color: var(--color-brand); }
+  .map-pin.is-selected .map-pin-photo { border-color: var(--color-brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand) 35%, transparent), 0 6px 14px -3px rgb(37 41 31 / 0.4); }
   .map-pin.is-selected .map-pin-price { background: var(--color-brand); color: var(--color-ink); }
 
   .map-cluster-count {
@@ -223,11 +208,11 @@
     place-items: center;
     width: 46px;
     height: 46px;
-    border-radius: 9999px;
-    background: var(--color-ink);
+    border-radius: 15px;
+    background: var(--color-walnut);
     color: var(--color-card);
     font-size: 1rem;
-    box-shadow: 0 0 0 7px rgb(140 198 63 / 0.45), 0 0 0 9px rgb(255 255 255 / 0.6), 0 6px 14px -4px rgb(20 18 16 / 0.4);
+    box-shadow: 0 0 0 5px rgb(174 189 147 / 0.6), 0 0 0 7px rgb(255 255 255 / 0.72), 0 6px 14px -4px rgb(37 41 31 / 0.4);
   }
   .map-cluster-price {
     margin-top: 2px;

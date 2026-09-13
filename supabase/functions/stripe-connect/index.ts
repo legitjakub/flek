@@ -59,7 +59,7 @@ Deno.serve(async (request) => {
     if (action === 'onboard') {
       const accountId = business.stripe_account_id ?? (await createRecipientAccount(stripe, db, business));
       // Stripe requires HTTPS return addresses, so a local build returns to production.
-      const origin = appOrigin(request).startsWith('https://') ? appOrigin(request) : 'https://flek-nine.vercel.app';
+      const origin = appOrigin(request).startsWith('https://') ? appOrigin(request) : 'https://www.app-flek.eu';
       const link = await stripe.v2.core.accountLinks.create({
         account: accountId,
         use_case: {
@@ -186,7 +186,7 @@ async function demoAccounts(stripe: Stripe, db: SupabaseClient) {
             defaults: {
               currency: 'czk',
               responsibilities: { fees_collector: 'application', losses_collector: 'application' },
-              profile: { business_url: 'https://flek-nine.vercel.app', product_description: `Demo provozovna ${business.display_name}` },
+              profile: { business_url: 'https://www.app-flek.eu', product_description: `Demo provozovna ${business.display_name}` },
             },
             configuration: { recipient: { capabilities: { stripe_balance: { stripe_transfers: { requested: true } } } } },
             include: ACCOUNT_INCLUDE,

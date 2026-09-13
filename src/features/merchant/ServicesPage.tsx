@@ -10,7 +10,7 @@ import { ActivitySuggestions, ServicePhotoPicker } from './ActivityPicker';
 import { useServices } from './useBusiness';
 import type { Business, Service } from '../../types/database';
 import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
-import { serviceIllustration } from '../../lib/serviceIllustrations';
+import { SERVICE_PLACEHOLDER, serviceIllustration } from '../../lib/serviceIllustrations';
 
 const DURATION_PRESETS = [15, 30, 45, 60, 90, 120] as const;
 
@@ -63,7 +63,7 @@ function Services({ business }: { business: Business }) {
                 {image ? (
                   <span className="relative size-20 shrink-0 overflow-hidden rounded-xl">
                     <img src={image} alt="" className="size-full object-cover" />
-                    <IllustrativePhotoLabel compact className="right-1 bottom-1" />
+                    {image !== SERVICE_PLACEHOLDER ? <IllustrativePhotoLabel compact className="right-1 bottom-1" /> : null}
                   </span>
                 ) : (
                   <span className="grid size-20 shrink-0 place-items-center rounded-xl bg-surface text-muted">
@@ -306,7 +306,7 @@ function ServiceSheet({
             {previewImage ? (
               <span className="relative h-28 w-28 shrink-0">
                 <img src={previewImage} alt="" className="size-full object-cover" />
-                <IllustrativePhotoLabel compact className="right-1.5 bottom-1.5" />
+                {previewImage !== SERVICE_PLACEHOLDER ? <IllustrativePhotoLabel compact className="right-1.5 bottom-1.5" /> : null}
               </span>
             ) : (
               <span className="grid h-28 w-28 shrink-0 place-items-center bg-line/50 text-muted"><ImageOff size={22} aria-hidden="true" /></span>

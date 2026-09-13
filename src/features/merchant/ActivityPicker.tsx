@@ -5,6 +5,7 @@ import { listServicePhotos } from '../../lib/api';
 import { cx, Skeleton } from '../../components/ui';
 import { useSnapCarousel } from '../../components/useSnapCarousel';
 import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
+import { SERVICE_PLACEHOLDER } from '../../lib/serviceIllustrations';
 
 function usePhotos() {
   return useQuery({
@@ -123,8 +124,11 @@ export function ServicePhotoPicker({
     const reference = catalogue.find((photo) => photo.slug === activity);
     const gallery = activity ? (ACTIVITY_GALLERIES[activity] ?? (reference?.image_url ? [reference.image_url] : [])) : [];
     const options: PhotoOption[] = [
-      { key: 'venue', label: 'Fotka provozovny', imageUrl: venueCover, fallback: <Store size={26} aria-hidden="true" />, value: null },
+      { key: 'placeholder', label: 'Univerzální FLEK', imageUrl: SERVICE_PLACEHOLDER, value: null },
     ];
+    if (venueCover) {
+      options.push({ key: 'venue', label: 'Fotka provozovny', imageUrl: venueCover, fallback: <Store size={26} aria-hidden="true" />, value: venueCover });
+    }
     gallery.forEach((imageUrl, index) => options.push({
       key: `${activity}-${index}`,
       label: reference?.label_cs ?? (serviceName || 'Fotka služby'),
@@ -171,7 +175,7 @@ export function ServicePhotoPicker({
         {selected?.imageUrl ? (
           <>
             <img src={selected.imageUrl} alt="" className="aspect-[16/9] max-h-52 w-full object-cover" />
-            <IllustrativePhotoLabel className="top-2 left-2" />
+            {selected.imageUrl !== SERVICE_PLACEHOLDER ? <IllustrativePhotoLabel className="top-2 left-2" /> : null}
           </>
         ) : (
           <span className="flex aspect-[16/9] max-h-52 items-center justify-center text-muted">{selected?.fallback ?? <Image size={28} aria-hidden="true" />}</span>
@@ -227,7 +231,7 @@ function PhotoChoice({ active, label, imageUrl, fallback, onClick }: {
       {imageUrl ? (
         <>
           <img src={imageUrl} alt="" loading="lazy" className="aspect-square w-full object-cover" />
-          <IllustrativePhotoLabel compact className="bottom-[2.05rem] left-1" />
+          {imageUrl !== SERVICE_PLACEHOLDER ? <IllustrativePhotoLabel compact className="bottom-[2.05rem] left-1" /> : null}
         </>
       ) : (
         <span className="flex aspect-square items-center justify-center bg-line/45 text-muted">{fallback ?? <Image size={22} aria-hidden="true" />}</span>

@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Potvrď svůj e-mail pro FLEK</title>
+    <title>Obnova hesla — FLEK</title>
   </head>
   <body style="margin:0;background:#f7f8f3;color:#11130e;font-family:Arial,sans-serif">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:32px 16px">
@@ -11,14 +11,14 @@
         <td align="center">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:520px;background:#fff;border-radius:24px;padding:32px">
             <tr><td style="font-size:34px;font-weight:800;letter-spacing:-1.5px">flek<span style="color:#7a8450">′</span></td></tr>
-            <tr><td style="padding-top:28px;font-size:24px;font-weight:800">Potvrď svůj e-mail</td></tr>
-            <tr><td style="padding-top:12px;font-size:16px;line-height:1.55;color:#5c6055">Jedním kliknutím aktivuješ svůj účet a můžeš pokračovat tam, kde jsi skončil/a.</td></tr>
+            <tr><td style="padding-top:28px;font-size:24px;font-weight:800">Nastav si nové heslo</td></tr>
+            <tr><td style="padding-top:12px;font-size:16px;line-height:1.55;color:#5c6055">Otevři odkaz a nastav si nové heslo k účtu FLEK.</td></tr>
             <tr>
               <td style="padding-top:24px">
-                <a href="{{ .SiteURL }}/potvrzeni?token_hash={{ .TokenHash }}&amp;type=email" style="display:block;border-radius:14px;background:#4c2e05;padding:15px 20px;color:#fff;text-align:center;font-size:16px;font-weight:700;text-decoration:none">Potvrdit e-mail</a>
+                <a href="{{ .SiteURL }}/prihlaseni?mode=reset&amp;token_hash={{ .TokenHash }}&amp;type=recovery" style="display:block;border-radius:14px;background:#4c2e05;padding:15px 20px;color:#fff;text-align:center;font-size:16px;font-weight:700;text-decoration:none">Nastavit heslo</a>
               </td>
             </tr>
-            <tr><td style="padding-top:20px;font-size:13px;line-height:1.5;color:#5c6055">Pokud jsi účet nezakládal/a, e-mail můžeš ignorovat.</td></tr>
+            <tr><td style="padding-top:20px;font-size:13px;line-height:1.5;color:#5c6055">Pokud jsi o změnu hesla nežádal/a, e-mail můžeš ignorovat.</td></tr>
           </table>
         </td>
       </tr>

@@ -17,6 +17,7 @@ import { useInstallMode } from '../pwa/InstallPrompt';
 import { promptInstall } from '../pwa/install';
 import { openIntro } from '../onboarding/FirstVisitIntro';
 import { useMyBusinesses } from '../merchant/useBusiness';
+import { NotificationSettings } from '../notifications/Notifications';
 
 type ProfileValues = z.infer<typeof profileSchema>;
 
@@ -69,6 +70,8 @@ export function ProfilePage() {
       <SettingsList title="Můj účet">
         <DetailsRow />
       </SettingsList>
+
+      <NotificationSettings />
 
       <AppList partner={(businesses.data?.length ?? 0) > 0} admin={admin} signedIn />
 

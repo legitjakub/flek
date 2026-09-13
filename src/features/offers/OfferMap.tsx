@@ -3,6 +3,7 @@
 import './mapWorker';
 import { clusterPins } from '../discovery/mapClusters';
 import { money } from '../../lib/format';
+import { SERVICE_PLACEHOLDER } from '../../lib/serviceIllustrations';
 import { useEffect, useRef } from 'react';
 import { LngLatBounds, Map as MapLibreMap, Marker, NavigationControl, type MapOptions, type StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -68,7 +69,7 @@ export type MapMarker = {
   description?: string;
   count?: number;
   price?: number;
-  /** A small, already-resized picture of the service; the pin falls back to FLEK's clock glyph. */
+  /** A small, already-resized picture; missing or broken photos use FLEK's abstract tile. */
   image?: string | null;
 };
 
@@ -282,8 +283,14 @@ export function MapCanvas({
             img.decoding = 'async';
             img.width = 44;
             img.height = 44;
-            // A broken address shows the clock glyph rather than an empty white disc.
-            img.addEventListener('error', () => { photo.innerHTML = GLYPH; photo.classList.add('map-pin-photo--glyph'); }, { once: true });
+            img.addEventListener('error', () => {
+              if (img.src.endsWith(SERVICE_PLACEHOLDER)) {
+                photo.innerHTML = GLYPH;
+                photo.classList.add('map-pin-photo--glyph');
+                return;
+              }
+              img.src = SERVICE_PLACEHOLDER;
+            });
             photo.append(img);
           } else {
             photo.innerHTML = GLYPH;

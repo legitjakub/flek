@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, MailWarning } from 'lucide-react';
 import { Link, useRouter } from '../../app/router';
-import { Button, Wordmark } from '../../components/ui';
+import { Button, Field, Input, Wordmark } from '../../components/ui';
 import { supabase } from '../../lib/supabase';
 import { useSession } from './session';
 
@@ -37,6 +37,9 @@ export function ConfirmationPage() {
   const attempted = useRef(false);
   const [state, setState] = useState<State>('checking');
   const [message, setMessage] = useState('Ověřujeme potvrzovací odkaz…');
+  const [resendEmail, setResendEmail] = useState(pending.current.email ?? '');
+  const [resendBusy, setResendBusy] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
 
   const metadataTarget = session?.user.user_metadata?.signup_return_to;
   const target = safeTarget(metadataTarget ?? pending.current.returnTo);
@@ -106,7 +109,29 @@ export function ConfirmationPage() {
   }, [ready, search, session]);
 
   const loginHref = `/prihlaseni?${merchant ? 'role=merchant&' : ''}returnTo=${encodeURIComponent(target)}`;
-  const signupHref = `/prihlaseni?${merchant ? 'role=merchant&' : ''}mode=signup&returnTo=${encodeURIComponent(target)}`;
+
+  async function resend() {
+    const email = resendEmail.trim();
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      setResendMessage(merchant ? 'Zadejte e-mail, který jste použili při registraci.' : 'Zadej e-mail, se kterým ses registroval/a.');
+      return;
+    }
+    setResendBusy(true);
+    setResendMessage(null);
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/potvrzeni` },
+    });
+    setResendBusy(false);
+    if (error && /rate|limit|seconds?|security/i.test(error.message)) {
+      setResendMessage(merchant ? 'Další e-mail teď nejde odeslat. Chvíli počkejte a zkuste to znovu.' : 'Další e-mail teď nejde odeslat. Chvíli počkej a zkus to znovu.');
+      return;
+    }
+    setResendMessage(error
+      ? merchant ? 'E-mail se nepodařilo odeslat. Zkuste to prosím za chvíli znovu.' : 'E-mail se nepodařilo odeslat. Zkus to prosím za chvíli znovu.'
+      : 'Nový potvrzovací e-mail je odeslaný.');
+  }
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col px-4 py-8 sm:justify-center sm:py-14">
@@ -125,11 +150,26 @@ export function ConfirmationPage() {
           <Link to={target} className="btn-primary mt-5 w-full">
             {merchant ? 'Pokračovat do správy provozovny' : 'Pokračovat do aplikace'}
           </Link>
-        ) : state === 'login' || state === 'error' ? (
+        ) : state === 'login' ? (
           <div className="mt-5 flex flex-col gap-2">
             <Link to={loginHref} className="btn-primary w-full">Přihlásit se</Link>
-            <Link to={signupHref} className="inline-flex min-h-11 items-center justify-center text-sm font-bold text-ink underline underline-offset-4">
-              Poslat nový potvrzovací e-mail
+          </div>
+        ) : state === 'error' ? (
+          <div className="mt-5 text-left">
+            <Field id="confirmation-email" label="E-mail účtu">
+              <Input
+                id="confirmation-email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                value={resendEmail}
+                onChange={(event) => setResendEmail(event.target.value)}
+              />
+            </Field>
+            {resendMessage ? <p role="status" className="mt-2 text-sm text-muted">{resendMessage}</p> : null}
+            <Button className="mt-3 w-full" loading={resendBusy} onClick={() => void resend()}>Poslat nový odkaz</Button>
+            <Link to={loginHref} className="mt-2 inline-flex min-h-11 w-full items-center justify-center text-sm font-bold text-ink underline underline-offset-4">
+              Přihlásit se heslem
             </Link>
           </div>
         ) : (

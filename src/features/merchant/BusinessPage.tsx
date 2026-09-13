@@ -11,6 +11,7 @@ import { LazyMap } from '../offers/LazyMap';
 import { useRouter } from '../../app/router';
 import { DEFAULT_POINT } from '../../lib/geo';
 import type { Business } from '../../types/database';
+import { NotificationSettings } from '../notifications/Notifications';
 
 type Values = {
   display_name: string;
@@ -92,6 +93,7 @@ export function MerchantBusinessPage() {
       {(business) => (
         <div className="flex flex-col gap-6">
           <StripePayouts business={business} />
+          <NotificationSettings businessId={business.id} />
           <BusinessForm business={business} />
         </div>
       )}

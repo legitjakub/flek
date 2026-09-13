@@ -113,9 +113,9 @@ export function buttonClass({
     // Padding lives with the size, not the base: a later `px-2` cannot beat a `px-4` that
     // Tailwind happens to emit after it, which is how a short button quietly wrapped its label.
     size === 'lg' ? 'min-h-13 gap-2 px-5 text-base' : size === 'sm' ? 'gap-1.5 px-2.5 text-sm whitespace-nowrap' : 'gap-2 px-4 text-sm',
-    variant === 'primary' && 'bg-ink text-accent-ink hover:bg-[#11161a]',
+    variant === 'primary' && 'bg-ink text-accent-ink hover:bg-[#171b16]',
     variant === 'secondary' && 'border border-line bg-card text-ink hover:bg-surface',
-    variant === 'soft' && 'bg-line text-ink hover:bg-[#e2d9cb]',
+    variant === 'soft' && 'bg-line text-ink hover:bg-sage',
     variant === 'ghost' && 'text-ink hover:bg-line/50',
     variant === 'danger' && 'border border-danger/25 bg-card text-danger hover:bg-danger/5',
   );
@@ -548,7 +548,7 @@ export function PromoCard({
       {...rest}
       className={cx(
         'relative overflow-hidden rounded-3xl p-5 shadow-card sm:p-6',
-        tone === 'dark' ? 'bg-ink text-card' : 'bg-[linear-gradient(135deg,#8cc63f_0%,#b6dd7d_100%)] text-ink',
+        tone === 'dark' ? 'bg-ink text-card' : 'bg-[linear-gradient(135deg,#7a8450_0%,#bee7b8_100%)] text-ink',
         className,
       )}
     >

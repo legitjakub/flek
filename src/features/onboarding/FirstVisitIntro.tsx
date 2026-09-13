@@ -152,7 +152,7 @@ function IntroVisual({ index, playing }: { index: number; playing: boolean }) {
   if (index === 0) {
     return (
       <div className="relative mx-auto aspect-[5/4] w-full max-w-sm overflow-hidden rounded-3xl bg-accent-soft shadow-card" aria-hidden="true">
-        <div className="absolute inset-0 opacity-55" style={{ backgroundImage: 'linear-gradient(30deg, transparent 46%, #d8e5bd 47%, #d8e5bd 50%, transparent 51%), linear-gradient(120deg, transparent 44%, #d8e5bd 45%, #d8e5bd 48%, transparent 49%)', backgroundSize: '80px 80px' }} />
+        <div className="absolute inset-0 opacity-55" style={{ backgroundImage: 'linear-gradient(30deg, transparent 46%, #aebd93 47%, #aebd93 50%, transparent 51%), linear-gradient(120deg, transparent 44%, #aebd93 45%, #aebd93 48%, transparent 49%)', backgroundSize: '80px 80px' }} />
         <span className="absolute top-[22%] left-[14%] rounded-full bg-card px-3 py-2 text-sm font-extrabold shadow-lift">od 225 Kč</span>
         <span className="absolute top-[48%] right-[9%] rounded-full bg-card px-3 py-2 text-sm font-extrabold shadow-lift">350 Kč</span>
         <span className="absolute bottom-[14%] left-[36%] grid size-14 place-items-center rounded-full bg-brand text-ink shadow-lift"><MapPin size={27} aria-hidden="true" /></span>

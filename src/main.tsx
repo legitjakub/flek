@@ -18,7 +18,7 @@ function MissingConfig() {
         margin: '0 auto',
         padding: '3rem 1.25rem',
         fontFamily: "'Instrument Sans Variable', system-ui, sans-serif",
-        color: '#22282b',
+        color: '#11130e',
       }}
     >
       <h1 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>FLEK nemá připojení k databázi.</h1>
@@ -26,7 +26,7 @@ function MissingConfig() {
         Chybí nastavení <code>VITE_SUPABASE_URL</code> a <code>VITE_SUPABASE_ANON_KEY</code>. Obě proměnné musí být
         dostupné <strong>při sestavení</strong> — po jejich doplnění je potřeba nasadit znovu.
       </p>
-      <p style={{ marginTop: '0.75rem', lineHeight: 1.6, color: '#5d6a68' }}>
+      <p style={{ marginTop: '0.75rem', lineHeight: 1.6, color: '#5c6055' }}>
         Lokálně je zapíše <code>npm run db:start</code> do <code>.env.local</code>.
       </p>
     </main>

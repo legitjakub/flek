@@ -4,6 +4,7 @@ import { LogOut } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { cx } from '../../components/ui';
 import { useRouter } from '../../app/router';
+import { disableDevicePush } from '../notifications/Notifications';
 
 /**
  * One sign-out, used everywhere.
@@ -24,6 +25,7 @@ export function useSignOut() {
   async function signOut() {
     setBusy(true);
     try {
+      await disableDevicePush().catch(() => undefined);
       const { error } = await supabase.auth.signOut();
       if (error) await supabase.auth.signOut({ scope: 'local' });
     } catch {

@@ -11,6 +11,7 @@ import { money } from '../../lib/format';
 import { clockTime, dayLabel } from '../../lib/time';
 import { serverNow } from '../../lib/clock';
 import type { Business } from '../../types/database';
+import { NotificationBell } from '../notifications/Notifications';
 
 const NAV = [
   { to: '/partner', label: 'Přehled', icon: LayoutDashboard },
@@ -292,7 +293,12 @@ function MerchantFrame({
               <span className="hidden sm:inline">Zákaznická část</span>
               <ArrowUpRight size={17} aria-hidden="true" />
             </Link>
-            {userId ? <SignOutButton compact /> : null}
+            {userId ? (
+              <>
+                <NotificationBell businessId={business?.id} />
+                <SignOutButton compact />
+              </>
+            ) : null}
           </div>
         </div>
       </header>

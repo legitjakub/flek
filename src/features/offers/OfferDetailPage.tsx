@@ -24,7 +24,7 @@ import { UnavailableOfferRecovery } from './UnavailableOfferRecovery';
 import { unavailableReason } from './unavailable';
 import { GooglePlaceRating } from '../ratings/GooglePlaceRating';
 import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
-import { serviceIllustration } from '../../lib/serviceIllustrations';
+import { SERVICE_PLACEHOLDER, serviceIllustration } from '../../lib/serviceIllustrations';
 
 export function OfferDetailPage({ offerId }: { offerId: string }) {
   const { search, navigate } = useRouter();
@@ -131,7 +131,8 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
     return <BookingSuccess code={code} offer={offer} now={now} />;
   }
 
-  const image = serviceIllustration(offer.service_name, offer.image_url, offer.cover_url);
+  const source = serviceIllustration(offer.service_name, offer.image_url, offer.cover_url);
+  const image = source === failedPhoto ? SERVICE_PLACEHOLDER : source;
   const savings = offer.original_price_cents - offer.deal_price_cents;
   const minutesAway = Math.round((Date.parse(offer.start_at) - Date.parse(now)) / 60000);
   const lastSeat = offer.capacity_remaining === 1 && offer.capacity_total > 1;
@@ -141,7 +142,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
     ? '10 minut od rezervace'
     : `do ${clockTime(cancellationAt)}`;
 
-  const hasPhoto = Boolean(image) && image !== failedPhoto;
+  const hasPhoto = Boolean(image);
   const reason = unavailableReason(offer, now);
 
   return (
@@ -160,7 +161,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             <div className="relative -mx-4 mb-3 md:mx-0 md:mb-4">
               <img
                 src={image!}
-                onError={() => setFailedPhoto(image)}
+                onError={() => setFailedPhoto(source)}
                 alt=""
                 className="aspect-[16/9] w-full object-cover md:aspect-[2/1] md:rounded-2xl"
               />
@@ -181,7 +182,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
                   businessName={offer.business_name}
                 />
               </div>
-              <IllustrativePhotoLabel className="right-3 bottom-3" />
+              {image !== SERVICE_PLACEHOLDER ? <IllustrativePhotoLabel className="right-3 bottom-3" /> : null}
             </div>
           ) : null}
           {/*
