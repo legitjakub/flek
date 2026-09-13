@@ -17,7 +17,7 @@ React 19 + TypeScript + Vite · Tailwind v4 · TanStack Query · React Hook Form
 
 ## Nasazená ukázka
 
-<https://flek-nine.vercel.app> — produkční build nad hostovaným Supabase, nasazovaný automaticky z větve `main`. Konfiguraci řídí `vercel.json`; klíčový je přepis `/(.*) → /index.html`, bez kterého by obnovení stránky na detailu nabídky skončilo chybou 404. Proměnné `VITE_SUPABASE_URL` a `VITE_SUPABASE_ANON_KEY` musí být dostupné **při sestavení**, jinak se aplikace nespustí.
+<https://www.app-flek.eu> (dřív <https://flek-nine.vercel.app>, funguje dál) — produkční build nad hostovaným Supabase, nasazovaný automaticky z větve `main`. Konfiguraci řídí `vercel.json`; klíčový je přepis `/(.*) → /index.html`, bez kterého by obnovení stránky na detailu nabídky skončilo chybou 404. Proměnné `VITE_SUPABASE_URL` a `VITE_SUPABASE_ANON_KEY` musí být dostupné **při sestavení**, jinak se aplikace nespustí.
 
 ## Nastavení
 
@@ -132,7 +132,8 @@ Aktuální stav ověření a to, co ještě není hotové, je v [VERIFICATION.md
 
 - **CI:** `.github/workflows/ci.yml` spouští build s TypeScriptem, unit testy a `npm audit` při každém pushi a PR. Na GitHubu je zapnutý secret scanning s ochranou proti pushnutí tajných údajů a Dependabot upozornění.
 - **Hlavičky:** CSP a další bezpečnostní hlavičky jsou ve `vercel.json`. Přidáváte-li externí službu (dlaždice, obrázky, API), doplňte její doménu do CSP.
-- **Obnova hesla:** v Supabase → Authentication → URL Configuration musí být v Redirect URLs `https://flek-nine.vercel.app/prihlaseni` (lokálně je v `supabase/config.toml`).
+- **E-maily a obnova hesla:** Supabase Auth posílá přes SMTP Resend z `mail.app-flek.eu`; Site URL je `https://www.app-flek.eu` a v Redirect URLs jsou `/potvrzeni` a `/prihlaseni**` (lokálně v `supabase/config.toml`). Šablony jsou v `supabase/templates`.
+- **Upozornění na rezervace:** zvonek a nastavení zapíná `VITE_NOTIFICATIONS_ENABLED=true`, Web Push potřebuje `VITE_VAPID_PUBLIC_KEY`. Funkce `notification-delivery` potřebuje v Supabase secrets `RESEND_API_KEY`, `NOTIFICATION_FROM`, `VAPID_PUBLIC_KEY` a `VAPID_PRIVATE_KEY`; frontu kontroluje `select status, count(*) from private.notification_delivery group by 1`.
 - **Demo data:** job `flek-demo-refresh` každé ráno doplní demo FLEKy. Před ostrým provozem na této databázi: `select cron.unschedule('flek-demo-refresh');`.
 - **Audit:** každá admin změna je v záložce Administrace → Audit; záznamy nejde upravit ani smazat.
 

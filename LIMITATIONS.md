@@ -40,7 +40,12 @@ Google hodnocení se zobrazí jen pro správně přiřazené Place ID a funkčn�
 
 ## Upozornění a obsluha podniku
 
-Upozornění podniku funguje přes Realtime s 30sekundovým pollingem v otevřené aplikaci. Zvuk závisí na povolení přehrávání prohlížečem. Při zavřené aplikaci se neposílá web push, SMS ani e-mail. Zákaznické sledování podniku znamená nové nabídky v Oblíbených a odznak navigace, nikoliv push oznámení.
+Upozornění podniku v otevřené aplikaci funguje přes Realtime s 30sekundovým pollingem; zvuk závisí na povolení přehrávání prohlížečem. Potvrzená a zrušená rezervace navíc vytvoří upozornění v aplikaci (zvonek) pro zákazníka i členy podniku a podle nastavení e-mail a Web Push.
+
+- E-mail a push odcházejí přes Edge Function `notification-delivery`. Potřebuje v Supabase secrets `RESEND_API_KEY`, `NOTIFICATION_FROM`, `VAPID_PUBLIC_KEY` a `VAPID_PRIVATE_KEY` a ověřenou doménu `mail.app-flek.eu` v Resendu. Dokud chybí, zprávy čekají ve frontě a po doplnění odejdou i se zpožděním. K 13. 9. chybí `NOTIFICATION_FROM` a oba VAPID klíče.
+- Push na iPhonu funguje jen v aplikaci přidané na plochu (iOS 16.4+). Text oznámení záměrně neobsahuje detaily rezervace.
+- Účty `@flek.test` e-maily nedostávají. SMS, připomínka před termínem ani e-mail o vratce nejsou.
+- Zákaznické sledování podniku znamená nové nabídky v Oblíbených a odznak navigace, ne push oznámení.
 
 Více provozoven na účet je podporováno přepínačem v partnerské části. Pozvánky personálu a detailnější týmová oprávnění zůstávají mimo tento pilot. Schválení provozovny se oznámí v aplikaci; potvrzovací e-maily registrace účtu zajišťuje Supabase Auth.
 

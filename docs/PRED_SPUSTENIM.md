@@ -10,7 +10,8 @@ Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B).
 
 ## Kde jsme teď
 
-- Aplikace běží veřejně na https://flek-nine.vercel.app jako demo pilot. Připravuje se doména app-flek.eu.
+- Aplikace běží veřejně na https://www.app-flek.eu jako demo pilot (původní https://flek-nine.vercel.app funguje dál).
+- E-maily jdou přes Resend z `mail.app-flek.eu`. Upozornění na rezervace fungují v aplikaci; e-mail a push čekají na klíče v Supabase secrets.
 - Platby jdou **jen přes Stripe Connect v testovacím režimu**:
   - zákazník platí na stránce Stripe Checkout,
   - FLEK si ponechá servisní poplatek, zbytek jde podniku,
@@ -40,9 +41,13 @@ Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B).
 - [ ] **Rozhodnout o produkčním prostředí.** Doporučení je nový Supabase projekt pro ostrý provoz; současný `yupkrntknbkvmlajwlph` zůstane jako demo/staging pro akceptační testy.
 - [ ] **Produkční projekt přepnout na Supabase Pro** (placené). Přináší zálohy, projekt se neuspává a zapne se ochrana proti prolomeným heslům.
 - [ ] **Převést vlastnictví Supabase na firemní účet.** Dnes je projekt v organizaci jiného účtu. Zapnout 2FA a přidat druhého vlastníka.
-- [ ] **Doplnit Redirect URLs** v Supabase → Authentication → URL Configuration: `/potvrzeni` a `/prihlaseni` pro flek-nine.vercel.app i app-flek.eu. Nastavit Site URL na finální doménu.
-- [ ] **Doména app-flek.eu:** DNS a přidání domény ve Vercelu.
-- [ ] **E-maily:** účet u Resend nebo Postmark, ověření domény (SPF, DKIM, DMARC) a zadání SMTP v Supabase → Authentication → SMTP. Výchozí e-mail Supabase je jen na testování a má nízký limit.
+- [x] **Redirect URLs a Site URL** v Supabase → Authentication → URL Configuration: `https://www.app-flek.eu` (13. 9.).
+- [x] **Doména app-flek.eu:** DNS v Endoře a doména ve Vercelu (13. 9.).
+- [x] **E-maily:** účet Resend, doména `mail.app-flek.eu` (DKIM a dva CNAME v Endoře), SMTP v Supabase Auth (13. 9.). Zkontrolovat, že Resend doménu označil jako Verified.
+- [ ] **Doplnit Edge Function secrets** v Supabase → Edge Functions → Secrets: `NOTIFICATION_FROM` = `FLEK <rezervace@mail.app-flek.eu>`, `VAPID_PUBLIC_KEY` a `VAPID_PRIVATE_KEY` z `/private/tmp/flek-notification-secrets.env`. Bez nich e-mailová a push upozornění čekají ve frontě.
+- [ ] **Resend klíč:** vytvořit nový API klíč (Sending access, doména `mail.app-flek.eu`), uložit ho jako `RESEND_API_KEY` a smazat starý klíč „FLEK production“, který se objevil v logu Codexu.
+- [ ] **VAPID klíče** uložit do správce hesel a soubor `/private/tmp/flek-notification-secrets.env` smazat.
+- [ ] **Skutečné e-maily:** na www.app-flek.eu vyzkoušet „Zapomenuté heslo“ a testovací rezervaci (potvrzení e-mailem, v aplikaci a push).
 - [ ] **Monitoring chyb:** účet Sentry (nebo podobné služby) a předání DSN do Vercelu jako `VITE_SENTRY_DSN`.
 - [ ] **Vercel:** proměnné `VITE_*` pro produkci, včetně skutečného `VITE_SUPPORT_EMAIL`.
 
@@ -79,18 +84,18 @@ Každý bod je samostatný úkol. Po dokončení agent aktualizuje dokumentaci p
 - [ ] **Sladit formulář „Výplatní a fakturační údaje“ se Stripe.** Číslo účtu pro výplaty už zadává podnik u Stripe, formulář má nechat jen fakturační údaje a souhlas s podmínkami.
 - [ ] **Migrace pro ostrý režim.** Nastavit `stripe_test_mode = 'false'` v `private.settings`, aby zmizela hláška o testovací kartě. Spustit až spolu s ostrými klíči.
 - [x] **Stripe funkce `stripe-checkout` a `stripe-connect` znovu nasazené s doménou app-flek.eu** (CORS ověřen 13. 9.).
-- [ ] V `stripe-connect` přepsat natvrdo zadanou `https://flek-nine.vercel.app` (záložní návratová adresa a `business_url`) na finální doménu. Až bude app-flek.eu hotová i v Supabase Auth, znovu nasadit i ostatní Stripe funkce, ať sdílejí stejný `_shared/stripe.ts`.
+- [x] V `stripe-connect` záložní návratová adresa a `business_url` na `https://www.app-flek.eu` (13. 9.).
 - [ ] **Z ostrého nasazení vynechat `stripe-test-pay`.** S ostrým klíčem sama odmítá, ale je čistší ji nenasadit.
 - [ ] **Admin nástroj na ruční vratku a storno** se zápisem do `admin_audit_log`, pro řešení sporů.
 - [ ] **Přehled plateb pro admina a účetní export (CSV):** platby, vratky, poplatky FLEKu a převody podnikům spárované se Stripe ID.
 - [x] **Úklid `scripts/acceptance.mjs`:** mrtvé větve demo plateb odstraněné (13. 9.).
 - [ ] **Spustit `npm run test:integration` s Dockerem.** Po přechodu na Stripe neběžel; helper `book()` teď potvrzuje platbu přes `stripe_payment_succeeded`.
 
-### E-maily (po nastavení SMTP člověkem)
+### E-maily a upozornění
 
-- [ ] Potvrzení rezervace zákazníkovi s kódem a údaji o storno lhůtě. Pravděpodobně i zákonný požadavek na potvrzení „na trvalém nosiči“.
+- [x] Potvrzení a zrušení rezervace zákazníkovi e-mailem, v aplikaci a push (13. 9.). Doplnit do e-mailu kód rezervace a storno lhůtu, ať splní potvrzení „na trvalém nosiči“.
 - [ ] Připomínka před termínem.
-- [ ] E-mail podniku o nové rezervaci a o stornu.
+- [x] E-mail, push a upozornění v aplikaci podniku o nové rezervaci a o stornu, nastavitelné v Provozovně (13. 9.).
 - [ ] E-mail o vratce.
 
 ### Přihlášení a zabezpečení

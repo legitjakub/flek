@@ -6,7 +6,7 @@ Vstupní bod pro každého agenta (Claude Code, Codex, Cursor…). Přečti cel�
 
 FLEK je český marketplace pro volná místa na poslední chvíli. Podnik zveřejní termín, který by jinak propadl, zákazník ho se slevou rezervuje, zaplatí v aplikaci a v podniku ukáže kód. Pilot: Praha, CZK, `Europe/Prague`, platby jdou jen přes Stripe Connect, zatím v testovacím režimu Stripe (žádné skutečné peníze).
 
-- Web: https://flek-nine.vercel.app (Vercel, automaticky z větve `main`)
+- Web: https://www.app-flek.eu (Vercel, automaticky z větve `main`; https://flek-nine.vercel.app funguje dál)
 - Databáze: Supabase projekt `yupkrntknbkvmlajwlph`
 - Kód: https://github.com/legitjakub/flek
 
@@ -34,12 +34,13 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik zveř
 | `src/features/bookings` | rezervace, platba, voucher s QR |
 | `src/features/merchant` | FLEK Partner: provozovna, služby, zveřejnění FLEKu, rezervace, metriky, upozornění |
 | `src/features/admin` | administrace |
+| `src/features/notifications` | zvonek s upozorněními a nastavení e-mailu a push (zákazník v Profilu, podnik v Provozovně), zapíná `VITE_NOTIFICATIONS_ENABLED` |
 | `src/features/{auth,profile,favorites,referral,onboarding,pwa,business,ratings}` | profil, oblíbené, pozvánky, intro, instalace, stránka podniku, Google hodnocení |
 | `src/components/ui.tsx` | sdílené komponenty (Button, PromoCard, SettingsList, Tabs, Sheet…) |
 | `src/lib/api.ts` | všechna volání Supabase RPC |
 | `src/lib/pricing.ts` | výpočet ceny a poplatku (zrcadlí SQL, test `tests/fixtures/fee-vector.json`) |
 | `src/types/database.ts` | ručně psané typy, **negenerovat** |
-| `supabase/functions` | Edge Functions: `stripe-checkout`, `stripe-webhook`, `stripe-connect` (Accounts v2), `stripe-refunds`, `stripe-test-pay` (jen test), sdílené `_shared/stripe.ts` |
+| `supabase/functions` | Edge Functions: `stripe-checkout`, `stripe-webhook`, `stripe-connect` (Accounts v2), `stripe-refunds`, `stripe-test-pay` (jen test), sdílené `_shared/stripe.ts`; `notification-delivery` (e-mail přes Resend a Web Push z fronty) |
 | `supabase/migrations` | schéma, RLS a všechny RPC; názvy souborů = verze v hostované DB |
 | `tests` | unit testy (Vitest), `integration.test.ts` (potřebuje Docker), `pilot-maintenance.sql` |
 | `scripts` | `acceptance.mjs` (API kontroly), `sync-notion.mjs`, lokální Supabase |
@@ -58,6 +59,7 @@ Routy: zákazník `/`, `/mapa`, `/nabidka/:id`, `/podnik/:id`, `/oblibene`, `/re
 - Každá nová admin mutace zapisuje `private.audit(...)` ve stejné transakci.
 - Nová externí doména (API, obrázky, dlaždice) musí do CSP ve `vercel.json`. Žádné `eval`, inline skripty ani `dangerouslySetInnerHTML`.
 - Stripe klíče (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`) žijí jen v Supabase secrets. Místo podniku zaplatí a obsadí jen webhook Stripe; klient nikdy neoznačuje platbu jako zaplacenou.
+- Upozornění na rezervace vytváří jen trigger `booking_notification` nad `bookings`; klient je nezakládá. Push nese jen odkaz, žádné detaily rezervace.
 - Service-role klíč nepatří do prohlížeče ani repozitáře. Hesla (admin, demo účty) se nikdy necommitují; v testech se přihlašuje vložením session, ne psaním hesla do formuláře.
 
 ## Jak pracovat

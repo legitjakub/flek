@@ -9,10 +9,10 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 | Co | Stav |
 | --- | --- |
 | Fáze | Fáze 1 — demo pilot (běží veřejně, platby přes Stripe v testovacím režimu) |
-| Web | https://flek-nine.vercel.app |
+| Web | https://www.app-flek.eu (původní https://flek-nine.vercel.app funguje dál) |
 | Kód | https://github.com/legitjakub/flek (větev `main`) |
 | Poslední nasazení | 13. 9. 2026 (vždy poslední commit ve větvi `main`) |
-| Testy | unit testy a build v CI při každém pushi, 100 API akceptačních kontrol (13. 9. po zabezpečení) |
+| Testy | unit testy a build v CI při každém pushi, akceptační kontroly proti hostované databázi (13. 9.: 99/99 s upozorněními a Stripe) |
 | Data v produkci (13. 9.) | 18 schválených podniků, 330 nabídek, 321 rezervací, 16 účtů (12 demo, 4 ostatní), od 13. 9. platby jen přes Stripe (test), 16 demo podniků s testovacím Stripe účtem |
 | Pro AI agenty | `AGENTS.md` v kořeni repozitáře (Claude Code ho načítá přes `CLAUDE.md`) |
 
@@ -38,12 +38,16 @@ Rozdělení vychází z auditu 13. 9. 2026 (bezpečnostní audit ChatGPT ověře
 
 Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spuštění) je v `docs/PRED_SPUSTENIM.md`.
 
-- [ ] V Supabase přidat Redirect URL `https://flek-nine.vercel.app/prihlaseni` (bez toho odkaz na nové heslo vede jinam)
+- [x] Supabase Auth: Site URL `https://www.app-flek.eu` a návratové adresy pro potvrzení účtu a obnovu hesla (13. 9.)
 - [ ] Oddělit prostředí: nový produkční Supabase projekt, současný zůstane jako demo/staging s akceptačními testy
 - [ ] Produkce na Supabase Pro (zálohy, bez uspávání, ochrana proti prolomeným heslům)
 - [ ] Převést Supabase projekt na firemní účet s 2FA a druhým vlastníkem
-- [ ] Vlastní SMTP (Resend/Postmark) — výchozí e-mail Supabase je jen na testování
-- [ ] E-mail s potvrzením rezervace a kódem, připomínka, e-mail podniku o nové rezervaci a stornu
+- [x] Vlastní SMTP přes Resend z `mail.app-flek.eu`, české šablony potvrzení účtu a obnovy hesla (13. 9.; DNS záznamy v Endoře přidané, Resend doménu ověřuje)
+- [x] Upozornění na potvrzenou a zrušenou rezervaci pro zákazníka i podnik: v aplikaci, e-mailem a push, nastavitelné (13. 9.)
+- [ ] Doplnit v Supabase → Edge Functions → Secrets `NOTIFICATION_FROM`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` (bez nich e-mail a push upozornění čekají ve frontě; v aplikaci fungují)
+- [ ] Resend: vytvořit nový API klíč do `RESEND_API_KEY` a smazat starý „FLEK production“ (objevil se v logu Codexu)
+- [ ] Ověřit skutečné doručení: „Zapomenuté heslo“ a testovací rezervace na www.app-flek.eu (e-mail i push)
+- [ ] Připomínka před termínem a e-mail o vratce
 - [x] Platby přes Stripe Connect: Checkout, poplatek FLEKu jako application fee, výplaty a KYC podniků přes Stripe, ověřený webhook, vratky přes refund API (13. 9., testovací režim)
 - [x] Odebrat demo platby (`start_payment` jen Stripe, `demo_confirm_payment` zrušená) (13. 9.)
 - [ ] Jedna ruční testovací platba přes Stripe Checkout kartou 4242 4242 4242 4242 a projít onboarding reálného podniku („Propojit se Stripe“)
@@ -90,7 +94,7 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 2. Filtruje podle času (Vše, Teď, Do 2 h, Dnes, Zítra), denní doby (Ráno, Odpoledne, Večer), kategorie, minimální slevy a maximální ceny; řadí podle doporučení, vzdálenosti, slevy, ceny nebo začátku.
 3. Na detailu vidí konečnou cenu včetně poplatku a úsporu proti běžné ceně.
 4. Rezervuje a zaplatí kartou, Apple Pay nebo Google Pay na stránce Stripe Checkout (v pilotu testovací karta 4242 4242 4242 4242). Místo obsadí webhook Stripe, zákazník se vrátí na kód rezervace. Bez účtu může prohlížet, k rezervaci se musí přihlásit. Zapomenuté heslo si obnoví odkazem z e-mailu.
-5. Dostane rezervační kód a QR, najde je v Rezervacích.
+5. Dostane rezervační kód a QR, najde je v Rezervacích. O potvrzení a zrušení ví ze zvonku v aplikaci, e-mailem a (když si zapne) oznámením na telefonu.
 6. Zdarma může zrušit do 60 minut před začátkem (podnik si lhůtu může změnit) nebo do 10 minut od rezervace, podle toho, co nastane později.
 7. Oblíbené podniky může sledovat a vidí u nich nové FLEKy; může pozvat kamaráda odkazem `/r/kód` a nainstalovat si appku na plochu.
 
@@ -99,7 +103,7 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 1. Registruje provozovnu, admin ji schválí.
 2. Přidá služby z připravených šablon podle kategorie nebo vlastní.
 3. Zveřejní FLEK: čas, kapacita a částka, kterou chce dostat. Sleva pro zákazníka musí být aspoň 10 % a cena aspoň 15 % běžné ceny; server hlídá i kolize termínů.
-4. Dostane upozornění na novou rezervaci, u pultu ověří kód zákazníka, případně označí „Nedorazil“.
+4. Dostane upozornění na novou rezervaci a storno (v aplikaci vždy, e-mail a push podle nastavení v Provozovně), u pultu ověří kód zákazníka, případně označí „Nedorazil“.
 5. Vidí metriky: rezervace, výplaty a naplněnost.
 
 ### Admin (`/admin`)
@@ -139,6 +143,9 @@ Schvaluje provozovny, kontroluje nabídky a rezervace, spravuje uživatele, vid�
 | Platby | Stripe Connect (testovací režim, sandbox FLEK) | Checkout, destination charges, účty podniků přes Accounts v2; klíče v Supabase secrets |
 | Platební Edge Functions | Supabase: `stripe-checkout`, `stripe-webhook`, `stripe-connect`, `stripe-refunds`, `stripe-test-pay` | webhook: `https://yupkrntknbkvmlajwlph.supabase.co/functions/v1/stripe-webhook` |
 | Údržba plateb | `pg_cron`, job `flek-stripe-maintenance` (každých 5 min) | vrátí zaplacené platby bez rezervace po 60 min, uzavře opuštěné pokusy, dožene frontu vratek |
+| Doména | www.app-flek.eu: DNS v Endoře (freehosting), web na Vercelu | kořenová doména a e-mailové schránky zůstávají u Seznamu |
+| E-maily | Resend, odesílací subdoména `mail.app-flek.eu` | SMTP pro Supabase Auth (ověření účtu, obnova hesla) i upozornění na rezervace |
+| Upozornění na rezervace | trigger `booking_notification`, fronta `private.notification_delivery`, Edge Function `notification-delivery`, cron `flek-notification-delivery` (každou minutu, jen když je co doručit) | zvonek v aplikaci, e-mail, Web Push (VAPID) |
 | Google hodnocení | Supabase Edge Function `google-place-rating` | v kódu hotové, v produkci nenasazené |
 | Mapové podklady | OpenFreeMap (styl `bright`) nad OpenStreetMap; záložní dlaždice ArcGIS World Street Map | zdarma, bez klíče |
 | Hledání adresy | Photon (komoot) nad OpenStreetMap | výběr místa a adresa provozovny |
@@ -160,6 +167,11 @@ React 19 + TypeScript + Vite, Tailwind v4, TanStack Query, React Hook Form + Zod
 | `VITE_SUPABASE_URL` | Vercel, `.env.local` | adresa Supabase projektu (musí být při sestavení) |
 | `VITE_SUPABASE_ANON_KEY` | Vercel, `.env.local` | veřejný klíč Supabase |
 | `VITE_SUPPORT_EMAIL` | Vercel | volitelné, zobrazí Podporu v profilu |
+| `VITE_NOTIFICATIONS_ENABLED` | Vercel | `true` zapne zvonek a nastavení upozornění |
+| `VITE_VAPID_PUBLIC_KEY` | Vercel | veřejný klíč pro Web Push |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Supabase secrets | platby přes Stripe |
+| `RESEND_API_KEY`, `NOTIFICATION_FROM` | Supabase secrets | e-mailová upozornění (odesílatel `FLEK <rezervace@mail.app-flek.eu>`) |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | Supabase secrets | odesílání Web Push |
 | `GOOGLE_MAPS_API_KEY` | Supabase secrets | zatím nenastaveno, pro Google hodnocení |
 
 Service-role klíč nikdy nepatří do aplikace ani do repozitáře. Hesla demo účtů nejsou v repozitáři.
@@ -196,7 +208,7 @@ Service-role klíč nikdy nepatří do aplikace ani do repozitáře. Hesla demo 
 | `npm run dev` | lokální vývoj |
 | `npm run build` | kontrola typů a produkční build |
 | `npm run test:unit` | unit testy |
-| `npm run test:acceptance` | 100 kontrol proti hostované databázi (mění demo data) |
+| `npm run test:acceptance` | ~100 kontrol proti hostované databázi (mění demo data) |
 
 Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICATION.md`, `DECISIONS.md`.
 
@@ -204,6 +216,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 13. 9. 2026 | Dokončení práce ChatGPT: olivová paleta a logo, univerzální obrázek služby, kompaktní náhled na mapě, e-maily přes Resend na www.app-flek.eu, upozornění na rezervace v aplikaci, e-mailem a push; opravené doručování (dřív každé volání 401) |
 | 13. 9. 2026 | Stripe Connect: platby jen přes Stripe Checkout, webhook obsazuje místo a vrací peníze, účty podniků přes Accounts v2, testovací účty pro 16 demo podniků, sekce „Platby a výplaty“ u partnera |
 | 13. 9. 2026 | Audit: ověření auditu ChatGPT a fáze A — obnova demo FLEKů, čtecí RPC místo tabulek, CSP, audit log, zapomenuté heslo, CI, analytika bez přesné polohy |
 | 13. 9. 2026 | Notion přehled ověřený proti kódu a produkční DB, `AGENTS.md` + `CLAUDE.md` pro AI agenty |

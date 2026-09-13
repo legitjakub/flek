@@ -92,3 +92,12 @@ Jeden řádek na rozhodnutí, chronologicky. Kde bylo zadání nejednoznačné, 
 - Obnova hesla používá stejný PKCE tok jako potvrzení e-mailu: odkaz vede na `/prihlaseni?mode=reset` a musí se otevřít ve stejném prohlížeči. Odpověď na žádost o odkaz je stejná bez ohledu na to, zda účet existuje.
 - Chyba jedné stránky neshodí navigaci (boundary na úrovni routy) a chybějící chunk po novém nasazení stránku jednou sám obnoví.
 
+## E-maily, upozornění a vzhled — 13. 9. 2026
+
+- E-maily odcházejí přes Resend ze subdomény `mail.app-flek.eu`. Kořenová doména `app-flek.eu` a schránky u Seznamu zůstávají beze změny; Resend potřebuje jen DKIM a dva CNAME pod `mail`.
+- Supabase Auth posílá ověření účtu a obnovu hesla přes stejné SMTP. Odkazy nesou `token_hash`, takže fungují i v jiném prohlížeči, než ve kterém se o ně požádalo.
+- Upozornění vznikají v triggeru nad `bookings` ve stejné transakci jako změna rezervace: záznam do inboxu a do fronty doručení. Doručuje Edge Function volaná přes `pg_net` jen tehdy, když je něco splatné, a cron každou minutu jako pojistka. Výpadek Resendu nebo push služby rezervaci nezablokuje, jen se zpráva zkusí znovu (až 8×).
+- Tajný klíč pracovníka je jen v `private.notification_config` a funkce ho ověřuje přes service-role RPC. Kopie v prostředí funkce se s databází rozešla a všechna doručení končila 401.
+- Push nese jen odkaz a obecný text, detaily si aplikace načte po otevření: zamykací obrazovka může být sdílená.
+- Barva značky je olivová `#7A8450` (text a ovládací prvky tmavší `#596337`), podklady šalvěj a celadon, výrazné prvky hnědá `#4C2E05`. Svítivá zelená zmizela i z loga, ikon, mapy a e-mailů.
+- Služba bez vlastní fotky a bez ilustrace aktivity ukáže univerzální obrázek FLEKu, ne obal provozovny: ten dělal z půjčovny kol wellness.
