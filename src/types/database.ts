@@ -288,7 +288,7 @@ export type Payment = {
   refund_requested_at?: string | null;
 };
 
-export type PaymentsMode = { provider: 'demo' | 'stripe'; test: boolean };
+export type PaymentsMode = { provider: 'stripe'; test: boolean };
 
 /** What the customer sees after coming back from Stripe Checkout. */
 export type PaymentState = {
@@ -304,7 +304,7 @@ export type PaymentState = {
 };
 
 export type BusinessPaymentsStatus = {
-  provider: 'demo' | 'stripe';
+  provider: 'stripe';
   connected: boolean;
   charges_enabled: boolean;
   payouts_enabled: boolean;

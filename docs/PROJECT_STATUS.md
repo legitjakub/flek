@@ -85,6 +85,9 @@ Nejdůležitější migrace:
 | `20260913145524_demo_offer_refresh.sql`, `…145627_…_spread.sql` | denní obnova demo FLEKů na 3 dny dopředu (`flek-demo-refresh`, jen podniky s účty `@flek.test`) |
 | `20260913145931_read_models_only.sql` | anon nečte tabulky `businesses/services/offers`, jen čtecí RPC; analytika zaokrouhlená a mazaná po 180 dnech; limity délek a allowlist adres fotek |
 | `20260913150229_admin_audit_log.sql` | neměnný audit log admin změn a RPC `admin_audit_log` |
+| `20260913154845_stripe_payments.sql` | Stripe Connect: sloupce účtu podniku a platby, fronta vratek přes `pg_net`, RPC pro webhook (service role), `flek-stripe-maintenance` |
+| `20260913160245_payments_mode.sql` | `payments_mode()` — testovací režim pro text u platby |
+| `20260913170235_payments_stripe_only.sql` | jen Stripe: `start_payment` bez demo, `demo_confirm_payment` zrušená, demo obnova jen u podniků s aktivním Stripe |
 
 ## Ověření a otevřené body
 
@@ -95,7 +98,7 @@ Nejdůležitější migrace:
 - `tests/pilot-maintenance.sql` prošel proti hostované databázi: hranice 24 hodin / 30 minut, neměnný finanční snímek, zachování výplaty při nedostavení, staré ceny a oprávnění. Testovací transakce se celá vrací zpět.
 - Lokální integrační sada potřebuje běžící Docker/Supabase; v tomto prostředí neběžela. Typy aplikace jsou ručně spravované, nevyměňovat je přímo za generovaný soubor.
 - Názvy souborů v `supabase/migrations/` odpovídají verzím v hostované tabulce `supabase_migrations.schema_migrations` (sladěno 13. 9. 2026 podle názvu, včetně pořadí `photo_matches_activity` před `google_place_ratings`, jak se skutečně aplikovaly). `supabase db push` proto již aplikované migrace nespustí znovu. Novou migraci po aplikaci přes MCP pojmenujte podle verze, kterou databáze zapsala.
-- Připojení skutečné platební brány, skutečné výplaty a účetní doklady zůstávají mimo tento pilot. UI u placení výslovně uvádí ukázkový režim.
+- Platby jdou přes Stripe Connect v testovacím režimu (Edge Functions v `supabase/functions`, klíče v Supabase secrets). Ostrý režim, události Accounts v2 a účetní doklady jsou otevřené, viz `LIMITATIONS.md`. Integrační sada nově potvrzuje platbu přes `stripe_payment_succeeded` (náhrada webhooku), lokálně zatím neběžela.
 
 Podrobné důkazy jsou v [VERIFICATION.md](../VERIFICATION.md), omezení v [LIMITATIONS.md](../LIMITATIONS.md), technická rozhodnutí v [DECISIONS.md](../DECISIONS.md) a historické předání v [HANDOFF.md](../HANDOFF.md).
 
@@ -103,6 +106,7 @@ Podrobné důkazy jsou v [VERIFICATION.md](../VERIFICATION.md), omezení v [LIMI
 
 | Datum | Změna | Stav |
 | --- | --- | --- |
+| 13. 9. 2026 | Stripe Connect, všude jen Stripe: Checkout s destination charge a application fee, webhook zaplatí a obsadí místo (nebo zařadí vratku), vratky přes `stripe-refunds`, účty podniků přes Accounts v2 (`recipient`), sekce „Platby a výplaty“ a krok v checklistu, testovací účty 16 demo podniků, demo platby odstraněny | migrace a funkce v produkci; build, unit testy, akceptační kontroly se skutečnými testovacími platbami Stripe |
 | 13. 9. 2026 | Fáze A auditu: denní obnova demo FLEKů, veřejná data jen přes čtecí RPC, bezpečnostní hlavičky s CSP, audit log admina, zapomenuté heslo, odolnější error boundary, analytika bez přesné polohy a s retencí, CI a secret scanning, oprava popisu a vysvětlení řazení | migrace v produkci; 100/100 akceptačních kontrol, build, unit testy, CSP průchod v prohlížeči |
 | 13. 9. 2026 | `docs/NOTION.md` (todolist, fáze, jak to funguje, kde co běží) vložený do Notionu; `AGENTS.md` a `CLAUDE.md` jako vstupní bod pro AI agenty; `HANDOFF.md` označený jako zastaralý | ověřeno proti kódu, Supabase (cron, Edge Functions, advisor) a stránce v Notionu |
 | 13. 9. 2026 | Nový vzhled zákaznické appky: profil v barevných blocích se seznamem nastavení, celoobrazovková mapa s fotkami služeb ve špendlících, shluky s přiblížením a náhledovou kartou, plovoucí spodní navigace, nové Oblíbené a Rezervace | implementováno; typy, 81 unit testů, build a Playwright audit (kontrast, 44px, přetečení) na 375/390/1280 px |

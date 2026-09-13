@@ -4,7 +4,7 @@ Vstupní bod pro každého agenta (Claude Code, Codex, Cursor…). Přečti cel�
 
 ## Co to je
 
-FLEK je český marketplace pro volná místa na poslední chvíli. Podnik zveřejní termín, který by jinak propadl, zákazník ho se slevou rezervuje, zaplatí v aplikaci a v podniku ukáže kód. Pilot: Praha, CZK, `Europe/Prague`, peníze jsou zatím jen ukázkové (`provider=demo`).
+FLEK je český marketplace pro volná místa na poslední chvíli. Podnik zveřejní termín, který by jinak propadl, zákazník ho se slevou rezervuje, zaplatí v aplikaci a v podniku ukáže kód. Pilot: Praha, CZK, `Europe/Prague`, platby jdou jen přes Stripe Connect, zatím v testovacím režimu Stripe (žádné skutečné peníze).
 
 - Web: https://flek-nine.vercel.app (Vercel, automaticky z větve `main`)
 - Databáze: Supabase projekt `yupkrntknbkvmlajwlph`
@@ -38,6 +38,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik zveř
 | `src/lib/api.ts` | všechna volání Supabase RPC |
 | `src/lib/pricing.ts` | výpočet ceny a poplatku (zrcadlí SQL, test `tests/fixtures/fee-vector.json`) |
 | `src/types/database.ts` | ručně psané typy, **negenerovat** |
+| `supabase/functions` | Edge Functions: `stripe-checkout`, `stripe-webhook`, `stripe-connect` (Accounts v2), `stripe-refunds`, `stripe-test-pay` (jen test), sdílené `_shared/stripe.ts` |
 | `supabase/migrations` | schéma, RLS a všechny RPC; názvy souborů = verze v hostované DB |
 | `tests` | unit testy (Vitest), `integration.test.ts` (potřebuje Docker), `pilot-maintenance.sql` |
 | `scripts` | `acceptance.mjs` (API kontroly), `sync-notion.mjs`, lokální Supabase |
@@ -55,6 +56,7 @@ Routy: zákazník `/`, `/mapa`, `/nabidka/:id`, `/podnik/:id`, `/oblibene`, `/re
 - Veřejná data jen přes čtecí RPC. Anon nemá SELECT na doménové tabulky; nový veřejný údaj přidej do RPC, ne grantem na tabulku.
 - Každá nová admin mutace zapisuje `private.audit(...)` ve stejné transakci.
 - Nová externí doména (API, obrázky, dlaždice) musí do CSP ve `vercel.json`. Žádné `eval`, inline skripty ani `dangerouslySetInnerHTML`.
+- Stripe klíče (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`) žijí jen v Supabase secrets. Místo podniku zaplatí a obsadí jen webhook Stripe; klient nikdy neoznačuje platbu jako zaplacenou.
 - Service-role klíč nepatří do prohlížeče ani repozitáře. Hesla (admin, demo účty) se nikdy necommitují; v testech se přihlašuje vložením session, ne psaním hesla do formuláře.
 
 ## Jak pracovat

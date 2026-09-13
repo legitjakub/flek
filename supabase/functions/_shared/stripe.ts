@@ -5,6 +5,8 @@ export { Stripe };
 
 /** Where Checkout and onboarding may send people back to. Anything else falls back to production. */
 const APP_ORIGINS = [
+  'https://www.app-flek.eu',
+  'https://app-flek.eu',
   'https://flek-nine.vercel.app',
   'http://127.0.0.1:5173',
   'http://localhost:5173',
@@ -131,6 +133,41 @@ export async function processRefunds(db: SupabaseClient, stripe: Stripe, limit =
     }
   }
   return { refunded, failed };
+}
+
+export type ConnectedAccount = Stripe.V2.Core.Account;
+
+/** The parts of an Accounts v2 account that say what it may do. */
+export const ACCOUNT_INCLUDE: ('configuration.recipient' | 'requirements')[] = ['configuration.recipient', 'requirements'];
+
+/**
+ * What a connected account may do. FLEK sells through destination charges, so a business can take
+ * payments as soon as Stripe allows transfers to its account, and is paid out once Stripe also
+ * allows payouts (a verified bank account).
+ */
+export function accountFlags(account: ConnectedAccount) {
+  const balance = account.configuration?.recipient?.capabilities?.stripe_balance;
+  const due = (account.requirements?.entries ?? []).filter((entry) =>
+    entry.minimum_deadline?.status === 'currently_due' || entry.minimum_deadline?.status === 'past_due');
+  return {
+    charges: balance?.stripe_transfers?.status === 'active',
+    payouts: balance?.payouts?.status === 'active',
+    details: due.length === 0,
+    due: due.map((entry) => entry.description ?? 'requirement'),
+    reason: balance?.stripe_transfers?.status_details?.[0]?.code ?? null,
+  };
+}
+
+export async function syncAccount(db: SupabaseClient, businessId: string, account: ConnectedAccount) {
+  const flags = accountFlags(account);
+  const { error } = await db.rpc('stripe_account_synced', {
+    p_business_id: businessId,
+    p_account: account.id,
+    p_charges: flags.charges,
+    p_payouts: flags.payouts,
+    p_details: flags.details,
+  });
+  if (error) throw new Error(`stripe_account_synced: ${error.message}`);
 }
 
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

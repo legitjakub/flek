@@ -407,10 +407,6 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           setSheetOpen(false);
           if (search.get('rezervovat')) { const params = new URLSearchParams(search); params.delete('rezervovat'); navigate(`/nabidka/${offer.id}${params.size ? `?${params}` : ''}`, { replace: true, scroll: false }); }
         }}
-        onBooked={(reservationCode) => {
-          setSheetOpen(false);
-          setCode(reservationCode);
-        }}
       />
     </main>
   );

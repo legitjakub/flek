@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowUpRight, CreditCard } from 'lucide-react';
 import { businessPaymentsStatus, stripeConnect } from '../../lib/api';
@@ -47,6 +47,15 @@ export function StripePayouts({ business }: { business: Business }) {
     refresh.mutate();
     navigate('/partner/provozovna', { replace: true, scroll: false });
   }, [returned]);
+
+  // Stripe may finish verifying while nobody is looking, so ask it again once whenever this opens.
+  const asked = useRef(false);
+  useEffect(() => {
+    const data = status.data;
+    if (!data || returned || asked.current) return;
+    asked.current = true;
+    if (data.connected && !(data.charges_enabled && data.payouts_enabled)) refresh.mutate();
+  }, [status.data, returned]);
 
   const data = status.data;
   const ready = Boolean(data?.charges_enabled);

@@ -50,9 +50,7 @@ export function SetupChecklist({ business }: { business: Business }) {
       done: Boolean(billing.data?.bank_account && billing.data?.terms_accepted_at),
       to: '/partner/provozovna',
     },
-    ...(payments.data?.provider === 'stripe'
-      ? [{ key: 'payments', label: 'Platby přes Stripe', done: Boolean(payments.data.charges_enabled), to: '/partner/provozovna' }]
-      : []),
+    { key: 'payments', label: 'Platby přes Stripe', done: Boolean(payments.data?.charges_enabled), to: '/partner/provozovna' },
     { key: 'service', label: 'První služba', done: (services.data ?? []).some((s) => s.is_active), to: '/partner/sluzby' },
     { key: 'offer', label: 'První FLEK', done: (offers.data ?? []).length > 0, to: approved ? '/partner/nabidky' : undefined },
     { key: 'preview', label: 'Zobrazit jako zákazník', done: previewed, href: approved ? `/podnik/${business.id}` : undefined },

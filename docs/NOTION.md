@@ -8,12 +8,12 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 
 | Co | Stav |
 | --- | --- |
-| Fáze | Fáze 1 — demo pilot (běží veřejně, peníze jsou jen ukázkové) |
+| Fáze | Fáze 1 — demo pilot (běží veřejně, platby přes Stripe v testovacím režimu) |
 | Web | https://flek-nine.vercel.app |
 | Kód | https://github.com/legitjakub/flek (větev `main`) |
 | Poslední nasazení | 13. 9. 2026 (vždy poslední commit ve větvi `main`) |
 | Testy | unit testy a build v CI při každém pushi, 100 API akceptačních kontrol (13. 9. po zabezpečení) |
-| Data v produkci (13. 9.) | 18 schválených podniků, 330 nabídek, 321 rezervací, 16 účtů (12 demo, 4 ostatní), platby jen `demo` |
+| Data v produkci (13. 9.) | 18 schválených podniků, 330 nabídek, 321 rezervací, 16 účtů (12 demo, 4 ostatní), od 13. 9. platby jen přes Stripe (test), 16 demo podniků s testovacím Stripe účtem |
 | Pro AI agenty | `AGENTS.md` v kořeni repozitáře (Claude Code ho načítá přes `CLAUDE.md`) |
 
 ## Todolist
@@ -42,8 +42,13 @@ Rozdělení vychází z auditu 13. 9. 2026 (bezpečnostní audit ChatGPT ověře
 - [ ] Převést Supabase projekt na firemní účet s 2FA a druhým vlastníkem
 - [ ] Vlastní SMTP (Resend/Postmark) — výchozí e-mail Supabase je jen na testování
 - [ ] E-mail s potvrzením rezervace a kódem, připomínka, e-mail podniku o nové rezervaci a stornu
-- [ ] Skutečné platby: Stripe Connect (poplatek FLEKu jako application fee, výplaty a KYC podniků přes Stripe), ověřené webhooky, refund API, párování plateb
-- [ ] Odebrat demo platby v produkci (`start_payment` bez `demo`, zrušit `demo_confirm_payment`)
+- [x] Platby přes Stripe Connect: Checkout, poplatek FLEKu jako application fee, výplaty a KYC podniků přes Stripe, ověřený webhook, vratky přes refund API (13. 9., testovací režim)
+- [x] Odebrat demo platby (`start_payment` jen Stripe, `demo_confirm_payment` zrušená) (13. 9.)
+- [ ] Jedna ruční testovací platba přes Stripe Checkout kartou 4242 4242 4242 4242 a projít onboarding reálného podniku („Propojit se Stripe“)
+- [ ] Ostrý Stripe: živé klíče a webhook, `stripe_test_mode=false`, potvrdit odpovědnost platformy v Connect nastavení, vypnout `stripe-test-pay`
+- [ ] Poslouchat události Accounts v2 (`v2.core.account[...]`) nebo Connect webhook `account.updated`, ať se stav účtu podniku mění i bez otevření aplikace
+- [ ] Skrýt ve feedu FLEKy podniků, kterým Stripe omezil platby; formulář „Výplatní údaje“ sladit se Stripe (číslo účtu už zadává podnik u Stripe)
+- [ ] Fakturace servisního poplatku podnikům a účetní export plateb
 - [ ] Povinné MFA (TOTP) pro administrátory, CAPTCHA (Turnstile) u registrace, `secure_password_change`, přísnější limity
 - [ ] Obchodní podmínky pro zákazníky (vč. výjimky z odstoupení u služeb s termínem a pravidel nedostavení) a pro podniky (P2B: řazení, pozastavení, stížnosti)
 - [ ] Zásady ochrany osobních údajů, seznam zpracovatelů, rozhodnutí o souhlasu s analytikou
@@ -82,7 +87,7 @@ Rozdělení vychází z auditu 13. 9. 2026 (bezpečnostní audit ChatGPT ověře
 1. Otevře Objevit nebo Mapu a vidí volné FLEKy v okolí (výchozí okruh 5 km a dnešek; když nic není, hledání se samo rozšíří až na 25 km a na celý týden a řekne to).
 2. Filtruje podle času (Vše, Teď, Do 2 h, Dnes, Zítra), denní doby (Ráno, Odpoledne, Večer), kategorie, minimální slevy a maximální ceny; řadí podle doporučení, vzdálenosti, slevy, ceny nebo začátku.
 3. Na detailu vidí konečnou cenu včetně poplatku a úsporu proti běžné ceně.
-4. Rezervuje a zaplatí v aplikaci (v pilotu ukázková platba). Bez účtu může prohlížet, k rezervaci se musí přihlásit. Zapomenuté heslo si obnoví odkazem z e-mailu.
+4. Rezervuje a zaplatí kartou, Apple Pay nebo Google Pay na stránce Stripe Checkout (v pilotu testovací karta 4242 4242 4242 4242). Místo obsadí webhook Stripe, zákazník se vrátí na kód rezervace. Bez účtu může prohlížet, k rezervaci se musí přihlásit. Zapomenuté heslo si obnoví odkazem z e-mailu.
 5. Dostane rezervační kód a QR, najde je v Rezervacích.
 6. Zdarma může zrušit do 60 minut před začátkem (podnik si lhůtu může změnit) nebo do 10 minut od rezervace, podle toho, co nastane později.
 7. Oblíbené podniky může sledovat a vidí u nich nové FLEKy; může pozvat kamaráda odkazem `/r/kód` a nainstalovat si appku na plochu.
@@ -129,6 +134,9 @@ Schvaluje provozovny, kontroluje nabídky a rezervace, spravuje uživatele, vid�
 | Mazání staré analytiky | `pg_cron`, job `flek-analytics-retention` (každé ráno) | smaže události starší 180 dní |
 | Kontrola kódu | GitHub Actions (`.github/workflows/ci.yml`) | build, unit testy a audit závislostí při každém pushi; secret scanning a Dependabot |
 | Bezpečnostní hlavičky | Vercel (`vercel.json`) | CSP s allowlistem domén; nová služba se musí přidat |
+| Platby | Stripe Connect (testovací režim, sandbox FLEK) | Checkout, destination charges, účty podniků přes Accounts v2; klíče v Supabase secrets |
+| Platební Edge Functions | Supabase: `stripe-checkout`, `stripe-webhook`, `stripe-connect`, `stripe-refunds`, `stripe-test-pay` | webhook: `https://yupkrntknbkvmlajwlph.supabase.co/functions/v1/stripe-webhook` |
+| Údržba plateb | `pg_cron`, job `flek-stripe-maintenance` (každých 5 min) | vrátí zaplacené platby bez rezervace po 60 min, uzavře opuštěné pokusy, dožene frontu vratek |
 | Google hodnocení | Supabase Edge Function `google-place-rating` | v kódu hotové, v produkci nenasazené |
 | Mapové podklady | OpenFreeMap (styl `bright`) nad OpenStreetMap; záložní dlaždice ArcGIS World Street Map | zdarma, bez klíče |
 | Hledání adresy | Photon (komoot) nad OpenStreetMap | výběr místa a adresa provozovny |
@@ -194,6 +202,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 13. 9. 2026 | Stripe Connect: platby jen přes Stripe Checkout, webhook obsazuje místo a vrací peníze, účty podniků přes Accounts v2, testovací účty pro 16 demo podniků, sekce „Platby a výplaty“ u partnera |
 | 13. 9. 2026 | Audit: ověření auditu ChatGPT a fáze A — obnova demo FLEKů, čtecí RPC místo tabulek, CSP, audit log, zapomenuté heslo, CI, analytika bez přesné polohy |
 | 13. 9. 2026 | Notion přehled ověřený proti kódu a produkční DB, `AGENTS.md` + `CLAUDE.md` pro AI agenty |
 | 13. 9. 2026 | Volné FLEKy, ikona lístku, jeden řádek o rozšíření hledání, tlačítka rezervace v řadě |

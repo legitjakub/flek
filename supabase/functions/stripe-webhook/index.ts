@@ -1,5 +1,5 @@
 import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
-import { cryptoProvider, message, processRefunds, serviceClient, Stripe, stripeClient } from '../_shared/stripe.ts';
+import { ACCOUNT_INCLUDE, cryptoProvider, message, processRefunds, serviceClient, Stripe, stripeClient, syncAccount } from '../_shared/stripe.ts';
 
 /**
  * Stripe's word on money. Every event is verified by signature, handled once (Stripe retries and may
@@ -78,10 +78,8 @@ async function handle(event: Stripe.Event, stripe: Stripe, db: SupabaseClient) {
       const account = event.data.object as Stripe.Account;
       const businessId = account.metadata?.business_id;
       if (!businessId) return;
-      await rpc(db, 'stripe_account_synced', {
-        p_business_id: businessId, p_account: account.id,
-        p_charges: account.charges_enabled, p_payouts: account.payouts_enabled, p_details: account.details_submitted,
-      });
+      // The v1 view of a recipient account never has card payments, so read what it may do from Accounts v2.
+      await syncAccount(db, businessId, await stripe.v2.core.accounts.retrieve(account.id, { include: ACCOUNT_INCLUDE }));
       return;
     }
     default:

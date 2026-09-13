@@ -26,7 +26,8 @@ async function user(phone=true):Promise<Account>{
 async function business(owner:Account,status='approved'){
  const {data,error}=await owner.client.rpc('create_business',{p_data:{display_name:`Test ${run}`,category_slug:'test',phone:'+420777123456',public_email:'test@flek.test',address_line:'Testovací 1',city:'Praha',postal_code:'12000',latitude:50.0755,longitude:14.4378}});
  if(error)throw error; businesses.push(data.id);
- await db.query('update public.businesses set status=$1 where id=$2',[status,data.id]);return data.id as string;
+ // Payments go through Stripe only, so a test venue needs a (fake) connected account that may receive transfers.
+ await db.query('update public.businesses set status=$1,stripe_account_id=$3,stripe_charges_enabled=true where id=$2',[status,data.id,`acct_test_${data.id.slice(0,8)}`]);return data.id as string;
 }
 async function offer(cap=1,options:{business?:string;start?:number;cutoff?:number;status?:string}={}){
  const b=options.business??biz;
@@ -34,15 +35,15 @@ async function offer(cap=1,options:{business?:string;start?:number;cutoff?:numbe
  const r=await db.query(`insert into public.offers(business_id,service_id,start_at,end_at,booking_cutoff_at,original_price_cents,deal_price_cents,capacity_total,capacity_remaining,status) values($1,$2,now()+$3*interval '1 minute',now()+($3+45)*interval '1 minute',now()+$4*interval '1 minute',65000,39000,$5,$5,$6) returning *`,[b,s,options.start??180,options.cutoff??150,cap,options.status??'published']);
  return r.rows[0] as {id:string;capacity_remaining:number};
 }
-// Booking now requires settled money, so the helper pays first.
+// Booking needs a paid Stripe payment. The service role stands in for Stripe's webhook, which marks the
+// payment paid and books the seat; create_booking then returns that booking or the reason there is none.
 async function book(a:Account,o:{id:string}){
  const started=await a.client.rpc('start_payment',{p_offer_id:o.id});
  if(started.error)return started;
- const settled=await a.client.rpc('demo_confirm_payment',{p_payment_id:(started.data as {id:string}).id});
- if(settled.error)return settled;
- const result=await a.client.rpc('create_booking',{p_offer_id:o.id,p_payment_id:(settled.data as {id:string}).id});
- if(result.error)await a.client.rpc('release_unbooked_payment',{p_payment_id:(settled.data as {id:string}).id});
- return result;
+ const payment=started.data as {id:string;amount_cents:number};
+ const paid=await admin.rpc('stripe_payment_succeeded',{p_payment_id:payment.id,p_intent:`pi_test_${payment.id}`,p_amount:payment.amount_cents,p_currency:'czk',p_livemode:false});
+ if(paid.error)throw paid.error;
+ return a.client.rpc('create_booking',{p_offer_id:o.id,p_payment_id:payment.id});
 }
 async function stored(id:string){return (await db.query('select * from public.offers where id=$1',[id])).rows[0] as {capacity_remaining:number;capacity_total:number};}
 function code(error:{message:string}|null,expected:string){expect(error?.message).toContain(expected);}

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
-import { confirmDemoPayment, createBooking, openCheckout, paymentsMode, releaseUnbookedPayment, saveProfile, startPayment } from '../../lib/api';
+import { openCheckout, paymentsMode, saveProfile, startPayment } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
 import { profileSchema } from '../../lib/schemas';
@@ -16,13 +16,6 @@ import type { OfferDetail } from '../../types/database';
 
 type ProfileValues = z.infer<typeof profileSchema>;
 
-/** The booking failed after the money had moved — and the money has already gone back. */
-class PaymentReturned extends Error {
-  constructor(readonly original: unknown) {
-    super(original instanceof Error ? original.message : 'BOOKING_FAILED');
-  }
-}
-
 /**
  * Confirmation sheet. Phone capture happens here — in flow, not at signup — because the
  * merchant needs a way to reach the customer and it visibly raises commitment.
@@ -32,20 +25,17 @@ export function BookingSheet({
   now,
   open,
   onClose,
-  onBooked,
 }: {
   offer: OfferDetail;
   now: string;
   open: boolean;
   onClose: () => void;
-  onBooked: (code: string, bookingId: string) => void;
 }) {
   const { profile, userId } = useSession();
   const { navigate, search } = useRouter();
   const queryClient = useQueryClient();
   const [failure, setFailure] = useState<string | null>(null);
   const mode = useQuery({ queryKey: ['payments-mode'], queryFn: paymentsMode, staleTime: 300_000 });
-  const stripe = mode.data?.provider === 'stripe';
   const needsPhone = !hasPhone(profile);
   const needsName = !profile?.first_name?.trim();
 
@@ -67,54 +57,24 @@ export function BookingSheet({
   const book = useMutation({
     mutationFn: async (values: ProfileValues | null) => {
       if (values) await saveProfile(values);
-      // Money first, seat second: the booking RPC refuses anything but a settled payment,
-      // and the amount it checks comes from the offer row rather than from here.
+      // The amount comes from the offer row on the server, never from this screen.
       const payment = await startPayment(offer.id);
-      // A merchant may have edited the price after this sheet opened. Never settle
-      // a higher (or different) amount without the customer reviewing it first.
-      if (payment.amount_cents !== offer.deal_price_cents) {
-        if (payment.status === 'paid') await releaseUnbookedPayment(payment.id);
-        throw new Error('PRICE_CHANGED');
-      }
-      if (payment.provider === 'stripe') {
-        /*
-         * The card is entered on Stripe's own page. The seat is booked by Stripe's webhook, not
-         * by this tab, so a customer who pays and closes the browser still gets the booking;
-         * the detail page picks the result up from `?platba=` when they come back.
-         */
-        const checkout = await openCheckout(payment.id);
-        if (checkout.url) window.location.assign(checkout.url);
-        else navigate(`/nabidka/${offer.id}?platba=${payment.id}`, { replace: true });
-        return await new Promise<never>(() => undefined);
-      }
-      const settled = payment.status === 'paid' ? payment : await confirmDemoPayment(payment.id);
-      try {
-        return await createBooking(offer.id, settled.id);
-      } catch (error) {
-        /*
-         * Paid, but no seat — the last one went to someone else, or the price moved. Give the
-         * money back now rather than leave it "paid" with nothing behind it. If the server
-         * says the payment already has a booking, the first answer was only lost on the way:
-         * asking again returns that same booking, so the customer gets their code.
-         */
-        const released = await releaseUnbookedPayment(settled.id).catch(() => null);
-        if (released?.status === 'paid') return await createBooking(offer.id, settled.id);
-        if (released?.status === 'refunded') throw new PaymentReturned(error);
-        throw error;
-      }
-    },
-    onSuccess: async (booking) => {
-      await queryClient.invalidateQueries();
-      onBooked(booking.reservation_code, booking.booking_id);
+      // A merchant may have edited the price after this sheet opened: show the new one first.
+      if (payment.amount_cents !== offer.deal_price_cents) throw new Error('PRICE_CHANGED');
+      /*
+       * The card is entered on Stripe's own page. The seat is booked by Stripe's webhook, not
+       * by this tab, so a customer who pays and closes the browser still gets the booking;
+       * the detail page picks the result up from `?platba=` when they come back.
+       */
+      const checkout = await openCheckout(payment.id);
+      if (checkout.url) window.location.assign(checkout.url);
+      else navigate(`/nabidka/${offer.id}?platba=${payment.id}`, { replace: true });
+      return await new Promise<never>(() => undefined);
     },
     onError: (error) => {
       const code = error instanceof Error ? error.message : 'UNKNOWN';
       track('booking_failed', { offer_id: offer.id, code: code.slice(0, 80) });
-      setFailure(
-        error instanceof PaymentReturned
-          ? `${errorMessage(error.original)} Platbu jsme ti hned vrátili.`
-          : errorMessage(error),
-      );
+      setFailure(errorMessage(error));
       // Availability may have changed under us; refresh what the customer is looking at.
       void queryClient.invalidateQueries({ queryKey: ['offer', offer.id] });
       void queryClient.invalidateQueries({ queryKey: ['discovery'] });
@@ -155,7 +115,7 @@ export function BookingSheet({
             else book.mutate(null);
           }}
         >
-          {stripe ? `Pokračovat k platbě ${money(offer.deal_price_cents)}` : `Zaplatit ${money(offer.deal_price_cents)}`}
+          Pokračovat k platbě {money(offer.deal_price_cents)}
         </Button>
       }
     >
@@ -222,19 +182,12 @@ export function BookingSheet({
       ) : null}
 
       <p className="mt-5 rounded-xl bg-surface px-3 py-2 text-sm text-muted">
-        {stripe
-          ? 'Zaplatíš kartou, Apple Pay nebo Google Pay na zabezpečené stránce Stripe a vrátíme tě sem s rezervačním kódem. Když zrušíš včas, vrátíme ti celou částku.'
-          : 'Platíš rovnou přes FLEK a v podniku už jen ukážeš kód. Když zrušíš včas, vrátíme ti celou částku.'}
+        Zaplatíš kartou, Apple Pay nebo Google Pay na zabezpečené stránce Stripe a vrátíme tě sem s rezervačním kódem. Když zrušíš včas, vrátíme ti celou částku.
       </p>
-      {stripe && mode.data?.test ? (
+      {mode.data?.test ? (
         <p className="tnum mt-2 rounded-xl border border-warning/30 bg-warning/8 px-3 py-2 text-sm text-ink">
           <strong>Testovací platby.</strong> Použij kartu 4242 4242 4242 4242, libovolné budoucí datum a CVC. Žádné
           peníze se nestrhnou.
-        </p>
-      ) : null}
-      {mode.data && !stripe ? (
-        <p className="mt-2 rounded-xl border border-warning/30 bg-warning/8 px-3 py-2 text-sm text-ink">
-          <strong>Ukázkový režim.</strong> Platební brána zatím není napojená — žádné peníze se nestrhnou.
         </p>
       ) : null}
 

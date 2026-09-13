@@ -104,8 +104,7 @@ async function publish(capacity, minutesAhead = 180) {
 }
 
 
-const MODE = (await createClient(URL_, ANON, { auth: { persistSession: false } }).rpc('payments_mode')).data?.provider ?? 'demo';
-console.log(`Platby: ${MODE}`);
+const MODE = 'stripe';
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** Polls the customer's view of a payment until `done` says so, for Stripe's asynchronous webhook. */
@@ -126,7 +125,6 @@ async function waitPayment(client, paymentId, done, timeoutMs = 45_000) {
  * The result keeps the shape of the demo RPC so the checks below read the same in both modes.
  */
 async function settle(client, paymentId) {
-  if (MODE !== 'stripe') return client.rpc('demo_confirm_payment', { p_payment_id: paymentId });
   const { error } = await client.functions.invoke('stripe-test-pay', { body: { payment_id: paymentId } });
   if (error) {
     const body = await error.context?.json?.().catch(() => null);

@@ -4,7 +4,13 @@ Aktualizováno 13. 9. 2026. Aktuální implementaci shrnuje [přehled projektu](
 
 ## Platby a výplaty
 
-Platby používají `provider=demo`. Potvrzení a vrácení mění databázový stav; skutečné peníze se nestrhávají ani neposílají. Checkout to výslovně uvádí. Nový cenový model a neměnné finanční snímky jsou implementované, ale napojení skutečné brány, refund API, skutečné výplaty a účetní doklady zůstávají mimo pilot.
+Platby jdou jen přes Stripe Connect (Checkout, destination charge, poplatek FLEKu jako application fee), zatím v **testovacím režimu** Stripe: platí se testovací kartou 4242 4242 4242 4242 a žádné peníze se nestrhnou. Demo platby (`demo_confirm_payment`) jsou odstraněné; starší platby s `provider=demo` zůstaly jen kvůli historii.
+
+- Demo podniky mají testovací účty Stripe bez dashboardu (Accounts v2, testovací údaje a IBAN). Příjem plateb je aktivní, výplaty (`payouts`) Stripe k 13. 9. ještě neaktivoval.
+- Stav účtu podniku se obnovuje při návratu z onboardingu, otevřením sekce „Platby a výplaty“ a přes `account.updated`. Tuto událost ale posílá jen Connect webhook. Události Accounts v2 (`v2.core.account…`) zatím nikdo neposlouchá.
+- FLEKy podniku, kterému Stripe později platby omezí, se ve feedu dál zobrazují. Rezervace ale skončí hláškou `PAYMENTS_NOT_READY`.
+- Ostrý režim vyžaduje živé klíče, nový webhook, `stripe_test_mode=false` v `private.settings`, potvrzenou odpovědnost platformy za ztráty v nastavení Connect a vypnutí `stripe-test-pay`. Účetní doklady a fakturace poplatků chybí.
+- Formulář „Výplatní a fakturační údaje“ v provozovně se stále ptá na číslo účtu, přestože výplaty už posílá Stripe na účet zadaný v jeho onboardingu.
 
 ## Testy a zařízení
 

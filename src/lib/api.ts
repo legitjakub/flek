@@ -97,7 +97,7 @@ async function invokeFunction<T>(name: string, body: Record<string, unknown>): P
 }
 
 export async function paymentsMode(): Promise<PaymentsMode> {
-  return (await result<PaymentsMode>(supabase.rpc('payments_mode'))) ?? { provider: 'demo', test: true };
+  return (await result<PaymentsMode>(supabase.rpc('payments_mode'))) ?? { provider: 'stripe', test: false };
 }
 
 /** Stripe Checkout for a started payment: either a page to go to, or word that it is already paid. */
@@ -126,31 +126,11 @@ export async function startPayment(offerId: string): Promise<Payment> {
 }
 
 /**
- * Demo settlement. A real gateway never goes through here — it settles the same row from
- * its webhook, and this call disappears with the demo provider.
- */
-export async function confirmDemoPayment(paymentId: string): Promise<Payment> {
-  return await result<Payment>(supabase.rpc('demo_confirm_payment', { p_payment_id: paymentId }));
-}
-
-/**
  * The payment went through but the booking did not. Returns the money at once instead of
  * leaving it "paid" with nothing behind it; the scheduled sweep is only the safety net.
  */
 export async function releaseUnbookedPayment(paymentId: string): Promise<Payment> {
   return await result<Payment>(supabase.rpc('release_unbooked_payment', { p_payment_id: paymentId }));
-}
-
-export async function createBooking(
-  offerId: string,
-  paymentId: string,
-): Promise<{ booking_id: string; reservation_code: string }> {
-  const rows = await result<{ booking_id: string; reservation_code: string }[]>(
-    supabase.rpc('create_booking', { p_offer_id: offerId, p_payment_id: paymentId }),
-  );
-  const row = rows?.[0];
-  if (!row) throw new Error('OFFER_UNAVAILABLE');
-  return row;
 }
 
 export async function cancelBooking(bookingId: string): Promise<void> {

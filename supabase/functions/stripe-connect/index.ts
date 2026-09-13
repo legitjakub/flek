@@ -1,4 +1,7 @@
-import { appOrigin, caller, isTestMode, json, message, preflight, serviceClient, Stripe, stripeClient, UUID } from '../_shared/stripe.ts';
+import {
+  ACCOUNT_INCLUDE, accountFlags, appOrigin, caller, type ConnectedAccount, isTestMode, json, message, preflight, serviceClient,
+  Stripe, stripeClient, syncAccount, UUID,
+} from '../_shared/stripe.ts';
 import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 
 type Business = {
@@ -10,7 +13,7 @@ type Business = {
 
 /**
  * Connects a business to Stripe so it can be paid.
- *   onboard        creates the business's Express account once and returns Stripe's onboarding link
+ *   onboard        creates the business's Stripe account once (Accounts v2) and returns Stripe's onboarding link
  *   status         asks Stripe what the account may do and stores it
  *   dashboard      returns a one-time link to the business's Stripe Express dashboard (payouts)
  *   demo_accounts  admin, test mode only: gives every demo business a ready test account
@@ -54,21 +57,27 @@ Deno.serve(async (request) => {
     if (!business) return json(request, { error: 'NOT_FOUND' }, 404);
 
     if (action === 'onboard') {
-      const accountId = business.stripe_account_id ?? (await createExpressAccount(stripe, db, business));
-      const origin = appOrigin(request);
-      const link = await stripe.accountLinks.create({
+      const accountId = business.stripe_account_id ?? (await createRecipientAccount(stripe, db, business));
+      // Stripe requires HTTPS return addresses, so a local build returns to production.
+      const origin = appOrigin(request).startsWith('https://') ? appOrigin(request) : 'https://flek-nine.vercel.app';
+      const link = await stripe.v2.core.accountLinks.create({
         account: accountId,
-        type: 'account_onboarding',
-        refresh_url: `${origin}/partner/provozovna?stripe=znovu`,
-        return_url: `${origin}/partner/provozovna?stripe=hotovo`,
+        use_case: {
+          type: 'account_onboarding',
+          account_onboarding: {
+            configurations: ['recipient'],
+            refresh_url: `${origin}/partner/provozovna?stripe=znovu`,
+            return_url: `${origin}/partner/provozovna?stripe=hotovo`,
+          },
+        },
       });
       return json(request, { url: link.url });
     }
 
     if (action === 'status') {
       if (!business.stripe_account_id) return json(request, { connected: false });
-      const account = await stripe.accounts.retrieve(business.stripe_account_id);
-      await sync(db, business.id, account);
+      const account = await stripe.v2.core.accounts.retrieve(business.stripe_account_id, { include: ACCOUNT_INCLUDE });
+      await syncAccount(db, business.id, account);
       return json(request, summary(account));
     }
 
@@ -85,53 +94,50 @@ Deno.serve(async (request) => {
   }
 });
 
-async function createExpressAccount(stripe: Stripe, db: SupabaseClient, business: Business) {
-  const account = await stripe.accounts.create(
+/**
+ * Accounts v2, recipient configuration: the business receives transfers from FLEK's destination
+ * charges, sees payouts in the Stripe Express dashboard, and Stripe collects its details in hosted
+ * onboarding. FLEK pays Stripe's fees and carries negative balances, as destination charges require.
+ */
+async function createRecipientAccount(stripe: Stripe, db: SupabaseClient, business: Business) {
+  const account = await stripe.v2.core.accounts.create(
     {
-      country: 'CZ',
-      email: business.public_email ?? undefined,
-      controller: {
-        stripe_dashboard: { type: 'express' },
-        fees: { payer: 'application' },
-        losses: { payments: 'application' },
-        requirement_collection: 'stripe',
+      contact_email: business.public_email ?? undefined,
+      display_name: business.display_name,
+      dashboard: 'express',
+      identity: { country: 'cz' },
+      defaults: {
+        currency: 'czk',
+        locales: ['cs-CZ'],
+        responsibilities: { fees_collector: 'application', losses_collector: 'application' },
+        profile: { product_description: 'Služby na místě rezervované přes FLEK' },
       },
-      capabilities: { card_payments: { requested: true }, transfers: { requested: true } },
-      business_profile: { name: business.display_name, product_description: 'Služby na místě rezervované přes FLEK' },
+      configuration: { recipient: { capabilities: { stripe_balance: { stripe_transfers: { requested: true } } } } },
+      include: ACCOUNT_INCLUDE,
       metadata: { business_id: business.id },
     },
-    { idempotencyKey: `flek-account-${business.id}` },
+    { idempotencyKey: `flek-account-v2-${business.id}` },
   );
-  await sync(db, business.id, account);
+  await syncAccount(db, business.id, account);
   return account.id;
 }
 
-async function sync(db: SupabaseClient, businessId: string, account: Stripe.Account) {
-  const { error } = await db.rpc('stripe_account_synced', {
-    p_business_id: businessId,
-    p_account: account.id,
-    p_charges: account.charges_enabled,
-    p_payouts: account.payouts_enabled,
-    p_details: account.details_submitted,
-  });
-  if (error) throw new Error(`stripe_account_synced: ${error.message}`);
-}
-
-function summary(account: Stripe.Account) {
+function summary(account: ConnectedAccount) {
+  const f = accountFlags(account);
   return {
     connected: true,
-    charges_enabled: account.charges_enabled,
-    payouts_enabled: account.payouts_enabled,
-    details_submitted: account.details_submitted,
-    currently_due: account.requirements?.currently_due ?? [],
-    disabled_reason: account.requirements?.disabled_reason ?? null,
+    charges_enabled: f.charges,
+    payouts_enabled: f.payouts,
+    details_submitted: f.details,
+    currently_due: f.due,
+    disabled_reason: f.reason,
   };
 }
 
 /**
  * Test mode only. Demo businesses have no people behind them to go through onboarding, so each gets
- * an account whose details are Stripe's documented test values (1901-01-01 birth date,
- * `address_full_match`, Stripe's Czech test IBAN), which Stripe verifies instantly.
+ * a recipient account without a Stripe dashboard, where FLEK supplies the details itself: Stripe's
+ * documented test values (1901-01-01 birth date, `address_full_match`, test IBAN), verified instantly.
  */
 async function demoAccounts(stripe: Stripe, db: SupabaseClient) {
   const { data: members, error } = await db.from('business_members').select('business_id, user_id');
@@ -156,45 +162,48 @@ async function demoAccounts(stripe: Stripe, db: SupabaseClient) {
   const results = [];
   for (const business of (businesses ?? []) as Business[]) {
     try {
-      const account = business.stripe_account_id
-        ? await stripe.accounts.retrieve(business.stripe_account_id)
-        : await stripe.accounts.create(
+      const email = `platby-${business.id.slice(0, 8)}@flek.test`;
+      let account = business.stripe_account_id
+        ? await stripe.v2.core.accounts.retrieve(business.stripe_account_id, { include: ACCOUNT_INCLUDE })
+        : await stripe.v2.core.accounts.create(
           {
-            country: 'CZ',
-            email: `platby-${business.id.slice(0, 8)}@flek.test`,
-            controller: {
-              stripe_dashboard: { type: 'none' },
-              fees: { payer: 'application' },
-              losses: { payments: 'application' },
-              requirement_collection: 'application',
+            contact_email: email,
+            display_name: business.display_name,
+            dashboard: 'none',
+            identity: {
+              country: 'cz',
+              entity_type: 'individual',
+              individual: {
+                given_name: 'Demo',
+                surname: 'Provozovna',
+                email,
+                phone: '+420777000000',
+                date_of_birth: { day: 1, month: 1, year: 1901 },
+                address: { line1: 'address_full_match', city: 'Praha', postal_code: '11000', country: 'cz' },
+              },
+              attestations: { terms_of_service: { account: { date: new Date().toISOString(), ip: '127.0.0.1' } } },
             },
-            capabilities: { card_payments: { requested: true }, transfers: { requested: true } },
-            business_type: 'individual',
-            business_profile: {
-              mcc: '7298',
-              url: 'https://flek-nine.vercel.app',
-              product_description: `Demo provozovna ${business.display_name}`,
-            },
-            individual: {
-              first_name: 'Demo',
-              last_name: 'Provozovna',
-              email: `platby-${business.id.slice(0, 8)}@flek.test`,
-              phone: '+420777000000',
-              dob: { day: 1, month: 1, year: 1901 },
-              address: { line1: 'address_full_match', city: 'Praha', postal_code: '11000', country: 'CZ' },
-            },
-            external_account: {
-              object: 'bank_account',
-              country: 'CZ',
+            defaults: {
               currency: 'czk',
-              account_number: 'CZ6508000000192000145399',
+              responsibilities: { fees_collector: 'application', losses_collector: 'application' },
+              profile: { business_url: 'https://flek-nine.vercel.app', product_description: `Demo provozovna ${business.display_name}` },
             },
-            tos_acceptance: { date: Math.floor(Date.now() / 1000), ip: '127.0.0.1' },
+            configuration: { recipient: { capabilities: { stripe_balance: { stripe_transfers: { requested: true } } } } },
+            include: ACCOUNT_INCLUDE,
             metadata: { business_id: business.id, demo: 'true' },
           },
-          { idempotencyKey: `flek-demo-account-${business.id}` },
+          { idempotencyKey: `flek-demo-account-v2-${business.id}` },
         );
-      await sync(db, business.id, account);
+      if (accountFlags(account).due.includes('external_account')) {
+        // Stripe's Czech test IBAN, to which every test payout succeeds.
+        await stripe.accounts.createExternalAccount(
+          account.id,
+          { external_account: { object: 'bank_account', country: 'CZ', currency: 'czk', account_number: 'CZ6508000000192000145399' } },
+          { idempotencyKey: `flek-demo-bank-${account.id}` },
+        );
+        account = await stripe.v2.core.accounts.retrieve(account.id, { include: ACCOUNT_INCLUDE });
+      }
+      await syncAccount(db, business.id, account);
       results.push({ business: business.display_name, account: account.id, ...summary(account) });
     } catch (error) {
       results.push({ business: business.display_name, error: message(error) });
