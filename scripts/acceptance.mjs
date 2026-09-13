@@ -502,13 +502,22 @@ const listen = async (client, bucket) => {
   });
 };
 const channels = [await listen(merchant.client, 'own'), await listen(merchant2.client, 'foreign')];
+// SUBSCRIBED means the socket joined, not that the server is already streaming changes for
+// it; a row written in the same instant can be missed. Measured on the hosted project, a
+// settled subscription delivers in 166–487 ms — so settle first, then wait for the event
+// itself rather than for a fixed interval.
+await new Promise((resolve) => setTimeout(resolve, 2000));
 const live = await publish(1, 280);
 const liveBuyer = users.find((u) => u !== buyer && u !== loser && u !== otherUser && u !== customer) ?? users[5];
 const liveBooking = await book(liveBuyer.client, live);
-await new Promise((resolve) => setTimeout(resolve, 6000));
 const liveId = liveBooking.data?.[0]?.booking_id;
+for (let waited = 0; waited < 15_000 && liveId && !heard.own.includes(liveId); waited += 250) {
+  await new Promise((resolve) => setTimeout(resolve, 250));
+}
+// Give a leak to the foreign venue the same chance to show up before judging it absent.
+await new Promise((resolve) => setTimeout(resolve, 1500));
 check('Realtime: podnik se o nové rezervaci dozví bez obnovení', Boolean(liveId) && heard.own.includes(liveId),
-  `přijato ${heard.own.length}`);
+  liveId ? `přijato ${heard.own.length}` : `rezervace se nevytvořila: ${err(liveBooking.error)}`);
 check('Realtime: cizí podnik nedostane nic', heard.foreign.length === 0, `přijato ${heard.foreign.length}`);
 for (const channel of channels) await channel.unsubscribe();
 
