@@ -1,5 +1,5 @@
 import { SlidersHorizontal, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button, Field, Input, Segmented, Sheet } from '../../components/ui';
 import type { Category, SortKey } from '../../types/database';
 import {
@@ -31,6 +31,7 @@ export function FilterBar({
   resultCount,
   pending,
   applied,
+  floating = false,
 }: {
   filters: Filters;
   onChange: (next: Filters) => void;
@@ -43,6 +44,8 @@ export function FilterBar({
    * is the whole reason the filters read as broken.
    */
   applied?: { when: When; radius_m: number };
+  /** Over a full-screen map: white pills lifted by a shadow instead of outlined on cream. */
+  floating?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<Filters>(filters);
@@ -50,6 +53,19 @@ export function FilterBar({
   const label = (slug: string) => categories.find((c) => c.slug === slug)?.label_cs ?? slug;
   const chips = activeChips(filters, label);
   const lit = intentOf({ ...filters, when: applied?.when ?? filters.when });
+  const rail = useRef<HTMLDivElement>(null);
+
+  // The lit pill can sit past the fade at the rail's end ("Dnes" on a phone, beside Filtry),
+  // which reads as nothing being selected. Scroll the rail itself — never the page — to it.
+  useEffect(() => {
+    const viewport = rail.current;
+    const chip = viewport?.querySelector<HTMLElement>('[aria-checked="true"]');
+    if (!viewport || !chip) return;
+    const outer = viewport.getBoundingClientRect();
+    const inner = chip.getBoundingClientRect();
+    if (inner.right > outer.right - 32) viewport.scrollLeft += inner.right - outer.right + 32;
+    else if (inner.left < outer.left) viewport.scrollLeft -= outer.left - inner.left + 4;
+  }, [lit]);
   // The ladder can search at 25 km while the radius chip still reads 5 km and the Filtry
   // badge reads zero. Say it, and give it no cross — it is not the customer's choice to undo.
   const widened =
@@ -65,7 +81,7 @@ export function FilterBar({
       <div className="flex items-end gap-3">
         <div className="min-w-0 flex-1">
           {/* The six labelled pills say this themselves; the heading only cost height. */}
-          <div role="radiogroup" aria-label="Kdy máš čas" className="rail rail-fade -mx-1 -my-1 flex gap-2 px-1 py-1">
+          <div ref={rail} role="radiogroup" aria-label="Kdy máš čas" className={`rail rail-fade -mx-1 flex gap-2 px-1 ${floating ? '-my-3 py-3' : '-my-1 py-1'}`}>
             {TIME_INTENTS.map((intent) => {
               const active = lit === intent.key;
               return (
@@ -75,7 +91,7 @@ export function FilterBar({
                   role="radio"
                   aria-checked={active}
                   onClick={() => onChange(applyIntent(filters, intent.key))}
-                  className={`min-h-11 shrink-0 rounded-full border px-4 text-sm font-bold whitespace-nowrap transition-colors ${active ? 'border-ink bg-ink text-accent-ink' : 'border-line bg-card text-ink hover:border-accent'}`}
+                  className={`min-h-11 shrink-0 rounded-full border px-4 text-sm font-bold whitespace-nowrap transition-colors ${active ? 'border-ink bg-ink text-accent-ink' : floating ? 'border-transparent bg-card text-ink shadow-card hover:border-accent' : 'border-line bg-card text-ink hover:border-accent'} ${floating && active ? 'shadow-card' : ''}`}
                 >
                   {intent.label}
                 </button>
@@ -83,7 +99,7 @@ export function FilterBar({
             })}
           </div>
         </div>
-        <button type="button" onClick={openSheet} aria-haspopup="dialog" className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-line bg-card px-4 text-sm font-bold hover:border-accent">
+        <button type="button" onClick={openSheet} aria-haspopup="dialog" className={`inline-flex min-h-11 shrink-0 items-center gap-2 border bg-card px-4 text-sm font-bold hover:border-accent ${floating ? 'rounded-full border-transparent shadow-card' : 'rounded-xl border-line'}`}>
           <SlidersHorizontal size={17} aria-hidden="true" />
           Filtry
           {count ? (
@@ -105,7 +121,7 @@ export function FilterBar({
               key={chip.key}
               type="button"
               onClick={() => onChange(chip.clear(filters))}
-              className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-line bg-card py-1 pr-2 pl-3 font-bold text-ink transition-colors hover:border-accent"
+              className={`inline-flex min-h-9 items-center gap-1.5 rounded-full border bg-card py-1 pr-2 pl-3 font-bold text-ink transition-colors hover:border-accent ${floating ? 'border-transparent shadow-card' : 'border-line'}`}
             >
               {chip.label}
               <X size={15} aria-hidden="true" className="text-muted" />
@@ -113,7 +129,7 @@ export function FilterBar({
             </button>
           ))}
           {widened ? (
-            <span className="inline-flex min-h-9 items-center rounded-full bg-warning-soft px-3 py-1 font-bold text-warning">
+            <span className={`inline-flex min-h-9 items-center rounded-full bg-warning-soft px-3 py-1 font-bold text-warning ${floating ? 'shadow-card' : ''}`}>
               {widened}
             </span>
           ) : null}
@@ -121,7 +137,7 @@ export function FilterBar({
             <button
               type="button"
               onClick={() => onChange({ ...DEFAULT_FILTERS, when: filters.when })}
-              className="min-h-9 font-bold text-accent underline underline-offset-4"
+              className={`min-h-9 font-bold underline underline-offset-4 ${floating ? 'rounded-full bg-card px-3 text-ink shadow-card' : 'text-accent'}`}
             >
               Zrušit vše
             </button>

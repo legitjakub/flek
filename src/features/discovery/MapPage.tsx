@@ -1,21 +1,23 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, Crosshair, List, MapPin, X } from 'lucide-react';
+import { Crosshair, List } from 'lucide-react';
 import { Link, useRouter } from '../../app/router';
 import { listCategories } from '../../lib/api';
 import { money, distance } from '../../lib/format';
 import { DiscountBadge, OriginalPrice } from '../../components/Price';
 import { clockTime, dayLabel, duration } from '../../lib/time';
 import { useServerNow } from '../../lib/clock';
-import { Banner, EmptyState, ErrorState, Skeleton } from '../../components/ui';
+import { Banner, ErrorState, Spinner, cx } from '../../components/ui';
 import { LazyMap } from '../offers/LazyMap';
 import { LocationChip } from './LocationChip';
 import { FilterBar, plural } from './FilterBar';
 import { useDiscoveryState } from './useDiscoveryState';
 import { useDiscovery } from './useDiscovery';
 import { groupMapOffers } from './mapOffers';
+import { MapPreviewCard } from './MapPreviewCard';
 import { locate } from '../../lib/geo';
-import { useSnapCarousel } from '../../components/useSnapCarousel';
+import { serviceIllustration } from '../../lib/serviceIllustrations';
+import { thumbnail } from '../../lib/thumbnail';
 import type { SearchRow } from '../../types/database';
 
 const markerTime = new Intl.DateTimeFormat('cs-CZ', {
@@ -25,31 +27,60 @@ const markerTime = new Intl.DateTimeFormat('cs-CZ', {
   timeZone: 'Europe/Prague',
 });
 
+/*
+ * Free space the camera keeps around the results. On a phone the search controls float over
+ * the top of the map and the tab bar over its bottom; a pin framed underneath either could
+ * not be tapped.
+ */
+const PHONE_FRAME = { top: 170, right: 40, bottom: 120, left: 40 };
+const WIDE_FRAME = { top: 150, right: 72, bottom: 64, left: 72 };
+/* What the preview card and the controls cover while a pin is open, so the pin stays visible. */
+const PHONE_FOCUS = { top: 150, bottom: 450 };
+const WIDE_FOCUS = { top: 150, bottom: 400 };
+
+/**
+ * The map is the screen: full height under the header, search controls floating over its top,
+ * service photos as pins. A pin opens a preview card at the bottom; the list beside the map
+ * stays for wide screens, where there is room for both.
+ */
 export function MapPage() {
   const { point, setPoint, filters, setFilters } = useDiscoveryState();
-  const { search, navigate } = useRouter();
+  const { search } = useRouter();
   const [openGroup, setOpenGroup] = useState<string[]>([]);
   const [highlighted, setHighlighted] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
   const [locateError, setLocateError] = useState(false);
+  const [phone, setPhone] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
   const now = useServerNow();
   const discovery = useDiscovery(point, filters);
   const categories = useQuery({ queryKey: ['categories'], queryFn: listCategories, staleTime: 3_600_000 });
   const rows = discovery.data?.rows;
   const groups = useMemo(() => groupMapOffers(rows ?? []), [rows]);
-  const selectedOffers = groups.filter((group) => openGroup.includes(group.id)).flatMap((group) => group.offers).sort((a, b) => a.start_at.localeCompare(b.start_at));
-  const carousel = useSnapCarousel<HTMLUListElement>(selectedOffers.length, openGroup.join(':'));
-  const oneBusiness = new Set(selectedOffers.map((offer) => offer.business_id)).size === 1;
+  const selectedOffers = groups
+    .filter((group) => openGroup.includes(group.id))
+    .flatMap((group) => group.offers)
+    .sort((a, b) => a.start_at.localeCompare(b.start_at));
   const origin = `/mapa${search.size ? `?${search}` : ''}`;
-  const detailHref = (id: string) => `/nabidka/${id}?from=${encodeURIComponent(origin)}`;
-  const markers = useMemo(() => groups.map((group) => ({
-    id: group.id, lat: group.lat, lng: group.lng,
-    label: `${group.offers.length > 1 ? 'od ' : ''}${money(group.minPrice)}`,
-    count: group.offers.length, price: group.minPrice,
-    description: group.offers.length === 1
-      ? `Otevřít ${group.offers[0].service_name}, ${group.offers[0].business_name}, ${markerTime.format(new Date(group.offers[0].start_at))}, ${money(group.minPrice)}`
-      : `${group.offers[0].business_name}: ${group.offers.length} termíny, od ${money(group.minPrice)}. Vybrat termín.`,
-  })), [groups]);
+  const detailHref = useCallback((id: string) => `/nabidka/${id}?from=${encodeURIComponent(origin)}`, [origin]);
+  const markers = useMemo(() => groups.map((group) => {
+    const first = group.offers[0];
+    return {
+      id: group.id, lat: group.lat, lng: group.lng,
+      label: `${group.offers.length > 1 ? 'od ' : ''}${money(group.minPrice)}`,
+      count: group.offers.length, price: group.minPrice,
+      image: thumbnail(serviceIllustration(first.service_name, first.image_url, first.cover_url)),
+      description: group.offers.length === 1
+        ? `${first.service_name}, ${first.business_name}, ${markerTime.format(new Date(first.start_at))}, ${money(group.minPrice)}. Zobrazit náhled.`
+        : `${first.business_name}: ${group.offers.length} termíny, od ${money(group.minPrice)}. Zobrazit termíny.`,
+    };
+  }), [groups]);
+
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 767px)');
+    const update = () => setPhone(query.matches);
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
 
   useEffect(() => {
     setOpenGroup((current) => {
@@ -58,12 +89,15 @@ export function MapPage() {
     });
   }, [groups]);
 
-  function openMarker(id: string) {
-    const group = groups.find((item) => item.id === id);
-    if (!group) return;
-    if (group.offers.length === 1) navigate(detailHref(group.offers[0].id));
-    else setOpenGroup([id]);
-  }
+  const closePreview = useCallback(() => {
+    const ids = openGroup;
+    setOpenGroup([]);
+    // Back to the pin that opened the card, so a keyboard user does not start over at the top.
+    const pin = [...document.querySelectorAll<HTMLElement>('[data-map-ids]')].find((element) =>
+      ids.some((id) => (JSON.parse(element.dataset.mapIds ?? '[]') as string[]).includes(id)),
+    );
+    pin?.focus({ preventScroll: true });
+  }, [openGroup]);
 
   async function useMyLocation() {
     setLocating(true);
@@ -77,171 +111,166 @@ export function MapPage() {
     }
   }
 
+  const empty = discovery.isSuccess && !rows?.length;
+
   return (
-    <main className="page-container map-page flex flex-col gap-3 py-4 md:py-5">
-      <div className="flex shrink-0 items-center justify-between gap-3">
-        <LocationChip point={point} onChange={setPoint} />
-        <Link to={`/${search.size ? `?${search}` : ''}`} className="inline-flex min-h-11 items-center gap-2 text-sm font-bold text-accent"><List size={18} aria-hidden="true" />Seznam</Link>
-      </div>
+    <main className="map-page map-full relative flex">
       <h1 className="sr-only">Volné termíny na mapě</h1>
-      <FilterBar filters={filters} onChange={setFilters} categories={categories.data ?? []} resultCount={rows?.length ?? 0} pending={discovery.isFetching} applied={discovery.data?.applied} />
-      {discovery.isError ? <ErrorState error={discovery.error} onRetry={() => discovery.refetch()} /> : null}
-      {discovery.data?.note ? <Banner tone="warning">{discovery.data.note}</Banner> : null}
-      {discovery.isPending ? <Skeleton className="min-h-80 flex-1" /> : null}
-      {discovery.isSuccess && !rows?.length ? <EmptyState title="V okolí teď nic volného není." body="Zkus změnit místo nebo filtry nad mapou." /> : null}
-      {discovery.isSuccess && rows?.length ? (
-        <div className="grid min-h-80 flex-1 overflow-hidden rounded-2xl bg-card shadow-card lg:grid-cols-[340px_minmax(0,1fr)]">
-          <section className="hidden min-h-0 flex-col border-r border-line lg:flex" aria-label="Nabídky na mapě">
-            <div className="border-b border-line px-5 py-4"><h2 className="text-base font-extrabold">{rows.length} {plural(rows.length)} v okolí</h2><p className="mt-1 text-sm text-muted">Vyber si aktivitu a svůj čas.</p></div>
-            <ul className="min-h-0 flex-1 divide-y divide-line overflow-y-auto overscroll-contain">
-              {rows.map((offer) => <li key={offer.id} onMouseEnter={() => setHighlighted(groups.find((g) => g.offers.some((o) => o.id === offer.id))?.id ?? null)} onMouseLeave={() => setHighlighted(null)} onFocus={() => setHighlighted(groups.find((g) => g.offers.some((o) => o.id === offer.id))?.id ?? null)} onBlur={() => setHighlighted(null)}><MapOffer offer={offer} now={now} to={detailHref(offer.id)} /></li>)}
-            </ul>
-          </section>
-          <div className="relative min-h-0 min-w-0">
-            <LazyMap className="h-full min-h-80 w-full" center={point} markers={markers} selectedId={openGroup[0] ?? highlighted ?? undefined} eager fitToMarkers onSelect={openMarker} onSelectGroup={setOpenGroup} ariaLabel="Mapa aktivit. Cena otevře konkrétní aktivitu, číslo u ceny nabídne více termínů v okolí." />
-            <p className="pointer-events-none absolute top-3 left-3 z-10 max-w-[calc(100%-6rem)] rounded-xl border border-line bg-card px-3 py-2 text-sm font-bold shadow-card">Klepni na cenu a vyber si termín</p>
+
+      {rows?.length ? (
+        <section className="hidden w-[360px] shrink-0 flex-col border-r border-line bg-card lg:flex" aria-label="Nabídky na mapě">
+          <div className="border-b border-line px-5 py-4">
+            <h2 className="text-lg font-extrabold">{rows.length} {plural(rows.length)} v okolí</h2>
+            <p className="mt-1 text-sm text-muted">Vyber si aktivitu a svůj čas.</p>
+          </div>
+          <ul className="min-h-0 flex-1 divide-y divide-line overflow-y-auto overscroll-contain">
+            {rows.map((offer) => {
+              const group = groups.find((g) => g.offers.some((o) => o.id === offer.id))?.id ?? null;
+              return (
+                <li key={offer.id} onMouseEnter={() => setHighlighted(group)} onMouseLeave={() => setHighlighted(null)} onFocus={() => setHighlighted(group)} onBlur={() => setHighlighted(null)}>
+                  <MapOffer offer={offer} now={now} to={detailHref(offer.id)} />
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
+
+      <div className="relative min-w-0 flex-1 overflow-hidden">
+        <LazyMap
+          className="absolute inset-0 h-full w-full"
+          center={point}
+          markers={markers}
+          selectedId={openGroup[0] ?? highlighted ?? undefined}
+          eager
+          fitToMarkers
+          framePadding={phone ? PHONE_FRAME : WIDE_FRAME}
+          focusId={openGroup.length === 1 ? openGroup[0] : undefined}
+          focusArea={phone ? PHONE_FOCUS : WIDE_FOCUS}
+          onSelect={(id) => setOpenGroup([id])}
+          onSelectGroup={setOpenGroup}
+          ariaLabel="Mapa volných termínů. Fotka s cenou ukáže náhled termínu, číslo přiblíží mapu."
+        />
+
+        {/* Search floats over the map. The wrapper lets taps through to the map between controls. */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col gap-3 bg-gradient-to-b from-surface/80 via-surface/40 to-transparent px-3 pt-3 pb-6 md:px-4">
+          <div className="pointer-events-auto flex items-center gap-2">
+            <div className="min-w-0 flex-1">
+              <LocationChip point={point} onChange={setPoint} floating />
+            </div>
+            <Link
+              to={`/${search.size ? `?${search}` : ''}`}
+              className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full bg-card px-4 text-sm font-bold text-ink shadow-card lg:hidden"
+            >
+              <List size={18} aria-hidden="true" />
+              Seznam
+            </Link>
             <button
               type="button"
               aria-label="Najít nabídky u mojí polohy"
               title="Moje poloha"
               disabled={locating}
               onClick={() => void useMyLocation()}
-              className="absolute top-[108px] right-3 z-10 inline-flex size-11 items-center justify-center gap-2 rounded-xl border border-line bg-card text-ink shadow-card disabled:opacity-60 sm:w-auto sm:px-3"
+              className="grid size-11 shrink-0 place-items-center rounded-full bg-card text-ink shadow-card disabled:opacity-60"
             >
-              <Crosshair size={18} className={locating ? 'animate-spin' : ''} aria-hidden="true" />
-              <span className="hidden text-sm font-bold sm:inline">Moje poloha</span>
+              <Crosshair size={19} className={locating ? 'animate-spin' : ''} aria-hidden="true" />
             </button>
-            {locateError ? (
-              <p role="status" className="absolute top-[160px] right-3 z-10 max-w-56 rounded-xl bg-card px-3 py-2 text-sm text-muted shadow-card">
-                Polohu se nepodařilo zjistit. Vyber ji nahoře ručně.
-              </p>
-            ) : null}
-            {selectedOffers.length ? (
-              <section className="absolute inset-x-2 bottom-2 z-20 rounded-2xl border border-line bg-card/95 p-2 shadow-lift backdrop-blur-sm sm:inset-x-3 sm:bottom-3" aria-label="Vybrané termíny">
-                <div className="flex items-center gap-2 px-2 pb-1">
-                  <MapPin size={16} className="shrink-0 text-accent" aria-hidden="true" />
-                  {/* Only the name truncates. The count used to be inside the truncating
-                      paragraph, so the header read "… · 5 nabíd…" — the one number in it. */}
-                  <p className="flex min-w-0 flex-1 items-baseline gap-1 text-sm font-bold text-ink">
-                    <span className="min-w-0 truncate">
-                      {oneBusiness ? selectedOffers[0].business_name : 'V této části mapy'}
-                    </span>
-                    <span className="tnum shrink-0 font-normal text-muted">
-                      · {selectedOffers.length} {plural(selectedOffers.length)}
-                    </span>
-                  </p>
-                  {selectedOffers.length > 1 ? (
-                    <span className="tnum shrink-0 text-xs font-bold text-muted" aria-live="polite">
-                      {carousel.index + 1} / {selectedOffers.length}
-                    </span>
-                  ) : null}
-                  <button
-                    type="button"
-                    onClick={() => carousel.goTo(carousel.index - 1)}
-                    disabled={!carousel.canGoBack}
-                    aria-label="Předchozí termín"
-                    className="grid size-9 shrink-0 place-items-center rounded-xl text-muted hover:bg-surface hover:text-ink disabled:opacity-30"
-                  >
-                    <ChevronLeft size={18} aria-hidden="true" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => carousel.goTo(carousel.index + 1)}
-                    disabled={!carousel.canGoForward}
-                    aria-label="Další termín"
-                    className="grid size-9 shrink-0 place-items-center rounded-xl text-muted hover:bg-surface hover:text-ink disabled:opacity-30"
-                  >
-                    <ChevronRight size={18} aria-hidden="true" />
-                  </button>
-                  <button type="button" onClick={() => setOpenGroup([])} aria-label="Zavřít výběr" className="grid size-10 shrink-0 place-items-center rounded-xl text-muted hover:bg-surface hover:text-ink">
-                    <X size={18} aria-hidden="true" />
-                  </button>
-                </div>
-                <ul
-                  ref={carousel.viewportRef}
-                  tabIndex={selectedOffers.length > 1 ? 0 : -1}
-                  onScroll={carousel.onScroll}
-                  onKeyDown={carousel.onKeyDown}
-                  className="rail rail-fade flex snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-contain pb-1 touch-pan-x"
-                  aria-label="Termíny na vybraném místě"
-                >
-                  {selectedOffers.map((offer) => (
-                    <li
-                      key={offer.id}
-                      data-snap-item
-                      aria-label={`Termín ${selectedOffers.indexOf(offer) + 1} z ${selectedOffers.length}`}
-                      className="w-[calc(100%_-_2.5rem)] max-w-[330px] shrink-0 snap-start snap-always overflow-hidden rounded-xl border border-line bg-card"
-                    >
-                      <MapOffer offer={offer} now={now} to={detailHref(offer.id)} />
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ) : null}
           </div>
+          <div className="pointer-events-auto">
+            <FilterBar
+              filters={filters}
+              onChange={setFilters}
+              categories={categories.data ?? []}
+              resultCount={rows?.length ?? 0}
+              pending={discovery.isFetching}
+              applied={discovery.data?.applied}
+              floating
+            />
+          </div>
+          {locateError ? (
+            <p role="status" className="pointer-events-auto self-start rounded-2xl bg-card px-4 py-2.5 text-sm text-ink shadow-card">
+              Polohu se nepodařilo zjistit. Vyber místo ručně.
+            </p>
+          ) : null}
+          {discovery.data?.note ? (
+            <div className="pointer-events-auto shadow-card">
+              <Banner tone="warning">{discovery.data.note}</Banner>
+            </div>
+          ) : null}
         </div>
-      ) : null}
+
+        {/* Status and preview sit over the bottom, clear of the floating tab bar on a phone. */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-20 flex flex-col items-center md:bottom-4 md:items-start">
+          {discovery.isPending ? (
+            <p role="status" className="pointer-events-auto mx-3 inline-flex min-h-11 items-center gap-2 rounded-full bg-card px-4 text-sm font-bold text-ink shadow-card">
+              <Spinner /> Hledám volné termíny…
+            </p>
+          ) : null}
+          {discovery.isError ? (
+            <div className="pointer-events-auto mx-3 w-[calc(100%-1.5rem)] max-w-sm rounded-3xl bg-card p-4 shadow-lift">
+              <ErrorState error={discovery.error} onRetry={() => discovery.refetch()} />
+            </div>
+          ) : null}
+          {empty ? (
+            <div className="pointer-events-auto mx-3 w-[calc(100%-1.5rem)] max-w-sm rounded-3xl bg-card p-5 shadow-lift">
+              <p className="text-base font-extrabold text-ink">V okolí teď nic volného není.</p>
+              <p className="mt-1 text-sm text-muted">Zkus jiné místo nebo čas nahoře nad mapou.</p>
+            </div>
+          ) : null}
+          {selectedOffers.length ? (
+            <MapPreviewCard
+              key={openGroup.join(':')}
+              offers={selectedOffers}
+              now={now}
+              detailHref={detailHref}
+              onClose={closePreview}
+              className="w-full md:max-w-md"
+            />
+          ) : null}
+        </div>
+      </div>
     </main>
   );
 }
 
-/**
- * One appointment in the list beside the map and in the sheet a pin opens.
- *
- * The card is about 330 px wide and had six facts, a three-line price column and a chevron
- * fighting over it — the venue, the district and the whole time line all ended in an
- * ellipsis while the price column ran to three lines in the corner. A card nobody can read
- * is not information.
- *
- * Three lines, each one using both edges: name and price, then the venue, then the time and
- * the discount. The chevron is gone — the entire card is the link, and in a horizontal
- * carousel that arrow only ever cost the width the names needed.
- */
+/** One appointment in the list beside the map on wide screens. */
 function MapOffer({ offer, now, to }: { offer: SearchRow; now: string; to: string }) {
+  const photo = thumbnail(serviceIllustration(offer.service_name, offer.image_url, offer.cover_url));
   return (
     <Link
       to={to}
-      className="group flex flex-col gap-1 p-3 transition-colors hover:bg-surface focus-visible:bg-accent-soft"
+      className="group flex items-center gap-3 p-3 transition-colors hover:bg-surface focus-visible:bg-accent-soft"
     >
-      {/*
-        Two columns of three. On the left what the appointment is, on the right what it
-        costs — deal, list price, discount, stacked and right-aligned so the eye reads the
-        price as one thing instead of hunting it among the facts. Cramming all three into
-        one corner is what made this card unreadable in the first place.
-      */}
-      <span className="flex items-baseline gap-3">
-        <span className="min-w-0 flex-1 truncate text-base leading-snug font-extrabold text-ink">
-          {offer.service_name}
-        </span>
-        <span className="tnum shrink-0 text-base leading-snug font-extrabold text-ink">
-          {money(offer.deal_price_cents)}
-        </span>
+      <span className={cx('size-14 shrink-0 overflow-hidden rounded-2xl bg-accent-soft')} aria-hidden="true">
+        {photo ? <img src={photo} alt="" loading="lazy" decoding="async" className="size-full object-cover" /> : null}
       </span>
-
-      <span className="flex items-baseline gap-3">
-        <span className="min-w-0 flex-1 truncate text-sm text-muted">
-          {offer.business_name}
-          {offer.district ? ` · ${offer.district}` : ''}
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="flex items-baseline gap-3">
+          <span className="min-w-0 flex-1 truncate text-base leading-snug font-extrabold text-ink">{offer.service_name}</span>
+          <span className="tnum shrink-0 text-base leading-snug font-extrabold text-ink">{money(offer.deal_price_cents)}</span>
         </span>
-        {offer.original_price_cents > offer.deal_price_cents ? (
-          <OriginalPrice cents={offer.original_price_cents} className="shrink-0 text-sm" />
-        ) : null}
-      </span>
-
-      {/* Time first and in ink: on a last-minute marketplace it is the fact people scan
-          for. The discount closes the column at the other edge. */}
-      <span className="flex items-baseline gap-3">
-        <span className="tnum min-w-0 flex-1 truncate text-sm">
-          <span className="font-bold text-ink">
-            {dayLabel(offer.start_at, now)} {clockTime(offer.start_at)}
+        <span className="flex items-baseline gap-3">
+          <span className="min-w-0 flex-1 truncate text-sm text-muted">
+            {offer.business_name}
+            {offer.district ? ` · ${offer.district}` : ''}
           </span>
-          <span className="text-muted">
-            {' · '}
-            {duration(offer.start_at, offer.end_at)} min
-            {distance(offer.distance_m) ? ` · ${distance(offer.distance_m)}` : ''}
-          </span>
+          {offer.original_price_cents > offer.deal_price_cents ? (
+            <OriginalPrice cents={offer.original_price_cents} className="shrink-0 text-sm" />
+          ) : null}
         </span>
-        <DiscountBadge pct={offer.discount_pct} className="shrink-0" />
+        <span className="flex items-baseline gap-3">
+          <span className="tnum min-w-0 flex-1 truncate text-sm">
+            <span className="font-bold text-ink">
+              {dayLabel(offer.start_at, now)} {clockTime(offer.start_at)}
+            </span>
+            <span className="text-muted">
+              {' · '}
+              {duration(offer.start_at, offer.end_at)} min
+              {distance(offer.distance_m) ? ` · ${distance(offer.distance_m)}` : ''}
+            </span>
+          </span>
+          <DiscountBadge pct={offer.discount_pct} className="shrink-0" />
+        </span>
       </span>
     </Link>
   );

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { myCustomerMetrics } from '../../lib/api';
 import { money } from '../../lib/format';
-import { Skeleton } from '../../components/ui';
+import { PinMark, PromoCard, Skeleton } from '../../components/ui';
 import { Link } from '../../app/router';
 
 const MONTHS = [
@@ -28,37 +28,40 @@ export function CustomerFlekStats({ userId }: { userId: string }) {
     staleTime: 60_000,
   });
 
-  if (metrics.isPending) return <Skeleton className="h-28 w-full" />;
+  if (metrics.isPending) return <Skeleton className="h-44 w-full rounded-3xl" />;
   if (metrics.isError || !metrics.data) return null;
 
   const m = metrics.data;
 
   if (m.all_time_completed === 0) {
     return (
-      <section className="rounded-2xl bg-card p-5 shadow-card">
-        <h2 className="text-base font-extrabold">Tvůj FLEK</h2>
-        <p className="mt-1 text-base text-muted">První FLEK na tebe teprve čeká.</p>
-        <Link to="/" className="mt-4 inline-flex min-h-11 items-center text-base font-bold text-accent">
+      <PromoCard tone="dark">
+        <PinMark className="pointer-events-none absolute top-3.5 right-4 h-10 w-12" />
+        <p className="text-sm font-bold text-brand">Tvůj FLEK</p>
+        <h2 className="mt-2 max-w-xs text-xl leading-snug font-extrabold tracking-tight">První FLEK na tebe čeká</h2>
+        <p className="mt-2 max-w-xs text-base text-card/75">Chyť volný termín se slevou a tady uvidíš, kolik ušetříš.</p>
+        <Link to="/" className="relative mt-5 inline-flex min-h-11 items-center rounded-full bg-brand px-5 text-sm font-bold text-ink hover:bg-[#9dd052]">
           Objevit FLEKy
         </Link>
-      </section>
+      </PromoCard>
     );
   }
 
   return (
-    <section className="rounded-2xl bg-card p-5 shadow-card">
-      <h2 className="text-base font-extrabold">Tvé {currentMonthName()}</h2>
-      <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3">
+    <PromoCard tone="dark">
+      <PinMark className="pointer-events-none absolute top-3.5 right-4 h-10 w-12" />
+      <h2 className="text-sm font-bold text-brand">Tvůj FLEK · {currentMonthName()}</h2>
+      <dl className="relative mt-3 grid grid-cols-2 gap-x-4 gap-y-3">
         <div>
-          <dt className="text-sm text-muted">Chycené FLEKy</dt>
-          <dd className="tnum text-xl font-extrabold">{m.month_completed}</dd>
+          <dt className="text-sm text-card/75">Ušetřeno</dt>
+          <dd className="tnum text-2xl font-extrabold text-brand">{money(m.month_saved_cents)}</dd>
         </div>
         <div>
-          <dt className="text-sm text-muted">Ušetřeno</dt>
-          <dd className="tnum text-xl font-extrabold text-positive">{money(m.month_saved_cents)}</dd>
+          <dt className="text-sm text-card/75">Chycené FLEKy</dt>
+          <dd className="tnum text-2xl font-extrabold">{m.month_completed}</dd>
         </div>
       </dl>
-      <p className="tnum mt-4 border-t border-line pt-3 text-sm text-muted">
+      <p className="tnum relative mt-4 border-t border-card/15 pt-3 text-sm text-card/75">
         Celkem {m.all_time_completed}{' '}
         {m.all_time_completed === 1 ? 'chycený FLEK' : m.all_time_completed < 5 ? 'chycené FLEKy' : 'chycených FLEKů'}
         {' · '}ušetřeno {money(m.all_time_saved_cents)}
@@ -66,6 +69,6 @@ export function CustomerFlekStats({ userId }: { userId: string }) {
             would be a real if unexciting best catch, so it is not hidden. */}
         {m.best_discount_pct !== null ? ` · nejlepší úlovek −${m.best_discount_pct} %` : ''}
       </p>
-    </section>
+    </PromoCard>
   );
 }

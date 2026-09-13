@@ -18,6 +18,9 @@ type Props = {
   eager?: boolean;
   /** Frame the results instead of a fixed centre. */
   fitToMarkers?: boolean;
+  framePadding?: { top: number; right: number; bottom: number; left: number };
+  focusId?: string;
+  focusArea?: { top: number; bottom: number };
 };
 
 /**

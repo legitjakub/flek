@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { ChevronRight, Heart, MapPin } from 'lucide-react';
+import { ChevronRight, Compass, Heart, MapPin } from 'lucide-react';
 import { markFavoritesSeen, myFavorites, newAtFavorites } from '../../lib/api';
 import { useServerNow } from '../../lib/clock';
-import { EmptyState, ErrorState, LoadingList } from '../../components/ui';
+import { EmptyState, ErrorState, LoadingList, buttonClass } from '../../components/ui';
 import { Link } from '../../app/router';
 import { OfferCard } from '../discovery/OfferCard';
 import { GooglePlaceRating } from '../ratings/GooglePlaceRating';
@@ -37,17 +37,16 @@ export function FavoritesPage() {
 
   if (!userId) {
     return (
-      <main className="page-container py-8">
+      <main className="page-container py-6 sm:py-8">
         <h1 className="text-2xl font-extrabold tracking-tight">Oblíbená místa</h1>
         <div className="mt-5">
           <EmptyState
+            tone="lime"
+            icon={<Heart size={26} />}
             title="Sleduj místa, kam se rád vracíš."
             body="Dáme ti vědět, jakmile u nich přibude volný termín."
             action={
-              <Link
-                to="/prihlaseni?returnTo=%2Foblibene"
-                className="btn-primary"
-              >
+              <Link to="/prihlaseni?returnTo=%2Foblibene" className={buttonClass({ size: 'lg', shape: 'pill' })}>
                 Přihlásit se
               </Link>
             }
@@ -71,13 +70,12 @@ export function FavoritesPage() {
       {favorites.isSuccess && places.length === 0 ? (
         <div className="mt-6">
           <EmptyState
+            tone="lime"
+            icon={<Heart size={26} />}
             title="Zatím nesleduješ žádné místo."
             body="U nabídky klepni na Sledovat a dáme ti vědět, až tam přibude volný termín."
             action={
-              <Link
-                to="/"
-                className="btn-primary"
-              >
+              <Link to="/" className={buttonClass({ size: 'lg', shape: 'pill' })}>
                 Objevit nabídky
               </Link>
             }
@@ -88,8 +86,12 @@ export function FavoritesPage() {
       {news.length > 0 ? (
         <section className="mt-8" aria-labelledby="nove">
           <div className="mb-4 flex items-baseline justify-between gap-3">
-            <h2 id="nove" className="text-lg font-extrabold tracking-tight">Nové u tvých míst</h2>
-            <span className="tnum shrink-0 text-sm text-muted">{news.length}</span>
+            <h2 id="nove" className="flex items-center gap-2 text-lg font-extrabold tracking-tight">
+              Nové u tvých míst
+              <span className="tnum grid min-h-6 min-w-6 place-items-center rounded-full bg-brand px-1.5 text-xs font-extrabold text-ink">
+                {news.length}
+              </span>
+            </h2>
           </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {news.map((offer) => (
@@ -101,8 +103,8 @@ export function FavoritesPage() {
 
       {places.length > 0 ? (
         <section className="mt-8" aria-labelledby="mista">
-          <h2 id="mista" className="mb-4 text-lg font-extrabold tracking-tight">Sleduješ</h2>
-          <ul className="flex flex-col gap-3">
+          <h2 id="mista" className="mb-3 px-1 text-lg font-extrabold tracking-tight">Sleduješ</h2>
+          <ul className="divide-y divide-line overflow-hidden rounded-3xl bg-card shadow-card">
             {places.map((place) => (
               <li key={place.id}>
                 {/*
@@ -112,38 +114,35 @@ export function FavoritesPage() {
                 */}
                 <Link
                   to={`/podnik/${place.id}?from=%2Foblibene`}
-                  className="group flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-card p-4 shadow-card transition-colors hover:bg-surface"
+                  className="group flex min-h-18 items-center gap-3 px-4 py-3 transition-colors hover:bg-surface"
                 >
-                  <span className="min-w-0">
-                    <span className="block text-base font-bold text-ink">{place.display_name}</span>
-                    <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-base text-muted">
-                      <span className="inline-flex items-center gap-1.5">
-                        <MapPin size={15} aria-hidden="true" />
-                        {place.district || place.city}
-                      </span>
-                    </span>
+                  <span aria-hidden="true" className="grid size-11 shrink-0 place-items-center rounded-full bg-accent-soft text-base font-extrabold text-accent">
+                    {place.display_name.trim().charAt(0).toLocaleUpperCase('cs-CZ')}
                   </span>
-                  <span className="tnum inline-flex shrink-0 items-center gap-2 text-base font-bold">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-base font-bold text-ink">{place.display_name}</span>
+                    <span className="mt-0.5 flex items-center gap-1 truncate text-sm text-muted">
+                      <MapPin size={14} aria-hidden="true" className="shrink-0" />
+                      {place.district || place.city}
+                    </span>
                     {place.open_offers > 0 ? (
-                      <span className="text-ink">
+                      <span className="tnum block text-sm font-bold text-ink">
                         {place.open_offers} {place.open_offers === 1 ? 'volný termín' : place.open_offers < 5 ? 'volné termíny' : 'volných termínů'}
                       </span>
                     ) : (
-                      <span className="text-muted">Teď nic volného</span>
+                      <span className="block text-sm text-muted">Teď nic volného</span>
                     )}
-                    {place.new_offers > 0 ? (
-                      <span className="rounded-md bg-accent-soft px-2 py-0.5 text-sm text-accent">
-                        {place.new_offers} nové
-                      </span>
-                    ) : null}
-                    <ChevronRight size={18} className="text-muted group-hover:text-accent" aria-hidden="true" />
                   </span>
+                  {place.new_offers > 0 ? (
+                    <span className="tnum shrink-0 rounded-full bg-brand px-2.5 py-1 text-xs font-extrabold text-ink">
+                      {place.new_offers} nové
+                    </span>
+                  ) : null}
+                  <ChevronRight size={18} className="shrink-0 text-muted group-hover:text-ink" aria-hidden="true" />
                 </Link>
                 {/* Kept out of the link: it is a second destination (Google Maps), and an
                     anchor inside an anchor is invalid. */}
-                <span className="mt-1 ml-4 inline-block">
-                  <GooglePlaceRating businessId={place.id} placeId={place.google_place_id} mapsUri />
-                </span>
+                <GooglePlaceRatingRow businessId={place.id} placeId={place.google_place_id} />
               </li>
             ))}
           </ul>
@@ -151,21 +150,29 @@ export function FavoritesPage() {
       ) : null}
 
       {places.length > 0 && news.length === 0 ? (
-        <p className="mt-6 flex items-center gap-2 text-base text-muted">
+        <p className="mt-6 flex items-center gap-2 px-1 text-base text-muted">
           <Heart size={16} aria-hidden="true" />U sledovaných míst zatím nic nového nepřibylo.
         </p>
       ) : null}
 
       {places.length > 0 ? (
         <div className="mt-6">
-          <Link
-            to="/"
-            className="inline-flex min-h-11 items-center rounded-xl border border-line bg-card px-4 text-sm font-bold text-ink hover:bg-surface"
-          >
+          <Link to="/" className={buttonClass({ variant: 'soft', shape: 'pill' })}>
+            <Compass size={17} aria-hidden="true" />
             Objevit další místa
           </Link>
         </div>
       ) : null}
     </main>
+  );
+}
+
+/** The Google rating under a followed place, indented to the name; renders nothing when off. */
+function GooglePlaceRatingRow({ businessId, placeId }: { businessId: string; placeId: string | null }) {
+  if (!placeId) return null;
+  return (
+    <span className="-mt-2 block pb-3 pl-18">
+      <GooglePlaceRating businessId={businessId} placeId={placeId} mapsUri />
+    </span>
   );
 }

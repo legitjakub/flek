@@ -16,10 +16,31 @@ import { useRouter } from '../../app/router';
  * The cache is cleared after the sign-out, not before: what one account fetched must never
  * be readable by whoever signs in next.
  */
-export function SignOutButton({ compact = false }: { compact?: boolean }) {
+export function useSignOut() {
   const queryClient = useQueryClient();
   const { navigate } = useRouter();
   const [busy, setBusy] = useState(false);
+
+  async function signOut() {
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) await supabase.auth.signOut({ scope: 'local' });
+    } catch {
+      await supabase.auth.signOut({ scope: 'local' });
+    } finally {
+      // A failed remote revocation still falls back to deleting the browser session.
+      // Cached account data must never be readable by whoever signs in next.
+      queryClient.clear();
+      navigate('/');
+    }
+  }
+
+  return { busy, signOut };
+}
+
+export function SignOutButton({ compact = false }: { compact?: boolean }) {
+  const { busy, signOut } = useSignOut();
 
   return (
     <button
@@ -27,20 +48,7 @@ export function SignOutButton({ compact = false }: { compact?: boolean }) {
       aria-label={busy ? 'Odhlašuji účet' : 'Odhlásit se'}
       title={compact ? (busy ? 'Odhlašuji…' : 'Odhlásit se') : undefined}
       disabled={busy}
-      onClick={async () => {
-        setBusy(true);
-        try {
-          const { error } = await supabase.auth.signOut();
-          if (error) await supabase.auth.signOut({ scope: 'local' });
-        } catch {
-          await supabase.auth.signOut({ scope: 'local' });
-        } finally {
-          // A failed remote revocation still falls back to deleting the browser session.
-          // Cached account data must never be readable by whoever signs in next.
-          queryClient.clear();
-          navigate('/');
-        }
-      }}
+      onClick={() => void signOut()}
       className={cx(
         'inline-flex min-h-11 shrink-0 items-center gap-2 font-bold transition-colors disabled:opacity-55',
         compact

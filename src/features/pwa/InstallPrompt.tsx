@@ -16,6 +16,18 @@ import {
  * a first-time visitor who has no reason yet to want FLEK on their home screen. A dismissal
  * is remembered, so this asks once and then stops.
  */
+/**
+ * What installing means in this browser right now: the real dialog, the iOS Share-menu route,
+ * or nothing at all. Deliberately ignores the dismissal — that silences the unprompted card,
+ * not a row the customer went looking for in Profile.
+ */
+export function useInstallMode(): 'prompt' | 'ios' | null {
+  const [, force] = useState(0);
+  useEffect(() => subscribeInstall(() => force((n) => n + 1)), []);
+  if (isStandalone()) return null;
+  return canPrompt() ? 'prompt' : isIos() ? 'ios' : null;
+}
+
 export function InstallPrompt() {
   const [gone, setGone] = useState(() => dismissed() || isStandalone());
   const [, force] = useState(0);

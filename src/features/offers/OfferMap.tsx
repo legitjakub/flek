@@ -60,7 +60,22 @@ export const RASTER_FALLBACK: StyleSpecification = {
 
 
 
-export type MapMarker = { id: string; lat: number; lng: number; label: string; description?: string; count?: number; price?: number };
+export type MapMarker = {
+  id: string;
+  lat: number;
+  lng: number;
+  label: string;
+  description?: string;
+  count?: number;
+  price?: number;
+  /** A small, already-resized picture of the service; the pin falls back to FLEK's clock glyph. */
+  image?: string | null;
+};
+
+/** Beyond this zoom a cluster stops zooming in and hands its appointments to the page instead. */
+const CLUSTER_MAX_ZOOM = 17;
+
+const GLYPH = '<svg viewBox="0 0 36 34" focusable="false"><path d="M12 31s11-11.8 11-17.8a11 11 0 1 0-22 0C1 19.2 12 31 12 31z" class="map-pin-shape"/><circle cx="12" cy="13.2" r="6.5" class="map-pin-face"/><path d="M12 8.8v4.5l3.4 2" class="map-pin-hands"/></svg>';
 
 /**
  * OpenMapTiles ships every name in `name` (local/English) plus translations in `name:xx`.
@@ -92,6 +107,9 @@ export function MapCanvas({
   className,
   interactive = true,
   fitToMarkers = false,
+  framePadding = { top: 88, right: 72, bottom: 52, left: 72 },
+  focusId,
+  focusArea,
   ariaLabel,
 }: {
   center: { lat: number; lng: number };
@@ -104,6 +122,12 @@ export function MapCanvas({
   interactive?: boolean;
   /** Frame the results rather than a fixed centre, so the map never opens on empty streets. */
   fitToMarkers?: boolean;
+  /** Room kept free around the framed results, for controls floating over the map. */
+  framePadding?: { top: number; right: number; bottom: number; left: number };
+  /** A marker whose preview covers part of the map: it is panned into the part left uncovered. */
+  focusId?: string;
+  /** How much of the map, from the top and the bottom, is covered while `focusId` is shown. */
+  focusArea?: { top: number; bottom: number };
   ariaLabel: string;
 }) {
   const container = useRef<HTMLDivElement>(null);
@@ -111,6 +135,8 @@ export function MapCanvas({
   const groupRef = useRef(onSelectGroup);
   const selectedRef = useRef(selectedId);
   useEffect(() => { groupRef.current = onSelectGroup; selectedRef.current = selectedId; }, [onSelectGroup, selectedId]);
+  const framePaddingRef = useRef(framePadding);
+  useEffect(() => { framePaddingRef.current = framePadding; }, [framePadding]);
   const selectRef = useRef(onSelect);
   useEffect(() => { selectRef.current = onSelect; }, [onSelect]);
   const selectable = Boolean(onSelect);
@@ -152,6 +178,12 @@ export function MapCanvas({
       styled = true;
       localiseLabels(instance);
     });
+    // On a narrow map MapLibre opens the compact attribution as a full-width strip until the
+    // first drag. It is collapsed to its "i" button once the map settles, so it does not
+    // cover the pins along the bottom; the button opens the sources again.
+    instance.once('idle', () => {
+      instance.getContainer().querySelector('.maplibregl-compact-show')?.classList.remove('maplibregl-compact-show');
+    });
     const fallbackTimer = window.setTimeout(() => useFallback('vypršel čas'), 6000);
     // A map that fails silently is worse than one that complains: without this a broken
     // style just looks like an empty grey box.
@@ -161,7 +193,8 @@ export function MapCanvas({
       useFallback(message);
     });
 
-    if (interactive) instance.addControl(new NavigationControl({ showCompass: false }), 'top-right');
+    // Bottom right: the top of a full-screen map belongs to the floating search controls.
+    if (interactive) instance.addControl(new NavigationControl({ showCompass: false }), 'bottom-right');
     lastCenter.current = `${center.lat},${center.lng}`;
     const observer = new ResizeObserver(() => map.current?.resize());
     observer.observe(container.current);
@@ -208,7 +241,8 @@ export function MapCanvas({
       drawn.current.forEach((marker) => marker.remove());
       const projected = markers.map((marker, index) => {
         const point = instance.project([marker.lng, marker.lat]);
-        return { x: point.x, y: point.y, width: Math.max(96, marker.label.length * 8 + 54 + ((marker.count ?? 1) > 1 ? 28 : 0)), indexes: [index] };
+        // A photo over a price ticket: as wide as the ticket, never narrower than the photo.
+        return { x: point.x, y: point.y, width: Math.max(56, marker.label.length * 7.5 + 24), indexes: [index] };
       });
       const clusters = groupRef.current ? clusterPins(projected) : projected;
       drawn.current = clusters.map((cluster) => {
@@ -220,27 +254,67 @@ export function MapCanvas({
         const el = document.createElement(selectable ? 'button' : 'span');
         if (el instanceof HTMLButtonElement) el.type = 'button';
         el.dataset.mapIds = JSON.stringify(ids);
-        el.setAttribute('aria-label', multiple ? `${count} ${count < 5 ? 'termíny' : 'termínů'} v této oblasti, ${label}. Vybrat aktivitu.` : entries[0].description ?? label);
-        el.className = 'map-pin';
-        const glyph = document.createElement('span');
-        glyph.className = 'map-pin-glyph';
-        glyph.setAttribute('aria-hidden', 'true');
-        glyph.innerHTML = '<svg viewBox="0 0 36 34" focusable="false"><path d="M12 31s11-11.8 11-17.8a11 11 0 1 0-22 0C1 19.2 12 31 12 31z" class="map-pin-shape"/><circle cx="12" cy="13.2" r="6.5" class="map-pin-face"/><path d="M12 8.8v4.5l3.4 2" class="map-pin-hands"/><path d="M26.2 7.7 31 3M28.4 13.1l5.5-2.3M28.6 18.7l5.7-.6" class="map-pin-rays"/></svg>';
         const price = document.createElement('span');
-        price.className = 'map-pin-price';
         price.textContent = label;
-        el.append(glyph, price);
-        const active = ids.includes(selectedRef.current ?? '');
-        el.classList.toggle('map-pin--selected', active);
-        if (selectable) el.setAttribute('aria-pressed', String(active));
-        if (count > 1) {
-          const badge = document.createElement('span');
-          badge.className = 'map-pin-count';
-          badge.textContent = String(count);
-          badge.setAttribute('aria-hidden', 'true');
-          price.append(badge);
+
+        if (multiple) {
+          // Several places overlap at this zoom: a count to zoom into, with the lowest price kept.
+          el.className = 'map-cluster';
+          el.setAttribute('aria-label', `${count} ${count < 5 ? 'termíny' : 'termínů'} v této oblasti, ${label}. Přiblížit.`);
+          const bubble = document.createElement('span');
+          bubble.className = 'map-cluster-count';
+          bubble.textContent = String(count);
+          bubble.setAttribute('aria-hidden', 'true');
+          price.className = 'map-cluster-price';
+          price.setAttribute('aria-hidden', 'true');
+          el.append(bubble, price);
+        } else {
+          el.className = 'map-pin';
+          el.setAttribute('aria-label', entries[0].description ?? label);
+          const photo = document.createElement('span');
+          photo.className = 'map-pin-photo';
+          photo.setAttribute('aria-hidden', 'true');
+          const image = entries[0].image;
+          if (image) {
+            const img = document.createElement('img');
+            img.src = image;
+            img.alt = '';
+            img.decoding = 'async';
+            img.width = 44;
+            img.height = 44;
+            // A broken address shows the clock glyph rather than an empty white disc.
+            img.addEventListener('error', () => { photo.innerHTML = GLYPH; photo.classList.add('map-pin-photo--glyph'); }, { once: true });
+            photo.append(img);
+          } else {
+            photo.innerHTML = GLYPH;
+            photo.classList.add('map-pin-photo--glyph');
+          }
+          price.className = 'map-pin-price';
+          price.setAttribute('aria-hidden', 'true');
+          el.append(photo, price);
+          if (count > 1) {
+            const badge = document.createElement('span');
+            badge.className = 'map-pin-count';
+            badge.textContent = String(count);
+            badge.setAttribute('aria-hidden', 'true');
+            el.append(badge);
+          }
         }
-        if (selectable) el.addEventListener('click', () => multiple ? groupRef.current?.(ids) : selectRef.current?.(ids[0]));
+
+        const active = ids.includes(selectedRef.current ?? '');
+        el.classList.toggle('is-selected', active);
+        if (selectable && !multiple) el.setAttribute('aria-pressed', String(active));
+        if (selectable) {
+          el.addEventListener('click', () => {
+            if (!multiple) return selectRef.current?.(ids[0]);
+            // Zoom into the cluster until its places separate. Where they cannot — two doors
+            // in one building — the page shows all of their appointments instead.
+            if (instance.getZoom() >= CLUSTER_MAX_ZOOM - 0.25) return groupRef.current?.(ids);
+            const bounds = new LngLatBounds();
+            entries.forEach((entry) => bounds.extend([entry.lng, entry.lat]));
+            instance.fitBounds(bounds, { padding: framePaddingRef.current, maxZoom: CLUSTER_MAX_ZOOM, duration: cameraDuration() });
+          });
+        }
         const pin = new Marker({ element: el }).setLngLat(instance.unproject([cluster.x, cluster.y])).addTo(instance);
         if (focused === el.dataset.mapIds) el.focus({ preventScroll: true });
         return pin;
@@ -269,7 +343,7 @@ export function MapCanvas({
       lastFit.current = key;
       const bounds = new LngLatBounds();
       markers.forEach((marker) => bounds.extend([marker.lng, marker.lat]));
-      instance.fitBounds(bounds, { padding: { top: 88, right: 72, bottom: 52, left: 72 }, maxZoom: 15, duration: 0 });
+      instance.fitBounds(bounds, { padding: framePaddingRef.current, maxZoom: 15, duration: 0 });
     }
     frame();
     instance.on('resize', frame);
@@ -281,10 +355,31 @@ export function MapCanvas({
       const element = marker.getElement();
       const ids: string[] = JSON.parse(element.dataset.mapIds ?? '[]');
       const active = ids.includes(selectedId ?? '');
-      element.classList.toggle('map-pin--selected', active);
-      if (selectable) element.setAttribute('aria-pressed', String(active));
+      element.classList.toggle('is-selected', active);
+      if (selectable && element.classList.contains('map-pin')) element.setAttribute('aria-pressed', String(active));
     });
   }, [selectedId, markers, selectable]);
+
+  // A pin tapped near the bottom would open its card right on top of itself. Move the camera
+  // just enough to keep the chosen pin in sight above the card; leave it alone if it already is.
+  useEffect(() => {
+    const instance = map.current;
+    const marker = markers.find((entry) => entry.id === focusId);
+    if (!instance || !marker || !focusArea) return;
+    const { clientWidth: width, clientHeight: height } = instance.getContainer();
+    const visibleBottom = height - focusArea.bottom;
+    if (visibleBottom - focusArea.top < 80) return;
+    const point = instance.project([marker.lng, marker.lat]);
+    // Room for the photo above the point and the ticket below it.
+    if (point.y > focusArea.top + 40 && point.y < visibleBottom - 30 && point.x > 32 && point.x < width - 32) return;
+    instance.easeTo({
+      center: [marker.lng, marker.lat],
+      offset: [0, (focusArea.top - focusArea.bottom) / 2],
+      duration: cameraDuration(),
+    });
+    // Only a new focus moves the camera; a re-render with the same one must not undo a pan.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusId]);
 
   return <div ref={container} className={className} role="region" aria-label={ariaLabel} />;
 }

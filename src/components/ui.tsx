@@ -1,7 +1,8 @@
 import { Dialog } from '@base-ui/react/dialog';
-import { Star, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Star, X } from 'lucide-react';
 import { useRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from 'react';
 import { errorMessage } from '../lib/errors';
+import { Link } from '../app/router';
 
 export function cx(...parts: (string | false | null | undefined)[]) {
   return parts.filter(Boolean).join(' ');
@@ -38,7 +39,7 @@ export function Mark({ className = 'size-6' }: { className?: string }) {
  * The pin keeps its own colours rather than inheriting `currentColor`: the white clock face
  * and the ink hands have to hold whichever ground the wordmark sits on.
  */
-function PinMark({ className }: { className?: string }) {
+export function PinMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 36 32" aria-hidden="true" focusable="false" className={className}>
       <path
@@ -91,26 +92,39 @@ export function Wordmark({ tone = 'ink', suffix }: { tone?: 'ink' | 'invert'; su
 /* -------------------------------------------------------------------- button */
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  /** `soft` is the warm beige secondary of the customer app: a quiet fill rather than an outline. */
+  variant?: 'primary' | 'secondary' | 'soft' | 'ghost' | 'danger';
   size?: 'md' | 'lg';
+  /** `pill` is the customer app's shape; the merchant console keeps the squarer default. */
+  shape?: 'rounded' | 'pill';
   loading?: boolean;
 };
 
-export function Button({ variant = 'primary', size = 'md', loading, className, children, ...rest }: ButtonProps) {
+/** Shared by <Button> and by links that must look like one. */
+export function buttonClass({
+  variant = 'primary',
+  size = 'md',
+  shape = 'rounded',
+}: Pick<ButtonProps, 'variant' | 'size' | 'shape'> = {}) {
+  return cx(
+    'inline-flex min-h-11 items-center justify-center gap-2 px-4 font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-55',
+    shape === 'pill' ? 'rounded-full' : 'rounded-xl',
+    size === 'lg' ? 'min-h-13 px-5 text-base' : 'text-sm',
+    variant === 'primary' && 'bg-ink text-accent-ink hover:bg-[#11161a]',
+    variant === 'secondary' && 'border border-line bg-card text-ink hover:bg-surface',
+    variant === 'soft' && 'bg-line text-ink hover:bg-[#e2d9cb]',
+    variant === 'ghost' && 'text-ink hover:bg-line/50',
+    variant === 'danger' && 'border border-danger/25 bg-card text-danger hover:bg-danger/5',
+  );
+}
+
+export function Button({ variant = 'primary', size = 'md', shape = 'rounded', loading, className, children, ...rest }: ButtonProps) {
   return (
     <button
       {...rest}
       disabled={rest.disabled || loading}
       aria-busy={loading || undefined}
-      className={cx(
-        'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-55',
-        size === 'lg' ? 'min-h-13 px-5 text-base' : 'text-sm',
-        variant === 'primary' && 'bg-ink text-accent-ink hover:bg-[#11161a]',
-        variant === 'secondary' && 'border border-line bg-card text-ink hover:bg-surface',
-        variant === 'ghost' && 'text-ink hover:bg-line/50',
-        variant === 'danger' && 'border border-danger/25 bg-card text-danger hover:bg-danger/5',
-        className,
-      )}
+      className={cx(buttonClass({ variant, size, shape }), className)}
     >
       {loading ? <Spinner /> : null}
       {children}
@@ -210,7 +224,34 @@ export function LoadingList({ rows = 3 }: { rows?: number }) {
   );
 }
 
-export function EmptyState({ title, body, action }: { title: string; body?: string; action?: ReactNode }) {
+export function EmptyState({
+  title,
+  body,
+  action,
+  tone = 'plain',
+  icon,
+}: {
+  title: string;
+  body?: string;
+  action?: ReactNode;
+  /** `lime` is the customer app's empty screen: a block of colour with one clear way on. */
+  tone?: 'plain' | 'lime';
+  icon?: ReactNode;
+}) {
+  if (tone === 'lime') {
+    return (
+      <PromoCard tone="lime" className="px-6 py-8 text-center">
+        {icon ? (
+          <span aria-hidden="true" className="mx-auto mb-4 grid size-14 place-items-center rounded-full bg-card text-ink shadow-card">
+            {icon}
+          </span>
+        ) : null}
+        <p className="text-lg font-extrabold tracking-tight text-ink">{title}</p>
+        {body ? <p className="mx-auto mt-1 max-w-xs text-base text-ink">{body}</p> : null}
+        {action ? <div className="mt-5 flex justify-center">{action}</div> : null}
+      </PromoCard>
+    );
+  }
   return (
     <div className="rounded-2xl bg-card shadow-card px-5 py-10 text-center">
       <p className="text-base font-bold text-ink">{title}</p>
@@ -301,14 +342,17 @@ export function Tabs<T extends string>({
   onChange,
   items,
   label,
+  pill = false,
 }: {
   value: T;
   onChange: (next: T) => void;
   items: { value: T; label: string }[];
   label: string;
+  /** Rounded, equal-width tabs for the customer app. */
+  pill?: boolean;
 }) {
   return (
-    <div role="tablist" aria-label={label} className="flex gap-1 overflow-x-auto rounded-xl bg-line/50 p-1">
+    <div role="tablist" aria-label={label} className={cx('flex gap-1 overflow-x-auto p-1', pill ? 'rounded-full bg-line' : 'rounded-xl bg-line/50')}>
       {items.map((item, index) => (
         <button
           key={item.value}
@@ -325,7 +369,8 @@ export function Tabs<T extends string>({
           }}
           onClick={() => onChange(item.value)}
           className={cx(
-            'min-h-11 shrink-0 rounded-lg px-3 text-sm font-bold whitespace-nowrap transition-colors',
+            'min-h-11 shrink-0 px-3 text-sm font-bold whitespace-nowrap transition-colors',
+            pill ? 'flex-1 rounded-full' : 'rounded-lg',
             value === item.value ? 'bg-card text-ink shadow-sm' : 'text-muted hover:text-ink',
           )}
         >
@@ -480,4 +525,122 @@ function choiceIndex(key: string, current: number, length: number): number | nul
   if (key === 'ArrowRight' || key === 'ArrowDown') return (current + 1) % length;
   if (key === 'ArrowLeft' || key === 'ArrowUp') return (current - 1 + length) % length;
   return null;
+}
+
+/* ------------------------------------------------------- colour blocks and lists */
+
+/**
+ * The customer app divides a screen with contrast, not with hairlines: a white card, then a
+ * block of colour, then a grouped list. `dark` is ink with lime figures (6.9 : 1), `lime` is
+ * the logo's green running into a paler lime with ink text (7.3 : 1 at its darkest).
+ */
+export function PromoCard({
+  tone = 'dark',
+  className,
+  children,
+  ...rest
+}: { tone?: 'dark' | 'lime'; className?: string; children: ReactNode } & React.HTMLAttributes<HTMLElement>) {
+  return (
+    <section
+      {...rest}
+      className={cx(
+        'relative overflow-hidden rounded-3xl p-5 shadow-card sm:p-6',
+        tone === 'dark' ? 'bg-ink text-card' : 'bg-[linear-gradient(135deg,#8cc63f_0%,#b6dd7d_100%)] text-ink',
+        className,
+      )}
+    >
+      {children}
+    </section>
+  );
+}
+
+/** A titled group of rows on one white card, the way settings read on a phone. */
+export function SettingsList({ title, children }: { title?: string; children: ReactNode }) {
+  return (
+    <section className="flex flex-col gap-3">
+      {title ? <h2 className="px-1 text-lg font-extrabold tracking-tight text-ink">{title}</h2> : null}
+      <ul className="divide-y divide-line overflow-hidden rounded-3xl bg-card shadow-card">{children}</ul>
+    </section>
+  );
+}
+
+type RowProps = {
+  icon: ReactNode;
+  label: string;
+  hint?: string;
+  tone?: 'default' | 'danger';
+  /** Chevron for rows that go somewhere; off for rows that act in place. */
+  chevron?: boolean;
+  /** Set for a row that opens content below itself: the chevron turns down and flips. */
+  expanded?: boolean;
+};
+
+function RowBody({ icon, label, hint, tone = 'default', chevron = true, expanded }: RowProps) {
+  return (
+    <>
+      <span
+        className={cx(
+          'grid size-10 shrink-0 place-items-center rounded-2xl',
+          tone === 'danger' ? 'bg-danger-soft text-danger' : 'bg-accent-soft text-accent',
+        )}
+        aria-hidden="true"
+      >
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className={cx('block text-base font-bold', tone === 'danger' ? 'text-danger' : 'text-ink')}>{label}</span>
+        {hint ? <span className="block truncate text-sm text-muted">{hint}</span> : null}
+      </span>
+      {expanded !== undefined ? (
+        <ChevronDown size={18} aria-hidden="true" className={cx('shrink-0 text-muted transition-transform', expanded && 'rotate-180')} />
+      ) : chevron ? (
+        <ChevronRight size={18} aria-hidden="true" className="shrink-0 text-muted" />
+      ) : null}
+    </>
+  );
+}
+
+const rowClass = 'flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface focus-visible:bg-surface';
+
+export function SettingsRow({
+  onClick,
+  to,
+  href,
+  external,
+  disabled,
+  controls,
+  ...row
+}: RowProps & { onClick?: () => void; to?: string; href?: string; external?: boolean; disabled?: boolean; controls?: string }) {
+  if (to) {
+    return (
+      <li>
+        <Link to={to} className={rowClass}>
+          <RowBody {...row} />
+        </Link>
+      </li>
+    );
+  }
+  if (href) {
+    return (
+      <li>
+        <a href={href} className={rowClass} {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}>
+          <RowBody {...row} />
+        </a>
+      </li>
+    );
+  }
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        aria-expanded={row.expanded}
+        aria-controls={controls}
+        className={cx(rowClass, 'disabled:opacity-55')}
+      >
+        <RowBody {...row} />
+      </button>
+    </li>
+  );
 }

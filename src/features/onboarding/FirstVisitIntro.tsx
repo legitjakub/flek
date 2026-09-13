@@ -1,6 +1,6 @@
 import { Dialog } from '@base-ui/react/dialog';
 import { MapPin, TicketCheck } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from '../../app/router';
 import { Button, Wordmark, cx } from '../../components/ui';
 import { useSnapCarousel } from '../../components/useSnapCarousel';
@@ -24,6 +24,13 @@ const SLIDES = [
   },
 ] as const;
 
+const OPEN_EVENT = 'flek:open-intro';
+
+/** Opens the intro on demand — "Jak FLEK funguje?" in the profile — for anyone, anywhere. */
+export function openIntro() {
+  window.dispatchEvent(new Event(OPEN_EVENT));
+}
+
 function wasDismissed() {
   try {
     return window.localStorage.getItem(STORAGE_KEY) === 'done';
@@ -45,12 +52,21 @@ export function FirstVisitIntro() {
   const { userId, ready } = useSession();
   const { path } = useRouter();
   const [dismissed, setDismissed] = useState(wasDismissed);
-  const open = ready && !userId && !dismissed && path === '/';
+  const [requested, setRequested] = useState(false);
+  // The first visit opens by itself; after that only when someone asks for it.
+  const open = requested || (ready && !userId && !dismissed && path === '/');
+
+  useEffect(() => {
+    const show = () => setRequested(true);
+    window.addEventListener(OPEN_EVENT, show);
+    return () => window.removeEventListener(OPEN_EVENT, show);
+  }, []);
   const carousel = useSnapCarousel<HTMLDivElement>(SLIDES.length, open ? 'open' : 'closed');
 
   function finish() {
     rememberDismissal();
     setDismissed(true);
+    setRequested(false);
   }
 
   return (

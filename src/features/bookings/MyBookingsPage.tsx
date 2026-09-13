@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { QrCode } from 'lucide-react';
+import { CalendarDays, Phone, QrCode } from 'lucide-react';
 import { cancelBooking, myBookings } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
 import { clockTime, dayLabel } from '../../lib/time';
 import { useServerNow } from '../../lib/clock';
-import { Banner, Button, EmptyState, ErrorState, LoadingList, Sheet, Tabs } from '../../components/ui';
+import { Banner, Button, EmptyState, ErrorState, LoadingList, Sheet, Tabs, buttonClass, cx } from '../../components/ui';
 import { Link } from '../../app/router';
 import { useSession } from '../auth/session';
 import { Voucher } from './Voucher';
@@ -41,19 +41,21 @@ export function MyBookingsPage() {
 
   if (!userId) {
     return (
-      <main className="page-container py-10">
-        <EmptyState
-          title="Rezervace uvidíš po přihlášení."
-          body="Prohlížet nabídky můžeš i bez účtu."
-          action={
-            <Link
-              to="/prihlaseni?returnTo=%2Frezervace"
-              className="btn-primary"
-            >
-              Přihlásit se
-            </Link>
-          }
-        />
+      <main className="page-container py-6 sm:py-8">
+        <h1 className="text-2xl font-extrabold tracking-tight text-ink">Moje rezervace</h1>
+        <div className="mt-5">
+          <EmptyState
+            tone="lime"
+            icon={<CalendarDays size={26} />}
+            title="Rezervace uvidíš po přihlášení."
+            body="Prohlížet nabídky můžeš i bez účtu."
+            action={
+              <Link to="/prihlaseni?returnTo=%2Frezervace" className={buttonClass({ size: 'lg', shape: 'pill' })}>
+                Přihlásit se
+              </Link>
+            }
+          />
+        </div>
       </main>
     );
   }
@@ -64,10 +66,11 @@ export function MyBookingsPage() {
   const rows = tab === 'upcoming' ? upcoming : history;
 
   return (
-    <main className="page-container pt-8 pb-6">
+    <main className="page-container max-w-3xl pt-6 pb-6 sm:pt-8">
       <h1 className="text-2xl font-extrabold tracking-tight text-ink">Moje rezervace</h1>
       <div className="mt-4">
         <Tabs
+          pill
           label="Rezervace"
           value={tab}
           onChange={setTab}
@@ -83,13 +86,12 @@ export function MyBookingsPage() {
         {query.isError ? <ErrorState error={query.error} onRetry={() => query.refetch()} /> : null}
         {query.isSuccess && rows.length === 0 ? (
           <EmptyState
+            tone="lime"
+            icon={<CalendarDays size={26} />}
             title={tab === 'upcoming' ? 'Nemáš žádnou nadcházející rezervaci.' : 'Historie je zatím prázdná.'}
             body="Najdi si volný termín na dnes."
             action={
-              <Link
-                to="/"
-                className="btn-primary"
-              >
+              <Link to="/" className={buttonClass({ size: 'lg', shape: 'pill' })}>
                 Objevit nabídky
               </Link>
             }
@@ -98,87 +100,100 @@ export function MyBookingsPage() {
 
         {rows.map((booking) => {
           const today = dayLabel(booking.start_at_snapshot, now) === 'Dnes';
+          const live = booking.status === 'confirmed';
           return (
             <article
               key={booking.id}
-              className={`rounded-2xl border bg-card p-4 shadow-card ${today && booking.status === 'confirmed' ? 'border-accent' : 'border-transparent'}`}
+              className={cx('overflow-hidden rounded-3xl bg-card shadow-card', today && live && 'ring-2 ring-brand')}
             >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="tnum font-mono text-xl font-extrabold tracking-[0.1em] text-ink">
+              {/* The code is what gets read out at the counter, so on a live booking it gets the
+                  darkest block on the screen and the brightest colour in the palette. */}
+              {live ? (
+                <div className="flex items-baseline justify-between gap-3 bg-ink px-4 py-3 text-card">
+                  <p className="text-xs font-bold text-card/75">Rezervační kód</p>
+                  <p className="tnum font-mono text-xl font-extrabold tracking-[0.12em] text-brand">
                     {booking.reservation_code}
                   </p>
-                  <p className="tnum mt-2 text-base font-bold text-ink">
-                    {dayLabel(booking.start_at_snapshot, now)} {clockTime(booking.start_at_snapshot)}–
-                    {clockTime(booking.end_at_snapshot)}
-                  </p>
                 </div>
-                <span className="flex shrink-0 flex-wrap justify-end gap-1.5">
-                  <StatusBadge status={booking.status} />
-                  {booking.payment_status ? (
-                    <StatusBadge
-                      status={booking.payment_status}
-                      label={booking.payment_status === 'pending' ? 'Čeká na platbu' : undefined}
-                    />
-                  ) : null}
-                </span>
-              </div>
-
-              <p className="mt-4 text-base font-bold text-ink">{booking.service_name_snapshot}</p>
-              <p className="text-base text-muted">
-                {booking.business_name_snapshot} · {booking.business_address_snapshot}
-              </p>
-              <p className="tnum mt-2 flex flex-wrap items-baseline gap-x-2 text-base font-bold text-ink">
-                {money(booking.price_cents)}
-                {/* Only a kept appointment created value. A cancellation or a no-show that
-                    counted towards "saved" would be a number the product cannot defend, so
-                    savings appear on completed bookings alone — and always from the snapshot
-                    taken at booking time, never from what the service costs today. */}
-                {booking.status === 'completed' &&
-                booking.original_price_cents_snapshot > booking.price_cents ? (
-                  <span className="text-sm font-bold text-positive">
-                    Ušetřeno {money(booking.original_price_cents_snapshot - booking.price_cents)}
-                  </span>
-                ) : null}
-              </p>
-
-              {booking.cancellation_reason ? (
-                <p className="mt-2 text-sm text-danger">Důvod: {booking.cancellation_reason}</p>
               ) : null}
-
-              {booking.status === 'confirmed' ? (
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  {/*
-                    The QR is the thing you actually hold up at the counter, and until now it
-                    existed only on the confirmation screen — once that was dismissed there was
-                    no way back to it and the reservation was six characters to read aloud.
-                    It opens in a sheet rather than inline: the encoder is a lazy import and
-                    rendering one per row would fetch it for every booking in the list.
-                  */}
-                  <Button onClick={() => setVoucherFor(booking)}>
-                    <QrCode size={17} aria-hidden="true" />
-                    Ukázat QR kód
-                  </Button>
-                  <a
-                    className="inline-flex min-h-11 items-center rounded-xl border border-line px-3 text-sm font-bold text-ink"
-                    href={`tel:${booking.business_phone}`}
-                  >
-                    Zavolat podniku
-                  </a>
-                  {booking.can_cancel ? (
-                    <Button variant="danger" onClick={() => setToCancel(booking)}>
-                      Zrušit rezervaci
-                    </Button>
-                  ) : (
-                    <p className="text-xs text-muted">Rezervaci už nejde zrušit online.</p>
-                  )}
-                  {booking.can_cancel ? (
-                    <p className="tnum w-full text-xs text-muted">
-                      Zrušit můžeš zdarma do {clockTime(booking.cancellation_deadline)}
+              <div className="p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    {!live ? (
+                      <p className="tnum font-mono text-sm font-bold tracking-[0.1em] text-muted">
+                        {booking.reservation_code}
+                      </p>
+                    ) : null}
+                    <p className={cx('tnum text-base font-bold text-ink', !live && 'mt-1')}>
+                      {dayLabel(booking.start_at_snapshot, now)} {clockTime(booking.start_at_snapshot)}–
+                      {clockTime(booking.end_at_snapshot)}
                     </p>
-                  ) : null}
+                  </div>
+                  <span className="flex shrink-0 flex-wrap justify-end gap-1.5">
+                    <StatusBadge status={booking.status} />
+                    {booking.payment_status ? (
+                      <StatusBadge
+                        status={booking.payment_status}
+                        label={booking.payment_status === 'pending' ? 'Čeká na platbu' : undefined}
+                      />
+                    ) : null}
+                  </span>
                 </div>
-              ) : null}
+
+                <p className="mt-3 text-base font-bold text-ink">{booking.service_name_snapshot}</p>
+                <p className="text-base text-muted">
+                  {booking.business_name_snapshot} · {booking.business_address_snapshot}
+                </p>
+                <p className="tnum mt-2 flex flex-wrap items-baseline gap-x-2 text-base font-bold text-ink">
+                  {money(booking.price_cents)}
+                  {/* Only a kept appointment created value. A cancellation or a no-show that
+                      counted towards "saved" would be a number the product cannot defend, so
+                      savings appear on completed bookings alone — and always from the snapshot
+                      taken at booking time, never from what the service costs today. */}
+                  {booking.status === 'completed' &&
+                  booking.original_price_cents_snapshot > booking.price_cents ? (
+                    <span className="text-sm font-bold text-positive">
+                      Ušetřeno {money(booking.original_price_cents_snapshot - booking.price_cents)}
+                    </span>
+                  ) : null}
+                </p>
+
+                {booking.cancellation_reason ? (
+                  <p className="mt-2 text-sm text-danger">Důvod: {booking.cancellation_reason}</p>
+                ) : null}
+
+                {booking.status === 'confirmed' ? (
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {/*
+                      The QR is the thing you actually hold up at the counter, and until now it
+                      existed only on the confirmation screen — once that was dismissed there was
+                      no way back to it and the reservation was six characters to read aloud.
+                      It opens in a sheet rather than inline: the encoder is a lazy import and
+                      rendering one per row would fetch it for every booking in the list.
+                    */}
+                    <Button shape="pill" onClick={() => setVoucherFor(booking)}>
+                      <QrCode size={17} aria-hidden="true" />
+                      Ukázat QR kód
+                    </Button>
+                    <a className={buttonClass({ variant: 'soft', shape: 'pill' })} href={`tel:${booking.business_phone}`}>
+                      <Phone size={16} aria-hidden="true" />
+                      Zavolat podniku
+                    </a>
+                    {booking.can_cancel ? (
+                      <Button variant="danger" shape="pill" onClick={() => setToCancel(booking)}>
+                        Zrušit rezervaci
+                      </Button>
+                    ) : (
+                      <p className="text-xs text-muted">Rezervaci už nejde zrušit online.</p>
+                    )}
+                    {booking.can_cancel ? (
+                      <p className="tnum w-full text-xs text-muted">
+                        Zrušit můžeš zdarma do {clockTime(booking.cancellation_deadline)}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
             </article>
           );
         })}

@@ -107,7 +107,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .map-pin--selected {
+  .map-pin.is-selected,
+  .map-pin:hover,
+  .map-cluster:hover {
     transform: none;
   }
 
@@ -140,61 +142,100 @@
     background: #11161a;
   }
 
-  /* A clock pin and an ink price ticket are FLEK's map language. White pills read as a
-     generic accommodation marketplace and disappear into the pale map. */
-  .map-pin {
+  /* A pin is the service itself: its photo in a white ring over an ink price ticket. A clock
+     glyph stands in where a service has no picture. Several places that overlap at the
+     current zoom become an ink count with a lime halo, still carrying the lowest price. */
+  .map-pin,
+  .map-cluster {
+    position: relative;
     display: inline-flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 0;
+    min-width: 44px;
     min-height: 44px;
-    padding: 2px 3px;
+    padding: 0;
     border: 0;
     background: transparent;
-    font-size: 0.875rem;
+    font-family: inherit;
     font-weight: 800;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
     cursor: pointer;
-    filter: drop-shadow(0 2px 3px rgb(20 18 16 / 0.18));
-    transition: transform 150ms, filter 150ms;
+    transition: transform 150ms;
   }
-  .map-pin:hover {
-    transform: translateY(-1px);
-    filter: drop-shadow(0 4px 5px rgb(20 18 16 / 0.22));
-  }
-  .map-pin-glyph {
-    position: relative;
-    z-index: 1;
+  .map-pin:hover,
+  .map-cluster:hover { transform: translateY(-2px); }
+  .map-pin-photo {
     display: block;
-    width: 34px;
-    height: 36px;
+    width: 48px;
+    height: 48px;
     flex: none;
+    overflow: hidden;
+    border: 3px solid var(--color-card);
+    border-radius: 9999px;
+    background: var(--color-accent-soft);
+    box-shadow: 0 4px 10px -2px rgb(20 18 16 / 0.35);
+    transition: border-color 150ms;
   }
-  .map-pin-glyph svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .map-pin-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .map-pin-photo--glyph { display: grid; place-items: center; background: var(--color-ink); }
+  .map-pin-photo--glyph svg { width: 26px; height: 26px; margin-left: 7px; overflow: visible; }
   .map-pin-shape { fill: var(--color-brand); }
   .map-pin-face { fill: var(--color-card); }
   .map-pin-hands { fill: none; stroke: var(--color-ink); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-  .map-pin-rays { fill: none; stroke: var(--color-brand); stroke-width: 3; stroke-linecap: round; }
-  .map-pin-price {
+  .map-pin-price,
+  .map-cluster-price {
+    position: relative;
     display: inline-flex;
-    min-height: 32px;
     align-items: center;
-    margin-left: -5px;
-    padding: 0 10px 0 11px;
-    border-radius: 0 10px 10px 0;
+    min-height: 24px;
+    margin-top: -8px;
+    padding: 0 8px;
+    border-radius: 9999px;
     background: var(--color-ink);
     color: var(--color-card);
-    box-shadow: inset 3px 0 0 var(--color-brand);
+    font-size: 0.8125rem;
+    line-height: 1;
+    box-shadow: 0 0 0 2px var(--color-card), 0 3px 8px -2px rgb(20 18 16 / 0.3);
   }
-  .map-pin--selected {
-    z-index: 1;
-    transform: translateY(-2px) scale(1.06);
-    filter: drop-shadow(0 0 0.45rem rgb(140 198 63 / 0.55));
+  .map-pin-count {
+    position: absolute;
+    top: -4px;
+    right: 50%;
+    margin-right: -34px;
+    display: grid;
+    place-items: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 5px;
+    border-radius: 9999px;
+    background: var(--color-brand);
+    color: var(--color-ink);
+    font-size: 0.75rem;
+    box-shadow: 0 0 0 2px var(--color-card);
   }
-  .map-pin--selected .map-pin-price { background: var(--color-brand); color: var(--color-ink); box-shadow: inset 3px 0 0 var(--color-ink); }
-  .map-pin--selected .map-pin-shape { fill: var(--color-ink); }
-  .map-pin--selected .map-pin-rays { stroke: var(--color-ink); }
+  .map-pin.is-selected { z-index: 2; transform: translateY(-3px) scale(1.12); }
+  .map-pin.is-selected .map-pin-photo { border-color: var(--color-brand); }
+  .map-pin.is-selected .map-pin-price { background: var(--color-brand); color: var(--color-ink); }
+
+  .map-cluster-count {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 9999px;
+    background: var(--color-ink);
+    color: var(--color-card);
+    font-size: 1rem;
+    box-shadow: 0 0 0 7px rgb(140 198 63 / 0.45), 0 0 0 9px rgb(255 255 255 / 0.6), 0 6px 14px -4px rgb(20 18 16 / 0.4);
+  }
+  .map-cluster-price {
+    margin-top: 2px;
+    background: var(--color-card);
+    color: var(--color-ink);
+    box-shadow: 0 3px 8px -2px rgb(20 18 16 / 0.3);
+  }
+  .map-cluster.is-selected .map-cluster-count { background: var(--color-brand); color: var(--color-ink); }
 
   /* Horizontal filter rails scroll, but the scrollbar itself is visual noise. */
   .rail {
@@ -218,27 +259,15 @@
 }
 
 @layer components {
-  /* The primary action as a link. It was hand-copied at seven call sites, so every change
-     to the button had to be made seven times. */
-  .btn-primary {
-    display: inline-flex;
-    min-height: 2.75rem;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    border-radius: var(--radius-xl);
-    background: var(--color-ink);
-    padding-inline: 1rem;
-    font-weight: 700;
-    color: var(--color-accent-ink);
-  }
-  .btn-primary:hover {
-    background: #11161a;
-  }
+  /* The map runs under the floating tab bar on a phone, so it takes everything below the
+     header. Its own controls lift clear of that bar; zoom buttons are left to the pinch. */
+  .map-page { height: calc(100dvh - 69px); min-height: 480px; }
+}
 
-  .map-page { height: calc(100dvh - 132px - env(safe-area-inset-bottom)); min-height: 660px; }
-  @media (min-width: 768px) { .map-page { height: calc(100dvh - 69px); min-height: 640px; } }
-  .map-pin-count { margin-left: 7px; display: inline-grid; place-items: center; min-width: 21px; height: 21px; border-radius: 50%; background: var(--color-brand); color: var(--color-ink); font-size: 11px; }
-  .map-pin--selected .map-pin-count { background: var(--color-ink); color: var(--color-card); }
-  .maplibregl-ctrl-group button { width: 44px; height: 44px; }
+/* Outside any layer on purpose: MapLibre's own stylesheet is unlayered, and a layered rule
+   loses to it whatever its specificity. */
+.maplibregl-ctrl-group button { width: 44px; height: 44px; }
+@media (max-width: 767px) {
+  .map-full .maplibregl-ctrl-bottom-right { bottom: calc(5.25rem + max(0.75rem, env(safe-area-inset-bottom))); }
+  .map-full .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group { display: none; }
 }
