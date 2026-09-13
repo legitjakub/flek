@@ -63,7 +63,7 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 - [ ] Admin nástroj na ruční vratku a storno (se zápisem do audit logu)
 - [ ] Sentry pro chyby v aplikaci, upozornění při selhání cronu nebo webhooku, jednou vyzkoušené obnovení ze zálohy
 - [ ] Mapy a hledání adres: licencovaný poskytovatel nebo vlastní limity (ArcGIS záloha a veřejné Photon API nejsou na komerční provoz)
-- [ ] Nastavit skutečný e-mail podpory (`VITE_SUPPORT_EMAIL`) a vlastní doménu
+- [ ] Nastavit skutečný e-mail podpory (`VITE_SUPPORT_EMAIL`); doména www.app-flek.eu už běží
 - [ ] Otestovat na fyzickém iPhonu v Safari včetně skenování QR kamerou
 - [ ] Zvážit soukromý repozitář a ochranu větve `main` (povinné zelené CI)
 
@@ -72,7 +72,7 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 - [ ] Role v podniku: vlastník → manažer → recepce (recepce jen ověřuje kódy)
 - [ ] Nahrávání vlastních fotek podnikem s přepočtem, odstraněním EXIF a limitem rozměrů
 - [ ] Google hodnocení s cache, rate limitem a hlídáním rozpočtu (dnes nenasazené)
-- [ ] Web push upozornění pro podnik i zákazníka
+- [x] Web push upozornění pro podnik i zákazníka (13. 9.)
 - [ ] Kredit za doporučení
 - [ ] Menší balík aplikace (mapa 979 kB, Temporal 325 kB) a měření Lighthouse
 - [ ] Napojení na rezervační systémy podniků, další města
@@ -84,7 +84,7 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 | 0 — Základ | Zákaznický, partnerský a admin tok, rezervace s QR, vyhledávání podle polohy, zabezpečení dat (RLS) | hotovo 7.–8. 9. |
 | 1 — Demo pilot | Cenový model, spolehlivé rezervace, upozornění podniku, nový vzhled, veřejné nasazení, zabezpečení z auditu (fáze A) | běží teď |
 | 2 — Ostrý pilot v Praze | Oddělená produkce, skutečné platby a výplaty, e-maily, MFA, právní texty, reálné podniky | čeká na todolist fáze B |
-| 3 — Růst | Push upozornění, Google hodnocení, doporučení s kreditem, další města | později |
+| 3 — Růst | Google hodnocení, doporučení s kreditem, role v podniku, další města | později |
 
 ## Jak FLEK funguje
 
