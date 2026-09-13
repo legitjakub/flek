@@ -43,7 +43,7 @@ Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B).
 - [ ] **Převést vlastnictví Supabase na firemní účet.** Dnes je projekt v organizaci jiného účtu. Zapnout 2FA a přidat druhého vlastníka.
 - [x] **Redirect URLs a Site URL** v Supabase → Authentication → URL Configuration: `https://www.app-flek.eu` (13. 9.).
 - [x] **Doména app-flek.eu:** DNS v Endoře a doména ve Vercelu (13. 9.).
-- [x] **E-maily:** účet Resend, doména `mail.app-flek.eu` (DKIM a dva CNAME v Endoře), SMTP v Supabase Auth (13. 9.). Zkontrolovat, že Resend doménu označil jako Verified.
+- [x] **E-maily:** účet Resend, doména `mail.app-flek.eu` (DKIM a dva CNAME v Endoře), SMTP v Supabase Auth (13. 9.). Resend doménu ověřil (Verified).
 - [ ] **Doplnit Edge Function secrets** v Supabase → Edge Functions → Secrets: `NOTIFICATION_FROM` = `FLEK <rezervace@mail.app-flek.eu>`, `VAPID_PUBLIC_KEY` a `VAPID_PRIVATE_KEY` z `/private/tmp/flek-notification-secrets.env`. Bez nich e-mailová a push upozornění čekají ve frontě.
 - [ ] **Resend klíč:** vytvořit nový API klíč (Sending access, doména `mail.app-flek.eu`), uložit ho jako `RESEND_API_KEY` a smazat starý klíč „FLEK production“, který se objevil v logu Codexu.
 - [ ] **VAPID klíče** uložit do správce hesel a soubor `/private/tmp/flek-notification-secrets.env` smazat.

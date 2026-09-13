@@ -42,7 +42,7 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 - [ ] Oddělit prostředí: nový produkční Supabase projekt, současný zůstane jako demo/staging s akceptačními testy
 - [ ] Produkce na Supabase Pro (zálohy, bez uspávání, ochrana proti prolomeným heslům)
 - [ ] Převést Supabase projekt na firemní účet s 2FA a druhým vlastníkem
-- [x] Vlastní SMTP přes Resend z `mail.app-flek.eu`, české šablony potvrzení účtu a obnovy hesla (13. 9.; DNS záznamy v Endoře přidané, Resend doménu ověřuje)
+- [x] Vlastní SMTP přes Resend z `mail.app-flek.eu`, české šablony potvrzení účtu a obnovy hesla (13. 9.; DNS záznamy v Endoře, doména v Resendu ověřená)
 - [x] Upozornění na potvrzenou a zrušenou rezervaci pro zákazníka i podnik: v aplikaci, e-mailem a push, nastavitelné (13. 9.)
 - [ ] Doplnit v Supabase → Edge Functions → Secrets `NOTIFICATION_FROM`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` (bez nich e-mail a push upozornění čekají ve frontě; v aplikaci fungují)
 - [ ] Resend: vytvořit nový API klíč do `RESEND_API_KEY` a smazat starý „FLEK production“ (objevil se v logu Codexu)
