@@ -20,11 +20,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 
 Úkoly, které AI agent udělat nesmí nebo nemůže, protože jde o klíče, hesla nebo platbu kartou. Hotové odškrtni.
 
-- [ ] **Doplnit soukromý klíč pro push v Supabase.** `NOTIFICATION_FROM` a `VAPID_PUBLIC_KEY` už doplnil Claude (13. 9.), e-mailová upozornění fungují. Chybí jen soukromý klíč, ten agent zadávat nesmí.
-  1. Otevři soubor s klíči od Codexu. V Terminálu spusť `open -e /private/tmp/flek-notification-secrets.env`.
-  2. Zkopíruj jen řádek `VAPID_PRIVATE_KEY`.
-  3. V Supabase otevři Edge Functions → Secrets, vlož řádek do pole Name a ulož.
-  - Dokud to neuděláš, upozornění na telefonu (push) čekají ve frontě.
+- [x] **Doplnit klíče pro upozornění v Supabase.** `NOTIFICATION_FROM` a `VAPID_PUBLIC_KEY` doplnil Claude, `VAPID_PRIVATE_KEY` Jakub (13. 9.). Otisk klíče sedí se souborem a doručovací funkce s ním běží.
 - [ ] **Vyměnit klíč Resendu.**
   1. V resend.com otevři API keys → Create API key. Název „FLEK“, oprávnění Sending access, doména `mail.app-flek.eu`.
   2. Nový klíč vlož v Supabase na dvě místa: Edge Functions → Secrets jako `RESEND_API_KEY` a Authentication → Emails → SMTP Settings → Password.
@@ -234,6 +230,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 13. 9. 2026 | Push upozornění připravená: `VAPID_PRIVATE_KEY` v Edge Function secrets |
 | 13. 9. 2026 | E-mailová upozornění zapnutá (`NOTIFICATION_FROM`, `VAPID_PUBLIC_KEY`), zkušební e-maily obnovy hesla a upozornění doručené |
 | 13. 9. 2026 | Nová paleta „Mandarinka“: téměř černá, mandarinková a neutrální pozadí v aplikaci, logu, ikonách, mapě a e-mailech |
 | 13. 9. 2026 | Sekce „Na tahu je Jakub“: klíče pro upozornění, výměna klíče Resendu, zkouška e-mailů a platby, propojení podniku se Stripe |
