@@ -9,7 +9,7 @@
  *
  * A separate table, not new columns on businesses, and the reason is a grant:
  *
- *   grant select on public.businesses to anon, authenticated;   -- 202609070001_schema.sql
+ *   grant select on public.businesses to anon, authenticated;   -- 20260907215051_schema.sql
  *   create policy business_read ... using(status='approved' or is_member_of(id) or is_admin())
  *
  * Every approved venue's row is readable by everyone, by design — that is how the public

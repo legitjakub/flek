@@ -16,7 +16,7 @@ Mobilní rozměry systémového Chrome ověřují responzivní rozhraní, nenahr
 
 `src/types/database.ts` obsahuje aplikační typy spravované ručně. Výstup generátoru Supabase má jinou strukturu; starý skript `db:types` by bez navazující migrace importů aplikaci rozbil. Není součástí postupu pro běžné spuštění.
 
-Migrace aplikované přes MCP mají v hostované historii čas aplikace odlišný od lokálního názvu souboru. Mapování je v PROJECT_STATUS.md. Před prvním CLI `db push` je nutné ověřit a sladit historii podle názvu a obsahu, aby se již aplikované DDL neopakovalo.
+Názvy migrací v repozitáři jsou sladěné s hostovanou historií (13. 9. 2026). Migrace aplikovaná přes MCP dostane verzi podle času aplikace; soubor je pak potřeba přejmenovat na tuto verzi, jinak by ji `supabase db push` spustil podruhé.
 
 ## Demo data a účty
 

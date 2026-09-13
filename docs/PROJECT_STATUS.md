@@ -23,7 +23,7 @@ Demo účty a jejich omezení jsou v [README.md](../README.md). Produkční hesl
 
 ### Objevování a mapa
 
-- Karty zobrazují skutečné hodnocení z Google Places přes Edge Function; demo hodnocení se jako náhrada nezobrazuje.
+- Hodnocení z Google Places je v kódu hotové (Edge Function `google-place-rating` a komponenta na kartě), **v produkci ale neaktivní**: funkce není v Supabase nasazená, chybí `GOOGLE_MAPS_API_KEY` a žádný podnik nemá Place ID (ověřeno 13. 9. 2026). Karty proto hodnocení neukazují a falešné se nedoplňuje. Zapnutí: klíč s billingem → `supabase secrets set GOOGLE_MAPS_API_KEY=…` → `supabase functions deploy google-place-rating` → Place ID u podniků v administraci. Každé zobrazení karty volá Places API bez cache, s rostoucím provozem to poroste i v nákladech.
 - Klik na samostatnou cenu na mapě otevře přímo konkrétní aktivitu. Skupina více termínů otevře spodní panel.
 - Spodní panel má horizontální snap carousel, číslování, šipky a odkaz na detail každé aktivity. Každá karta se zarovnává na celou šířku, takže není potřeba „přeswipovat“ několik karet najednou.
 - Mapa má ovládání „Moje poloha“, seznamový režim a krátkou nápovědu. Mapové markery jsou skupinované podle provozovny/místa.
@@ -73,15 +73,15 @@ Nejdůležitější migrace:
 
 | Migrace | Účel |
 | --- | --- |
-| `202609070001`–`006` | schéma, rezervace, partner, dotazy, Storage a metriky |
-| `202609080007`–`013` | serverový čas, denní části, hodnocení, platby a storno lhůty |
-| `202609080014`–`202609090020` | oblíbená místa, růstová smyčka, galerie, fotografie bez tváří, Google Places a stránka podniku |
-| `20260909220026_service_gallery_images.sql` | katalog ilustračních fotografií podle aktivity |
-| `202609100021_business_billing.sql` | podklady pro účtování podniku |
-| `202609110022_service_fee_v1.sql` | cenový model v1, finanční snapshoty, nové sloupce a `publish_flek` |
-| `202609110023_maintenance_cron.sql` | periodická údržba plateb a starých rezervací |
-| `20260912221925_pilot_booking_reliability.sql` | souběžné opakování rezervace, bezpečné zamykání vratek, neměnnost nabídky i po stornu |
-| `20260913085439_pilot_completion_read_models.sql` | metriky čekajícího dokončení podle konce rezervace + 24 h |
+| `20260907215051`–`20260907215349` | schéma, rezervace, partner, dotazy, Storage a metriky |
+| `20260907220149`–`20260908180956` | serverový čas, denní části, hodnocení, platby a storno lhůty |
+| `20260908182847`–`20260909213817` | oblíbená místa, růstová smyčka, galerie, fotografie bez tváří, Google Places a stránka podniku |
+| `20260909234559_service_gallery_images.sql` | katalog ilustračních fotografií podle aktivity |
+| `20260910005253_business_billing.sql` | podklady pro účtování podniku |
+| `20260911161109_service_fee_v1.sql` | cenový model v1, finanční snapshoty, nové sloupce a `publish_flek` |
+| `20260911161149_maintenance_cron.sql` | periodická údržba plateb a starých rezervací |
+| `20260912222313_pilot_booking_reliability.sql` | souběžné opakování rezervace, bezpečné zamykání vratek, neměnnost nabídky i po stornu |
+| `20260913085542_pilot_completion_read_models.sql` | metriky čekajícího dokončení podle konce rezervace + 24 h |
 
 ## Ověření a otevřené body
 
@@ -90,7 +90,7 @@ Nejdůležitější migrace:
 - 100 akceptačních kontrol proti reálným JWT a hostované databázi prošlo, včetně posledního místa, opakování stejné platby, výpočtu poplatku a Realtime pouze pro vlastní podnik.
 - `tests/pilot-maintenance.sql` prošel proti hostované databázi: hranice 24 hodin / 30 minut, neměnný finanční snímek, zachování výplaty při nedostavení, staré ceny a oprávnění. Testovací transakce se celá vrací zpět.
 - Lokální integrační sada potřebuje běžící Docker/Supabase; v tomto prostředí neběžela. Typy aplikace jsou ručně spravované, nevyměňovat je přímo za generovaný soubor.
-- Hostovaná databáze eviduje migrace pod časem aplikace nástrojem: `service_fee_v1` = `20260911161109`, `maintenance_cron` = `20260911161149`, `pilot_booking_reliability` = `20260912222313`, `pilot_completion_read_models` = `20260913085542`. Lokální soubory mají původní čas vytvoření. Již aplikované migrace znovu nespouštět; před použitím CLI push nejdřív sjednotit historii podle názvu a obsahu.
+- Názvy souborů v `supabase/migrations/` odpovídají verzím v hostované tabulce `supabase_migrations.schema_migrations` (sladěno 13. 9. 2026 podle názvu, včetně pořadí `photo_matches_activity` před `google_place_ratings`, jak se skutečně aplikovaly). `supabase db push` proto již aplikované migrace nespustí znovu. Novou migraci po aplikaci přes MCP pojmenujte podle verze, kterou databáze zapsala.
 - Připojení skutečné platební brány, skutečné výplaty a účetní doklady zůstávají mimo tento pilot. UI u placení výslovně uvádí ukázkový režim.
 
 Podrobné důkazy jsou v [VERIFICATION.md](../VERIFICATION.md), omezení v [LIMITATIONS.md](../LIMITATIONS.md), technická rozhodnutí v [DECISIONS.md](../DECISIONS.md) a historické předání v [HANDOFF.md](../HANDOFF.md).
