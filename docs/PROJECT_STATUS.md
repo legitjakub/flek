@@ -99,6 +99,7 @@ Podrobné důkazy jsou v [VERIFICATION.md](../VERIFICATION.md), omezení v [LIMI
 
 | Datum | Změna | Stav |
 | --- | --- | --- |
+| 13. 9. 2026 | `docs/NOTION.md` (todolist, fáze, jak to funguje, kde co běží) vložený do Notionu; `AGENTS.md` a `CLAUDE.md` jako vstupní bod pro AI agenty; `HANDOFF.md` označený jako zastaralý | ověřeno proti kódu, Supabase (cron, Edge Functions, advisor) a stránce v Notionu |
 | 13. 9. 2026 | Nový vzhled zákaznické appky: profil v barevných blocích se seznamem nastavení, celoobrazovková mapa s fotkami služeb ve špendlících, shluky s přiblížením a náhledovou kartou, plovoucí spodní navigace, nové Oblíbené a Rezervace | implementováno; typy, 81 unit testů, build a Playwright audit (kontrast, 44px, přetečení) na 375/390/1280 px |
 | 13. 9. 2026 | Audit rolí: zrušené rezervace u podniku bez „Vy dostanete“ a sbalené pod platnými, stav nabídky jako barevný štítek, detail nabídky vede na další termíny v podniku, jasnější prázdné stavy a větší dotykové plochy; migrace sladěné s hostovanou historií | ověřeno v prohlížeči, 77 testů, build |
 | 13. 9. 2026 | Dokončení Claudeova pilotu: cenový model, bezpečné opakování a vratky, automatické dokončení a upozornění podniku | implementováno; databáze a 100 API kontrol ověřeny |
