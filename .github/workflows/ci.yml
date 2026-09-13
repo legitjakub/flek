@@ -17,6 +17,11 @@ jobs:
     name: Typy, build, unit testy a závislosti
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      # Placeholders: unit tests import the Supabase client module, which refuses to load
+      # without these. Nothing in CI talks to a database.
+      VITE_SUPABASE_URL: http://127.0.0.1:54321
+      VITE_SUPABASE_ANON_KEY: ci-placeholder-anon-key
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
