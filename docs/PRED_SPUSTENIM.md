@@ -78,13 +78,12 @@ Každý bod je samostatný úkol. Po dokončení agent aktualizuje dokumentaci p
 - [ ] **Skrýt ve feedu, na mapě a na stránce podniku FLEKy podniků**, kterým Stripe omezil platby. Dnes se zobrazí a rezervace skončí hláškou `PAYMENTS_NOT_READY`.
 - [ ] **Sladit formulář „Výplatní a fakturační údaje“ se Stripe.** Číslo účtu pro výplaty už zadává podnik u Stripe, formulář má nechat jen fakturační údaje a souhlas s podmínkami.
 - [ ] **Migrace pro ostrý režim.** Nastavit `stripe_test_mode = 'false'` v `private.settings`, aby zmizela hláška o testovací kartě. Spustit až spolu s ostrými klíči.
-- [ ] **Nová doména ve Stripe funkcích.**
-  - Znovu nasadit všechny Stripe Edge Functions, protože app-flek.eu je v `_shared/stripe.ts`, ale v nasazených funkcích zatím ne.
-  - V `stripe-connect` přepsat natvrdo zadanou `https://flek-nine.vercel.app` (záložní návratová adresa a `business_url`) na finální doménu.
+- [x] **Stripe funkce `stripe-checkout` a `stripe-connect` znovu nasazené s doménou app-flek.eu** (CORS ověřen 13. 9.).
+- [ ] V `stripe-connect` přepsat natvrdo zadanou `https://flek-nine.vercel.app` (záložní návratová adresa a `business_url`) na finální doménu. Až bude app-flek.eu hotová i v Supabase Auth, znovu nasadit i ostatní Stripe funkce, ať sdílejí stejný `_shared/stripe.ts`.
 - [ ] **Z ostrého nasazení vynechat `stripe-test-pay`.** S ostrým klíčem sama odmítá, ale je čistší ji nenasadit.
 - [ ] **Admin nástroj na ruční vratku a storno** se zápisem do `admin_audit_log`, pro řešení sporů.
 - [ ] **Přehled plateb pro admina a účetní export (CSV):** platby, vratky, poplatky FLEKu a převody podnikům spárované se Stripe ID.
-- [ ] **Úklid `scripts/acceptance.mjs`.** Odstranit mrtvé větve pro demo platby (`MODE === 'stripe'`).
+- [x] **Úklid `scripts/acceptance.mjs`:** mrtvé větve demo plateb odstraněné (13. 9.).
 - [ ] **Spustit `npm run test:integration` s Dockerem.** Po přechodu na Stripe neběžel; helper `book()` teď potvrzuje platbu přes `stripe_payment_succeeded`.
 
 ### E-maily (po nastavení SMTP člověkem)

@@ -104,7 +104,6 @@ async function publish(capacity, minutesAhead = 180) {
 }
 
 
-const MODE = 'stripe';
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** Polls the customer's view of a payment until `done` says so, for Stripe's asynchronous webhook. */
@@ -120,9 +119,8 @@ async function waitPayment(client, paymentId, done, timeoutMs = 45_000) {
 }
 
 /**
- * Settles a started payment. Demo flips the row; Stripe charges the test card through
- * stripe-test-pay and waits for the webhook, which also books the seat (or asks for a refund).
- * The result keeps the shape of the demo RPC so the checks below read the same in both modes.
+ * Pays a started payment the way a customer would: Stripe charges the test card through
+ * stripe-test-pay and the webhook marks it paid and books the seat (or asks for a refund).
  */
 async function settle(client, paymentId) {
   const { error } = await client.functions.invoke('stripe-test-pay', { body: { payment_id: paymentId } });
@@ -259,14 +257,12 @@ check('Po zaplacení rezervace projde', !paidBooking.error);
 const replay = await payer.client.rpc('create_booking', { p_offer_id: payOffer, p_payment_id: settledPay.data.id });
 check('Opakování platby vrací původní rezervaci bez dalšího místa',
   !replay.error && replay.data?.[0]?.booking_id === paidBooking.data?.[0]?.booking_id);
-check('Cizí platbu nelze potvrdit', MODE === 'stripe'
-  ? /NOT_FOUND|FORBIDDEN|PAYMENT_CLOSED/.test(err((await settle(users[2].client, settledPay.data.id)).error))
-  : err((await users[2].client.rpc('demo_confirm_payment', { p_payment_id: settledPay.data.id })).error).includes('FORBIDDEN'));
+check('Cizí platbu nelze potvrdit', /NOT_FOUND|FORBIDDEN|PAYMENT_CLOSED/.test(err((await settle(users[2].client, settledPay.data.id)).error)));
 const payerBooking = ((await payer.client.rpc('my_bookings')).data ?? []).find((b) => b.offer_id === payOffer);
 check('Rezervace nese stav zaplaceno', payerBooking?.payment_status === 'paid', payerBooking?.payment_status);
 await payer.client.rpc('cancel_booking', { p_booking_id: payerBooking.id });
 // Stripe returns the money asynchronously; the row turns refunded once Stripe accepts the refund.
-if (MODE === 'stripe') await waitPayment(payer.client, settledPay.data.id, (x) => x.status === 'refunded');
+await waitPayment(payer.client, settledPay.data.id, (x) => x.status === 'refunded');
 const afterRefund = ((await payer.client.rpc('my_bookings')).data ?? []).find((b) => b.id === payerBooking.id);
 check('Zrušení vrátí peníze', afterRefund?.payment_status === 'refunded', afterRefund?.payment_status);
 
@@ -500,20 +496,12 @@ check('Platba s rezervací se „vrátit“ nedá',
 const lastSeat = await publish(1, 260);
 const loser = users.find((u) => u !== buyer && u !== customer && u !== otherUser && u !== users[0]) ?? users[4];
 const loserPay = await loser.client.rpc('start_payment', { p_offer_id: lastSeat });
-let loserPaid;
-if (MODE === 'stripe') {
-  // With Stripe the webhook books at payment time, so the seat has to go before the loser pays.
-  await book(otherUser.client, lastSeat);
-  loserPaid = await settle(loser.client, loserPay.data?.id);
-} else {
-  loserPaid = await loser.client.rpc('demo_confirm_payment', { p_payment_id: loserPay.data?.id });
-  await book(otherUser.client, lastSeat);
-}
+// The webhook books at payment time, so the seat has to go before the loser pays.
+await book(otherUser.client, lastSeat);
+const loserPaid = await settle(loser.client, loserPay.data?.id);
 const lost = await loser.client.rpc('create_booking', { p_offer_id: lastSeat, p_payment_id: loserPay.data?.id });
 await loser.client.rpc('release_unbooked_payment', { p_payment_id: loserPay.data?.id });
-const released = MODE === 'stripe'
-  ? { data: await waitPayment(loser.client, loserPay.data?.id, (x) => x.status === 'refunded') }
-  : { data: (await loser.client.rpc('my_payment_state', { p_payment_id: loserPay.data?.id })).data };
+const released = { data: await waitPayment(loser.client, loserPay.data?.id, (x) => x.status === 'refunded') };
 check('Zaplaceno bez místa: platba se hned vrátí',
   /OFFER_UNAVAILABLE|PAYMENT_REQUIRED/.test(err(lost.error)) && released.data?.status === 'refunded' && !loserPaid.data?.reservation_code,
   `${err(lost.error)} → ${released.data?.status}`);
