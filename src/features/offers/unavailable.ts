@@ -49,7 +49,7 @@ export function unavailableCopy(reason: UnavailableReason): { title: string; bod
     case 'started':
       return {
         title: 'Tenhle FLEK už proběhl.',
-        body: 'Termín, na který odkaz mířil, je minulostí. Volné termíny přibývají každý den.',
+        body: 'Termín, na který odkaz mířil, je minulostí. Volné FLEKy přibývají každý den.',
       };
     case 'closed':
       return {

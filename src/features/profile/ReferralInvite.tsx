@@ -20,7 +20,7 @@ export function ReferralInvite({ userId }: { userId: string }) {
   if (code.isError || !code.data) return null;
 
   const url = `${window.location.origin}/r/${code.data}`;
-  const text = 'Pošli FLEK někomu, komu by se hodily volné termíny na poslední chvíli.';
+  const text = 'Pošli FLEK někomu, komu by se hodily volné FLEKy na poslední chvíli.';
   const invited = stats.data?.invited ?? 0;
   // Where the share sheet exists it is the main action and copying steps back; otherwise
   // copying is the only one, and gets the ink fill.

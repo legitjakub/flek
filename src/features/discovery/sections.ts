@@ -18,7 +18,7 @@ const MAX_PER_SECTION = 6;
 export function buildSections(rows: SearchRow[], now: string): Section[] {
   if (rows.length === 0) return [];
   if (rows.length < SECTIONS_FROM) {
-    return [{ key: 'all', title: 'Volné termíny', rows: byTime(rows) }];
+    return [{ key: 'all', title: 'V okolí', rows: byTime(rows) }];
   }
 
   const nowMs = Date.parse(now);
@@ -41,18 +41,18 @@ export function buildSections(rows: SearchRow[], now: string): Section[] {
   if (evening.length) sections.push({ key: 'evening', title: 'Dnes večer', rows: evening });
 
   const deals = take([...rows].sort((a, b) => b.discount_pct - a.discount_pct));
-  if (deals.length) sections.push({ key: 'deals', title: 'Nejvýhodnější termíny', rows: deals });
+  if (deals.length) sections.push({ key: 'deals', title: 'Nejvýhodnější FLEKy', rows: deals });
 
   const near = take([...rows].sort((a, b) => (a.distance_m ?? Number.POSITIVE_INFINITY) - (b.distance_m ?? Number.POSITIVE_INFINITY)));
   if (near.length) sections.push({ key: 'near', title: 'Blízko tebe', rows: near });
 
   const rest = byTime(rows.filter((row) => !used.has(row.id)));
   if (rest.length >= MIN_PER_SECTION) {
-    sections.push({ key: 'rest', title: 'Další volné termíny', rows: rest });
+    sections.push({ key: 'rest', title: 'Další volné FLEKy', rows: rest });
   } else if (rest.length && sections.length) {
     sections[sections.length - 1].rows.push(...rest);
   } else if (rest.length) {
-    sections.push({ key: 'all', title: 'Volné termíny', rows: rest });
+    sections.push({ key: 'all', title: 'V okolí', rows: rest });
   }
   return sections;
 }

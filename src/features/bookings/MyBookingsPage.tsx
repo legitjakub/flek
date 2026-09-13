@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { CalendarDays, Phone, QrCode } from 'lucide-react';
+import { Phone, QrCode, Ticket, X } from 'lucide-react';
 import { cancelBooking, myBookings } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
@@ -46,7 +46,7 @@ export function MyBookingsPage() {
         <div className="mt-5">
           <EmptyState
             tone="lime"
-            icon={<CalendarDays size={26} />}
+            icon={<Ticket size={26} />}
             title="Rezervace uvidíš po přihlášení."
             body="Prohlížet nabídky můžeš i bez účtu."
             action={
@@ -87,9 +87,9 @@ export function MyBookingsPage() {
         {query.isSuccess && rows.length === 0 ? (
           <EmptyState
             tone="lime"
-            icon={<CalendarDays size={26} />}
+            icon={<Ticket size={26} />}
             title={tab === 'upcoming' ? 'Nemáš žádnou nadcházející rezervaci.' : 'Historie je zatím prázdná.'}
-            body="Najdi si volný termín na dnes."
+            body="Najdi si volný FLEK na dnes."
             action={
               <Link to="/" className={buttonClass({ size: 'lg', shape: 'pill' })}>
                 Objevit nabídky
@@ -140,57 +140,75 @@ export function MyBookingsPage() {
                   </span>
                 </div>
 
-                <p className="mt-3 text-base font-bold text-ink">{booking.service_name_snapshot}</p>
-                <p className="text-base text-muted">
+                <p className="mt-3 flex items-baseline gap-3 text-base font-bold text-ink">
+                  <span className="min-w-0 flex-1">{booking.service_name_snapshot}</span>
+                  <span className="tnum shrink-0">{money(booking.price_cents)}</span>
+                </p>
+                <p className="text-sm text-muted">
                   {booking.business_name_snapshot} · {booking.business_address_snapshot}
                 </p>
-                <p className="tnum mt-2 flex flex-wrap items-baseline gap-x-2 text-base font-bold text-ink">
-                  {money(booking.price_cents)}
-                  {/* Only a kept appointment created value. A cancellation or a no-show that
-                      counted towards "saved" would be a number the product cannot defend, so
-                      savings appear on completed bookings alone — and always from the snapshot
-                      taken at booking time, never from what the service costs today. */}
-                  {booking.status === 'completed' &&
-                  booking.original_price_cents_snapshot > booking.price_cents ? (
-                    <span className="text-sm font-bold text-positive">
-                      Ušetřeno {money(booking.original_price_cents_snapshot - booking.price_cents)}
-                    </span>
-                  ) : null}
-                </p>
+                {/* Only a kept appointment created value. A cancellation or a no-show that
+                    counted towards "saved" would be a number the product cannot defend, so
+                    savings appear on completed bookings alone — and always from the snapshot
+                    taken at booking time, never from what the service costs today. */}
+                {booking.status === 'completed' && booking.original_price_cents_snapshot > booking.price_cents ? (
+                  <p className="tnum mt-1 text-sm font-bold text-positive">
+                    Ušetřeno {money(booking.original_price_cents_snapshot - booking.price_cents)}
+                  </p>
+                ) : null}
 
                 {booking.cancellation_reason ? (
                   <p className="mt-2 text-sm text-danger">Důvod: {booking.cancellation_reason}</p>
                 ) : null}
 
                 {booking.status === 'confirmed' ? (
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <div className="mt-4">
                     {/*
                       The QR is the thing you actually hold up at the counter, and until now it
                       existed only on the confirmation screen — once that was dismissed there was
                       no way back to it and the reservation was six characters to read aloud.
                       It opens in a sheet rather than inline: the encoder is a lazy import and
                       rendering one per row would fetch it for every booking in the list.
+
+                      One row of equal, short buttons. Three full-width pills stacked into two
+                      rows took a third of the phone screen for three actions.
                     */}
-                    <Button shape="pill" onClick={() => setVoucherFor(booking)}>
-                      <QrCode size={17} aria-hidden="true" />
-                      Ukázat QR kód
-                    </Button>
-                    <a className={buttonClass({ variant: 'soft', shape: 'pill' })} href={`tel:${booking.business_phone}`}>
-                      <Phone size={16} aria-hidden="true" />
-                      Zavolat podniku
-                    </a>
-                    {booking.can_cancel ? (
-                      <Button variant="danger" shape="pill" onClick={() => setToCancel(booking)}>
-                        Zrušit rezervaci
+                    <div className={cx('grid gap-2', booking.can_cancel ? 'grid-cols-3' : 'grid-cols-2')}>
+                      <Button
+                        shape="pill"
+                        size="sm"
+                        aria-label="Ukázat QR kód"
+                        onClick={() => setVoucherFor(booking)}
+                      >
+                        <QrCode size={16} aria-hidden="true" className="shrink-0" />
+                        QR kód
                       </Button>
-                    ) : (
-                      <p className="text-xs text-muted">Rezervaci už nejde zrušit online.</p>
-                    )}
-                    {booking.can_cancel ? (
-                      <p className="tnum w-full text-xs text-muted">
-                        Zrušit můžeš zdarma do {clockTime(booking.cancellation_deadline)}
-                      </p>
-                    ) : null}
+                      <a
+                        className={buttonClass({ variant: 'soft', shape: 'pill', size: 'sm' })}
+                        aria-label="Zavolat podniku"
+                        href={`tel:${booking.business_phone}`}
+                      >
+                        <Phone size={15} aria-hidden="true" className="shrink-0" />
+                        Zavolat
+                      </a>
+                      {booking.can_cancel ? (
+                        <Button
+                          variant="danger"
+                          shape="pill"
+                          size="sm"
+                          aria-label="Zrušit rezervaci"
+                          onClick={() => setToCancel(booking)}
+                        >
+                          <X size={15} aria-hidden="true" className="shrink-0" />
+                          Zrušit
+                        </Button>
+                      ) : null}
+                    </div>
+                    <p className="tnum mt-2 text-xs text-muted">
+                      {booking.can_cancel
+                        ? `Zrušit můžeš zdarma do ${clockTime(booking.cancellation_deadline)}`
+                        : 'Rezervaci už nejde zrušit online.'}
+                    </p>
                   </div>
                 ) : null}
               </div>

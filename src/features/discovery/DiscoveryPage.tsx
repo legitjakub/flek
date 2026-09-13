@@ -22,31 +22,26 @@ export function DiscoveryPage() {
   const rows = discovery.data?.rows ?? [];
   const customized = activeCount(filters) > 0 || filters.when !== DEFAULT_FILTERS.when;
   const sections = useMemo(() => customized
-    ? (rows.length ? [{ key: 'all', title: 'Volné termíny', rows }] : [])
+    ? (rows.length ? [{ key: 'all', title: 'V okolí', rows }] : [])
     : buildSections(rows, now), [rows, now, customized]);
   return (
     <main className="page-container py-5 sm:py-8">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-        <h1 className="text-xl leading-tight font-extrabold tracking-tight sm:text-2xl">Volné termíny</h1>
+        <h1 className="text-xl leading-tight font-extrabold tracking-tight sm:text-2xl">Volné FLEKy</h1>
         <LocationChip point={point} onChange={setPoint} />
       </div>
-      <div className="mt-3"><FilterBar filters={filters} onChange={setFilters} categories={categories.data ?? []} resultCount={rows.length} pending={discovery.isFetching} applied={discovery.data?.applied} /></div>
+      <div className="mt-3"><FilterBar filters={filters} onChange={setFilters} categories={categories.data ?? []} resultCount={rows.length} pending={discovery.isFetching} applied={discovery.data?.applied} note={discovery.data?.note} /></div>
       <p className="sr-only" aria-live="polite">
         {discovery.isPending
-          ? 'Hledáme volné termíny…'
+          ? 'Hledáme volné FLEKy…'
           : discovery.isSuccess
             ? `${rows.length} ${plural(rows.length)} · ${SORT_LABELS[filters.sort]}`
             : 'Nabídky se nepodařilo načíst'}
       </p>
       {discovery.isError ? <div className="mt-4"><ErrorState error={discovery.error} onRetry={() => discovery.refetch()} /></div> : null}
-      {discovery.data?.note ? (
-        <p className="mt-3 rounded-xl border border-warning/20 bg-warning-soft px-3 py-2 text-sm text-ink">
-          {discovery.data.note}
-        </p>
-      ) : null}
-      {discovery.isSuccess && rows.length === 0 ? <div className="mt-4"><EmptyState title="V okolí teď nic volného není." body="Zkus jiný den nebo větší okolí. Nové termíny přibývají během dne." action={<Button variant="secondary" onClick={() => setFilters({ ...DEFAULT_FILTERS, when: 'week', radius_m: 25000 })}>Hledat v celém týdnu</Button>} /></div> : null}
+      {discovery.isSuccess && rows.length === 0 ? <div className="mt-4"><EmptyState title="V okolí teď nic volného není." body="Zkus jiný den nebo větší okolí. Nové FLEKy přibývají během dne." action={<Button variant="secondary" onClick={() => setFilters({ ...DEFAULT_FILTERS, when: 'week', radius_m: 25000 })}>Hledat v celém týdnu</Button>} /></div> : null}
       {discovery.isPending ? (
-        <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3" role="status" aria-label="Načítáme volné termíny">
+        <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3" role="status" aria-label="Načítáme volné FLEKy">
           {Array.from({ length: 6 }, (_, i) => <CardSkeleton key={i} />)}
         </div>
       ) : null}

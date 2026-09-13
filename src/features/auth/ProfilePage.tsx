@@ -25,7 +25,7 @@ const SUPPORT_EMAIL: string | undefined = import.meta.env.VITE_SUPPORT_EMAIL || 
 
 const BENEFITS = [
   'Konečnou cenu i slevu vidíš dřív, než rezervuješ.',
-  'Volný termín máš za minutu, bez volání.',
+  'Volný FLEK máš za minutu, bez volání.',
   'Platíš předem, v podniku ukážeš kód.',
 ];
 

@@ -233,10 +233,10 @@ export function wideningSteps(filters: Filters, now: string): Widening[] {
           !widerRadius && !widerWhen
             ? null
             : widerRadius && widerWhen
-              ? `Poblíž teď nic není. Ukazujeme nabídky do ${radius / 1000} km a širší období než ${WHEN_SENTENCE[filters.when]}.`
+              ? `Poblíž nic není, ukazujeme do ${radius / 1000} km a ${WHEN_SENTENCE[when]}`
               : widerRadius
-                ? `Do ${filters.radius_m / 1000} km nic není. Ukazujeme nabídky do ${radius / 1000} km.`
-                : `Na ${WHEN_SENTENCE[filters.when]} nic volného není. Ukazujeme ${WHEN_SENTENCE[when]}.`,
+                ? `Do ${filters.radius_m / 1000} km nic není, ukazujeme do ${radius / 1000} km`
+                : `Na ${WHEN_SENTENCE[filters.when]} nic není, ukazujeme ${WHEN_SENTENCE[when]}`,
       });
     }
   }

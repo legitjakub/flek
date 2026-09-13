@@ -44,7 +44,7 @@ export function FavoritesPage() {
             tone="lime"
             icon={<Heart size={26} />}
             title="Sleduj místa, kam se rád vracíš."
-            body="Dáme ti vědět, jakmile u nich přibude volný termín."
+            body="Dáme ti vědět, jakmile u nich přibude volný FLEK."
             action={
               <Link to="/prihlaseni?returnTo=%2Foblibene" className={buttonClass({ size: 'lg', shape: 'pill' })}>
                 Přihlásit se
@@ -73,7 +73,7 @@ export function FavoritesPage() {
             tone="lime"
             icon={<Heart size={26} />}
             title="Zatím nesleduješ žádné místo."
-            body="U nabídky klepni na Sledovat a dáme ti vědět, až tam přibude volný termín."
+            body="U nabídky klepni na Sledovat a dáme ti vědět, až tam přibude volný FLEK."
             action={
               <Link to="/" className={buttonClass({ size: 'lg', shape: 'pill' })}>
                 Objevit nabídky
@@ -127,7 +127,7 @@ export function FavoritesPage() {
                     </span>
                     {place.open_offers > 0 ? (
                       <span className="tnum block text-sm font-bold text-ink">
-                        {place.open_offers} {place.open_offers === 1 ? 'volný termín' : place.open_offers < 5 ? 'volné termíny' : 'volných termínů'}
+                        {place.open_offers} {place.open_offers === 1 ? 'volný FLEK' : place.open_offers < 5 ? 'volné FLEKy' : 'volných FLEKů'}
                       </span>
                     ) : (
                       <span className="block text-sm text-muted">Teď nic volného</span>

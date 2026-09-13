@@ -67,7 +67,7 @@ export function VenuePage({ businessId }: { businessId: string }) {
       <main className="page-container py-10 text-center">
         <p className="text-base font-bold text-ink">Tenhle podnik na FLEKu nenajdeme.</p>
         <Link to="/" className="mt-4 inline-block text-base font-bold underline underline-offset-4">
-          Objevit volné termíny
+          Objevit volné FLEKy
         </Link>
       </main>
     );
@@ -114,7 +114,7 @@ export function VenuePage({ businessId }: { businessId: string }) {
 
       <section className="mt-7" aria-labelledby="volne-terminy">
         <h2 id="volne-terminy" className="mb-3 text-lg font-extrabold tracking-tight">
-          Volné termíny
+          Volné FLEKy
           <span className="tnum ml-2 text-sm font-normal text-muted">
             {rows.length} {rows.length === 1 ? 'nabídka' : rows.length < 5 ? 'nabídky' : 'nabídek'}
           </span>

@@ -366,7 +366,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
               to={`/podnik/${offer.business_id}?from=${encodeURIComponent(`/nabidka/${offer.id}`)}`}
               className="inline-flex min-h-11 items-center text-base font-bold text-accent"
             >
-              Další volné termíny v podniku
+              Další volné FLEKy v podniku
             </Link>
           </div>
           {/* Terms for a booking that can still be made. On a slot nobody can book any more

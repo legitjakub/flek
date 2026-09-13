@@ -1,4 +1,4 @@
-import { SlidersHorizontal, X } from 'lucide-react';
+import { Info, SlidersHorizontal, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Button, Field, Input, Segmented, Sheet } from '../../components/ui';
 import type { Category, SortKey } from '../../types/database';
@@ -31,6 +31,7 @@ export function FilterBar({
   resultCount,
   pending,
   applied,
+  note,
   floating = false,
 }: {
   filters: Filters;
@@ -44,6 +45,8 @@ export function FilterBar({
    * is the whole reason the filters read as broken.
    */
   applied?: { when: When; radius_m: number };
+  /** What the cold-start ladder widened, as one short line. */
+  note?: string | null;
   /** Over a full-screen map: white pills lifted by a shadow instead of outlined on cream. */
   floating?: boolean;
 }) {
@@ -67,9 +70,10 @@ export function FilterBar({
     else if (inner.left < outer.left) viewport.scrollLeft -= outer.left - inner.left + 4;
   }, [lit]);
   // The ladder can search at 25 km while the radius chip still reads 5 km and the Filtry
-  // badge reads zero. Say it, and give it no cross — it is not the customer's choice to undo.
-  const widened =
-    applied && applied.radius_m !== filters.radius_m ? `Rozšířeno na ${applied.radius_m / 1000} km` : null;
+  // badge reads zero. Say it — once, in one line beside the chips. It used to be a chip AND a
+  // full-width banner saying the same thing, which cost a phone screen about 150 px of offers.
+  // No cross: it is not the customer's choice to undo.
+  const widened = note ?? null;
 
   function openSheet() {
     setDraft(filters);
@@ -129,8 +133,9 @@ export function FilterBar({
             </button>
           ))}
           {widened ? (
-            <span className={`inline-flex min-h-9 items-center rounded-full bg-warning-soft px-3 py-1 font-bold text-warning ${floating ? 'shadow-card' : ''}`}>
-              {widened}
+            <span role="status" className={`inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-2xl bg-warning-soft px-3 py-1.5 font-bold text-warning ${floating ? 'shadow-card' : ''}`}>
+              <Info size={15} aria-hidden="true" className="shrink-0" />
+              <span className="min-w-0">{widened}</span>
             </span>
           ) : null}
           {chips.length ? (

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Compass, Map, Heart, CalendarDays, UserRound, ArrowUpRight } from 'lucide-react';
+import { Compass, Map, Heart, Ticket, UserRound, ArrowUpRight } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { newAtFavoritesCount } from '../lib/api';
 import { Link, useRouter } from './router';
@@ -10,7 +10,7 @@ const NAV = [
   { to: '/', label: 'Objevit', icon: Compass },
   { to: '/mapa', label: 'Mapa', icon: Map },
   { to: '/oblibene', label: 'Oblíbené', icon: Heart },
-  { to: '/rezervace', label: 'Rezervace', icon: CalendarDays },
+  { to: '/rezervace', label: 'Rezervace', icon: Ticket },
   { to: '/profil', label: 'Profil', icon: UserRound },
 ];
 

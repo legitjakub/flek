@@ -7,7 +7,7 @@ import { money, distance } from '../../lib/format';
 import { DiscountBadge, OriginalPrice } from '../../components/Price';
 import { clockTime, dayLabel, duration } from '../../lib/time';
 import { useServerNow } from '../../lib/clock';
-import { Banner, ErrorState, Spinner, cx } from '../../components/ui';
+import { ErrorState, Spinner, cx } from '../../components/ui';
 import { LazyMap } from '../offers/LazyMap';
 import { LocationChip } from './LocationChip';
 import { FilterBar, plural } from './FilterBar';
@@ -115,7 +115,7 @@ export function MapPage() {
 
   return (
     <main className="map-page map-full relative flex">
-      <h1 className="sr-only">Volné termíny na mapě</h1>
+      <h1 className="sr-only">Volné FLEKy na mapě</h1>
 
       {rows?.length ? (
         <section className="hidden w-[360px] shrink-0 flex-col border-r border-line bg-card lg:flex" aria-label="Nabídky na mapě">
@@ -149,7 +149,7 @@ export function MapPage() {
           focusArea={phone ? PHONE_FOCUS : WIDE_FOCUS}
           onSelect={(id) => setOpenGroup([id])}
           onSelectGroup={setOpenGroup}
-          ariaLabel="Mapa volných termínů. Fotka s cenou ukáže náhled termínu, číslo přiblíží mapu."
+          ariaLabel="Mapa volných FLEKů. Fotka s cenou ukáže náhled, číslo přiblíží mapu."
         />
 
         {/* Search floats over the map. The wrapper lets taps through to the map between controls. */}
@@ -184,6 +184,7 @@ export function MapPage() {
               resultCount={rows?.length ?? 0}
               pending={discovery.isFetching}
               applied={discovery.data?.applied}
+              note={discovery.data?.note}
               floating
             />
           </div>
@@ -192,18 +193,13 @@ export function MapPage() {
               Polohu se nepodařilo zjistit. Vyber místo ručně.
             </p>
           ) : null}
-          {discovery.data?.note ? (
-            <div className="pointer-events-auto shadow-card">
-              <Banner tone="warning">{discovery.data.note}</Banner>
-            </div>
-          ) : null}
         </div>
 
         {/* Status and preview sit over the bottom, clear of the floating tab bar on a phone. */}
         <div className="pointer-events-none absolute inset-x-0 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-20 flex flex-col items-center md:bottom-4 md:items-start">
           {discovery.isPending ? (
             <p role="status" className="pointer-events-auto mx-3 inline-flex min-h-11 items-center gap-2 rounded-full bg-card px-4 text-sm font-bold text-ink shadow-card">
-              <Spinner /> Hledám volné termíny…
+              <Spinner /> Hledám volné FLEKy…
             </p>
           ) : null}
           {discovery.isError ? (

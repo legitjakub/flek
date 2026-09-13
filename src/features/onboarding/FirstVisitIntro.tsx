@@ -11,7 +11,7 @@ const STORAGE_KEY = 'flek.intro.v1';
 
 const SLIDES = [
   {
-    title: 'Volný termín právě teď',
+    title: 'Volný FLEK právě teď',
     body: 'Najdi poblíž kadeřnictví, masáž, sport nebo wellness, kde mají last-minute místo za mnohem nižší cenu.',
   },
   {

@@ -41,7 +41,7 @@ export function ReferralLandingPage({ code }: { code: string }) {
             {firstName ? `${firstName} tě zve na FLEK.` : 'Někdo tě zve na FLEK.'}
           </h1>
           <p className="mt-3 text-base leading-relaxed text-muted">
-            Volné termíny na poslední chvíli u pražských podniků — kadeřnictví, masáže, jóga, sport.
+            Volné FLEKy na poslední chvíli u pražských podniků — kadeřnictví, masáže, jóga, sport.
             Podniku by termín propadl, tak ho nabídne levněji.
           </p>
           <Link to="/" className="btn-primary mt-7 w-full">
