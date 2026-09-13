@@ -6,7 +6,7 @@ Stav k 13. 9. 2026. Seznam všeho, co je potřeba dodělat, než FLEK začne br�
 - **Část 2: Zvládne AI agent v kódu.** Stačí mu zadat úkol, nic dalšího nepotřebuje.
 - **Část 3: Postup spuštění.** Pořadí kroků v den přepnutí na ostrý provoz.
 
-Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B).
+Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B). Úkoly na teď pro Jakuba jsou v Notionu v sekci „Na tahu je Jakub“.
 
 ## Kde jsme teď
 
@@ -45,7 +45,7 @@ Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B).
 - [x] **Doména app-flek.eu:** DNS v Endoře a doména ve Vercelu (13. 9.).
 - [x] **E-maily:** účet Resend, doména `mail.app-flek.eu` (DKIM a dva CNAME v Endoře), SMTP v Supabase Auth (13. 9.). Resend doménu ověřil (Verified).
 - [ ] **Doplnit Edge Function secrets** v Supabase → Edge Functions → Secrets: `NOTIFICATION_FROM` = `FLEK <rezervace@mail.app-flek.eu>`, `VAPID_PUBLIC_KEY` a `VAPID_PRIVATE_KEY` z `/private/tmp/flek-notification-secrets.env`. Bez nich e-mailová a push upozornění čekají ve frontě.
-- [ ] **Resend klíč:** vytvořit nový API klíč (Sending access, doména `mail.app-flek.eu`), uložit ho jako `RESEND_API_KEY` a smazat starý klíč „FLEK production“, který se objevil v logu Codexu.
+- [ ] **Resend klíč:** vytvořit nový API klíč (Sending access, doména `mail.app-flek.eu`), vložit ho jako `RESEND_API_KEY` do Edge Function secrets i jako heslo SMTP v Supabase Auth a smazat oba staré klíče („FLEK production“ a „FLEK production rotated“), které se objevily v záznamu Codexu.
 - [ ] **VAPID klíče** uložit do správce hesel a soubor `/private/tmp/flek-notification-secrets.env` smazat.
 - [ ] **Skutečné e-maily:** na www.app-flek.eu vyzkoušet „Zapomenuté heslo“ a testovací rezervaci (potvrzení e-mailem, v aplikaci a push).
 - [ ] **Monitoring chyb:** účet Sentry (nebo podobné služby) a předání DSN do Vercelu jako `VITE_SENTRY_DSN`.

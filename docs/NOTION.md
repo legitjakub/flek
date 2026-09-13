@@ -16,6 +16,29 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 | Data v produkci (13. 9.) | 18 schválených podniků, 330 nabídek, 321 rezervací, 16 účtů (12 demo, 4 ostatní), od 13. 9. platby jen přes Stripe (test), 16 demo podniků s testovacím Stripe účtem |
 | Pro AI agenty | `AGENTS.md` v kořeni repozitáře (Claude Code ho načítá přes `CLAUDE.md`) |
 
+## Na tahu je Jakub
+
+Úkoly, které AI agent udělat nesmí nebo nemůže, protože jde o klíče, hesla nebo platbu kartou. Hotové odškrtni.
+
+- [ ] **Doplnit klíče pro upozornění v Supabase.**
+  1. Otevři soubor s klíči od Codexu. V Terminálu spusť `open -e /private/tmp/flek-notification-secrets.env`.
+  2. Zkopíruj řádky `NOTIFICATION_FROM`, `VAPID_PUBLIC_KEY` a `VAPID_PRIVATE_KEY`.
+  3. V Supabase otevři Edge Functions → Secrets, vlož všechny tři řádky najednou do pole Name a ulož.
+  4. Řádek `NOTIFICATION_WORKER_SECRET` už není potřeba.
+  - Dokud to neuděláš, upozornění fungují jen v aplikaci. E-mail a push čekají ve frontě.
+- [ ] **Vyměnit klíč Resendu.**
+  1. V resend.com otevři API keys → Create API key. Název „FLEK“, oprávnění Sending access, doména `mail.app-flek.eu`.
+  2. Nový klíč vlož v Supabase na dvě místa: Edge Functions → Secrets jako `RESEND_API_KEY` a Authentication → Emails → SMTP Settings → Password.
+  3. Potom v Resendu smaž oba staré klíče („FLEK production“ a „FLEK production rotated“). Objevily se v záznamu Codexu.
+- [ ] **Vyzkoušet e-maily na https://www.app-flek.eu.** Dej „Zapomenuté heslo“ na svůj e-mail: musí přijít odkaz a nové heslo musí jít nastavit. Pak si v Profilu zapni upozornění (e-mail, případně oznámení na telefonu).
+- [ ] **Vyzkoušet platbu a upozornění.**
+  1. Rezervuj FLEK u demo podniku a zaplať testovací kartou 4242 4242 4242 4242 (libovolné budoucí datum a CVC).
+  2. Zkontroluj kód rezervace, zvonek v aplikaci a e-mail.
+  3. Rezervaci zruš a ověř vratku a e-mail o zrušení.
+- [ ] **Uložit VAPID klíče do správce hesel.** Jde o řádky `VAPID_PUBLIC_KEY` a `VAPID_PRIVATE_KEY` z uvedeného souboru. Soubor `/private/tmp/flek-notification-secrets.env` pak smaž.
+- [ ] **Propojit podnik „Kubova“ se Stripe.** Partner → Provozovna → „Propojit se Stripe“ (v testovacím režimu stačí testovací údaje). Bez propojení podnik nemůže zveřejnit FLEK.
+- [ ] **Odhlásit se z Endory.** DNS záznamy pro Resend jsou uložené a ověřené.
+
 ## Todolist
 
 Rozdělení vychází z auditu 13. 9. 2026 (bezpečnostní audit ChatGPT ověřený proti kódu a produkční databázi a doplněný o chybějící oblasti).
@@ -44,13 +67,9 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 - [ ] Převést Supabase projekt na firemní účet s 2FA a druhým vlastníkem
 - [x] Vlastní SMTP přes Resend z `mail.app-flek.eu`, české šablony potvrzení účtu a obnovy hesla (13. 9.; DNS záznamy v Endoře, doména v Resendu ověřená)
 - [x] Upozornění na potvrzenou a zrušenou rezervaci pro zákazníka i podnik: v aplikaci, e-mailem a push, nastavitelné (13. 9.)
-- [ ] Doplnit v Supabase → Edge Functions → Secrets `NOTIFICATION_FROM`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` (bez nich e-mail a push upozornění čekají ve frontě; v aplikaci fungují)
-- [ ] Resend: vytvořit nový API klíč do `RESEND_API_KEY` a smazat starý „FLEK production“ (objevil se v logu Codexu)
-- [ ] Ověřit skutečné doručení: „Zapomenuté heslo“ a testovací rezervace na www.app-flek.eu (e-mail i push)
 - [ ] Připomínka před termínem a e-mail o vratce
 - [x] Platby přes Stripe Connect: Checkout, poplatek FLEKu jako application fee, výplaty a KYC podniků přes Stripe, ověřený webhook, vratky přes refund API (13. 9., testovací režim)
 - [x] Odebrat demo platby (`start_payment` jen Stripe, `demo_confirm_payment` zrušená) (13. 9.)
-- [ ] Jedna ruční testovací platba přes Stripe Checkout kartou 4242 4242 4242 4242 a projít onboarding reálného podniku („Propojit se Stripe“)
 - [ ] Ostrý Stripe: živé klíče a webhook, `stripe_test_mode=false`, potvrdit odpovědnost platformy v Connect nastavení, vypnout `stripe-test-pay`
 - [ ] Poslouchat události Accounts v2 (`v2.core.account[...]`) nebo Connect webhook `account.updated`, ať se stav účtu podniku mění i bez otevření aplikace
 - [ ] Skrýt ve feedu FLEKy podniků, kterým Stripe omezil platby; formulář „Výplatní údaje“ sladit se Stripe (číslo účtu už zadává podnik u Stripe)
@@ -216,6 +235,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 13. 9. 2026 | Sekce „Na tahu je Jakub“: klíče pro upozornění, výměna klíče Resendu, zkouška e-mailů a platby, propojení podniku se Stripe |
 | 13. 9. 2026 | Dokončení práce ChatGPT: olivová paleta a logo, univerzální obrázek služby, kompaktní náhled na mapě, e-maily přes Resend na www.app-flek.eu, upozornění na rezervace v aplikaci, e-mailem a push; opravené doručování (dřív každé volání 401) |
 | 13. 9. 2026 | Stripe Connect: platby jen přes Stripe Checkout, webhook obsazuje místo a vrací peníze, účty podniků přes Accounts v2, testovací účty pro 16 demo podniků, sekce „Platby a výplaty“ u partnera |
 | 13. 9. 2026 | Audit: ověření auditu ChatGPT a fáze A — obnova demo FLEKů, čtecí RPC místo tabulek, CSP, audit log, zapomenuté heslo, CI, analytika bez přesné polohy |
