@@ -20,24 +20,23 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 
 Úkoly, které AI agent udělat nesmí nebo nemůže, protože jde o klíče, hesla nebo platbu kartou. Hotové odškrtni.
 
-- [ ] **Doplnit klíče pro upozornění v Supabase.**
+- [ ] **Doplnit soukromý klíč pro push v Supabase.** `NOTIFICATION_FROM` a `VAPID_PUBLIC_KEY` už doplnil Claude (13. 9.), e-mailová upozornění fungují. Chybí jen soukromý klíč, ten agent zadávat nesmí.
   1. Otevři soubor s klíči od Codexu. V Terminálu spusť `open -e /private/tmp/flek-notification-secrets.env`.
-  2. Zkopíruj řádky `NOTIFICATION_FROM`, `VAPID_PUBLIC_KEY` a `VAPID_PRIVATE_KEY`.
-  3. V Supabase otevři Edge Functions → Secrets, vlož všechny tři řádky najednou do pole Name a ulož.
-  4. Řádek `NOTIFICATION_WORKER_SECRET` už není potřeba.
-  - Dokud to neuděláš, upozornění fungují jen v aplikaci. E-mail a push čekají ve frontě.
+  2. Zkopíruj jen řádek `VAPID_PRIVATE_KEY`.
+  3. V Supabase otevři Edge Functions → Secrets, vlož řádek do pole Name a ulož.
+  - Dokud to neuděláš, upozornění na telefonu (push) čekají ve frontě.
 - [ ] **Vyměnit klíč Resendu.**
   1. V resend.com otevři API keys → Create API key. Název „FLEK“, oprávnění Sending access, doména `mail.app-flek.eu`.
   2. Nový klíč vlož v Supabase na dvě místa: Edge Functions → Secrets jako `RESEND_API_KEY` a Authentication → Emails → SMTP Settings → Password.
   3. Potom v Resendu smaž oba staré klíče („FLEK production“ a „FLEK production rotated“). Objevily se v záznamu Codexu.
-- [ ] **Vyzkoušet e-maily na https://www.app-flek.eu.** Dej „Zapomenuté heslo“ na svůj e-mail: musí přijít odkaz a nové heslo musí jít nastavit. Pak si v Profilu zapni upozornění (e-mail, případně oznámení na telefonu).
+- [x] **Vyzkoušet e-maily.** Claude 13. 9. poslal na jakub.hrncir24@gmail.com „Obnova hesla — FLEK“ a „Zkušební upozornění — FLEK“, Resend oba hlásí Delivered. Zkontroluj, že nepadly do spamu. Odkaz z obnovy hesla použít nemusíš.
 - [ ] **Vyzkoušet platbu a upozornění.**
   1. Rezervuj FLEK u demo podniku a zaplať testovací kartou 4242 4242 4242 4242 (libovolné budoucí datum a CVC).
-  2. Zkontroluj kód rezervace, zvonek v aplikaci a e-mail.
+  2. Zkontroluj kód rezervace, zvonek v aplikaci a e-mail „Tvůj FLEK je rezervovaný“.
   3. Rezervaci zruš a ověř vratku a e-mail o zrušení.
 - [ ] **Uložit VAPID klíče do správce hesel.** Jde o řádky `VAPID_PUBLIC_KEY` a `VAPID_PRIVATE_KEY` z uvedeného souboru. Soubor `/private/tmp/flek-notification-secrets.env` pak smaž.
 - [ ] **Propojit podnik „Kubova“ se Stripe.** Partner → Provozovna → „Propojit se Stripe“ (v testovacím režimu stačí testovací údaje). Bez propojení podnik nemůže zveřejnit FLEK.
-- [ ] **Odhlásit se z Endory.** DNS záznamy pro Resend jsou uložené a ověřené.
+- [x] **Odhlásit se z Endory.** Přihlášení už vypršelo (13. 9.), DNS záznamy pro Resend jsou uložené a ověřené.
 
 ## Todolist
 
@@ -235,6 +234,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 13. 9. 2026 | E-mailová upozornění zapnutá (`NOTIFICATION_FROM`, `VAPID_PUBLIC_KEY`), zkušební e-maily obnovy hesla a upozornění doručené |
 | 13. 9. 2026 | Nová paleta „Mandarinka“: téměř černá, mandarinková a neutrální pozadí v aplikaci, logu, ikonách, mapě a e-mailech |
 | 13. 9. 2026 | Sekce „Na tahu je Jakub“: klíče pro upozornění, výměna klíče Resendu, zkouška e-mailů a platby, propojení podniku se Stripe |
 | 13. 9. 2026 | Dokončení práce ChatGPT: olivová paleta a logo, univerzální obrázek služby, kompaktní náhled na mapě, e-maily přes Resend na www.app-flek.eu, upozornění na rezervace v aplikaci, e-mailem a push; opravené doručování (dřív každé volání 401) |

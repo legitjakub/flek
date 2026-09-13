@@ -11,7 +11,7 @@ Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B). Úkoly na 
 ## Kde jsme teď
 
 - Aplikace běží veřejně na https://www.app-flek.eu jako demo pilot (původní https://flek-nine.vercel.app funguje dál).
-- E-maily jdou přes Resend z `mail.app-flek.eu`. Upozornění na rezervace fungují v aplikaci; e-mail a push čekají na klíče v Supabase secrets.
+- E-maily jdou přes Resend z `mail.app-flek.eu`. Upozornění na rezervace fungují v aplikaci a e-mailem; push čeká na `VAPID_PRIVATE_KEY` v Supabase secrets.
 - Platby jdou **jen přes Stripe Connect v testovacím režimu**:
   - zákazník platí na stránce Stripe Checkout,
   - FLEK si ponechá servisní poplatek, zbytek jde podniku,
@@ -44,10 +44,11 @@ Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B). Úkoly na 
 - [x] **Redirect URLs a Site URL** v Supabase → Authentication → URL Configuration: `https://www.app-flek.eu` (13. 9.).
 - [x] **Doména app-flek.eu:** DNS v Endoře a doména ve Vercelu (13. 9.).
 - [x] **E-maily:** účet Resend, doména `mail.app-flek.eu` (DKIM a dva CNAME v Endoře), SMTP v Supabase Auth (13. 9.). Resend doménu ověřil (Verified).
-- [ ] **Doplnit Edge Function secrets** v Supabase → Edge Functions → Secrets: `NOTIFICATION_FROM` = `FLEK <rezervace@mail.app-flek.eu>`, `VAPID_PUBLIC_KEY` a `VAPID_PRIVATE_KEY` z `/private/tmp/flek-notification-secrets.env`. Bez nich e-mailová a push upozornění čekají ve frontě.
+- [x] **`NOTIFICATION_FROM` a `VAPID_PUBLIC_KEY`** v Supabase → Edge Functions → Secrets (13. 9.). E-mailová upozornění fungují.
+- [ ] **`VAPID_PRIVATE_KEY`** doplnit v Supabase → Edge Functions → Secrets ze souboru `/private/tmp/flek-notification-secrets.env`. Bez něj push upozornění čekají ve frontě.
 - [ ] **Resend klíč:** vytvořit nový API klíč (Sending access, doména `mail.app-flek.eu`), vložit ho jako `RESEND_API_KEY` do Edge Function secrets i jako heslo SMTP v Supabase Auth a smazat oba staré klíče („FLEK production“ a „FLEK production rotated“), které se objevily v záznamu Codexu.
 - [ ] **VAPID klíče** uložit do správce hesel a soubor `/private/tmp/flek-notification-secrets.env` smazat.
-- [ ] **Skutečné e-maily:** na www.app-flek.eu vyzkoušet „Zapomenuté heslo“ a testovací rezervaci (potvrzení e-mailem, v aplikaci a push).
+- [x] **Skutečné e-maily:** obnova hesla a upozornění doručené na jakub.hrncir24@gmail.com (Resend: Delivered, 13. 9.). Zbývá zkouška s rezervací kartou 4242 a push.
 - [ ] **Monitoring chyb:** účet Sentry (nebo podobné služby) a předání DSN do Vercelu jako `VITE_SENTRY_DSN`.
 - [ ] **Vercel:** proměnné `VITE_*` pro produkci, včetně skutečného `VITE_SUPPORT_EMAIL`.
 
