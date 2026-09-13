@@ -15,6 +15,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik zveř
 | Potřebuješ | Soubor |
 | --- | --- |
 | Todolist, fáze, jak to funguje, kde co běží (lidský přehled, zrcadlí se do Notionu) | `docs/NOTION.md` |
+| Co zbývá před ostrým spuštěním (co musí udělat člověk, co zvládne agent, postup spuštění) | `docs/PRED_SPUSTENIM.md` |
 | Detailní stav implementace, migrace, otevřené body | `docs/PROJECT_STATUS.md` |
 | Proč je něco udělané tak, jak je | `DECISIONS.md` |
 | Co vědomě chybí nebo je omezené | `LIMITATIONS.md` |

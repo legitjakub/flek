@@ -36,6 +36,8 @@ Rozdělení vychází z auditu 13. 9. 2026 (bezpečnostní audit ChatGPT ověře
 
 ### Fáze B — nutné před ostrým pilotem
 
+Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spuštění) je v `docs/PRED_SPUSTENIM.md`.
+
 - [ ] V Supabase přidat Redirect URL `https://flek-nine.vercel.app/prihlaseni` (bez toho odkaz na nové heslo vede jinam)
 - [ ] Oddělit prostředí: nový produkční Supabase projekt, současný zůstane jako demo/staging s akceptačními testy
 - [ ] Produkce na Supabase Pro (zálohy, bez uspávání, ochrana proti prolomeným heslům)
