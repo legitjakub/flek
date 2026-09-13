@@ -10,26 +10,25 @@
      only for headlines and the wordmark — that is where the brand gets a voice. */
   --font-sans: 'Instrument Sans Variable', ui-sans-serif, system-ui, sans-serif;
 
-  /* FLEK: olive identity, sage/celadon surfaces, walnut emphasis.
-     Dark olive is the accessible text/button counterpart to brand olive. */
-  --color-surface: #f7f8f3;
+  /* FLEK „Mandarinka“: near-black ink, one warm tangerine, quiet neutral ground.
+     Brand is a FILL and a highlight on dark blocks (6.1:1 with ink both ways); on white it
+     is only ever a graphic, never text (2.9:1). Accent is the same hue darkened for links,
+     icons and outlines (5.5:1 on white). Every text pair here was measured against WCAG AA. */
+  --color-surface: #f6f5f3;
   --color-card: #ffffff;
-  --color-ink: #11130e;
-  --color-muted: #5c6055;
-  --color-line: #dce1d3;
-  --color-brand: #7a8450;
-  --color-sage: #aebd93;
-  --color-celadon: #bee7b8;
-  --color-walnut: #4c2e05;
-  --color-granite: #95969d;
-  --color-accent: #596337;
+  --color-ink: #17181c;
+  --color-muted: #5e616b;
+  --color-line: #e7e5e1;
+  --color-brand: #f2703f;
+  --color-brand-soft: #ffd9c6;
+  --color-accent: #b4460f;
   --color-accent-ink: #ffffff;
-  --color-accent-soft: #eef2e7;
-  --color-positive: #496337;
-  --color-warning: #805700;
-  --color-warning-soft: #fbf2df;
-  --color-danger: #a12d36;
-  --color-danger-soft: #fceeef;
+  --color-accent-soft: #fdeee6;
+  --color-positive: #1e7a4c;
+  --color-warning: #8a6100;
+  --color-warning-soft: #fff4d6;
+  --color-danger: #b3261e;
+  --color-danger-soft: #fdecea;
 
   /* The whole scale. Roles, so a new screen does not invent a thirteenth combination:
      2xl/800 page heading · xl/800 price and time · lg/800 section heading ·
@@ -52,8 +51,8 @@
   --radius-3xl: 2rem;
 
   /* Depth used to come from a hairline. These are what separate a card from the ground now. */
-  --shadow-card: 0 1px 2px rgb(34 40 43 / 0.05), 0 6px 16px -8px rgb(34 40 43 / 0.12);
-  --shadow-lift: 0 2px 4px rgb(34 40 43 / 0.06), 0 14px 32px -12px rgb(34 40 43 / 0.2);
+  --shadow-card: 0 1px 2px rgb(23 24 28 / 0.05), 0 6px 16px -8px rgb(23 24 28 / 0.12);
+  --shadow-lift: 0 2px 4px rgb(23 24 28 / 0.06), 0 14px 32px -12px rgb(23 24 28 / 0.2);
 }
 
 @layer base {
@@ -125,11 +124,11 @@
     color: var(--color-accent-ink);
   }
   .btn-primary:hover {
-    background: #11161a;
+    background: #2a2c33;
   }
 
-  /* A pin is the service itself: its photo in a compact FLEK tile over a walnut price tab.
-     Several places that overlap become one branded count with the lowest price below. */
+  /* A pin is the service itself: its photo in a compact FLEK tile over an ink price tab.
+     Several places that overlap become one ink count with a tangerine halo and the lowest price. */
   .map-pin,
   .map-cluster {
     position: relative;
@@ -159,7 +158,7 @@
     border: 2px solid var(--color-card);
     border-radius: 15px;
     background: var(--color-accent-soft);
-    box-shadow: 0 5px 12px -3px rgb(37 41 31 / 0.36);
+    box-shadow: 0 5px 12px -3px rgb(23 24 28 / 0.36);
     transition: border-color 150ms;
   }
   .map-pin-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
@@ -177,7 +176,7 @@
     margin-top: -8px;
     padding: 0 8px;
     border-radius: 8px;
-    background: var(--color-walnut);
+    background: var(--color-ink);
     color: var(--color-card);
     font-size: 0.8125rem;
     line-height: 1;
@@ -200,7 +199,7 @@
     box-shadow: 0 0 0 2px var(--color-card);
   }
   .map-pin.is-selected { z-index: 2; transform: translateY(-3px) scale(1.12); }
-  .map-pin.is-selected .map-pin-photo { border-color: var(--color-brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand) 35%, transparent), 0 6px 14px -3px rgb(37 41 31 / 0.4); }
+  .map-pin.is-selected .map-pin-photo { border-color: var(--color-brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand) 35%, transparent), 0 6px 14px -3px rgb(23 24 28 / 0.4); }
   .map-pin.is-selected .map-pin-price { background: var(--color-brand); color: var(--color-ink); }
 
   .map-cluster-count {
@@ -209,10 +208,10 @@
     width: 46px;
     height: 46px;
     border-radius: 15px;
-    background: var(--color-walnut);
+    background: var(--color-ink);
     color: var(--color-card);
     font-size: 1rem;
-    box-shadow: 0 0 0 5px rgb(174 189 147 / 0.6), 0 0 0 7px rgb(255 255 255 / 0.72), 0 6px 14px -4px rgb(37 41 31 / 0.4);
+    box-shadow: 0 0 0 5px rgb(242 112 63 / 0.45), 0 0 0 7px rgb(255 255 255 / 0.72), 0 6px 14px -4px rgb(23 24 28 / 0.4);
   }
   .map-cluster-price {
     margin-top: 2px;
