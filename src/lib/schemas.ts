@@ -1,4 +1,6 @@
 import { z } from 'zod';
+// Zod probes `new Function` to pick a faster parser; the CSP forbids eval, so skip the probe.
+z.config({ jitless: true });
 const required=z.string().trim().min(1,'Vyplňte prosím toto pole.');
 const wholeCzk=z.string().regex(/^\d+$/,'Zadejte celé koruny.');
 export const loginSchema=z.object({email:z.email('Zkontroluj e-mail.'),password:z.string().min(8,'Heslo musí mít alespoň 8 znaků.')});

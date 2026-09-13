@@ -258,6 +258,19 @@ export type AdminBusiness = Business & {
 
 export type AdminUser = Profile & { email: string; bookings: AdminBooking[] };
 
+export type AdminAuditEntry = {
+  id: number;
+  occurred_at: string;
+  actor_email: string | null;
+  action: 'business_status_changed' | 'booking_block_changed' | 'google_place_id_changed' | string;
+  target_type: 'business' | 'user' | string;
+  target_id: string | null;
+  target_label: string | null;
+  before: Record<string, unknown> | null;
+  after: Record<string, unknown> | null;
+  reason: string | null;
+};
+
 export type PaymentStatus = 'pending' | 'paid' | 'refunded' | 'failed';
 
 export type Payment = {

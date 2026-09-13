@@ -12,56 +12,67 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 | Web | https://flek-nine.vercel.app |
 | Kód | https://github.com/legitjakub/flek (větev `main`) |
 | Poslední nasazení | 13. 9. 2026 (vždy poslední commit ve větvi `main`) |
-| Testy | 81 unit testů, 100 API akceptačních kontrol, build prochází |
+| Testy | unit testy a build v CI při každém pushi, 100 API akceptačních kontrol (13. 9. po zabezpečení) |
 | Data v produkci (13. 9.) | 18 schválených podniků, 330 nabídek, 321 rezervací, 16 účtů (12 demo, 4 ostatní), platby jen `demo` |
 | Pro AI agenty | `AGENTS.md` v kořeni repozitáře (Claude Code ho načítá přes `CLAUDE.md`) |
 
 ## Todolist
 
-### Nutné před ostrým pilotem
+Rozdělení vychází z auditu 13. 9. 2026 (bezpečnostní audit ChatGPT ověřený proti kódu a produkční databázi a doplněný o chybějící oblasti).
 
-- [ ] Napojit skutečnou platební bránu (dnes `provider=demo`, nic se nestrhává)
-- [ ] Odebrat nebo zamknout `demo_confirm_payment` (dnes ho může zavolat každý přihlášený a „zaplatit“ bez peněz)
-- [ ] Skutečné vracení peněz přes API brány (dnes jen změna stavu v databázi)
-- [ ] Výplaty podnikům a účetní doklady
-- [ ] Obchodní podmínky a zásady ochrany osobních údajů (texty + stránky v aplikaci)
-- [ ] Oddělit reálná data od demo seedu a demo účtů `demo-*@flek.test` (v produkční DB jsou dnes pomíchané: 12 demo a 4 ostatní účty)
-- [ ] Zapnout v Supabase ochranu proti prolomeným heslům (hlásí advisor)
-- [ ] Zkontrolovat Storage politiky pro fotky před ostrým provozem
-- [ ] Nastavit skutečný e-mail podpory (`VITE_SUPPORT_EMAIL` ve Vercelu) — řádek Podpora v profilu se pak objeví sám
-- [ ] Vlastní doména místo `flek-nine.vercel.app`
+### Fáze A — demo pilot (hotovo 13. 9.)
 
-### Důležité
+- [x] Denní obnova demo FLEKů na 3 dny dopředu (jen demo podniky `@flek.test`)
+- [x] Veřejná data jen přes čtecí RPC; anon už nečte tabulky podniků, služeb a nabídek
+- [x] Bezpečnostní hlavičky: CSP, nosniff, Referrer-Policy, Permissions-Policy, zákaz vložení do rámu
+- [x] Audit log admin změn (neměnný) a záložka Administrace → Audit
+- [x] Zapomenuté heslo (odkaz e-mailem a nastavení nového hesla)
+- [x] Chyba jedné stránky neshodí aplikaci; po nasazení se stará záložka sama obnoví
+- [x] Analytika: poloha jen na ~1 km, limit velikosti, mazání po 180 dnech
+- [x] Limity délek textů a allowlist adres fotek v databázi; interní funkce bez práv pro klienty
+- [x] CI na GitHubu (build, unit testy, audit závislostí), secret scanning, Dependabot
+- [x] Oprava popisu webu („zaplatíš v aplikaci“), náhled odkazu při sdílení, vysvětlení řazení „Doporučené“
+- [x] Nový vzhled zákaznické appky, volné FLEKy, přehled v Notionu a `AGENTS.md` (13. 9.)
 
-- [ ] Otestovat na fyzickém iPhonu v Safari, včetně skenování QR kódu kamerou
-- [ ] Upozornění podniku při zavřené aplikaci (web push, SMS nebo e-mail) — dnes jen v otevřené aplikaci
-- [ ] Google hodnocení: API klíč s billingem, nasadit funkci `google-place-rating`, doplnit Place ID podnikům
-- [ ] Zmenšit balíček mapy (Vite hlásí chunk nad 500 kB) a změřit Lighthouse
-- [ ] Nahrávání vlastních fotek podnikem
-- [ ] Rozjet lokální integrační testy (`npm test` potřebuje Docker se Supabase)
+### Fáze B — nutné před ostrým pilotem
 
-### Později
+- [ ] V Supabase přidat Redirect URL `https://flek-nine.vercel.app/prihlaseni` (bez toho odkaz na nové heslo vede jinam)
+- [ ] Oddělit prostředí: nový produkční Supabase projekt, současný zůstane jako demo/staging s akceptačními testy
+- [ ] Produkce na Supabase Pro (zálohy, bez uspávání, ochrana proti prolomeným heslům)
+- [ ] Převést Supabase projekt na firemní účet s 2FA a druhým vlastníkem
+- [ ] Vlastní SMTP (Resend/Postmark) — výchozí e-mail Supabase je jen na testování
+- [ ] E-mail s potvrzením rezervace a kódem, připomínka, e-mail podniku o nové rezervaci a stornu
+- [ ] Skutečné platby: Stripe Connect (poplatek FLEKu jako application fee, výplaty a KYC podniků přes Stripe), ověřené webhooky, refund API, párování plateb
+- [ ] Odebrat demo platby v produkci (`start_payment` bez `demo`, zrušit `demo_confirm_payment`)
+- [ ] Povinné MFA (TOTP) pro administrátory, CAPTCHA (Turnstile) u registrace, `secure_password_change`, přísnější limity
+- [ ] Obchodní podmínky pro zákazníky (vč. výjimky z odstoupení u služeb s termínem a pravidel nedostavení) a pro podniky (P2B: řazení, pozastavení, stížnosti)
+- [ ] Zásady ochrany osobních údajů, seznam zpracovatelů, rozhodnutí o souhlasu s analytikou
+- [ ] Verze a hash dokumentu u souhlasu podniku s podmínkami
+- [ ] Smazání účtu (anonymizace, finanční záznamy zůstanou) a export dat
+- [ ] Admin nástroj na ruční vratku a storno (se zápisem do audit logu)
+- [ ] Sentry pro chyby v aplikaci, upozornění při selhání cronu nebo webhooku, jednou vyzkoušené obnovení ze zálohy
+- [ ] Mapy a hledání adres: licencovaný poskytovatel nebo vlastní limity (ArcGIS záloha a veřejné Photon API nejsou na komerční provoz)
+- [ ] Nastavit skutečný e-mail podpory (`VITE_SUPPORT_EMAIL`) a vlastní doménu
+- [ ] Otestovat na fyzickém iPhonu v Safari včetně skenování QR kamerou
+- [ ] Zvážit soukromý repozitář a ochranu větve `main` (povinné zelené CI)
 
-- [ ] Pozvánky personálu a týmová oprávnění v podniku
-- [ ] Kredit za doporučení (dnes se jen měří)
-- [ ] Doplnit Playwright kontrolu nového vzhledu na 430 px
+### Fáze C — růst
 
-### Hotovo nedávno
-
-- [x] Přehled v Notionu a `AGENTS.md` pro předávání práce mezi AI agenty (13. 9.)
-- [x] Nový vzhled zákaznické appky: profil v barevných blocích, celoobrazovková mapa s fotkami ve špendlících, plovoucí navigace (13. 9.)
-- [x] „Volné FLEKy“ místo „volné termíny“, ikona lístku u Rezervací, kompaktní tlačítka rezervace (13. 9.)
-- [x] Cenový model v1 se servisním poplatkem, bezpečné opakování plateb, automatické dokončování rezervací (13. 9.)
-- [x] Upozornění podniku na novou rezervaci přes Realtime (13. 9.)
-- [x] Intro pro první návštěvu, galerie fotek podle aktivity (9.–10. 9.)
+- [ ] Role v podniku: vlastník → manažer → recepce (recepce jen ověřuje kódy)
+- [ ] Nahrávání vlastních fotek podnikem s přepočtem, odstraněním EXIF a limitem rozměrů
+- [ ] Google hodnocení s cache, rate limitem a hlídáním rozpočtu (dnes nenasazené)
+- [ ] Web push upozornění pro podnik i zákazníka
+- [ ] Kredit za doporučení
+- [ ] Menší balík aplikace (mapa 979 kB, Temporal 325 kB) a měření Lighthouse
+- [ ] Napojení na rezervační systémy podniků, další města
 
 ## Fáze projektu
 
 | Fáze | Obsah | Stav |
 | --- | --- | --- |
 | 0 — Základ | Zákaznický, partnerský a admin tok, rezervace s QR, vyhledávání podle polohy, zabezpečení dat (RLS) | hotovo 7.–8. 9. |
-| 1 — Demo pilot | Cenový model, spolehlivé rezervace, upozornění podniku, nový vzhled, veřejné nasazení | běží teď |
-| 2 — Ostrý pilot v Praze | Skutečné platby a výplaty, právní texty, reálné podniky, test na telefonech | čeká na todolist „Nutné“ |
+| 1 — Demo pilot | Cenový model, spolehlivé rezervace, upozornění podniku, nový vzhled, veřejné nasazení, zabezpečení z auditu (fáze A) | běží teď |
+| 2 — Ostrý pilot v Praze | Oddělená produkce, skutečné platby a výplaty, e-maily, MFA, právní texty, reálné podniky | čeká na todolist fáze B |
 | 3 — Růst | Push upozornění, Google hodnocení, doporučení s kreditem, další města | později |
 
 ## Jak FLEK funguje
@@ -71,7 +82,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 1. Otevře Objevit nebo Mapu a vidí volné FLEKy v okolí (výchozí okruh 5 km a dnešek; když nic není, hledání se samo rozšíří až na 25 km a na celý týden a řekne to).
 2. Filtruje podle času (Vše, Teď, Do 2 h, Dnes, Zítra), denní doby (Ráno, Odpoledne, Večer), kategorie, minimální slevy a maximální ceny; řadí podle doporučení, vzdálenosti, slevy, ceny nebo začátku.
 3. Na detailu vidí konečnou cenu včetně poplatku a úsporu proti běžné ceně.
-4. Rezervuje a zaplatí v aplikaci (v pilotu ukázková platba). Bez účtu může prohlížet, k rezervaci se musí přihlásit.
+4. Rezervuje a zaplatí v aplikaci (v pilotu ukázková platba). Bez účtu může prohlížet, k rezervaci se musí přihlásit. Zapomenuté heslo si obnoví odkazem z e-mailu.
 5. Dostane rezervační kód a QR, najde je v Rezervacích.
 6. Zdarma může zrušit do 60 minut před začátkem (podnik si lhůtu může změnit) nebo do 10 minut od rezervace, podle toho, co nastane později.
 7. Oblíbené podniky může sledovat a vidí u nich nové FLEKy; může pozvat kamaráda odkazem `/r/kód` a nainstalovat si appku na plochu.
@@ -99,6 +110,8 @@ Schvaluje provozovny, kontroluje nabídky a rezervace, spravuje uživatele, vid�
 ### Pravidla, která se nesmí obejít
 
 - Kapacitu mění jen serverové funkce; aplikace ji nikdy nezapisuje sama.
+- Veřejná data (nabídky, podniky) jdou jen přes čtecí funkce; přímo z tabulek je čte jen člen podniku a admin.
+- Každá změna v administraci se zapíše do neměnného audit logu.
 - Stejná platba odeslaná dvakrát vytvoří jednu rezervaci a vezme jedno místo.
 - Zákazník může mít najednou nejvýš 3 nadcházející rezervace; po 2 nedostaveních za 60 dní se mu rezervace zablokují (admin může výjimku).
 - Dostupnost („vyprodáno“, „prošlé“) se vždy počítá z databáze, neukládá se.
@@ -112,6 +125,10 @@ Schvaluje provozovny, kontroluje nabídky a rezervace, spravuje uživatele, vid�
 | Databáze, přihlašování, soubory | Supabase (projekt `yupkrntknbkvmlajwlph`) | PostgreSQL + PostGIS, Auth, Storage, zabezpečení RLS |
 | Realtime upozornění | Supabase Realtime | záložně se aplikace ptá každých 30 s |
 | Pravidelná údržba | Supabase `pg_cron`, job `flek-maintenance` | každých 15 min dokončí rezervace 24 h po konci a vrátí osiřelé platby starší 30 min |
+| Obnova demo nabídek | `pg_cron`, job `flek-demo-refresh` (každé ráno) | doplní demo FLEKy na 3 dny dopředu; před ostrým provozem vypnout |
+| Mazání staré analytiky | `pg_cron`, job `flek-analytics-retention` (každé ráno) | smaže události starší 180 dní |
+| Kontrola kódu | GitHub Actions (`.github/workflows/ci.yml`) | build, unit testy a audit závislostí při každém pushi; secret scanning a Dependabot |
+| Bezpečnostní hlavičky | Vercel (`vercel.json`) | CSP s allowlistem domén; nová služba se musí přidat |
 | Google hodnocení | Supabase Edge Function `google-place-rating` | v kódu hotové, v produkci nenasazené |
 | Mapové podklady | OpenFreeMap (styl `bright`) nad OpenStreetMap; záložní dlaždice ArcGIS World Street Map | zdarma, bez klíče |
 | Hledání adresy | Photon (komoot) nad OpenStreetMap | výběr místa a adresa provozovny |
@@ -143,7 +160,7 @@ Service-role klíč nikdy nepatří do aplikace ani do repozitáře. Hesla demo 
 | --- | --- |
 | Zákazník | `/` Objevit, `/mapa`, `/nabidka/:id`, `/podnik/:id`, `/oblibene`, `/rezervace`, `/profil`, `/prihlaseni`, `/potvrzeni`, `/r/:kód` |
 | Podnik | `/partner`, `/partner/nabidky`, `/partner/rezervace`, `/partner/sluzby`, `/partner/provozovna`, `/partner/metriky`, `/partner/registrace` |
-| Admin | `/admin`, `/admin/nabidky`, `/admin/rezervace`, `/admin/uzivatele`, `/admin/metriky` |
+| Admin | `/admin`, `/admin/nabidky`, `/admin/rezervace`, `/admin/uzivatele`, `/admin/metriky`, `/admin/audit` |
 
 ## Pro AI agenty a předávání práce
 
@@ -151,6 +168,7 @@ Service-role klíč nikdy nepatří do aplikace ani do repozitáře. Hesla demo 
 - Zákaznická část tyká, partnerská vyká; zákazníkovi se termínu říká „FLEK“.
 - Po každé změně agent zapíše: řádek do historie v `docs/PROJECT_STATUS.md`, úkol a historii sem do `docs/NOTION.md`, a přepíše Notion stránku.
 - Nespouštět `npm run db:types`; akceptační testy mění demo data; hesla se nikdy necommitují.
+- Nová externí doména musí do CSP ve `vercel.json`; nová admin akce zapisuje `private.audit(...)`; veřejná data jen přes RPC.
 
 ## Účty a přístupy
 
@@ -176,6 +194,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 13. 9. 2026 | Audit: ověření auditu ChatGPT a fáze A — obnova demo FLEKů, čtecí RPC místo tabulek, CSP, audit log, zapomenuté heslo, CI, analytika bez přesné polohy |
 | 13. 9. 2026 | Notion přehled ověřený proti kódu a produkční DB, `AGENTS.md` + `CLAUDE.md` pro AI agenty |
 | 13. 9. 2026 | Volné FLEKy, ikona lístku, jeden řádek o rozšíření hledání, tlačítka rezervace v řadě |
 | 13. 9. 2026 | Nový vzhled zákaznické appky inspirovaný Cuppkou: barevný profil, mapa s fotkami, plovoucí navigace |

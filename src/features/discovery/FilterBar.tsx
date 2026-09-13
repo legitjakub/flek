@@ -260,6 +260,10 @@ export function FilterBar({
               options={(Object.keys(SORT_LABELS) as SortKey[]).map((k) => ({ value: k, label: SORT_LABELS[k] }))}
               columns={2}
             />
+            <p className="mt-2 text-sm text-muted">
+              Doporučené řadí podle vzdálenosti (45 %), toho, jak brzy FLEK začíná (35 %), a výše slevy (20 %). Za lepší
+              pozici podniky neplatí.
+            </p>
           </Group>
 
           <p aria-live="polite" className="tnum text-sm text-muted">

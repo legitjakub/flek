@@ -42,7 +42,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik zveř
 | `tests` | unit testy (Vitest), `integration.test.ts` (potřebuje Docker), `pilot-maintenance.sql` |
 | `scripts` | `acceptance.mjs` (API kontroly), `sync-notion.mjs`, lokální Supabase |
 
-Routy: zákazník `/`, `/mapa`, `/nabidka/:id`, `/podnik/:id`, `/oblibene`, `/rezervace`, `/profil`, `/prihlaseni`, `/potvrzeni`, `/r/:code`; podnik `/partner` (+ `/nabidky`, `/rezervace`, `/sluzby`, `/provozovna`, `/metriky`, `/registrace`); admin `/admin` (+ `/nabidky`, `/rezervace`, `/uzivatele`, `/metriky`).
+Routy: zákazník `/`, `/mapa`, `/nabidka/:id`, `/podnik/:id`, `/oblibene`, `/rezervace`, `/profil`, `/prihlaseni`, `/potvrzeni`, `/r/:code`; podnik `/partner` (+ `/nabidky`, `/rezervace`, `/sluzby`, `/provozovna`, `/metriky`, `/registrace`); admin `/admin` (+ `/nabidky`, `/rezervace`, `/uzivatele`, `/metriky`, `/audit`).
 
 ## Pravidla, která se nesmí porušit
 
@@ -52,11 +52,14 @@ Routy: zákazník `/`, `/mapa`, `/nabidka/:id`, `/podnik/:id`, `/oblibene`, `/re
 - Finanční snímek rezervace je po vytvoření neměnný.
 - Zákaznická část **tyká**, partnerská **vyká**. Termínu pro zákazníka se říká „FLEK“ („volné FLEKy“).
 - Žádná vymyšlená data: falešná hodnocení, jména podniků, e-mail podpory ani právní texty.
+- Veřejná data jen přes čtecí RPC. Anon nemá SELECT na doménové tabulky; nový veřejný údaj přidej do RPC, ne grantem na tabulku.
+- Každá nová admin mutace zapisuje `private.audit(...)` ve stejné transakci.
+- Nová externí doména (API, obrázky, dlaždice) musí do CSP ve `vercel.json`. Žádné `eval`, inline skripty ani `dangerouslySetInnerHTML`.
 - Service-role klíč nepatří do prohlížeče ani repozitáře. Hesla (admin, demo účty) se nikdy necommitují; v testech se přihlašuje vložením session, ne psaním hesla do formuláře.
 
 ## Jak pracovat
 
-- Ověření před commitem: `npm run build` (včetně `tsc`) a `npm run test:unit`. UI změny projdi v prohlížeči na 375/390 px a desktopu (bez přetečení, dotykové plochy ≥ 44 px, kontrast AA).
+- Ověření před commitem: `npm run build` (včetně `tsc`) a `npm run test:unit`; totéž běží v CI (`.github/workflows/ci.yml`). UI změny projdi v prohlížeči na 375/390 px a desktopu (bez přetečení, dotykové plochy ≥ 44 px, kontrast AA).
 - Nasazení: push do `main` → Vercel sestaví sám. Proměnné `VITE_*` musí být ve Vercelu při sestavení.
 - Migrace: aplikuj přes Supabase MCP, pak **přejmenuj soubor** na verzi, kterou databáze zapsala do `supabase_migrations.schema_migrations`, jinak by ji `supabase db push` spustil znovu.
 - **Nespouštěj** `npm run db:types` (přepíše ručně psané typy a rozbije importy).

@@ -46,8 +46,9 @@ export async function discover(point: Point, filters: Filters): Promise<Discover
     if (rows.length >= MIN_RESULTS) break;
   }
   track('search_performed', {
-    lat: Number(point.lat.toFixed(3)),
-    lng: Number(point.lng.toFixed(3)),
+    // A district is enough for "where is the marketplace thin"; the server rounds the same way.
+    lat: Number(point.lat.toFixed(2)),
+    lng: Number(point.lng.toFixed(2)),
     when: filters.when,
     daypart: filters.daypart,
     category: filters.category,

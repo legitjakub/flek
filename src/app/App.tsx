@@ -50,6 +50,9 @@ const AdminBookingsPage = lazy(() =>
 const AdminUsersPage = lazy(() =>
   import('../features/admin/AdminPage').then((m) => ({ default: m.AdminUsersPage })),
 );
+const AdminAuditPage = lazy(() =>
+  import('../features/admin/AdminPage').then((m) => ({ default: m.AdminAuditPage })),
+);
 const AdminMetricsPage = lazy(() =>
   import('../features/admin/AdminPage').then((m) => ({ default: m.AdminMetricsPage })),
 );
@@ -92,6 +95,7 @@ const ROUTES: { path: string; render: (params: Record<string, string>) => ReactN
   { path: '/admin/rezervace', render: () => <AdminBookingsPage />, shell: false },
   { path: '/admin/uzivatele', render: () => <AdminUsersPage />, shell: false },
   { path: '/admin/metriky', render: () => <AdminMetricsPage />, shell: false },
+  { path: '/admin/audit', render: () => <AdminAuditPage />, shell: false },
 ];
 
 function RouteLoading() {
@@ -107,7 +111,11 @@ function Routes() {
   for (const route of ROUTES) {
     const params = matchPath(route.path, path);
     if (!params) continue;
-    const element = <Suspense fallback={<RouteLoading />}>{route.render(params)}</Suspense>;
+    const element = (
+      <Boundary key={path} page>
+        <Suspense fallback={<RouteLoading />}>{route.render(params)}</Suspense>
+      </Boundary>
+    );
     return route.shell ? <CustomerShell>{element}</CustomerShell> : element;
   }
   return (
@@ -122,19 +130,53 @@ function Routes() {
   );
 }
 
-class Boundary extends Component<{ children: ReactNode }, { error: unknown }> {
+const STALE_RELOAD_KEY = 'flek.stale-reload';
+
+/** A tab opened before a deploy asks for chunk files the new deploy no longer has. */
+function isStaleBuild(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return /dynamically imported module|Importing a module script failed|error loading dynamically|Loading chunk/i.test(message);
+}
+
+/**
+ * The root boundary catches what breaks the whole app; a page boundary keeps the header and tab
+ * bar alive so the customer can go elsewhere, and resets when the path changes. After a deploy a
+ * missing chunk reloads the page once instead of showing an error nobody can act on.
+ */
+class Boundary extends Component<{ children: ReactNode; page?: boolean }, { error: unknown }> {
   state = { error: null as unknown };
   static getDerivedStateFromError(error: unknown) {
     return { error };
   }
+  componentDidCatch(error: unknown) {
+    if (!isStaleBuild(error)) return;
+    try {
+      if (sessionStorage.getItem(STALE_RELOAD_KEY)) return;
+      sessionStorage.setItem(STALE_RELOAD_KEY, '1');
+    } catch {
+      return;
+    }
+    window.location.reload();
+  }
   render() {
     if (!this.state.error) return this.props.children;
+    const stale = isStaleBuild(this.state.error);
     return (
-      <main className="mx-auto w-full max-w-md px-4 py-16 text-center">
-        <h1 className="text-lg font-extrabold text-ink">{errorMessage(this.state.error)}</h1>
+      <main className="mx-auto w-full max-w-md px-4 py-16 text-center" role="alert">
+        <h1 className="text-lg font-extrabold text-ink">
+          {stale ? 'Aplikace se mezitím aktualizovala.' : 'Tahle stránka se nenačetla.'}
+        </h1>
+        <p className="mt-2 text-sm text-muted">
+          {stale ? 'Stačí ji načíst znovu.' : errorMessage(this.state.error)}
+        </p>
         <Button className="mt-4" onClick={() => window.location.reload()}>
           Načíst znovu
         </Button>
+        {this.props.page ? (
+          <Link to="/" className="mt-2 flex min-h-11 items-center justify-center text-sm font-bold underline underline-offset-4">
+            Zpět na nabídky
+          </Link>
+        ) : null}
       </main>
     );
   }

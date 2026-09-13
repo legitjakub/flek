@@ -78,3 +78,14 @@ Jeden řádek na rozhodnutí, chronologicky. Kde bylo zadání nejednoznačné, 
 - Dokončení po 24 hodinách od konce řídí pg_cron, nikoli načtení stránky. Nedorazení lze označit pouze před koncem této lhůty; není důvodem k vrácení platby ani ke ztrátě výplaty podniku.
 - Realtime přenáší impuls k opětovnému načtení autorizovaného seznamu, nikoli důvěryhodný obsah banneru. Záložní dotaz běží každých 30 sekund. Stav upozornění se váže na uživatele i provozovnu a odhlášení jej vymaže.
 - Cenová validace probíhá před platbou i při serverové rezervaci. Změní-li se částka od otevření potvrzení, zákazník ji musí nejdřív znovu vidět. Blízký termín ukazuje 10minutovou možnost storna od rezervace místo už uplynulé hodiny.
+
+## Audit a zabezpečení — 13. 9. 2026
+
+- Veřejná data tečou jen přes čtecí RPC (`search_offers`, `get_offer_detail`, `business_public`, `business_offers`). Anon nemá SELECT na `businesses/services/offers` a přihlášený je čte přímo jen jako člen podniku nebo admin. RLS filtruje řádky, ne sloupce: každý nový interní sloupec by jinak byl veřejný.
+- Demo nabídky obnovuje databázový job, ne seed ani ruční skript. Generuje jen pro podniky, jejichž všichni členové mají `@flek.test`, stejnou validací a cenou jako `publish_flek`; čas a cena vycházejí z hashe služby a dne, takže opakované spuštění nic nezdvojí.
+- Admin změny zapisují do `admin_audit_log` ve stejné transakci jako samotnou změnu. Tabulka nemá UPDATE/DELETE/TRUNCATE (trigger) ani klientské granty; aktér je jen id bez cizího klíče, aby smazání účtu nepřepsalo historii.
+- CSP je bez `unsafe-eval` a bez inline skriptů. Zod proto běží s `jitless: true` — jinak jeho zkouška `new Function` hlásí porušení CSP. Nová externí doména (mapy, obrázky, API) se musí přidat do CSP ve `vercel.json`, jinak ji prohlížeč tiše zablokuje.
+- Analytika ukládá polohu hledání zaokrouhlenou na ~1 km a nezpracované události maže po 180 dnech (`flek-analytics-retention`). Velikost props je omezená uvnitř `record_event`, ne jen politikou.
+- Obnova hesla používá stejný PKCE tok jako potvrzení e-mailu: odkaz vede na `/prihlaseni?mode=reset` a musí se otevřít ve stejném prohlížeči. Odpověď na žádost o odkaz je stejná bez ohledu na to, zda účet existuje.
+- Chyba jedné stránky neshodí navigaci (boundary na úrovni routy) a chybějící chunk po novém nasazení stránku jednou sám obnoví.
+

@@ -82,10 +82,14 @@ Nejdůležitější migrace:
 | `20260911161149_maintenance_cron.sql` | periodická údržba plateb a starých rezervací |
 | `20260912222313_pilot_booking_reliability.sql` | souběžné opakování rezervace, bezpečné zamykání vratek, neměnnost nabídky i po stornu |
 | `20260913085542_pilot_completion_read_models.sql` | metriky čekajícího dokončení podle konce rezervace + 24 h |
+| `20260913145524_demo_offer_refresh.sql`, `…145627_…_spread.sql` | denní obnova demo FLEKů na 3 dny dopředu (`flek-demo-refresh`, jen podniky s účty `@flek.test`) |
+| `20260913145931_read_models_only.sql` | anon nečte tabulky `businesses/services/offers`, jen čtecí RPC; analytika zaokrouhlená a mazaná po 180 dnech; limity délek a allowlist adres fotek |
+| `20260913150229_admin_audit_log.sql` | neměnný audit log admin změn a RPC `admin_audit_log` |
 
 ## Ověření a otevřené body
 
-- 77 jednotkových testů prošlo; `npm run build` včetně TypeScriptu prošel. Vite upozorňuje na velikost mapového balíčku.
+- Jednotkové testy a build s TypeScriptem běží v GitHub Actions (`.github/workflows/ci.yml`) při každém pushi; aktuální počet ukazuje CI. Vite upozorňuje na velikost mapového balíčku.
+- Bezpečnostní hlavičky (CSP, nosniff, Referrer-Policy, Permissions-Policy, zákaz rámů) jsou ve `vercel.json`. Průchod feedu, detailu, mapy, zapomenutého hesla, Realtime podniku, skeneru QR, hledání adresy a auditu v administraci proběhl s CSP bez jediného porušení (13. 9. 2026).
 - Produkční build prošel klikacím testem v systémovém Chrome při 375, 390, 430 a 1365 px: služba → nabídka → feed/mapa/detail → platba → potvrzení/historie a upozornění podniku ve druhém okně. Žádné horizontální přetečení ani chyby JavaScriptu; Realtime 881 ms a polling bez WebSocketu 29 013 ms.
 - 100 akceptačních kontrol proti reálným JWT a hostované databázi prošlo, včetně posledního místa, opakování stejné platby, výpočtu poplatku a Realtime pouze pro vlastní podnik.
 - `tests/pilot-maintenance.sql` prošel proti hostované databázi: hranice 24 hodin / 30 minut, neměnný finanční snímek, zachování výplaty při nedostavení, staré ceny a oprávnění. Testovací transakce se celá vrací zpět.
@@ -99,6 +103,7 @@ Podrobné důkazy jsou v [VERIFICATION.md](../VERIFICATION.md), omezení v [LIMI
 
 | Datum | Změna | Stav |
 | --- | --- | --- |
+| 13. 9. 2026 | Fáze A auditu: denní obnova demo FLEKů, veřejná data jen přes čtecí RPC, bezpečnostní hlavičky s CSP, audit log admina, zapomenuté heslo, odolnější error boundary, analytika bez přesné polohy a s retencí, CI a secret scanning, oprava popisu a vysvětlení řazení | migrace v produkci; 100/100 akceptačních kontrol, build, unit testy, CSP průchod v prohlížeči |
 | 13. 9. 2026 | `docs/NOTION.md` (todolist, fáze, jak to funguje, kde co běží) vložený do Notionu; `AGENTS.md` a `CLAUDE.md` jako vstupní bod pro AI agenty; `HANDOFF.md` označený jako zastaralý | ověřeno proti kódu, Supabase (cron, Edge Functions, advisor) a stránce v Notionu |
 | 13. 9. 2026 | Nový vzhled zákaznické appky: profil v barevných blocích se seznamem nastavení, celoobrazovková mapa s fotkami služeb ve špendlících, shluky s přiblížením a náhledovou kartou, plovoucí spodní navigace, nové Oblíbené a Rezervace | implementováno; typy, 81 unit testů, build a Playwright audit (kontrast, 44px, přetečení) na 375/390/1280 px |
 | 13. 9. 2026 | Audit rolí: zrušené rezervace u podniku bez „Vy dostanete“ a sbalené pod platnými, stav nabídky jako barevný štítek, detail nabídky vede na další termíny v podniku, jasnější prázdné stavy a větší dotykové plochy; migrace sladěné s hostovanou historií | ověřeno v prohlížeči, 77 testů, build |

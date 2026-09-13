@@ -1,33 +1,7 @@
 import { supabase } from './supabase';
 import { result } from './errors';
 import { noteServerNow } from './clock';
-import type {
-  AdminBooking,
-  AdminBusiness,
-  AdminMetrics,
-  AdminUser,
-  Business,
-  Category,
-  CustomerBooking,
-  CustomerMetrics,
-  FavoriteBusiness,
-  FavoriteOffer,
-  MerchantBooking,
-  MerchantBookingDetail,
-  MerchantMetrics,
-  MerchantOffer,
-  OfferDetail,
-  Payment,
-  Profile,
-  PublicBusiness,
-  ReferralClaim,
-  ReferralStats,
-  SearchRow,
-  ServicePhoto,
-  Service,
-  SortKey,
-  BusinessBilling,
-} from '../types/database';
+import type { AdminBooking, AdminBusiness, AdminMetrics, AdminUser, Business, Category, CustomerBooking, CustomerMetrics, FavoriteBusiness, FavoriteOffer, MerchantBooking, MerchantBookingDetail, MerchantMetrics, MerchantOffer, OfferDetail, Payment, Profile, PublicBusiness, ReferralClaim, ReferralStats, SearchRow, ServicePhoto, Service, SortKey, BusinessBilling, AdminAuditEntry } from '../types/database';
 
 /** Records the server clock carried by any payload that exposes it. */
 function withClock<T extends { server_now?: string }>(rows: T[]): T[] {
@@ -380,6 +354,10 @@ export async function adminSetBookingBlock(userId: string, blocked: boolean, ove
       p_override_no_shows: overrideNoShows,
     }),
   );
+}
+
+export async function adminAuditLog(limit = 100): Promise<AdminAuditEntry[]> {
+  return (await result<AdminAuditEntry[]>(supabase.rpc('admin_audit_log', { p_limit: limit }))) ?? [];
 }
 
 export async function adminMetrics(): Promise<AdminMetrics> {

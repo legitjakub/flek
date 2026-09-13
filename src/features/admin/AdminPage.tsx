@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import {
+  adminAuditLog,
   adminBookings,
   adminBusinesses,
   adminMetrics,
@@ -21,7 +22,7 @@ import { Link, useRouter } from '../../app/router';
 import { useSession } from '../auth/session';
 import { LazyMap } from '../offers/LazyMap';
 import { StatusBadge } from '../../components/StatusBadge';
-import type { AdminBusiness } from '../../types/database';
+import type { AdminAuditEntry, AdminBusiness } from '../../types/database';
 
 const NAV = [
   { to: '/admin', label: 'Provozovny' },
@@ -29,6 +30,7 @@ const NAV = [
   { to: '/admin/rezervace', label: 'Rezervace' },
   { to: '/admin/uzivatele', label: 'Uživatelé' },
   { to: '/admin/metriky', label: 'Metriky' },
+  { to: '/admin/audit', label: 'Audit' },
 ];
 
 /** Routing-only guard. Every admin RPC re-checks `is_admin()` in SQL. */
@@ -411,6 +413,71 @@ export function AdminUsersPage() {
           </li>
         ))}
       </ul>
+    </AdminFrame>
+  );
+}
+
+const AUDIT_ACTIONS: Record<string, string> = {
+  business_status_changed: 'Stav provozovny',
+  booking_block_changed: 'Blokace rezervací',
+  google_place_id_changed: 'Google Place ID',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'čeká', approved: 'schváleno', rejected: 'zamítnuto', suspended: 'pozastaveno',
+};
+
+/** One change in plain words: "čeká → schváleno", "blokováno → povoleno". */
+function auditChange(entry: AdminAuditEntry): string {
+  const before = entry.before ?? {};
+  const after = entry.after ?? {};
+  if (entry.action === 'business_status_changed') {
+    const from = STATUS_LABELS[String(before.status)] ?? String(before.status ?? '—');
+    const to = STATUS_LABELS[String(after.status)] ?? String(after.status ?? '—');
+    const cancelled = Number(after.offers_cancelled ?? 0);
+    const refunded = Number(after.bookings_refunded ?? 0);
+    return `${from} → ${to}${cancelled ? ` · zrušeno ${cancelled} nabídek` : ''}${refunded ? ` · vráceno ${refunded} rezervací` : ''}`;
+  }
+  if (entry.action === 'booking_block_changed') {
+    const label = (row: Record<string, unknown>) =>
+      row.booking_blocked ? 'blokováno' : row.no_show_override_until ? 'odpuštěno nedostavení' : 'povoleno';
+    return `${label(before)} → ${label(after)}`;
+  }
+  if (entry.action === 'google_place_id_changed') {
+    return `${before.google_place_id ?? 'bez ID'} → ${after.google_place_id ?? 'bez ID'}`;
+  }
+  return `${JSON.stringify(before)} → ${JSON.stringify(after)}`;
+}
+
+export function AdminAuditPage() {
+  const now = useServerNow();
+  const log = useQuery({ queryKey: ['admin-audit'], queryFn: () => adminAuditLog(200) });
+  return (
+    <AdminFrame>
+      <h1 className="text-2xl font-extrabold tracking-tight text-ink">Audit změn</h1>
+      <p className="mt-1 text-sm text-muted">Každá změna provedená v administraci. Záznamy nejde upravit ani smazat.</p>
+      {log.isPending ? <LoadingList /> : null}
+      {log.isError ? <ErrorState error={log.error} onRetry={() => log.refetch()} /> : null}
+      <ul className="mt-4 flex flex-col gap-2">
+        {(log.data ?? []).map((entry) => (
+          <li key={entry.id} className="tnum rounded-xl border border-line bg-card p-3 text-sm">
+            <p className="flex flex-wrap items-baseline justify-between gap-x-3">
+              <span className="font-bold text-ink">
+                {AUDIT_ACTIONS[entry.action] ?? entry.action} · {entry.target_label ?? entry.target_id ?? '—'}
+              </span>
+              <span className="text-muted">
+                {dayLabel(entry.occurred_at, now)} {clockTime(entry.occurred_at)}
+              </span>
+            </p>
+            <p className="mt-1 text-ink">{auditChange(entry)}</p>
+            <p className="mt-1 text-muted">
+              {entry.actor_email ?? 'neznámý účet'}
+              {entry.reason ? ` · důvod: ${entry.reason}` : ''}
+            </p>
+          </li>
+        ))}
+      </ul>
+      {log.isSuccess && log.data.length === 0 ? <EmptyState title="Zatím žádné změny." /> : null}
     </AdminFrame>
   );
 }

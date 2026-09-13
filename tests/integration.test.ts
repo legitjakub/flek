@@ -132,7 +132,13 @@ describe('Authorization and RLS, real JWTs',()=>{
   const a=await user(),b=await user(),r=await book(a,await offer());expect((await b.client.from('profiles').select('*').eq('id',a.id)).data).toHaveLength(0);expect((await b.client.from('bookings').select('*').eq('customer_id',a.id)).data).toHaveLength(0);code((await b.client.rpc('cancel_booking',{p_booking_id:r.data![0].booking_id})).error,'NOT_FOUND');
  });
  it('anonymous cannot read pending businesses, draft offers or bookings',async()=>{
-  const o=await offer(1,{status:'draft'});expect((await anon.from('businesses').select('*').eq('id',otherBiz)).data).toHaveLength(0);expect((await anon.from('offers').select('*').eq('id',o.id)).data).toHaveLength(0);expect((await anon.from('bookings').select('*')).error).toBeTruthy();
+  const o=await offer(1,{status:'draft'});expect((await anon.from('businesses').select('*').eq('id',otherBiz)).data??[]).toHaveLength(0);expect((await anon.from('offers').select('*').eq('id',o.id)).data??[]).toHaveLength(0);expect((await anon.from('bookings').select('*')).error).toBeTruthy();
+ });
+ it('public data is only reachable through read models, never the raw tables',async()=>{
+  const o=await offer();
+  for(const table of ['businesses','services','offers']){expect((await anon.from(table).select('*').limit(1)).error?.code).toBe('42501');}
+  expect((await other.client.from('offers').select('*').eq('id',o.id)).data??[]).toHaveLength(0);
+  expect((await anon.rpc('get_offer_detail',{p_offer_id:o.id,p_lat:50.08,p_lng:14.42})).error).toBeNull();
  });
  it('no client role can directly mutate capacity, insert booking or grant admin',async()=>{
   const o=await offer();for(const client of [anon,merchant.client,other.client,adminUser.client]){

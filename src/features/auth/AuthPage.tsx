@@ -7,6 +7,7 @@ import { errorMessage } from '../../lib/errors';
 import { loginSchema } from '../../lib/schemas';
 import { Button, Field, Input, Wordmark } from '../../components/ui';
 import { Link, useRouter } from '../../app/router';
+import { ForgotPasswordForm, NewPasswordForm } from './PasswordReset';
 
 const PENDING_SIGNUP_KEY = 'flek.pending-signup';
 
@@ -33,7 +34,10 @@ export function AuthPage() {
   const target = search.get('returnTo') || '/';
   const returnTo = target.startsWith('/') && !target.startsWith('//') ? target : '/';
   const merchant = search.get('role') === 'merchant';
-  const [mode, setMode] = useState<'login' | 'signup'>(search.get('mode') === 'signup' ? 'signup' : 'login');
+  const requested = search.get('mode');
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot' | 'reset'>(
+    requested === 'signup' || requested === 'forgot' || requested === 'reset' ? requested : 'login',
+  );
   const [failure, setFailure] = useState<string | null>(null);
   const [confirmSent, setConfirmSent] = useState(false);
   const [confirmationEmail, setConfirmationEmail] = useState('');
@@ -117,19 +121,30 @@ export function AuthPage() {
     <main className="mx-auto w-full max-w-lg px-4 py-8 sm:py-14">
       <Link to="/" aria-label="FLEK — domů" className="inline-flex min-h-11 items-center"><Wordmark suffix={merchant ? 'Partner' : undefined} /></Link>
       <h1 className="mt-6 text-2xl font-extrabold tracking-tight text-ink">
-        {isSignup
-          ? formal
-            ? 'Založte si účet partnera'
-            : 'Založ si účet'
-          : formal
-            ? 'Přihlaste se'
-            : 'Přihlas se'}
+        {mode === 'forgot'
+          ? 'Zapomenuté heslo'
+          : mode === 'reset'
+            ? 'Nové heslo'
+            : isSignup
+              ? formal
+                ? 'Založte si účet partnera'
+                : 'Založ si účet'
+              : formal
+                ? 'Přihlaste se'
+                : 'Přihlas se'}
       </h1>
-      <p className="mt-1 text-sm text-muted">
-        {formal
-          ? 'Účtem partnera spravujete provozovnu, služby a volné termíny.'
-          : 'Prohlížet můžeš i bez účtu. Účet potřebuješ až k rezervaci.'}
-      </p>
+      {mode === 'login' || mode === 'signup' ? (
+        <p className="mt-1 text-sm text-muted">
+          {formal
+            ? 'Účtem partnera spravujete provozovnu, služby a volné termíny.'
+            : 'Prohlížet můžeš i bez účtu. Účet potřebuješ až k rezervaci.'}
+        </p>
+      ) : null}
+
+      {mode === 'forgot' ? (
+        <ForgotPasswordForm formal={formal} initialEmail={form.getValues('email')} onBack={() => setMode('login')} />
+      ) : null}
+      {mode === 'reset' ? <NewPasswordForm formal={formal} /> : null}
 
       {confirmSent ? (
         <div className="mt-6 rounded-2xl bg-card shadow-card p-5 sm:p-6">
@@ -156,7 +171,7 @@ export function AuthPage() {
         </div>
       ) : null}
 
-      <form hidden={confirmSent} className="mt-6 flex flex-col gap-4 rounded-2xl bg-card shadow-card p-5 sm:p-6" onSubmit={form.handleSubmit(submit)} noValidate>
+      <form hidden={confirmSent || mode === 'forgot' || mode === 'reset'} className="mt-6 flex flex-col gap-4 rounded-2xl bg-card shadow-card p-5 sm:p-6" onSubmit={form.handleSubmit(submit)} noValidate>
         {isSignup ? (
           <div className="grid grid-cols-2 gap-3">
             <Field id="first_name" label="Jméno" error={form.formState.errors.first_name?.message}>
@@ -197,6 +212,18 @@ export function AuthPage() {
             {...form.register('password')}
           />
         </Field>
+        {isSignup ? null : (
+          <button
+            type="button"
+            className="-mt-2 min-h-11 self-start text-sm font-bold text-ink underline underline-offset-4"
+            onClick={() => {
+              setFailure(null);
+              setMode('forgot');
+            }}
+          >
+            Zapomenuté heslo?
+          </button>
+        )}
 
         {failure ? (
           <p role="alert" className="rounded-xl bg-accent-soft px-3 py-2 text-sm font-medium text-ink">
@@ -211,6 +238,7 @@ export function AuthPage() {
 
       <button
         type="button"
+        hidden={mode === 'forgot' || mode === 'reset'}
         className="mt-5 min-h-11 w-full text-sm font-bold text-ink underline underline-offset-4"
         onClick={() => {
           setFailure(null);

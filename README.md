@@ -128,6 +128,14 @@ Peníze jsou celočíselné haléře od databáze až po formátování. Čas je
 
 Aktuální stav ověření a to, co ještě není hotové, je v [VERIFICATION.md](VERIFICATION.md) a [LIMITATIONS.md](LIMITATIONS.md). Rozhodnutí učiněná při stavbě jsou v [DECISIONS.md](DECISIONS.md).
 
+### Bezpečnost a provoz
+
+- **CI:** `.github/workflows/ci.yml` spouští build s TypeScriptem, unit testy a `npm audit` při každém pushi a PR. Na GitHubu je zapnutý secret scanning s ochranou proti pushnutí tajných údajů a Dependabot upozornění.
+- **Hlavičky:** CSP a další bezpečnostní hlavičky jsou ve `vercel.json`. Přidáváte-li externí službu (dlaždice, obrázky, API), doplňte její doménu do CSP.
+- **Obnova hesla:** v Supabase → Authentication → URL Configuration musí být v Redirect URLs `https://flek-nine.vercel.app/prihlaseni` (lokálně je v `supabase/config.toml`).
+- **Demo data:** job `flek-demo-refresh` každé ráno doplní demo FLEKy. Před ostrým provozem na této databázi: `select cron.unschedule('flek-demo-refresh');`.
+- **Audit:** každá admin změna je v záložce Administrace → Audit; záznamy nejde upravit ani smazat.
+
 ### Živý přehled pro tým a Notion
 
 Souhrnný stav produktu, rolí, doménových pravidel, posledních migrací a otevřených bodů je v [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md). Přehled pro Notion (todolist, fáze, jak to funguje, kde co běží) je v [docs/NOTION.md](docs/NOTION.md); v Notionu je jako stránka „FLEK — přehled projektu“ ve workspace Jacob's Notion.

@@ -8,7 +8,7 @@ Platby používají `provider=demo`. Potvrzení a vrácení mění databázový 
 
 ## Testy a zařízení
 
-77 jednotkových testů a 100 API akceptačních kontrol prošlo. Databázový test údržby, časových hranic a neměnnosti cen prošel v transakci s rollbackem. Lokální sada `npm test` vyžaduje běžící Docker/Supabase; lokální backend nyní neběží. Docker CLI je dostupné, dřívější tvrzení, že na počítači vůbec není Docker, už neplatí.
+Jednotkové testy běží v CI při každém pushi a 100 API akceptačních kontrol prošlo (naposledy 13. 9. 2026 po zamknutí tabulek). Databázový test údržby, časových hranic a neměnnosti cen prošel v transakci s rollbackem. Lokální sada `npm test` vyžaduje běžící Docker/Supabase; lokální backend nyní neběží. Docker CLI je dostupné, dřívější tvrzení, že na počítači vůbec není Docker, už neplatí.
 
 Mobilní rozměry systémového Chrome ověřují responzivní rozhraní, nenahrazují fyzický iPhone/Safari a test skeneru kamerou. Aktuální průchod a jeho limity uvádí poslední sekce VERIFICATION.md. Kompletní nový audit všech rolí, barev a konkurence je samostatný odložený úkol.
 
@@ -20,9 +20,11 @@ Názvy migrací v repozitáři jsou sladěné s hostovanou historií (13. 9. 202
 
 ## Demo data a účty
 
+Demo nabídky obnovuje každý den job `flek-demo-refresh` (3 dny dopředu, jen podniky, jejichž všichni členové mají e-mail `@flek.test`). Před ostrým pilotem na stejné databázi ho vypněte: `select cron.unschedule('flek-demo-refresh');`.
+
 Veřejná ukázka obsahuje fiktivní podniky a účty `demo-*@flek.test`. Hesla jsou mimo repozitář, administrátor má vlastní heslo. Skutečný pilot musí oddělit reálná data od ukázkového seedu. Akceptační skript je určen demo prostředí: založené nabídky ruší, ale zanechá zrušenou historii rezervací a plateb. Neběží proti skutečným zákaznickým účtům.
 
-Supabase advisor nadále hlásí vypnutou ochranu proti prolomeným heslům. Oprávnění RPC, finanční a kapacitní změny se ověřují na serveru. Zpráva advisoru o endpointu `security definer` sama neznamená chybu: tyto RPC tvoří úmyslné rozhraní pro autorizované operace.
+Supabase advisor nadále hlásí vypnutou ochranu proti prolomeným heslům; na Free tarifu ji zapnout nejde. Projekt běží na Free tarifu bez stahovatelných záloh a výchozí e-mail Supabase je určený pro testování — pro skutečné zákazníky je potřeba vlastní SMTP. Administrátoři zatím nemají povinné MFA. Oprávnění RPC, finanční a kapacitní změny se ověřují na serveru. Zpráva advisoru o endpointu `security definer` sama neznamená chybu: tyto RPC tvoří úmyslné rozhraní pro autorizované operace.
 
 ## Fotografie a Google hodnocení
 
