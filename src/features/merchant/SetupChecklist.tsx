@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Check } from 'lucide-react';
-import { businessBilling, merchantOffers } from '../../lib/api';
+import { businessBilling, businessPaymentsStatus, merchantOffers } from '../../lib/api';
 import { Link } from '../../app/router';
 import { useServices } from './useBusiness';
 import type { Business } from '../../types/database';
@@ -25,6 +25,11 @@ export function SetupChecklist({ business }: { business: Business }) {
     queryFn: () => businessBilling(business.id),
     staleTime: 60_000,
   });
+  const payments = useQuery({
+    queryKey: ['business-payments', business.id],
+    queryFn: () => businessPaymentsStatus(business.id),
+    staleTime: 60_000,
+  });
   const [previewed, setPreviewed] = useState(() => {
     try {
       return window.localStorage.getItem(PREVIEWED + business.id) === '1';
@@ -33,7 +38,7 @@ export function SetupChecklist({ business }: { business: Business }) {
     }
   });
 
-  if (services.isPending || offers.isPending || billing.isPending) return null;
+  if (services.isPending || offers.isPending || billing.isPending || payments.isPending) return null;
 
   const approved = business.status === 'approved';
   const steps = [
@@ -45,6 +50,9 @@ export function SetupChecklist({ business }: { business: Business }) {
       done: Boolean(billing.data?.bank_account && billing.data?.terms_accepted_at),
       to: '/partner/provozovna',
     },
+    ...(payments.data?.provider === 'stripe'
+      ? [{ key: 'payments', label: 'Platby přes Stripe', done: Boolean(payments.data.charges_enabled), to: '/partner/provozovna' }]
+      : []),
     { key: 'service', label: 'První služba', done: (services.data ?? []).some((s) => s.is_active), to: '/partner/sluzby' },
     { key: 'offer', label: 'První FLEK', done: (offers.data ?? []).length > 0, to: approved ? '/partner/nabidky' : undefined },
     { key: 'preview', label: 'Zobrazit jako zákazník', done: previewed, href: approved ? `/podnik/${business.id}` : undefined },

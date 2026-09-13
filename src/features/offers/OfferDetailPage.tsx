@@ -12,6 +12,7 @@ import { Button, ErrorState, Skeleton, cx } from '../../components/ui';
 import { bookingIcs, icsHref } from '../../lib/calendar';
 import { Link, useRouter } from '../../app/router';
 import { BookingSheet, cancellationDeadline } from '../bookings/BookingSheet';
+import { PaymentReturn } from '../bookings/PaymentReturn';
 import { Voucher } from '../bookings/Voucher';
 import { FavoriteButton } from '../favorites/FavoriteButton';
 import { useSession } from '../auth/session';
@@ -105,6 +106,24 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           Zpět na nabídky
         </Link>
       </main>
+    );
+  }
+
+  const returningPayment = search.get('platba');
+  if (returningPayment && !code) {
+    return (
+      <PaymentReturn
+        paymentId={returningPayment}
+        cancelled={search.get('zruseno') === '1'}
+        onBooked={(reservationCode) => {
+          setCode(reservationCode);
+          navigate(`/nabidka/${offer.id}`, { replace: true, scroll: false });
+        }}
+        onRetry={() => {
+          navigate(`/nabidka/${offer.id}`, { replace: true, scroll: false });
+          setSheetOpen(true);
+        }}
+      />
     );
   }
 

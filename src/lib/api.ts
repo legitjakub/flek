@@ -1,7 +1,8 @@
+import { FunctionsHttpError } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { result } from './errors';
 import { noteServerNow } from './clock';
-import type { AdminBooking, AdminBusiness, AdminMetrics, AdminUser, Business, Category, CustomerBooking, CustomerMetrics, FavoriteBusiness, FavoriteOffer, MerchantBooking, MerchantBookingDetail, MerchantMetrics, MerchantOffer, OfferDetail, Payment, Profile, PublicBusiness, ReferralClaim, ReferralStats, SearchRow, ServicePhoto, Service, SortKey, BusinessBilling, AdminAuditEntry } from '../types/database';
+import type { AdminBooking, AdminBusiness, AdminMetrics, AdminUser, Business, Category, CustomerBooking, CustomerMetrics, FavoriteBusiness, FavoriteOffer, MerchantBooking, MerchantBookingDetail, MerchantMetrics, MerchantOffer, OfferDetail, Payment, Profile, PublicBusiness, ReferralClaim, ReferralStats, PaymentsMode, PaymentState, BusinessPaymentsStatus, SearchRow, ServicePhoto, Service, SortKey, BusinessBilling, AdminAuditEntry } from '../types/database';
 
 /** Records the server clock carried by any payload that exposes it. */
 function withClock<T extends { server_now?: string }>(rows: T[]): T[] {
@@ -80,6 +81,43 @@ export async function saveProfile(input: {
       p_avatar_url: input.avatar_url ?? null,
     }),
   );
+}
+
+/** Edge Functions answer errors as `{ error: CODE }`; surface the code like an RPC error would. */
+async function invokeFunction<T>(name: string, body: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke<T>(name, { body });
+  if (error) {
+    if (error instanceof FunctionsHttpError) {
+      const payload = (await error.context.json().catch(() => null)) as { error?: string } | null;
+      throw new Error(payload?.error ?? 'PAYMENT_FAILED');
+    }
+    throw error;
+  }
+  return data as T;
+}
+
+export async function paymentsMode(): Promise<PaymentsMode> {
+  return (await result<PaymentsMode>(supabase.rpc('payments_mode'))) ?? { provider: 'demo', test: true };
+}
+
+/** Stripe Checkout for a started payment: either a page to go to, or word that it is already paid. */
+export async function openCheckout(paymentId: string): Promise<{ url?: string; state?: 'paid' | 'processing'; livemode?: boolean }> {
+  return await invokeFunction('stripe-checkout', { payment_id: paymentId });
+}
+
+export async function paymentState(paymentId: string): Promise<PaymentState> {
+  return await result<PaymentState>(supabase.rpc('my_payment_state', { p_payment_id: paymentId }));
+}
+
+export async function businessPaymentsStatus(businessId: string): Promise<BusinessPaymentsStatus> {
+  return await result<BusinessPaymentsStatus>(supabase.rpc('business_payments_status', { p_business_id: businessId }));
+}
+
+export async function stripeConnect(
+  action: 'onboard' | 'status' | 'dashboard',
+  businessId: string,
+): Promise<{ url?: string; connected?: boolean; charges_enabled?: boolean; payouts_enabled?: boolean; currently_due?: string[] }> {
+  return await invokeFunction('stripe-connect', { action, business_id: businessId });
 }
 
 /** Opens (or reuses) a payment attempt. The amount always comes from the offer row. */

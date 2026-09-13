@@ -279,11 +279,37 @@ export type Payment = {
   offer_id: string;
   amount_cents: number;
   status: PaymentStatus;
-  provider: string;
+  provider: 'demo' | 'stripe';
   provider_reference: string | null;
   created_at: string;
   paid_at: string | null;
   refunded_at: string | null;
+  checkout_session_id?: string | null;
+  refund_requested_at?: string | null;
+};
+
+export type PaymentsMode = { provider: 'demo' | 'stripe'; test: boolean };
+
+/** What the customer sees after coming back from Stripe Checkout. */
+export type PaymentState = {
+  id: string;
+  offer_id: string;
+  provider: 'demo' | 'stripe';
+  status: PaymentStatus;
+  amount_cents: number;
+  refund_requested: boolean;
+  failure_reason: string | null;
+  booking_id: string | null;
+  reservation_code: string | null;
+};
+
+export type BusinessPaymentsStatus = {
+  provider: 'demo' | 'stripe';
+  connected: boolean;
+  charges_enabled: boolean;
+  payouts_enabled: boolean;
+  details_submitted: boolean;
+  synced_at: string | null;
 };
 
 export type FavoriteBusiness = Business & {

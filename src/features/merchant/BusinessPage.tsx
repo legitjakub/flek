@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { StripePayouts } from './StripePayouts';
 import { useState } from 'react';
 import { businessBilling, createBusiness, listCategories, saveBusinessBilling, updateBusiness } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
@@ -86,7 +87,16 @@ function initial(business?: Business): Values {
 }
 
 export function MerchantBusinessPage() {
-  return <MerchantShell>{(business) => <BusinessForm business={business} />}</MerchantShell>;
+  return (
+    <MerchantShell>
+      {(business) => (
+        <div className="flex flex-col gap-6">
+          <StripePayouts business={business} />
+          <BusinessForm business={business} />
+        </div>
+      )}
+    </MerchantShell>
+  );
 }
 
 /** Registration lives outside the shell: there is no business to frame it with yet. */
