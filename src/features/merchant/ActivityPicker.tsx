@@ -236,7 +236,7 @@ function PhotoChoice({ active, label, imageUrl, fallback, onClick }: {
       ) : (
         <span className="flex aspect-square items-center justify-center bg-line/45 text-muted">{fallback ?? <Image size={22} aria-hidden="true" />}</span>
       )}
-      {active ? <span className="absolute top-1.5 right-1.5 grid size-6 place-items-center rounded-full bg-brand text-ink"><Check size={14} aria-hidden="true" /></span> : null}
+      {active ? <span className="absolute top-1.5 right-1.5 grid size-6 place-items-center rounded-full bg-brand text-brand-ink"><Check size={14} aria-hidden="true" /></span> : null}
       <span className="block truncate px-2 py-1.5 text-xs font-bold text-ink">{label}</span>
     </button>
   );

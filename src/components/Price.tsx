@@ -22,14 +22,14 @@ export function savings(originalCents: number, dealCents: number): number {
 }
 
 /**
- * The exact logo lime is the promotional highlight; dark ink keeps it comfortably readable.
+ * The brand ultramarine is the promotional highlight; white on it reads at 9.1 : 1.
  * Text links and status labels use the darker tone of the same green family.
  */
 export function DiscountBadge({ pct, className = '' }: { pct: number; className?: string }) {
   if (pct <= 0) return null;
   return (
     <span
-      className={`tnum inline-flex items-center rounded-lg bg-brand px-2 py-0.5 text-xs font-extrabold text-ink ${className}`}
+      className={`tnum inline-flex items-center rounded-lg bg-brand px-2 py-0.5 text-xs font-extrabold text-brand-ink ${className}`}
     >
       −{pct} %
     </span>

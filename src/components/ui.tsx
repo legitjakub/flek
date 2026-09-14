@@ -39,12 +39,12 @@ export function Mark({ className = 'size-6' }: { className?: string }) {
  * The pin keeps its own colours rather than inheriting `currentColor`: the white clock face
  * and the ink hands have to hold whichever ground the wordmark sits on.
  */
-export function PinMark({ className }: { className?: string }) {
+export function PinMark({ className, tone = 'light' }: { className?: string; tone?: 'light' | 'dark' }) {
   return (
     <svg viewBox="0 0 36 32" aria-hidden="true" focusable="false" className={className}>
       <path
         d="M12 30.6s11-11.8 11-17.6a11 11 0 1 0-22 0c0 5.8 11 17.6 11 17.6z"
-        className="fill-brand"
+        className={tone === 'dark' ? 'fill-brand-bright' : 'fill-brand'}
       />
       <circle cx="12" cy="13" r="6.6" className="fill-card" />
       <path
@@ -55,7 +55,7 @@ export function PinMark({ className }: { className?: string }) {
         strokeLinejoin="round"
         className="stroke-ink"
       />
-      <g fill="none" strokeWidth="3.2" strokeLinecap="round" className="stroke-brand">
+      <g fill="none" strokeWidth="3.2" strokeLinecap="round" className={tone === 'dark' ? 'stroke-brand-bright' : 'stroke-brand'}>
         <path d="M26.2 7.6 30.8 2.8" />
         <path d="M28.4 13 34.2 10.6" />
         <path d="M28.6 18.6 34.6 18" />
@@ -82,7 +82,7 @@ export function Wordmark({ tone = 'ink', suffix }: { tone?: 'ink' | 'invert'; su
           flek
         </span>
         {/* Overlapping the k on purpose: the pin is part of the word, not an icon beside it. */}
-        <PinMark className="mt-[-0.26em] ml-[-0.26em] h-[1.2em] w-[1.35em] shrink-0" />
+        <PinMark tone={tone === 'invert' ? 'dark' : 'light'} className="mt-[-0.26em] ml-[-0.26em] h-[1.2em] w-[1.35em] shrink-0" />
       </span>
       {suffix ? <span className="text-xs font-bold tracking-wide text-muted uppercase">{suffix}</span> : null}
     </span>
@@ -113,7 +113,7 @@ export function buttonClass({
     // Padding lives with the size, not the base: a later `px-2` cannot beat a `px-4` that
     // Tailwind happens to emit after it, which is how a short button quietly wrapped its label.
     size === 'lg' ? 'min-h-13 gap-2 px-5 text-base' : size === 'sm' ? 'gap-1.5 px-2.5 text-sm whitespace-nowrap' : 'gap-2 px-4 text-sm',
-    variant === 'primary' && 'bg-ink text-accent-ink hover:bg-[#2a2c33]',
+    variant === 'primary' && 'bg-ink text-accent-ink hover:bg-ink-hover',
     variant === 'secondary' && 'border border-line bg-card text-ink hover:bg-surface',
     variant === 'soft' && 'bg-line text-ink hover:bg-brand-soft',
     variant === 'ghost' && 'text-ink hover:bg-line/50',
@@ -237,13 +237,13 @@ export function EmptyState({
   title: string;
   body?: string;
   action?: ReactNode;
-  /** `lime` is the customer app's empty screen: a block of colour with one clear way on. */
-  tone?: 'plain' | 'lime';
+  /** `promo` is the customer app's empty screen: a block of colour with one clear way on. */
+  tone?: 'plain' | 'promo';
   icon?: ReactNode;
 }) {
-  if (tone === 'lime') {
+  if (tone === 'promo') {
     return (
-      <PromoCard tone="lime" className="px-6 py-8 text-center">
+      <PromoCard tone="promo" className="px-6 py-8 text-center">
         {icon ? (
           <span aria-hidden="true" className="mx-auto mb-4 grid size-14 place-items-center rounded-full bg-card text-ink shadow-card">
             {icon}
@@ -534,21 +534,21 @@ function choiceIndex(key: string, current: number, length: number): number | nul
 
 /**
  * The customer app divides a screen with contrast, not with hairlines: a white card, then a
- * block of colour, then a grouped list. `dark` is ink with lime figures (6.9 : 1), `lime` is
- * the logo's green running into a paler lime with ink text (7.3 : 1 at its darkest).
+ * block of colour, then a grouped list. `dark` is ink with brand-on-dark figures (7.0 : 1),
+ * `promo` is a flat pale ultramarine with ink text (12.9 : 1).
  */
 export function PromoCard({
   tone = 'dark',
   className,
   children,
   ...rest
-}: { tone?: 'dark' | 'lime'; className?: string; children: ReactNode } & React.HTMLAttributes<HTMLElement>) {
+}: { tone?: 'dark' | 'promo'; className?: string; children: ReactNode } & React.HTMLAttributes<HTMLElement>) {
   return (
     <section
       {...rest}
       className={cx(
         'relative overflow-hidden rounded-3xl p-5 shadow-card sm:p-6',
-        tone === 'dark' ? 'bg-ink text-card' : 'bg-[linear-gradient(135deg,#f2703f_0%,#ffb48a_100%)] text-ink',
+        tone === 'dark' ? 'bg-ink text-card' : 'bg-promo text-promo-ink',
         className,
       )}
     >

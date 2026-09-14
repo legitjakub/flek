@@ -107,7 +107,7 @@ export function FilterBar({
           <SlidersHorizontal size={17} aria-hidden="true" />
           Filtry
           {count ? (
-            <span className="tnum grid size-5 place-items-center rounded-full bg-brand text-xs font-bold text-ink">
+            <span className="tnum grid size-5 place-items-center rounded-full bg-brand text-xs font-bold text-brand-ink">
               {count}
             </span>
           ) : null}

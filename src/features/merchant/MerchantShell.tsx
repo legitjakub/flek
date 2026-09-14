@@ -178,7 +178,7 @@ function NewBookingBanner({ alert, onDismiss }: { alert: BookingAlert; onDismiss
   const { navigate } = useRouter();
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-ink px-4 py-3 text-card shadow-lift">
-      <BellRing size={20} aria-hidden="true" className="shrink-0 text-brand" />
+      <BellRing size={20} aria-hidden="true" className="shrink-0 text-brand-on-dark" />
       <div className="min-w-0 flex-1">
         <p className="text-base font-extrabold">Nová rezervace</p>
         <p className="tnum text-sm text-card/85">
@@ -242,7 +242,7 @@ function MerchantFrame({
   const unread = useUnreadBookings(business?.id);
   const badge = (to: string) =>
     to === '/partner/rezervace' && unread > 0 ? (
-      <span className="tnum ml-auto grid min-h-5 min-w-5 place-items-center rounded-full bg-brand px-1.5 text-xs font-extrabold text-ink" aria-label={`${unread} nových`}>
+      <span className="tnum ml-auto grid min-h-5 min-w-5 place-items-center rounded-full bg-brand px-1.5 text-xs font-extrabold text-brand-ink" aria-label={`${unread} nových`}>
         {unread}
       </span>
     ) : null;
@@ -306,7 +306,7 @@ function MerchantFrame({
         {nav ? <aside className="hidden min-h-[calc(100dvh-73px)] border-r border-line bg-card px-4 py-6 lg:block"><nav aria-label="Partner" className="sticky top-24"><ul className="flex flex-col gap-2">{NAV.map(({ to, label, icon: Icon }) => <li key={to}><Link to={to} aria-current={path === to ? 'page' : undefined} className={`flex min-h-12 items-center gap-3 rounded-xl px-4 text-sm font-bold ${path === to ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-surface hover:text-ink'}`}><Icon size={20} aria-hidden="true" />{label}{badge(to)}</Link></li>)}</ul></nav></aside> : null}
         <main id="partner-obsah" className="min-w-0 px-4 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6 lg:p-8">{children}</main>
       </div>
-      {nav ? <nav aria-label="Partner" className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card pb-[env(safe-area-inset-bottom)] lg:hidden"><ul className="flex">{NAV.slice(0, 3).map(({ to, label, icon: Icon }) => <li key={to} className="flex-1"><Link to={to} aria-current={path === to ? 'page' : undefined} className={`relative flex min-h-16 flex-col items-center justify-center gap-1 text-xs font-bold ${path === to ? 'text-accent' : 'text-muted'}`}><span className="relative inline-flex"><Icon size={22} aria-hidden="true" />{to === '/partner/rezervace' && unread > 0 ? <span className="tnum absolute -top-1.5 -right-2.5 grid min-h-4 min-w-4 place-items-center rounded-full bg-brand px-1 text-[10px] font-extrabold text-ink" aria-label={`${unread} nových`}>{unread}</span> : null}</span>{label}</Link></li>)}<li className="flex-1"><button type="button" onClick={() => setMenu(true)} aria-haspopup="dialog" className={`flex min-h-16 w-full flex-col items-center justify-center gap-1 text-xs font-bold ${NAV.slice(3).some((item) => item.to === path) ? 'text-accent' : 'text-muted'}`}><Ellipsis size={22} aria-hidden="true" />Další</button></li></ul></nav> : null}
+      {nav ? <nav aria-label="Partner" className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card pb-[env(safe-area-inset-bottom)] lg:hidden"><ul className="flex">{NAV.slice(0, 3).map(({ to, label, icon: Icon }) => <li key={to} className="flex-1"><Link to={to} aria-current={path === to ? 'page' : undefined} className={`relative flex min-h-16 flex-col items-center justify-center gap-1 text-xs font-bold ${path === to ? 'text-accent' : 'text-muted'}`}><span className="relative inline-flex"><Icon size={22} aria-hidden="true" />{to === '/partner/rezervace' && unread > 0 ? <span className="tnum absolute -top-1.5 -right-2.5 grid min-h-4 min-w-4 place-items-center rounded-full bg-brand px-1 text-[10px] font-extrabold text-brand-ink" aria-label={`${unread} nových`}>{unread}</span> : null}</span>{label}</Link></li>)}<li className="flex-1"><button type="button" onClick={() => setMenu(true)} aria-haspopup="dialog" className={`flex min-h-16 w-full flex-col items-center justify-center gap-1 text-xs font-bold ${NAV.slice(3).some((item) => item.to === path) ? 'text-accent' : 'text-muted'}`}><Ellipsis size={22} aria-hidden="true" />Další</button></li></ul></nav> : null}
       <Sheet open={menu} onClose={() => setMenu(false)} title="Správa provozovny"><div className="flex flex-col gap-2">{NAV.slice(3).map(({ to, label, icon: Icon }) => <button key={to} type="button" onClick={() => { setMenu(false); navigate(to); }} className={`flex min-h-13 items-center gap-3 rounded-xl px-4 text-base font-bold ${path === to ? 'bg-accent-soft text-accent' : 'hover:bg-surface'}`}><Icon size={20} aria-hidden="true" />{label}</button>)}</div></Sheet>
     </div>
   );

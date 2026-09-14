@@ -32,7 +32,7 @@ const BENEFITS = [
 
 /**
  * Profile is read top to bottom as value, then settings: what FLEK saved, a block to share it,
- * then grouped rows. Colour separates the blocks — a dark card, a lime one, white lists on the
+ * then grouped rows. Colour separates the blocks — a dark card, a promo one, white lists on the
  * cream ground — so nothing needs a heading rule or a hairline to stand apart.
  */
 export function ProfilePage() {
@@ -47,7 +47,7 @@ export function ProfilePage() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 pt-6 pb-8">
       <header className="flex items-center gap-4">
-        <span aria-hidden="true" className="grid size-16 shrink-0 place-items-center rounded-full bg-brand text-2xl font-extrabold text-ink">
+        <span aria-hidden="true" className="grid size-16 shrink-0 place-items-center rounded-full bg-brand text-2xl font-extrabold text-brand-ink">
           {initial}
         </span>
         <div className="min-w-0">
@@ -99,7 +99,7 @@ function SignedOutProfile() {
         <ul className="mt-4 flex flex-col gap-3">
           {BENEFITS.map((benefit) => (
             <li key={benefit} className="flex items-start gap-3 text-base text-ink">
-              <span aria-hidden="true" className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-brand text-ink">
+              <span aria-hidden="true" className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-brand text-brand-ink">
                 <Check size={14} strokeWidth={3} />
               </span>
               {benefit}
@@ -121,7 +121,7 @@ function SignedOutProfile() {
 
       <AppList partner={false} admin={false} signedIn={false} />
 
-      <PromoCard tone="lime">
+      <PromoCard tone="promo">
         <Store size={26} aria-hidden="true" />
         <h2 className="mt-3 text-lg font-extrabold tracking-tight">Máte podnik?</h2>
         <p className="mt-1 max-w-sm text-base text-ink">

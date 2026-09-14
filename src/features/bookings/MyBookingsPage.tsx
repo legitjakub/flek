@@ -45,7 +45,7 @@ export function MyBookingsPage() {
         <h1 className="text-2xl font-extrabold tracking-tight text-ink">Moje rezervace</h1>
         <div className="mt-5">
           <EmptyState
-            tone="lime"
+            tone="promo"
             icon={<Ticket size={26} />}
             title="Rezervace uvidíš po přihlášení."
             body="Prohlížet nabídky můžeš i bez účtu."
@@ -86,7 +86,7 @@ export function MyBookingsPage() {
         {query.isError ? <ErrorState error={query.error} onRetry={() => query.refetch()} /> : null}
         {query.isSuccess && rows.length === 0 ? (
           <EmptyState
-            tone="lime"
+            tone="promo"
             icon={<Ticket size={26} />}
             title={tab === 'upcoming' ? 'Nemáš žádnou nadcházející rezervaci.' : 'Historie je zatím prázdná.'}
             body="Najdi si volný FLEK na dnes."
@@ -111,7 +111,7 @@ export function MyBookingsPage() {
               {live ? (
                 <div className="flex items-baseline justify-between gap-3 bg-ink px-4 py-3 text-card">
                   <p className="text-xs font-bold text-card/75">Rezervační kód</p>
-                  <p className="tnum font-mono text-xl font-extrabold tracking-[0.12em] text-brand">
+                  <p className="tnum font-mono text-xl font-extrabold tracking-[0.12em] text-brand-on-dark">
                     {booking.reservation_code}
                   </p>
                 </div>

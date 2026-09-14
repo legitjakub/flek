@@ -99,7 +99,7 @@ Jeden řádek na rozhodnutí, chronologicky. Kde bylo zadání nejednoznačné, 
 - Upozornění vznikají v triggeru nad `bookings` ve stejné transakci jako změna rezervace: záznam do inboxu a do fronty doručení. Doručuje Edge Function volaná přes `pg_net` jen tehdy, když je něco splatné, a cron každou minutu jako pojistka. Výpadek Resendu nebo push služby rezervaci nezablokuje, jen se zpráva zkusí znovu (až 8×).
 - Tajný klíč pracovníka je jen v `private.notification_config` a funkce ho ověřuje přes service-role RPC. Kopie v prostředí funkce se s databází rozešla a všechna doručení končila 401.
 - Push nese jen odkaz a obecný text, detaily si aplikace načte po otevření: zamykací obrazovka může být sdílená.
-- Paleta „Mandarinka“ (13. 9. večer, olivová se nelíbila): téměř černá `#17181C` pro text a hlavní tlačítka, mandarinková `#F2703F` jako výplň a zvýraznění (slevy, špendlíky, logo, kódy na tmavých blocích; s černou 6,1 : 1), tmavší `#B4460F` pro odkazy a ikony (5,5 : 1 na bílé), neutrální pozadí `#F6F5F3`. Barvy jsou jen v tokenech ve `src/styles.css`; logo, ikony aplikace (SVG i PNG), mapa, univerzální obrázek služby, manifest a e-maily používají stejné hodnoty.
+- ~~Paleta „Mandarinka“~~ (13. 9. večer, 14. 9. nahrazená Nočním ultramarínem, viz níže): téměř černá `#17181C` pro text a hlavní tlačítka, mandarinková `#F2703F` jako výplň a zvýraznění (slevy, špendlíky, logo, kódy na tmavých blocích; s černou 6,1 : 1), tmavší `#B4460F` pro odkazy a ikony (5,5 : 1 na bílé), neutrální pozadí `#F6F5F3`. Barvy jsou jen v tokenech ve `src/styles.css`; logo, ikony aplikace (SVG i PNG), mapa, univerzální obrázek služby, manifest a e-maily používají stejné hodnoty.
 - Služba bez vlastní fotky a bez ilustrace aktivity ukáže univerzální obrázek FLEKu, ne obal provozovny: ten dělal z půjčovny kol wellness.
 
 ## Vratky podle stavu ve Stripe — 14. 9. 2026
@@ -109,4 +109,12 @@ Jeden řádek na rozhodnutí, chronologicky. Kde bylo zadání nejednoznačné, 
 - Zpráva o starší vratce nepřepíše novější a selhaná nebo zrušená vratka už nikdy neožije jako `succeeded`. Stripe ji sám nikdy neobnoví; pozdní `succeeded` od pomalejšího pracovníka se proto zahodí.
 - Vratka, kterou Stripe zamítne (`failed`) nebo zruší (`canceled`), i dny po zdánlivém úspěchu, vrátí platbu na `paid` s důvodem a vypadne z automatické fronty. Stripe u selhané vratky radí vrátit peníze jinou cestou: nový pokus na zrušenou nebo ztracenou kartu jen znovu selže a vratku zrušenou kvůli sporu opakovat nelze. Automaticky se dál opakují jen chyby na cestě ke Stripe (až 8×).
 - Zákazník u zrušené rezervace s nevrácenou platbou vidí „Vracíme peníze“ místo „Zaplaceno“. Stránka po návratu z platby u selhané vratky řekne, že se peníze na kartu vrátit nepodařilo a vyřeší se ručně (`my_payment_state` nově vrací `refund_status`).
+
+## Paleta „Noční ultramarín“ — 14. 9. 2026
+
+- Mandarinka nepůsobila dost tmavě ani moderně. Aplikace zůstává světlá kvůli fotkám služeb a světlé mapě, tmavší je značka. Pět designérů navrhlo směry (ultramarín, švestka, petrol, grafit s kobaltem, černá višeň), porota je posoudila podle značky, přístupnosti a praxe a Jakub vybral ze tří finalistů ukázaných na skutečných obrazovkách ultramarín.
+- Značka `#2C26D2` je výplň s bílým textem (9,1 : 1) a může být i textem na bílé. Text a hlavní tlačítka jsou noční modročerné `#10121F`, odkazy a ikony `#1E22A3`, pozadí chladné `#F3F4F8`. Modrá je od zelené pro peníze, jantarového varování i červené chyby nejdál, takže se sleva nesplete se stavem, a jako doplňková barva k pleti, dřevu a teplému světlu nechá fotky vyniknout.
+- Značka a ink mají mezi sebou jen 2,1 : 1, proto má značka na tmavých blocích dvě podoby: `brand-on-dark` `#8797FF` pro text (kód rezervace, ušetřená částka, 7,0 : 1) a `brand-bright` `#4D67FB` pro grafiku (špendlík v logu na tmavém, prstenec shluku na mapě, špendlík v ikoně aplikace).
+- Role značky jsou tokeny (`brand-ink`, `brand-on-dark`, `brand-bright`, `ink-hover`, `promo`, `promo-ink`), ne natvrdo zapsané barvy v komponentách. Příští změna palety je tak jen změna hodnot ve `src/styles.css` plus statické soubory, které CSS nečtou: ikony (SVG a PNG), obrázek služby bez fotky, `theme-color` a e-maily.
+- Promo blok je jednobarevný `#CFD4FF`, bez přechodu.
 

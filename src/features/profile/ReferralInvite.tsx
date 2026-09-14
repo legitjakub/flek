@@ -28,7 +28,7 @@ export function ReferralInvite({ userId }: { userId: string }) {
   const qualified = stats.data?.qualified ?? 0;
 
   return (
-    <PromoCard tone="lime">
+    <PromoCard tone="promo">
       <h2 className="text-lg font-extrabold tracking-tight">Pozvi kamaráda</h2>
       <p className="mt-1 max-w-md text-base leading-relaxed">{text}</p>
 

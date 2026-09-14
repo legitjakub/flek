@@ -171,3 +171,11 @@ Lokální Docker integrační sada, fyzický iPhone/Safari, skutečná kamera, n
 - `private.stripe_events` za běh kontrol: 28× `refund.created`, 28× `refund.updated`, 28× `charge.refunded`, 1× `refund.failed`, 28× `payment_intent.succeeded`, všechny bez chyby.
 - `npm run build` a `npm run test:unit` (84/84) prošly, `deno check` všech pěti Stripe funkcí prošel. Supabase security advisor nehlásí nic nového.
 
+## Paleta „Noční ultramarín“ — 14. 9. 2026
+
+- Kontrast výsledných tokenů (skript nad `src/styles.css`): 27 dvojic, všechny splňují WCAG AA. Nejnižší textová dvojice je `warning` na `warning-soft` 5,42 : 1, grafika `brand-bright` na ink 4,12 : 1.
+- 57 snímků lokální verze přes Playwright a systémový Chrome na 375, 390 a 1280 px: intro, Objevit, mapa a náhled, detail, stránka podniku, přihlášení, rezervační sheet, profil, oblíbené, rezervace s živým kódem, QR, historie, partner (přehled, provozovna, rezervace, nabídky) a admin. Nikde horizontální přetečení ani chyba v konzoli.
+- Hledání zbylých barev Mandarinky (`#f2703f`, `#17181c`, `#f6f5f3`, `#5e616b`, `#b4460f`, `#ffd9c6`, přechod promo bloku, `rgb(242 112 63)`) v `src`, `public`, `index.html`, šablonách a Edge Functions: nic nezůstalo.
+- Snímky prošlo 5 nezávislých kontrolorů po skupinách obrazovek, každý nález ověřil další agent. Z 18 nálezů se potvrdilo 11. Opravené barevné: odznak „Platby aktivní“ u partnera měl vzhled značky místo zelené stavové barvy, další nesplněný krok v checklistu partnera měl kroužek s kontrastem 1,2 : 1 (teď `muted`, 6,9 : 1). Červené přeškrtnutí původní ceny zůstává, je to záměr (viz komentář v `Price.tsx`). Potvrzené chyby mapy, které s barvami nesouvisí (překrývání značek, náhled zakryje vybraný špendlík na 375 px, poloprůhledný čip u okraje nad mapou), a osiřelá tečka pod tlačítkem na desktopovém detailu jdou do samostatného úkolu.
+- `npm run build` a `npm run test:unit` (84/84) prošly. E-mailové šablony v Supabase uložené a znovu načtené s novými barvami, `notification-delivery` nasazená.
+

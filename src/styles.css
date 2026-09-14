@@ -10,25 +10,39 @@
      only for headlines and the wordmark — that is where the brand gets a voice. */
   --font-sans: 'Instrument Sans Variable', ui-sans-serif, system-ui, sans-serif;
 
-  /* FLEK „Mandarinka“: near-black ink, one warm tangerine, quiet neutral ground.
-     Brand is a FILL and a highlight on dark blocks (6.1:1 with ink both ways); on white it
-     is only ever a graphic, never text (2.9:1). Accent is the same hue darkened for links,
-     icons and outlines (5.5:1 on white). Every text pair here was measured against WCAG AA. */
-  --color-surface: #f6f5f3;
+  /* FLEK „Noční ultramarín“: Prague after dark. A deep ultramarine the brand owns, a night
+     ink with a blue cast for text and primary buttons, and a quiet cool ground that lets warm
+     photos of chairs, hands and courts carry the warmth. Blue sits furthest from the money
+     green, the warning amber and the danger red, so a discount never reads as a status.
+     Brand is a fill with white on it (9.1:1) and may be text on white (9.1:1); on ink it
+     disappears (2.1:1), so dark blocks use brand-on-dark for text (7.0:1) and brand-bright for
+     graphics such as the pin (4.1:1). Every text pair here was measured against WCAG AA. */
+  --color-surface: #f3f4f8;
   --color-card: #ffffff;
-  --color-ink: #17181c;
-  --color-muted: #5e616b;
-  --color-line: #e7e5e1;
-  --color-brand: #f2703f;
-  --color-brand-soft: #ffd9c6;
-  --color-accent: #b4460f;
+  --color-ink: #10121f;
+  --color-muted: #545970;
+  --color-line: #e1e4ee;
+  --color-brand: #2c26d2;
+  --color-brand-soft: #e3e5ff;
+  --color-accent: #1e22a3;
   --color-accent-ink: #ffffff;
-  --color-accent-soft: #fdeee6;
-  --color-positive: #1e7a4c;
-  --color-warning: #8a6100;
-  --color-warning-soft: #fff4d6;
+  --color-accent-soft: #eef0fa;
+  --color-positive: #17774a;
+  --color-warning: #865b00;
+  --color-warning-soft: #fff3d4;
   --color-danger: #b3261e;
   --color-danger-soft: #fdecea;
+
+  /* Roles the brand plays beyond the plain fill, so changing the brand only changes values
+     here: text on a brand fill, the brand as text on ink blocks (codes, savings), the brand as
+     a graphic on dark and on the map (pin, cluster ring, app icon), the primary button's
+     hover and the promo block (flat, no gradient). */
+  --color-brand-ink: #ffffff;
+  --color-brand-on-dark: #8797ff;
+  --color-brand-bright: #4d67fb;
+  --color-ink-hover: #2d2e3a;
+  --color-promo: #cfd4ff;
+  --color-promo-ink: #10121f;
 
   /* The whole scale. Roles, so a new screen does not invent a thirteenth combination:
      2xl/800 page heading · xl/800 price and time · lg/800 section heading ·
@@ -51,8 +65,8 @@
   --radius-3xl: 2rem;
 
   /* Depth used to come from a hairline. These are what separate a card from the ground now. */
-  --shadow-card: 0 1px 2px rgb(23 24 28 / 0.05), 0 6px 16px -8px rgb(23 24 28 / 0.12);
-  --shadow-lift: 0 2px 4px rgb(23 24 28 / 0.06), 0 14px 32px -12px rgb(23 24 28 / 0.2);
+  --shadow-card: 0 1px 2px rgb(16 18 31 / 0.05), 0 6px 16px -8px rgb(16 18 31 / 0.12);
+  --shadow-lift: 0 2px 4px rgb(16 18 31 / 0.06), 0 14px 32px -12px rgb(16 18 31 / 0.2);
 }
 
 @layer base {
@@ -124,11 +138,11 @@
     color: var(--color-accent-ink);
   }
   .btn-primary:hover {
-    background: #2a2c33;
+    background: var(--color-ink-hover);
   }
 
   /* A pin is the service itself: its photo in a compact FLEK tile over an ink price tab.
-     Several places that overlap become one ink count with a tangerine halo and the lowest price. */
+     Several places that overlap become one ink count with a bright brand ring and the lowest price. */
   .map-pin,
   .map-cluster {
     position: relative;
@@ -158,13 +172,13 @@
     border: 2px solid var(--color-card);
     border-radius: 15px;
     background: var(--color-accent-soft);
-    box-shadow: 0 5px 12px -3px rgb(23 24 28 / 0.36);
+    box-shadow: 0 5px 12px -3px rgb(16 18 31 / 0.36);
     transition: border-color 150ms;
   }
   .map-pin-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
   .map-pin-photo--glyph { display: grid; place-items: center; background: var(--color-ink); }
   .map-pin-photo--glyph svg { width: 26px; height: 26px; margin-left: 7px; overflow: visible; }
-  .map-pin-shape { fill: var(--color-brand); }
+  .map-pin-shape { fill: var(--color-brand-bright); }
   .map-pin-face { fill: var(--color-card); }
   .map-pin-hands { fill: none; stroke: var(--color-ink); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
   .map-pin-price,
@@ -180,7 +194,7 @@
     color: var(--color-card);
     font-size: 0.8125rem;
     line-height: 1;
-    box-shadow: 0 0 0 2px var(--color-card), 0 3px 8px -2px rgb(20 18 16 / 0.3);
+    box-shadow: 0 0 0 2px var(--color-card), 0 3px 8px -2px rgb(16 18 31 / 0.3);
   }
   .map-pin-count {
     position: absolute;
@@ -194,13 +208,13 @@
     padding: 0 5px;
     border-radius: 9999px;
     background: var(--color-brand);
-    color: var(--color-ink);
+    color: var(--color-brand-ink);
     font-size: 0.75rem;
     box-shadow: 0 0 0 2px var(--color-card);
   }
   .map-pin.is-selected { z-index: 2; transform: translateY(-3px) scale(1.12); }
-  .map-pin.is-selected .map-pin-photo { border-color: var(--color-brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand) 35%, transparent), 0 6px 14px -3px rgb(23 24 28 / 0.4); }
-  .map-pin.is-selected .map-pin-price { background: var(--color-brand); color: var(--color-ink); }
+  .map-pin.is-selected .map-pin-photo { border-color: var(--color-brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand) 35%, transparent), 0 6px 14px -3px rgb(16 18 31 / 0.4); }
+  .map-pin.is-selected .map-pin-price { background: var(--color-brand); color: var(--color-brand-ink); }
 
   .map-cluster-count {
     display: grid;
@@ -211,15 +225,15 @@
     background: var(--color-ink);
     color: var(--color-card);
     font-size: 1rem;
-    box-shadow: 0 0 0 5px rgb(242 112 63 / 0.45), 0 0 0 7px rgb(255 255 255 / 0.72), 0 6px 14px -4px rgb(23 24 28 / 0.4);
+    box-shadow: 0 0 0 5px var(--color-brand-bright), 0 0 0 7px rgb(255 255 255 / 0.72), 0 6px 14px -4px rgb(16 18 31 / 0.4);
   }
   .map-cluster-price {
     margin-top: 2px;
     background: var(--color-card);
     color: var(--color-ink);
-    box-shadow: 0 3px 8px -2px rgb(20 18 16 / 0.3);
+    box-shadow: 0 3px 8px -2px rgb(16 18 31 / 0.3);
   }
-  .map-cluster.is-selected .map-cluster-count { background: var(--color-brand); color: var(--color-ink); }
+  .map-cluster.is-selected .map-cluster-count { background: var(--color-brand); color: var(--color-brand-ink); }
 
   /* Horizontal filter rails scroll, but the scrollbar itself is visual noise. */
   .rail {

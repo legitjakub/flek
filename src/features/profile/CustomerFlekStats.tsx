@@ -36,11 +36,11 @@ export function CustomerFlekStats({ userId }: { userId: string }) {
   if (m.all_time_completed === 0) {
     return (
       <PromoCard tone="dark">
-        <PinMark className="pointer-events-none absolute top-3.5 right-4 h-10 w-12" />
-        <p className="text-sm font-bold text-brand">Tvůj FLEK</p>
+        <PinMark tone="dark" className="pointer-events-none absolute top-3.5 right-4 h-10 w-12" />
+        <p className="text-sm font-bold text-brand-on-dark">Tvůj FLEK</p>
         <h2 className="mt-2 max-w-xs text-xl leading-snug font-extrabold tracking-tight">První FLEK na tebe čeká</h2>
         <p className="mt-2 max-w-xs text-base text-card/75">Chyť volný FLEK se slevou a tady uvidíš, kolik ušetříš.</p>
-        <Link to="/" className="relative mt-5 inline-flex min-h-11 items-center rounded-full bg-brand px-5 text-sm font-bold text-ink hover:bg-brand-soft">
+        <Link to="/" className="relative mt-5 inline-flex min-h-11 items-center rounded-full bg-brand-on-dark px-5 text-sm font-bold text-ink hover:bg-brand-soft">
           Objevit FLEKy
         </Link>
       </PromoCard>
@@ -49,12 +49,12 @@ export function CustomerFlekStats({ userId }: { userId: string }) {
 
   return (
     <PromoCard tone="dark">
-      <PinMark className="pointer-events-none absolute top-3.5 right-4 h-10 w-12" />
-      <h2 className="text-sm font-bold text-brand">Tvůj FLEK · {currentMonthName()}</h2>
+      <PinMark tone="dark" className="pointer-events-none absolute top-3.5 right-4 h-10 w-12" />
+      <h2 className="text-sm font-bold text-brand-on-dark">Tvůj FLEK · {currentMonthName()}</h2>
       <dl className="relative mt-3 grid grid-cols-2 gap-x-4 gap-y-3">
         <div>
           <dt className="text-sm text-card/75">Ušetřeno</dt>
-          <dd className="tnum text-2xl font-extrabold text-brand">{money(m.month_saved_cents)}</dd>
+          <dd className="tnum text-2xl font-extrabold text-brand-on-dark">{money(m.month_saved_cents)}</dd>
         </div>
         <div>
           <dt className="text-sm text-card/75">Chycené FLEKy</dt>

@@ -69,7 +69,7 @@ export function SetupChecklist({ business }: { business: Business }) {
           const body = (
             <>
               <span
-                className={`grid size-6 shrink-0 place-items-center rounded-full ${step.done ? 'bg-accent text-accent-ink' : current ? 'border-2 border-ink' : 'border-2 border-line'}`}
+                className={`grid size-6 shrink-0 place-items-center rounded-full ${step.done ? 'bg-accent text-accent-ink' : current ? 'border-2 border-ink' : 'border-2 border-muted'}`}
                 aria-hidden="true"
               >
                 {step.done ? <Check size={14} strokeWidth={3} /> : null}

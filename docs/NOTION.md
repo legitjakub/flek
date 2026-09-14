@@ -1,6 +1,6 @@
 # FLEK — přehled projektu
 
-> Aktualizováno 13. 9. 2026. Zdroj pravdy je repozitář (`docs/NOTION.md`). Stránku aktualizuje Claude na požádání; ruční úpravy tady se při další aktualizaci přepíšou.
+> Aktualizováno 14. 9. 2026. Zdroj pravdy je repozitář (`docs/NOTION.md`). Stránku aktualizuje Claude na požádání; ruční úpravy tady se při další aktualizaci přepíšou.
 
 ## Ve zkratce
 
@@ -11,8 +11,8 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 | Fáze | Fáze 1 — demo pilot (běží veřejně, platby přes Stripe v testovacím režimu) |
 | Web | https://www.app-flek.eu (původní https://flek-nine.vercel.app funguje dál) |
 | Kód | https://github.com/legitjakub/flek (větev `main`) |
-| Poslední nasazení | 13. 9. 2026 (vždy poslední commit ve větvi `main`) |
-| Testy | unit testy a build v CI při každém pushi, akceptační kontroly proti hostované databázi (13. 9.: 99/99 s upozorněními a Stripe) |
+| Poslední nasazení | 14. 9. 2026 (vždy poslední commit ve větvi `main`) |
+| Testy | unit testy a build v CI při každém pushi, akceptační kontroly proti hostované databázi (14. 9.: 100/100 včetně vratky, která ve Stripe selže) |
 | Data v produkci (13. 9.) | 18 schválených podniků, 330 nabídek, 321 rezervací, 16 účtů (12 demo, 4 ostatní), od 13. 9. platby jen přes Stripe (test), 16 demo podniků s testovacím Stripe účtem |
 | Pro AI agenty | `AGENTS.md` v kořeni repozitáře (Claude Code ho načítá přes `CLAUDE.md`) |
 
@@ -232,6 +232,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 14. 9. 2026 | Nová paleta „Noční ultramarín“: tmavý ultramarín, noční modročerná a chladné světlé pozadí v aplikaci, logu, ikonách, mapě a e-mailech |
 | 14. 9. 2026 | Oprava vratek z auditu: platba je vrácená, až když to Stripe potvrdí; vratka, která selže i dodatečně, se vrátí na zaplaceno a vyřeší ji člověk; zákazník vidí „Vracíme peníze“ |
 | 13. 9. 2026 | Push upozornění připravená: `VAPID_PRIVATE_KEY` v Edge Function secrets |
 | 13. 9. 2026 | E-mailová upozornění zapnutá (`NOTIFICATION_FROM`, `VAPID_PUBLIC_KEY`), zkušební e-maily obnovy hesla a upozornění doručené |

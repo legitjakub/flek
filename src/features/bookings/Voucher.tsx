@@ -16,7 +16,7 @@ export function Voucher({ code }: { code: string }) {
     // Loaded on demand: the encoder is only ever needed on this one screen.
     import('qrcode')
       .then((mod) =>
-        mod.default.toDataURL(target, { width: 480, margin: 1, color: { dark: '#17181c', light: '#ffffff' } }),
+        mod.default.toDataURL(target, { width: 480, margin: 1, color: { dark: getComputedStyle(document.documentElement).getPropertyValue('--color-ink').trim() || '#10121f', light: '#ffffff' } }),
       )
       .then((url) => active && setQr(url))
       .catch(() => active && setFailed(true));

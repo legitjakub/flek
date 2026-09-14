@@ -74,7 +74,7 @@ export function StripePayouts({ business }: { business: Business }) {
           <span
             className={
               ready
-                ? 'rounded-full bg-accent-soft px-2.5 py-1 text-xs font-bold text-accent'
+                ? 'rounded-full bg-positive/10 px-2.5 py-1 text-xs font-bold text-positive'
                 : connected
                   ? 'rounded-full bg-warning-soft px-2.5 py-1 text-xs font-bold text-warning'
                   : 'rounded-full bg-surface px-2.5 py-1 text-xs font-bold text-muted'

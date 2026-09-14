@@ -41,7 +41,7 @@ export function FavoritesPage() {
         <h1 className="text-2xl font-extrabold tracking-tight">Oblíbená místa</h1>
         <div className="mt-5">
           <EmptyState
-            tone="lime"
+            tone="promo"
             icon={<Heart size={26} />}
             title="Sleduj místa, kam se rád vracíš."
             body="Dáme ti vědět, jakmile u nich přibude volný FLEK."
@@ -70,7 +70,7 @@ export function FavoritesPage() {
       {favorites.isSuccess && places.length === 0 ? (
         <div className="mt-6">
           <EmptyState
-            tone="lime"
+            tone="promo"
             icon={<Heart size={26} />}
             title="Zatím nesleduješ žádné místo."
             body="U nabídky klepni na Sledovat a dáme ti vědět, až tam přibude volný FLEK."
@@ -88,7 +88,7 @@ export function FavoritesPage() {
           <div className="mb-4 flex items-baseline justify-between gap-3">
             <h2 id="nove" className="flex items-center gap-2 text-lg font-extrabold tracking-tight">
               Nové u tvých míst
-              <span className="tnum grid min-h-6 min-w-6 place-items-center rounded-full bg-brand px-1.5 text-xs font-extrabold text-ink">
+              <span className="tnum grid min-h-6 min-w-6 place-items-center rounded-full bg-brand px-1.5 text-xs font-extrabold text-brand-ink">
                 {news.length}
               </span>
             </h2>
@@ -134,7 +134,7 @@ export function FavoritesPage() {
                     )}
                   </span>
                   {place.new_offers > 0 ? (
-                    <span className="tnum shrink-0 rounded-full bg-brand px-2.5 py-1 text-xs font-extrabold text-ink">
+                    <span className="tnum shrink-0 rounded-full bg-brand px-2.5 py-1 text-xs font-extrabold text-brand-ink">
                       {place.new_offers} nové
                     </span>
                   ) : null}

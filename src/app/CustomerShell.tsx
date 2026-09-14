@@ -47,14 +47,14 @@ export function CustomerShell({ children }: { children: ReactNode }) {
               !mobile && active && 'bg-accent-soft',
             )}
           >
-            {/* On a phone the active tab carries the lime pill behind its icon. */}
-            <span className={cx('relative inline-flex items-center justify-center', mobile && 'h-8 w-14 rounded-full transition-colors', mobile && active && 'bg-brand')}>
+            {/* On a phone the active tab carries the brand pill behind its icon. */}
+            <span className={cx('relative inline-flex items-center justify-center', mobile && 'h-8 w-14 rounded-full transition-colors', mobile && active && 'bg-brand text-brand-ink')}>
               <Icon size={mobile ? 21 : 18} aria-hidden="true" strokeWidth={active ? 2.3 : 1.8} />
               {badge > 0 ? (
                 <span
                   className={cx(
                     'tnum absolute grid min-h-4 min-w-4 place-items-center rounded-full px-1 text-[10px] font-bold',
-                    mobile ? 'top-0 right-2.5 bg-ink text-card ring-2 ring-card' : '-top-1.5 -right-2 bg-brand text-ink',
+                    mobile ? 'top-0 right-2.5 bg-ink text-card ring-2 ring-card' : '-top-1.5 -right-2 bg-brand text-brand-ink',
                   )}
                   aria-label={`${badge} nových`}
                 >
@@ -85,7 +85,7 @@ export function CustomerShell({ children }: { children: ReactNode }) {
       {!detail ? (
         <nav
           aria-label="Hlavní"
-          className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 rounded-[1.75rem] bg-card/95 px-1.5 py-1 shadow-[0_2px_6px_rgb(34_40_43/0.08),0_16px_36px_-12px_rgb(34_40_43/0.35)] backdrop-blur-md md:hidden"
+          className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 rounded-[1.75rem] bg-card/95 px-1.5 py-1 shadow-[0_2px_6px_rgb(16_18_31/0.08),0_16px_36px_-12px_rgb(16_18_31/0.35)] backdrop-blur-md md:hidden"
         >
           <ul className="flex">{navItems(true)}</ul>
         </nav>

@@ -152,17 +152,17 @@ function IntroVisual({ index, playing }: { index: number; playing: boolean }) {
   if (index === 0) {
     return (
       <div className="relative mx-auto aspect-[5/4] w-full max-w-sm overflow-hidden rounded-3xl bg-accent-soft shadow-card" aria-hidden="true">
-        <div className="absolute inset-0 opacity-55" style={{ backgroundImage: 'linear-gradient(30deg, transparent 46%, #ffd9c6 47%, #ffd9c6 50%, transparent 51%), linear-gradient(120deg, transparent 44%, #ffd9c6 45%, #ffd9c6 48%, transparent 49%)', backgroundSize: '80px 80px' }} />
+        <div className="absolute inset-0 opacity-55" style={{ backgroundImage: 'linear-gradient(30deg, transparent 46%, var(--color-brand-soft) 47%, var(--color-brand-soft) 50%, transparent 51%), linear-gradient(120deg, transparent 44%, var(--color-brand-soft) 45%, var(--color-brand-soft) 48%, transparent 49%)', backgroundSize: '80px 80px' }} />
         <span className="absolute top-[22%] left-[14%] rounded-full bg-card px-3 py-2 text-sm font-extrabold shadow-lift">od 225 Kč</span>
         <span className="absolute top-[48%] right-[9%] rounded-full bg-card px-3 py-2 text-sm font-extrabold shadow-lift">350 Kč</span>
-        <span className="absolute bottom-[14%] left-[36%] grid size-14 place-items-center rounded-full bg-brand text-ink shadow-lift"><MapPin size={27} aria-hidden="true" /></span>
+        <span className="absolute bottom-[14%] left-[36%] grid size-14 place-items-center rounded-full bg-brand text-brand-ink shadow-lift"><MapPin size={27} aria-hidden="true" /></span>
       </div>
     );
   }
   if (index === 1) return <IntroDeck playing={playing} />;
   return (
     <div className="mx-auto flex aspect-[5/4] w-full max-w-sm flex-col items-center justify-center rounded-3xl bg-ink p-6 text-center text-card shadow-lift" aria-hidden="true">
-      <span className="grid size-14 place-items-center rounded-2xl bg-brand text-ink"><TicketCheck size={29} /></span>
+      <span className="grid size-14 place-items-center rounded-2xl bg-brand-on-dark text-ink"><TicketCheck size={29} /></span>
       <p className="mt-5 text-sm font-bold text-card/70">Tvůj rezervační kód</p>
       <p className="tnum mt-2 rounded-xl bg-card/10 px-5 py-3 text-xl font-extrabold tracking-[0.14em]">FLEK-8K3P</p>
     </div>

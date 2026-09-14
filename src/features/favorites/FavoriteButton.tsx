@@ -76,7 +76,7 @@ export function FavoriteButton({
           variant === 'cta' &&
             cx(
               'min-h-13 w-full justify-center gap-2 rounded-xl px-5 text-base',
-              isFavorite ? 'bg-accent-soft text-accent' : 'bg-ink text-accent-ink hover:bg-[#2a2c33]',
+              isFavorite ? 'bg-accent-soft text-accent' : 'bg-ink text-accent-ink hover:bg-ink-hover',
             ),
           variant === 'chip' &&
             cx(
