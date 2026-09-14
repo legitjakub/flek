@@ -210,12 +210,17 @@ Service-role klíč nikdy nepatří do aplikace ani do repozitáře. Hesla demo 
 
 ## Účty a přístupy
 
-| Účet | Role |
-| --- | --- |
-| `demo-customer@flek.test` | zákazník s historií rezervací |
-| `demo-merchant@flek.test` | partner se schválenou provozovnou |
-| `demo-merchant2@flek.test` | partner čekající na schválení |
-| `demo-admin@flek.test` | administrace (vlastní heslo) |
+Skutečné účty (admin, podniky Kubova a Tenis kurt) a účty ke službám jsou na soukromé stránce „FLEK — účty a přístupy“ jen v Notionu, protože repozitář je veřejný. Hesla nejsou nikde v Notionu ani v repozitáři.
+
+| Účet | Role | Heslo |
+| --- | --- | --- |
+| `demo-admin@flek.test` | administrace | `DEMO_ADMIN_PASSWORD` v `.env.local` |
+| `demo-customer@flek.test` | zákazník s historií rezervací | `DEMO_PASSWORD` v `.env.local` |
+| `demo-merchant@flek.test` | partner, Studio Dobrá hodina | `DEMO_PASSWORD` |
+| `demo-merchant2@flek.test` | partner, Studio Nová kapitola | `DEMO_PASSWORD` |
+| `demo-5@flek.test` až `demo-12@flek.test` | partneři ostatních demo podniků | `DEMO_PASSWORD` |
+
+Kde účty najdeš: Supabase → Authentication → Users (seznam, poslední přihlášení, poslání obnovy hesla). V databázi `auth.users` (e-maily; heslo je jen jako nevratný hash), `public.profiles` (jméno a telefon), `public.user_roles` (kdo je admin) a `public.business_members` s `public.businesses` (kdo patří ke které provozovně). Zapomenuté heslo se nedá přečíst, jen obnovit.
 
 ## Jak s projektem pracovat
 
@@ -232,6 +237,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 14. 9. 2026 | Mapa: zpátky plný náhled s fotkou, slevou, původní cenou, vzdáleností a tlačítky Navigovat a Detail; vybraný špendlík zůstane nad kartou |
 | 14. 9. 2026 | Nová paleta „Noční ultramarín“: tmavý ultramarín, noční modročerná a chladné světlé pozadí v aplikaci, logu, ikonách, mapě a e-mailech |
 | 14. 9. 2026 | Oprava vratek z auditu: platba je vrácená, až když to Stripe potvrdí; vratka, která selže i dodatečně, se vrátí na zaplaceno a vyřeší ji člověk; zákazník vidí „Vracíme peníze“ |
 | 13. 9. 2026 | Push upozornění připravená: `VAPID_PRIVATE_KEY` v Edge Function secrets |

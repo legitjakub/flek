@@ -369,7 +369,25 @@ export function MapCanvas({
 
   // A pin tapped near the bottom would open its card right on top of itself. Move the camera
   // just enough to keep the chosen pin in sight above the card; leave it alone if it already is.
+  //
+  // The card is measured only after it has rendered, so the first pass for a new pin still
+  // sees the height of the empty slot and judged a pin under the card as visible. The pass
+  // runs again once the real height arrives, until the customer moves the map themselves:
+  // a re-render must never undo their pan.
+  const focusClaim = useRef<{ id?: string; released: boolean }>({ released: false });
   useEffect(() => {
+    const instance = map.current;
+    if (!instance) return;
+    const release = (event: { originalEvent?: unknown }) => {
+      if (event.originalEvent) focusClaim.current.released = true;
+    };
+    instance.on('movestart', release);
+    return () => { instance.off('movestart', release); };
+  }, []);
+
+  useEffect(() => {
+    if (focusClaim.current.id !== focusId) focusClaim.current = { id: focusId, released: false };
+    if (focusClaim.current.released) return;
     const instance = map.current;
     const marker = markers.find((entry) => entry.id === focusId);
     if (!instance || !marker || !focusArea) return;
@@ -377,16 +395,16 @@ export function MapCanvas({
     const visibleBottom = height - focusArea.bottom;
     if (visibleBottom - focusArea.top < 80) return;
     const point = instance.project([marker.lng, marker.lat]);
-    // Room for the photo above the point and the ticket below it.
-    if (point.y > focusArea.top + 40 && point.y < visibleBottom - 30 && point.x > 32 && point.x < width - 32) return;
+    // The selected pin is 64 px tall around its point and scaled up by 12 %.
+    if (point.y > focusArea.top + 40 && point.y < visibleBottom - 40 && point.x > 32 && point.x < width - 32) return;
     instance.easeTo({
       center: [marker.lng, marker.lat],
       offset: [0, (focusArea.top - focusArea.bottom) / 2],
       duration: cameraDuration(),
     });
-    // Only a new focus moves the camera; a re-render with the same one must not undo a pan.
+    // A new focus or a remeasured card moves the camera; new markers from the same search do not.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focusId]);
+  }, [focusId, focusArea?.top, focusArea?.bottom]);
 
   return <div ref={container} className={className} role="region" aria-label={ariaLabel} />;
 }
