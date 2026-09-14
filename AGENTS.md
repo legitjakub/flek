@@ -42,7 +42,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik zveř
 | `src/types/database.ts` | ručně psané typy, **negenerovat** |
 | `supabase/functions` | Edge Functions: `stripe-checkout`, `stripe-webhook`, `stripe-connect` (Accounts v2), `stripe-refunds`, `stripe-test-pay` (jen test), sdílené `_shared/stripe.ts`; `notification-delivery` (e-mail přes Resend a Web Push z fronty) |
 | `supabase/migrations` | schéma, RLS a všechny RPC; názvy souborů = verze v hostované DB |
-| `tests` | unit testy (Vitest), `integration.test.ts` (potřebuje Docker), `pilot-maintenance.sql` |
+| `tests` | unit testy (Vitest), `integration.test.ts` (potřebuje Docker), `pilot-maintenance.sql` a `stripe-refunds.sql` (SQL v transakci s rollbackem) |
 | `scripts` | `acceptance.mjs` (API kontroly), `sync-notion.mjs`, lokální Supabase |
 
 Routy: zákazník `/`, `/mapa`, `/nabidka/:id`, `/podnik/:id`, `/oblibene`, `/rezervace`, `/profil`, `/prihlaseni`, `/potvrzeni`, `/r/:code`; podnik `/partner` (+ `/nabidky`, `/rezervace`, `/sluzby`, `/provozovna`, `/metriky`, `/registrace`); admin `/admin` (+ `/nabidky`, `/rezervace`, `/uzivatele`, `/metriky`, `/audit`).

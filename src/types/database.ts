@@ -298,6 +298,8 @@ export type PaymentState = {
   status: PaymentStatus;
   amount_cents: number;
   refund_requested: boolean;
+  /** Stripe's status of the latest refund; `failed` or `canceled` means the money did not go back. */
+  refund_status: 'pending' | 'requires_action' | 'succeeded' | 'failed' | 'canceled' | null;
   failure_reason: string | null;
   booking_id: string | null;
   reservation_code: string | null;

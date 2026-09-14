@@ -90,6 +90,8 @@ Nejdůležitější migrace:
 | `20260913170235_payments_stripe_only.sql` | jen Stripe: `start_payment` bez demo, `demo_confirm_payment` zrušená, demo obnova jen u podniků s aktivním Stripe |
 | `20260913193637_booking_notifications.sql` | upozornění na rezervace: inbox `notifications`, preference, push předplatná, fronta `private.notification_delivery`, trigger `booking_notification`, cron `flek-notification-delivery` |
 | `20260913202903_notification_delivery_fixes.sql` | pracovník doručování ověřovaný proti tajnému klíči v databázi, volání jen při splatné zprávě, upozornění mizí s rezervací a podnikem |
+| `20260914074359_stripe_refund_states.sql`, `…075058_stripe_refund_done_removed.sql`, `…075622_stripe_refund_failure_to_person.sql` | stav vratky `payments.refund_status` a RPC `stripe_refund_update`: vráceno jen po `succeeded`, čekající vratka zůstává ve frontě, selhaná jde člověku; zrušené `stripe_refund_done` |
+| `20260914080051_payment_state_refund_status.sql` | `my_payment_state` vrací i `refund_status` |
 
 ## Ověření a otevřené body
 
@@ -98,6 +100,7 @@ Nejdůležitější migrace:
 - Produkční build prošel klikacím testem v systémovém Chrome při 375, 390, 430 a 1365 px: služba → nabídka → feed/mapa/detail → platba → potvrzení/historie a upozornění podniku ve druhém okně. Žádné horizontální přetečení ani chyby JavaScriptu; Realtime 881 ms a polling bez WebSocketu 29 013 ms.
 - 100 akceptačních kontrol proti reálným JWT a hostované databázi prošlo, včetně posledního místa, opakování stejné platby, výpočtu poplatku a Realtime pouze pro vlastní podnik.
 - `tests/pilot-maintenance.sql` prošel proti hostované databázi: hranice 24 hodin / 30 minut, neměnný finanční snímek, zachování výplaty při nedostavení, staré ceny a oprávnění. Testovací transakce se celá vrací zpět.
+- `tests/stripe-refunds.sql` prošel proti hostované databázi (14. 9. 2026): čekající vratka není vrácená, selhání po zdánlivém úspěchu vrátí platbu na `paid` a mimo frontu, staré ani opakované zprávy nic nepřepíšou, klient stav vratky změnit nemůže. Transakce se vrací zpět.
 - Lokální integrační sada potřebuje běžící Docker/Supabase; v tomto prostředí neběžela. Typy aplikace jsou ručně spravované, nevyměňovat je přímo za generovaný soubor.
 - Názvy souborů v `supabase/migrations/` odpovídají verzím v hostované tabulce `supabase_migrations.schema_migrations` (sladěno 13. 9. 2026 podle názvu, včetně pořadí `photo_matches_activity` před `google_place_ratings`, jak se skutečně aplikovaly). `supabase db push` proto již aplikované migrace nespustí znovu. Novou migraci po aplikaci přes MCP pojmenujte podle verze, kterou databáze zapsala.
 - Platby jdou přes Stripe Connect v testovacím režimu (Edge Functions v `supabase/functions`, klíče v Supabase secrets). Ostrý režim, události Accounts v2 a účetní doklady jsou otevřené, viz `LIMITATIONS.md`. Integrační sada nově potvrzuje platbu přes `stripe_payment_succeeded` (náhrada webhooku), lokálně zatím neběžela.
@@ -108,6 +111,7 @@ Podrobné důkazy jsou v [VERIFICATION.md](../VERIFICATION.md), omezení v [LIMI
 
 | Datum | Změna | Stav |
 | --- | --- | --- |
+| 14. 9. 2026 | Oprava vratek (P0 z auditu ChatGPT): platba je vrácená, až když Stripe vratku potvrdí; čekající vratky se sledují dál, selhané (i dodatečně) se vrátí na zaplaceno a jdou člověku; webhook poslouchá `refund.created/updated/failed` a stav si načte ze Stripe; zákazník vidí „Vracíme peníze“ | migrace a funkce v produkci, události přidané do webhooku v sandboxu; build, 84 unit testů, 100/100 akceptačních kontrol včetně nové kontroly s kartou `pm_card_refundFail`, `tests/stripe-refunds.sql` |
 | 13. 9. 2026 | Push upozornění připravená: `VAPID_PRIVATE_KEY` doplněný v Edge Function secrets | otisk SHA256 sedí se souborem klíčů, `notification-delivery` vrací 200; skutečný push na telefonu zatím nevyzkoušený |
 | 13. 9. 2026 | E-mailová upozornění zapnutá: `NOTIFICATION_FROM` a `VAPID_PUBLIC_KEY` v Edge Function secrets | `notification-delivery` vrací 200; zkušební upozornění i obnova hesla doručené přes Resend (Delivered); push čeká na `VAPID_PRIVATE_KEY` |
 | 13. 9. 2026 | Nová paleta „Mandarinka“ místo olivové: tokeny, logo, ikony aplikace (SVG i PNG), mapa, univerzální obrázek služby, manifest, e-mailové šablony (repozitář i Supabase) a e-maily upozornění | build, 84 unit testů, snímky 390 px (feed, mapa, profil, partner), WCAG AA pro text |

@@ -163,3 +163,11 @@ Cenový model a cron byly na serveru již od Claudea. Doplňující opravy byly 
 Všechny služby, nabídky, platby a rezervace vytvořené pouze klikacími testy byly odstraněny přes přesně zaznamenaná ID. API akceptační sada ruší své nabídky a zanechává zrušenou demo historii. SQL testy se vracejí rollbackem.
 
 Lokální Docker integrační sada, fyzický iPhone/Safari, skutečná kamera, nové měření Lighthouse a nově požadovaný úplný UX audit všech rolí nejsou součástí tohoto dokončeného průchodu. Platby a vratky jsou stále ukázkové; skutečné peníze se nepřevádějí.
+
+## Vratky podle stavu ve Stripe — 14. 9. 2026
+
+- `tests/stripe-refunds.sql` na hostovaném PostgreSQL: PASS. Čekající a `requires_action` vratka nechá platbu `paid`, `succeeded` ji označí `refunded`, pozdní `failed` ji vrátí na `paid` s důvodem, mimo automatickou frontu a se záznamem `refund_failed`. Opakovaná nebo pozdní `succeeded` o selhané vratce nic nezmění, starší vratka nepřepíše novější, neznámý stav je odmítnut, `stripe_refund_done` neexistuje a `anon`/`authenticated` nemají na `stripe_refund_update` právo. Po transakci nezůstal žádný testovací řádek.
+- `npm run test:acceptance`: **100/100**. Nová kontrola zaplatí testovací kartou `pm_card_refundFail`, zruší rezervaci a počká, až Stripe vratku zamítne: platba skončila `paid` s `refund_status = failed`, ne `refunded`.
+- `private.stripe_events` za běh kontrol: 28× `refund.created`, 28× `refund.updated`, 28× `charge.refunded`, 1× `refund.failed`, 28× `payment_intent.succeeded`, všechny bez chyby.
+- `npm run build` a `npm run test:unit` (84/84) prošly, `deno check` všech pěti Stripe funkcí prošel. Supabase security advisor nehlásí nic nového.
+

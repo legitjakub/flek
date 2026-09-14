@@ -149,6 +149,6 @@ Podnik zadává svou částku. Server přidá 5 % zaokrouhlených na celé korun
 
 `publish_flek` nahradil klientské `publish_offer`. Rezervace ukládá neměnný finanční snímek; opakování stejné platby vrací stejný kód. Job `flek-maintenance` každých 15 minut dokončí rezervace 24 hodin po konci a vrátí demo platby bez rezervace starší než 30 minut. Podnik pouze případně označí „Nedorazil“; i tehdy se jeho sjednaná částka zachová.
 
-Ověření: `npm run test:unit`, `npm run build`, `npm run test:acceptance`. Poslední příkaz používá pouze veřejný klíč a demo účty a mění demo data; nespouštět proti skutečným účtům. `tests/pilot-maintenance.sql` vyžaduje privilegovaný přístup, běží v transakci a své změny vrací zpět. Historie nasazených migrací a omezení ověření jsou v [přehledu projektu](docs/PROJECT_STATUS.md).
+Ověření: `npm run test:unit`, `npm run build`, `npm run test:acceptance`. Poslední příkaz používá pouze veřejný klíč a demo účty a mění demo data; nespouštět proti skutečným účtům. `tests/pilot-maintenance.sql` a `tests/stripe-refunds.sql` vyžadují privilegovaný přístup, běží v transakci a své změny vracejí zpět. Historie nasazených migrací a omezení ověření jsou v [přehledu projektu](docs/PROJECT_STATUS.md).
 
 `src/types/database.ts` obsahuje ručně spravované aplikační typy. Výstup generátoru Supabase má jinou strukturu; nesmí je bez úpravy importů přepsat. Příkaz `db:types` je starý pomocný skript, nikoli povinný krok pro spuštění aplikace.

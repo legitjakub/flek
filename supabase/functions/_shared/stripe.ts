@@ -80,59 +80,92 @@ export function message(error: unknown): string {
   return (error instanceof Error ? error.message : String(error)).slice(0, 500);
 }
 
+type RefundOutcome = 'refunded' | 'pending' | 'failed';
+
+/**
+ * Writes Stripe's verdict on a refund to the payment. Only `succeeded` makes a payment refunded;
+ * `pending` and `requires_action` keep it in the queue to be looked up again. `failed` or `canceled`
+ * (even after an earlier success) puts the payment back to paid with the reason and leaves it to a
+ * person: Stripe advises arranging another way to return the money rather than refunding the same
+ * card again.
+ */
+export async function recordRefund(db: SupabaseClient, paymentId: string, refund: Stripe.Refund): Promise<RefundOutcome> {
+  const { data, error } = await db.rpc('stripe_refund_update', {
+    p_payment_id: paymentId,
+    p_refund: refund.id,
+    p_status: refund.status ?? 'pending',
+    p_error: refund.failure_reason ?? null,
+  });
+  if (error) throw new Error(`stripe_refund_update: ${error.message}`);
+  return data === 'refunded' ? 'refunded' : data === 'failed' ? 'failed' : 'pending';
+}
+
+/** The refund that decides a payment's state: a succeeded one if there is any, else the newest. */
+export async function latestRefund(stripe: Stripe, paymentIntent: string): Promise<Stripe.Refund | null> {
+  const refunds = await stripe.refunds.list({ payment_intent: paymentIntent, limit: 10 });
+  return refunds.data.find((refund) => refund.status === 'succeeded') ?? refunds.data[0] ?? null;
+}
+
 /**
  * Returns requested refunds through Stripe. A destination charge refund also reverses the transfer
- * to the business and returns FLEK's fee, so the customer gets the whole amount back. The
- * idempotency key is per payment: however many workers race, Stripe refunds once.
+ * to the business and returns FLEK's fee, so the customer gets the whole amount back.
+ *
+ * A refund Stripe accepts is not money back yet, so each one is followed to its outcome: a pending
+ * refund is looked up again on the next run, and one Stripe failed leaves the queue for a person.
+ * Errors on the way to Stripe count as attempts; the idempotency key carries the attempt number, so
+ * racing workers refund once per attempt and a retry after an error really asks Stripe again.
  */
 export async function processRefunds(db: SupabaseClient, stripe: Stripe, limit = 20) {
   const { data: rows, error } = await db
     .from('payments')
-    .select('id, payment_intent_id')
+    .select('id, payment_intent_id, refund_id, refund_status, refund_attempts')
     .eq('provider', 'stripe')
     .eq('status', 'paid')
     .not('refund_requested_at', 'is', null)
+    .or('refund_status.is.null,refund_status.not.in.(failed,canceled)')
     .lt('refund_attempts', 8)
     .order('refund_requested_at')
     .limit(limit);
   if (error) throw error;
 
-  let refunded = 0;
-  let failed = 0;
+  const counts: Record<RefundOutcome, number> = { refunded: 0, pending: 0, failed: 0 };
   for (const row of rows ?? []) {
     if (!row.payment_intent_id) {
       await db.rpc('stripe_refund_failed', { p_payment_id: row.id, p_error: 'NO_PAYMENT_INTENT' });
-      failed += 1;
+      counts.failed += 1;
       continue;
     }
     try {
-      const refund = await stripe.refunds.create(
-        {
-          payment_intent: row.payment_intent_id,
-          reverse_transfer: true,
-          refund_application_fee: true,
-          metadata: { payment_id: row.id },
-        },
-        { idempotencyKey: `flek-refund-${row.id}` },
-      );
-      if (refund.status === 'failed' || refund.status === 'canceled') {
-        await db.rpc('stripe_refund_failed', { p_payment_id: row.id, p_error: `REFUND_${refund.status.toUpperCase()}` });
-        failed += 1;
-      } else {
-        await db.rpc('stripe_refund_done', { p_payment_id: row.id, p_refund: refund.id });
-        refunded += 1;
-      }
+      const waiting = row.refund_id && (row.refund_status === 'pending' || row.refund_status === 'requires_action');
+      const refund = waiting
+        ? await stripe.refunds.retrieve(row.refund_id)
+        : await stripe.refunds.create(
+          {
+            payment_intent: row.payment_intent_id,
+            reverse_transfer: true,
+            refund_application_fee: true,
+            metadata: { payment_id: row.id },
+          },
+          { idempotencyKey: `flek-refund-${row.id}-${row.refund_attempts}` },
+        );
+      counts[await recordRefund(db, row.id, refund)] += 1;
     } catch (error) {
-      if ((error as { code?: string }).code === 'charge_already_refunded') {
-        await db.rpc('stripe_refund_done', { p_payment_id: row.id, p_refund: null });
-        refunded += 1;
-      } else {
-        await db.rpc('stripe_refund_failed', { p_payment_id: row.id, p_error: message(error) });
-        failed += 1;
+      try {
+        const already = (error as { code?: string }).code === 'charge_already_refunded'
+          ? await latestRefund(stripe, row.payment_intent_id)
+          : null;
+        if (already) {
+          counts[await recordRefund(db, row.id, already)] += 1;
+          continue;
+        }
+      } catch {
+        // Fall through and record the original failure.
       }
+      await db.rpc('stripe_refund_failed', { p_payment_id: row.id, p_error: message(error) });
+      counts.failed += 1;
     }
   }
-  return { refunded, failed };
+  return counts;
 }
 
 export type ConnectedAccount = Stripe.V2.Core.Account;

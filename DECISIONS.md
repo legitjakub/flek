@@ -101,3 +101,12 @@ Jeden řádek na rozhodnutí, chronologicky. Kde bylo zadání nejednoznačné, 
 - Push nese jen odkaz a obecný text, detaily si aplikace načte po otevření: zamykací obrazovka může být sdílená.
 - Paleta „Mandarinka“ (13. 9. večer, olivová se nelíbila): téměř černá `#17181C` pro text a hlavní tlačítka, mandarinková `#F2703F` jako výplň a zvýraznění (slevy, špendlíky, logo, kódy na tmavých blocích; s černou 6,1 : 1), tmavší `#B4460F` pro odkazy a ikony (5,5 : 1 na bílé), neutrální pozadí `#F6F5F3`. Barvy jsou jen v tokenech ve `src/styles.css`; logo, ikony aplikace (SVG i PNG), mapa, univerzální obrázek služby, manifest a e-maily používají stejné hodnoty.
 - Služba bez vlastní fotky a bez ilustrace aktivity ukáže univerzální obrázek FLEKu, ne obal provozovny: ten dělal z půjčovny kol wellness.
+
+## Vratky podle stavu ve Stripe — 14. 9. 2026
+
+- Platba je `refunded` jen tehdy, když Stripe hlásí vratku `succeeded`. Přijatá vratka (`pending`, `requires_action`) nechá platbu `paid` ve frontě a pracovník `stripe-refunds` si stav při dalším běhu načte znovu. Dřív se za vrácenou považovala každá vratka, kterou Stripe přijal, a webhook `charge.refunded` ji tak označil naslepo (nález P0 z auditu ChatGPT).
+- Stav vratky zapisuje jediné service-role RPC `stripe_refund_update` a ukládá ho do `payments.refund_status`. Webhook obsluhuje `refund.created`, `refund.updated`, `refund.failed` (a zastaralé `charge.refund.updated`) a vratku si vždy načte znovu ze Stripe: události chodí v libovolném pořadí, kopie v události může být starší.
+- Zpráva o starší vratce nepřepíše novější a selhaná nebo zrušená vratka už nikdy neožije jako `succeeded`. Stripe ji sám nikdy neobnoví; pozdní `succeeded` od pomalejšího pracovníka se proto zahodí.
+- Vratka, kterou Stripe zamítne (`failed`) nebo zruší (`canceled`), i dny po zdánlivém úspěchu, vrátí platbu na `paid` s důvodem a vypadne z automatické fronty. Stripe u selhané vratky radí vrátit peníze jinou cestou: nový pokus na zrušenou nebo ztracenou kartu jen znovu selže a vratku zrušenou kvůli sporu opakovat nelze. Automaticky se dál opakují jen chyby na cestě ke Stripe (až 8×).
+- Zákazník u zrušené rezervace s nevrácenou platbou vidí „Vracíme peníze“ místo „Zaplaceno“. Stránka po návratu z platby u selhané vratky řekne, že se peníze na kartu vrátit nepodařilo a vyřeší se ručně (`my_payment_state` nově vrací `refund_status`).
+

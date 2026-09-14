@@ -1,6 +1,6 @@
 # Omezení pilotu
 
-Aktualizováno 13. 9. 2026. Aktuální implementaci shrnuje [přehled projektu](docs/PROJECT_STATUS.md); důkazy ověření jsou v [VERIFICATION.md](VERIFICATION.md).
+Aktualizováno 14. 9. 2026. Aktuální implementaci shrnuje [přehled projektu](docs/PROJECT_STATUS.md); důkazy ověření jsou v [VERIFICATION.md](VERIFICATION.md).
 
 ## Platby a výplaty
 
@@ -11,6 +11,8 @@ Platby jdou jen přes Stripe Connect (Checkout, destination charge, poplatek FLE
 - FLEKy podniku, kterému Stripe později platby omezí, se ve feedu dál zobrazují. Rezervace ale skončí hláškou `PAYMENTS_NOT_READY`.
 - Ostrý režim vyžaduje živé klíče, nový webhook, `stripe_test_mode=false` v `private.settings`, potvrzenou odpovědnost platformy za ztráty v nastavení Connect a vypnutí `stripe-test-pay`. Účetní doklady a fakturace poplatků chybí.
 - Formulář „Výplatní a fakturační údaje“ v provozovně se stále ptá na číslo účtu, přestože výplaty už posílá Stripe na účet zadaný v jeho onboardingu.
+- Vratku, kterou Stripe zamítne nebo zruší, musí vyřešit člověk: v aplikaci pro to není obrazovka ani upozornění, zapíše se jen událost `refund_failed` do analytiky. Takové platby najde dotaz `select * from payments where provider = 'stripe' and status = 'paid' and refund_status in ('failed', 'canceled')`. Totéž platí pro platby, u kterých se 8× nepodařilo se Stripe spojit (`refund_attempts >= 8`). Novou vratku lze vytvořit v Stripe Dashboardu; webhook ji zapíše sám.
+- Akceptační kontroly zakládají na demo účtu `demo-admin@flek.test` platbu na testovací kartě `pm_card_refundFail`, jejíž vratka schválně selže. V demo datech proto zůstávají zaplacené platby se selhanou vratkou; nejsou to skutečné peníze.
 
 ## Testy a zařízení
 

@@ -122,8 +122,8 @@ async function waitPayment(client, paymentId, done, timeoutMs = 45_000) {
  * Pays a started payment the way a customer would: Stripe charges the test card through
  * stripe-test-pay and the webhook marks it paid and books the seat (or asks for a refund).
  */
-async function settle(client, paymentId) {
-  const { error } = await client.functions.invoke('stripe-test-pay', { body: { payment_id: paymentId } });
+async function settle(client, paymentId, paymentMethod = 'pm_card_visa') {
+  const { error } = await client.functions.invoke('stripe-test-pay', { body: { payment_id: paymentId, payment_method: paymentMethod } });
   if (error) {
     const body = await error.context?.json?.().catch(() => null);
     return { data: null, error: new Error(body?.error ?? error.message) };
@@ -261,10 +261,28 @@ check('Cizí platbu nelze potvrdit', /NOT_FOUND|FORBIDDEN|PAYMENT_CLOSED/.test(e
 const payerBooking = ((await payer.client.rpc('my_bookings')).data ?? []).find((b) => b.offer_id === payOffer);
 check('Rezervace nese stav zaplaceno', payerBooking?.payment_status === 'paid', payerBooking?.payment_status);
 await payer.client.rpc('cancel_booking', { p_booking_id: payerBooking.id });
-// Stripe returns the money asynchronously; the row turns refunded once Stripe accepts the refund.
+// Stripe returns the money asynchronously; the row turns refunded once Stripe reports the refund succeeded.
 await waitPayment(payer.client, settledPay.data.id, (x) => x.status === 'refunded');
 const afterRefund = ((await payer.client.rpc('my_bookings')).data ?? []).find((b) => b.id === payerBooking.id);
 check('Zrušení vrátí peníze', afterRefund?.payment_status === 'refunded', afterRefund?.payment_status);
+
+// --- a refund that fails after it looked done is money not returned
+// On Stripe's test card pm_card_refundFail every refund starts as succeeded and fails a little later.
+const failOffer = await publish(1, 205);
+const failStart = await payer.client.rpc('start_payment', { p_offer_id: failOffer });
+const failPay = failStart.error ? { data: null } : await settle(payer.client, failStart.data.id, 'pm_card_refundFail');
+const failBooking = failPay.data
+  ? await payer.client.rpc('create_booking', { p_offer_id: failOffer, p_payment_id: failPay.data.id })
+  : { data: null };
+const failBookingId = failBooking.data?.[0]?.booking_id;
+if (failBookingId) await payer.client.rpc('cancel_booking', { p_booking_id: failBookingId });
+const failedRefund = failBookingId
+  ? await waitPayment(payer.client, failPay.data.id, (x) => x.refund_status === 'failed', 180_000)
+  : null;
+const failedBookingRow = ((await payer.client.rpc('my_bookings')).data ?? []).find((b) => b.id === failBookingId);
+check('Vratka, která selže, nezůstane jako vrácená',
+  failedRefund?.refund_status === 'failed' && failedRefund?.status === 'paid' && failedBookingRow?.payment_status === 'paid',
+  `platba ${failedRefund?.status ?? '?'}, vratka ${failedRefund?.refund_status ?? '?'}`);
 
 // --- the venue sets its own free-cancellation window, and the booking keeps the one it was made under
 const bizWindow = (await merchant.client.rpc('my_businesses')).data?.[0]?.cancellation_window_minutes;

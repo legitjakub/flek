@@ -1,5 +1,7 @@
 import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
-import { ACCOUNT_INCLUDE, cryptoProvider, message, processRefunds, serviceClient, Stripe, stripeClient, syncAccount } from '../_shared/stripe.ts';
+import {
+  ACCOUNT_INCLUDE, cryptoProvider, latestRefund, message, processRefunds, recordRefund, serviceClient, Stripe, stripeClient, syncAccount,
+} from '../_shared/stripe.ts';
 
 /**
  * Stripe's word on money. Every event is verified by signature, handled once (Stripe retries and may
@@ -66,12 +68,28 @@ async function handle(event: Stripe.Event, stripe: Stripe, db: SupabaseClient) {
       if (paymentId) await rpc(db, 'stripe_checkout_expired', { p_payment_id: paymentId, p_session: session.id });
       return;
     }
+    case 'refund.created':
+    case 'refund.updated':
+    case 'refund.failed':
+    case 'charge.refund.updated': {
+      // Stripe's word on one refund, including one that fails days after it looked done. Events can
+      // arrive out of order, so the refund is read again rather than trusting the event's copy.
+      const refund = await stripe.refunds.retrieve((event.data.object as Stripe.Refund).id);
+      const intent = typeof refund.payment_intent === 'string' ? refund.payment_intent : refund.payment_intent?.id;
+      if (!intent) return;
+      const { data: row } = await db.from('payments').select('id').eq('payment_intent_id', intent).maybeSingle();
+      if (row) await recordRefund(db, row.id, refund);
+      return;
+    }
     case 'charge.refunded': {
+      // `refunded` on the charge counts refunds that are still pending, so ask for the refunds themselves.
       const charge = event.data.object as Stripe.Charge;
       const intent = typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id;
-      if (!intent || !charge.refunded) return;
+      if (!intent) return;
       const { data: row } = await db.from('payments').select('id').eq('payment_intent_id', intent).maybeSingle();
-      if (row) await rpc(db, 'stripe_refund_done', { p_payment_id: row.id, p_refund: null });
+      if (!row) return;
+      const refund = await latestRefund(stripe, intent);
+      if (refund) await recordRefund(db, row.id, refund);
       return;
     }
     case 'account.updated': {

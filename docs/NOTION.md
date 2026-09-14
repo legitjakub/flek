@@ -75,6 +75,8 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 - [ ] Verze a hash dokumentu u souhlasu podniku s podmínkami
 - [ ] Smazání účtu (anonymizace, finanční záznamy zůstanou) a export dat
 - [ ] Admin nástroj na ruční vratku a storno (se zápisem do audit logu)
+- [x] Vratky podle skutečného stavu ve Stripe: vráceno až po potvrzení, selhaná vratka jde člověku (14. 9., P0 z auditu)
+- [ ] Přehled a upozornění pro admina na vratky, které Stripe zamítl nebo které 8× selhaly
 - [ ] Sentry pro chyby v aplikaci, upozornění při selhání cronu nebo webhooku, jednou vyzkoušené obnovení ze zálohy
 - [ ] Mapy a hledání adres: licencovaný poskytovatel nebo vlastní limity (ArcGIS záloha a veřejné Photon API nejsou na komerční provoz)
 - [ ] Nastavit skutečný e-mail podpory (`VITE_SUPPORT_EMAIL`); doména www.app-flek.eu už běží
@@ -230,6 +232,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 14. 9. 2026 | Oprava vratek z auditu: platba je vrácená, až když to Stripe potvrdí; vratka, která selže i dodatečně, se vrátí na zaplaceno a vyřeší ji člověk; zákazník vidí „Vracíme peníze“ |
 | 13. 9. 2026 | Push upozornění připravená: `VAPID_PRIVATE_KEY` v Edge Function secrets |
 | 13. 9. 2026 | E-mailová upozornění zapnutá (`NOTIFICATION_FROM`, `VAPID_PUBLIC_KEY`), zkušební e-maily obnovy hesla a upozornění doručené |
 | 13. 9. 2026 | Nová paleta „Mandarinka“: téměř černá, mandarinková a neutrální pozadí v aplikaci, logu, ikonách, mapě a e-mailech |

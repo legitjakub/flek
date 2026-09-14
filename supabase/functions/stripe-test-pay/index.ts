@@ -2,8 +2,9 @@ import { caller, isTestMode, json, message, preflight, serviceClient, stripeClie
 
 /**
  * Test mode only, demo accounts only: pays a started payment with Stripe's test card token
- * `pm_card_visa`, exactly like Checkout would, so automated checks exercise the real Stripe path —
- * charge, application fee, transfer and the webhook that books the seat — without a browser form.
+ * `pm_card_visa` (or `pm_card_refundFail`), exactly like Checkout would, so automated checks
+ * exercise the real Stripe path — charge, application fee, transfer and the webhook that books the
+ * seat — without a browser form.
  */
 Deno.serve(async (request) => {
   const early = preflight(request);
@@ -16,9 +17,12 @@ Deno.serve(async (request) => {
   if (!isTestMode() || !(who.user.email ?? '').endsWith('@flek.test')) return json(request, { error: 'FORBIDDEN' }, 403);
 
   let paymentId = '';
+  let paymentMethod = 'pm_card_visa';
   try {
     const body = await request.json();
     paymentId = typeof body.payment_id === 'string' ? body.payment_id : '';
+    // Stripe's test card whose refunds fail later, so checks can prove a failed refund is not "refunded".
+    if (body.payment_method === 'pm_card_refundFail') paymentMethod = 'pm_card_refundFail';
   } catch {
     return json(request, { error: 'INVALID_REQUEST' }, 400);
   }
@@ -35,7 +39,7 @@ Deno.serve(async (request) => {
       {
         amount: payment.amount_cents,
         currency: 'czk',
-        payment_method: 'pm_card_visa',
+        payment_method: paymentMethod,
         payment_method_types: ['card'],
         confirm: true,
         application_fee_amount: payment.application_fee_cents ?? 0,
@@ -43,7 +47,7 @@ Deno.serve(async (request) => {
         description: 'FLEK · testovací platba',
         metadata: { payment_id: payment.id, offer_id: payment.offer_id, test: 'true' },
       },
-      { idempotencyKey: `flek-testpay-${payment.id}-${payment.amount_cents}` },
+      { idempotencyKey: `flek-testpay-${payment.id}-${payment.amount_cents}-${paymentMethod}` },
     );
     return json(request, { status: intent.status, livemode: intent.livemode });
   } catch (error) {

@@ -1,6 +1,6 @@
 # FLEK — co zbývá před spuštěním
 
-Stav k 13. 9. 2026. Seznam všeho, co je potřeba dodělat, než FLEK začne brát skutečné peníze od skutečných zákazníků. Úkoly jsou rozdělené podle toho, **kdo je musí udělat**:
+Stav k 14. 9. 2026. Seznam všeho, co je potřeba dodělat, než FLEK začne brát skutečné peníze od skutečných zákazníků. Úkoly jsou rozdělené podle toho, **kdo je musí udělat**:
 
 - **Část 1: Musí udělat člověk.** Úkoly vyžadují účty, podpisy, peníze, osobní údaje, přihlašovací klíče nebo právníka. AI agent je udělat nesmí, nebo nemůže.
 - **Část 2: Zvládne AI agent v kódu.** Stačí mu zadat úkol, nic dalšího nepotřebuje.
@@ -31,7 +31,7 @@ Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B). Úkoly na 
 - [ ] **Aktivovat ostrý účet Stripe** pro firmu FLEK (IČO, bankovní účet, ověření totožnosti jednatele).
 - [ ] **V ostrém režimu dokončit nastavení Connect.** Týká se to profilu platformy, země Česko, Express dashboardu pro podniky a potvrzení, že poplatky a ztráty nese platforma (`losses_collector = application`). Bez toho Stripe nedovolí zakládat účty podniků.
 - [ ] **Vytvořit ostrý webhook** na `https://<projekt>.supabase.co/functions/v1/stripe-webhook`:
-  - Události platformy: `checkout.session.completed`, `checkout.session.expired`, `payment_intent.succeeded`, `charge.refunded`.
+  - Události platformy: `checkout.session.completed`, `checkout.session.expired`, `payment_intent.succeeded`, `charge.refunded`, `refund.created`, `refund.updated`, `refund.failed`. Bez událostí `refund.*` se o vratce, která selže až dodatečně, FLEK nedozví. Testovací webhook je má od 14. 9.
   - Zvlášť Connect webhook (události připojených účtů) s `account.updated`.
 - [ ] **Vložit ostré klíče do Supabase → Edge Functions → Secrets:** `STRIPE_SECRET_KEY` (`sk_live_…`) a `STRIPE_WEBHOOK_SECRET` (`whsec_…`). Klíče nikdy do chatu, repozitáře ani `.env` v gitu.
 - [ ] **Nastavit vzhled Checkoutu a výpis na kartě.** V Stripe nahrát logo a barvy a nastavit text výpisu (statement descriptor), např. `FLEK`.
@@ -88,6 +88,8 @@ Každý bod je samostatný úkol. Po dokončení agent aktualizuje dokumentaci p
 - [x] V `stripe-connect` záložní návratová adresa a `business_url` na `https://www.app-flek.eu` (13. 9.).
 - [ ] **Z ostrého nasazení vynechat `stripe-test-pay`.** S ostrým klíčem sama odmítá, ale je čistší ji nenasadit.
 - [ ] **Admin nástroj na ruční vratku a storno** se zápisem do `admin_audit_log`, pro řešení sporů.
+- [x] **Vratky podle skutečného stavu ve Stripe** (P0 z auditu ChatGPT, 14. 9.): vráceno až po `succeeded`, čekající vratky se sledují, webhook poslouchá `refund.*`.
+- [ ] **Přehled vratek, které potřebují člověka.** V administraci ukázat platby se selhanou nebo zrušenou vratkou (`refund_status in ('failed','canceled')`) a platby s 8 neúspěšnými pokusy a poslat adminovi upozornění. Dnes je najde jen SQL dotaz z `LIMITATIONS.md`.
 - [ ] **Přehled plateb pro admina a účetní export (CSV):** platby, vratky, poplatky FLEKu a převody podnikům spárované se Stripe ID.
 - [x] **Úklid `scripts/acceptance.mjs`:** mrtvé větve demo plateb odstraněné (13. 9.).
 - [ ] **Spustit `npm run test:integration` s Dockerem.** Po přechodu na Stripe neběžel; helper `book()` teď potvrzuje platbu přes `stripe_payment_succeeded`.
@@ -121,6 +123,7 @@ Každý bod je samostatný úkol. Po dokončení agent aktualizuje dokumentaci p
 ### Úklid dema před ostrým provozem
 
 - [ ] Vypnout denní obnovu demo nabídek: `select cron.unschedule('flek-demo-refresh');`.
+- [ ] V ostré databázi nesmí zůstat demo platby se selhanou vratkou z akceptačních kontrol (`pm_card_refundFail`); vznikají jen na účtech `@flek.test`.
 - [ ] V produkčním projektu nesmí zůstat demo podniky ani účty `@flek.test`. Admin akce `demo_accounts` funguje jen s testovacím klíčem.
 - [ ] Přepsat Notion stránku „FLEK — přehled projektu“ obsahem `docs/NOTION.md`.
 

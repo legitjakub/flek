@@ -131,7 +131,10 @@ export function MyBookingsPage() {
                   </div>
                   <span className="flex shrink-0 flex-wrap justify-end gap-1.5">
                     <StatusBadge status={booking.status} />
-                    {booking.payment_status ? (
+                    {booking.payment_status === 'paid' && booking.status.startsWith('cancelled') ? (
+                      // The refund is on its way but Stripe has not confirmed it yet.
+                      <StatusBadge status="refunded" label="Vracíme peníze" />
+                    ) : booking.payment_status ? (
                       <StatusBadge
                         status={booking.payment_status}
                         label={booking.payment_status === 'pending' ? 'Čeká na platbu' : undefined}

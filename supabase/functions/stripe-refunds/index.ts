@@ -3,8 +3,8 @@ import { message, processRefunds, serviceClient, stripeClient } from '../_shared
 /**
  * Works through refunds the database has asked for (a cancelled booking, a paid seat that went to
  * someone else). The database calls it after such a change commits and a cron job calls it every
- * few minutes as a safety net. It takes no input and returns only counts, so calling it from
- * anywhere can do nothing but process the queue that already exists.
+ * few minutes as a safety net. It takes no input and returns only counts (refunded, still pending,
+ * failed), so calling it from anywhere can do nothing but process the queue that already exists.
  */
 Deno.serve(async (request) => {
   if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });

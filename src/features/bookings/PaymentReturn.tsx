@@ -72,7 +72,9 @@ export function PaymentReturn({
           <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-ink">Rezervaci se nepodařilo dokončit</h1>
           <p className="mt-2 text-base leading-relaxed text-muted">
             {data?.failure_reason && data.failure_reason !== 'NO_BOOKING' ? `${errorMessage(new Error(data.failure_reason))} ` : ''}
-            Platbu {data ? money(data.amount_cents) : ''} ti proto celou vracíme na kartu. Na výpisu se obvykle objeví do 5–10 pracovních dnů.
+            {data?.refund_status === 'failed' || data?.refund_status === 'canceled'
+              ? `Platbu ${money(data.amount_cents)} se na kartu vrátit nepodařilo. Peníze nepropadly, vrácení vyřešíme s tebou ručně.`
+              : `Platbu ${data ? money(data.amount_cents) : ''} ti proto celou vracíme na kartu. Na výpisu se obvykle objeví do 5–10 pracovních dnů.`}
           </p>
           <Link to="/" className={buttonClass({ shape: 'pill' }) + ' mt-6'}>Najít jiný FLEK</Link>
         </>
