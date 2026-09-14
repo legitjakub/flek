@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clusterPins } from '../src/features/discovery/mapClusters';
+import { CLUSTER_HEIGHT, clusterPins, markersCollide, PIN_HEIGHT } from '../src/features/discovery/mapClusters';
 import { groupMapOffers } from '../src/features/discovery/mapOffers';
 import type { SearchRow } from '../src/types/database';
 
@@ -37,7 +37,19 @@ describe('Map selection regressions', () => {
     const groups = clusterPins(Array.from({ length: 30 }, (_, i) => ({ x: (i % 6) * 75, y: Math.floor(i / 6) * 50, width: 100, indexes: [i] })));
     expect(groups.flatMap((group) => group.indexes).sort((a, b) => a - b)).toEqual(Array.from({ length: 30 }, (_, i) => i));
     for (let i = 0; i < groups.length; i++) for (let j = i + 1; j < groups.length; j++) {
-      expect(Math.abs(groups[i].x - groups[j].x) >= (groups[i].width + groups[j].width) / 2 + 10 || Math.abs(groups[i].y - groups[j].y) >= 54).toBe(true);
+      expect(markersCollide(groups[i], groups[j])).toBe(false);
     }
+  });
+
+  it('keeps a pin price ticket off the ring of the cluster below it', () => {
+    // Holešovice over Karlín at the default Prague zoom: 60 px apart used to count as clear.
+    const pin = { x: 330, y: 300, width: 80, indexes: [0] };
+    const cluster = { x: 320, y: 360, width: 148, indexes: [1, 2] };
+    expect(clusterPins([pin, cluster])).toHaveLength(1);
+    // Half of each marker plus air is always enough.
+    const clear = (PIN_HEIGHT + CLUSTER_HEIGHT) / 2 + 8;
+    expect(clusterPins([pin, { ...cluster, y: pin.y + clear }])).toHaveLength(2);
+    expect(clusterPins([pin, { ...pin, indexes: [1], y: pin.y + PIN_HEIGHT }])).toHaveLength(1);
+    expect(clusterPins([pin, { ...pin, indexes: [1], y: pin.y + PIN_HEIGHT + 8 }])).toHaveLength(2);
   });
 });

@@ -250,6 +250,19 @@
     -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent 100%);
     mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent 100%);
   }
+  /* The same hint, but only on an edge that really hides more, over a rail that snaps to whole
+     items. Over the map a fixed fade turned the half-hidden white pill into a ghost on the tiles
+     while the start edge cut the first pill hard. 24px matches RAIL_FADE in FilterBar. */
+  .rail-edges {
+    --rail-fade-start: 0px;
+    --rail-fade-end: 0px;
+  }
+  .rail-edges[data-more-start] { --rail-fade-start: 24px; }
+  .rail-edges[data-more-end] { --rail-fade-end: 24px; }
+  .rail-edges:not(:focus-within) {
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--rail-fade-start), #000 calc(100% - var(--rail-fade-end)), transparent);
+    mask-image: linear-gradient(to right, transparent, #000 var(--rail-fade-start), #000 calc(100% - var(--rail-fade-end)), transparent);
+  }
 
 
   .page-container { width: 100%; max-width: 1200px; margin-inline: auto; padding-inline: 16px; }

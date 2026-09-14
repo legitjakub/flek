@@ -240,6 +240,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 | Datum | Změna |
 | --- | --- |
 | 14. 9. 2026 | Mapa: zpátky plný náhled s fotkou, slevou, původní cenou, vzdáleností a tlačítky Navigovat a Detail; vybraný špendlík zůstane nad kartou |
+| 14. 9. 2026 | Opravy mapy a detailu: značky na mapě se už nepřekrývají, po klepnutí na špendlík dole se mapa posune nad náhled, lišta časů nad mapou nekončí průhlednou pilulkou a u tlačítka Chytit FLEK nevisí tečka |
 | 14. 9. 2026 | Nová paleta „Noční ultramarín“: tmavý ultramarín, noční modročerná a chladné světlé pozadí v aplikaci, logu, ikonách, mapě a e-mailech |
 | 14. 9. 2026 | Oprava vratek z auditu: platba je vrácená, až když to Stripe potvrdí; vratka, která selže i dodatečně, se vrátí na zaplaceno a vyřeší ji člověk; zákazník vidí „Vracíme peníze“ |
 | 13. 9. 2026 | Push upozornění připravená: `VAPID_PRIVATE_KEY` v Edge Function secrets |

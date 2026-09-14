@@ -1,5 +1,5 @@
 import { Info, SlidersHorizontal, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button, Field, Input, Segmented, Sheet } from '../../components/ui';
 import type { Category, SortKey } from '../../types/database';
 import {
@@ -18,6 +18,9 @@ import {
   type Filters,
   type When,
 } from './filters';
+
+/** Width of the fade over a rail edge that hides more pills; `.rail-edges` in styles.css. */
+const RAIL_FADE = 24;
 
 /**
  * One compact toolbar plus a sheet, rather than a wall of controls: the phone screen is
@@ -58,16 +61,41 @@ export function FilterBar({
   const lit = intentOf({ ...filters, when: applied?.when ?? filters.when });
   const rail = useRef<HTMLDivElement>(null);
 
+  // Over the map a fade on a half-hidden white pill left a ghost of it floating on the tiles,
+  // and the scroll to the lit pill cut the first one hard at the left edge. The rail now rests
+  // on whole pills (scroll snap) and fades only the edge that actually hides more of them.
+  const [edges, setEdges] = useState({ start: false, end: false });
+  const measureEdges = useCallback(() => {
+    const viewport = rail.current;
+    if (!viewport) return;
+    const start = viewport.scrollLeft > 1;
+    const end = viewport.scrollLeft + viewport.clientWidth < viewport.scrollWidth - 1;
+    setEdges((current) => (current.start === start && current.end === end ? current : { start, end }));
+  }, []);
+  useEffect(() => {
+    const viewport = rail.current;
+    if (!viewport) return;
+    measureEdges();
+    const observer = new ResizeObserver(measureEdges);
+    observer.observe(viewport);
+    return () => observer.disconnect();
+  }, [measureEdges]);
+
   // The lit pill can sit past the fade at the rail's end ("Dnes" on a phone, beside Filtry),
-  // which reads as nothing being selected. Scroll the rail itself — never the page — to it.
+  // which reads as nothing being selected. Scroll the rail itself — never the page — to the
+  // first whole-pill position that shows it clear of the fade.
   useEffect(() => {
     const viewport = rail.current;
     const chip = viewport?.querySelector<HTMLElement>('[aria-checked="true"]');
     if (!viewport || !chip) return;
-    const outer = viewport.getBoundingClientRect();
-    const inner = chip.getBoundingClientRect();
-    if (inner.right > outer.right - 32) viewport.scrollLeft += inner.right - outer.right + 32;
-    else if (inner.left < outer.left) viewport.scrollLeft -= outer.left - inner.left + 4;
+    const origin = viewport.getBoundingClientRect().left - viewport.scrollLeft;
+    const left = (element: Element) => element.getBoundingClientRect().left - origin;
+    const right = left(chip) + chip.offsetWidth;
+    const max = viewport.scrollWidth - viewport.clientWidth;
+    const clear = (scroll: number) => right - scroll <= viewport.clientWidth - (scroll < max ? RAIL_FADE : 0);
+    if (clear(viewport.scrollLeft) && left(chip) >= viewport.scrollLeft + (viewport.scrollLeft > 0 ? RAIL_FADE : 0)) return;
+    const stops = [...viewport.children].map((element) => Math.min(max, Math.max(0, left(element) - RAIL_FADE)));
+    viewport.scrollLeft = stops.find((stop) => clear(stop) && stop <= left(chip) - (stop > 0 ? RAIL_FADE : 0)) ?? stops[0];
   }, [lit]);
   // The ladder can search at 25 km while the radius chip still reads 5 km and the Filtry
   // badge reads zero. Say it — once, in one line beside the chips. It used to be a chip AND a
@@ -85,7 +113,15 @@ export function FilterBar({
       <div className="flex items-end gap-3">
         <div className="min-w-0 flex-1">
           {/* The six labelled pills say this themselves; the heading only cost height. */}
-          <div ref={rail} role="radiogroup" aria-label="Kdy máš čas" className={`rail rail-fade -mx-1 flex gap-2 px-1 ${floating ? '-my-3 py-3' : '-my-1 py-1'}`}>
+          <div
+            ref={rail}
+            role="radiogroup"
+            aria-label="Kdy máš čas"
+            onScroll={measureEdges}
+            data-more-start={edges.start || undefined}
+            data-more-end={edges.end || undefined}
+            className={`rail rail-edges -mx-1 flex snap-x snap-mandatory scroll-px-6 gap-2 px-1 ${floating ? '-my-3 py-3' : '-my-1 py-1'}`}
+          >
             {TIME_INTENTS.map((intent) => {
               const active = lit === intent.key;
               return (
@@ -95,7 +131,7 @@ export function FilterBar({
                   role="radio"
                   aria-checked={active}
                   onClick={() => onChange(applyIntent(filters, intent.key))}
-                  className={`min-h-11 shrink-0 rounded-full border px-4 text-sm font-bold whitespace-nowrap transition-colors ${active ? 'border-ink bg-ink text-accent-ink' : floating ? 'border-transparent bg-card text-ink shadow-card hover:border-accent' : 'border-line bg-card text-ink hover:border-accent'} ${floating && active ? 'shadow-card' : ''}`}
+                  className={`min-h-11 shrink-0 snap-start rounded-full border px-4 text-sm font-bold whitespace-nowrap transition-colors ${active ? 'border-ink bg-ink text-accent-ink' : floating ? 'border-transparent bg-card text-ink shadow-card hover:border-accent' : 'border-line bg-card text-ink hover:border-accent'} ${floating && active ? 'shadow-card' : ''}`}
                 >
                   {intent.label}
                 </button>

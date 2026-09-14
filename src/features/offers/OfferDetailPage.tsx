@@ -340,21 +340,19 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             {/* Both facts a person weighs with their thumb already on the button: what the
                 payment is, and that it can be undone. The free-cancellation promise used to
                 be the last muted paragraph of the page, which is nowhere near the decision. */}
-            <p className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-muted">
+            {/* No dot between the two: whether they wrap depends on the column width, not the
+                breakpoint (the narrow desktop card wraps too), and a dot left hanging at the end
+                of a line reads as a typo. Each fact already opens with its own icon. */}
+            <p className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm text-muted">
               <span className="inline-flex items-center gap-2">
                 <Banknote size={16} aria-hidden="true" />
                 Zaplatíš rovnou
               </span>
               {offer.bookable ? (
-                <>
-                  {/* Hidden on a phone, where the two facts wrap onto separate lines and the dot
-                      was left hanging at the end of the first one. */}
-                  <span aria-hidden="true" className="hidden sm:inline">·</span>
-                  <span className="inline-flex items-center gap-1.5 font-bold text-positive">
-                    <Check size={15} aria-hidden="true" />
-                    Zrušení zdarma {cancellationCopy}
-                  </span>
-                </>
+                <span className="inline-flex items-center gap-1.5 font-bold text-positive">
+                  <Check size={15} aria-hidden="true" />
+                  Zrušení zdarma {cancellationCopy}
+                </span>
               ) : null}
             </p>
           </div>
