@@ -17,7 +17,7 @@ type Notice = {
 };
 
 type Preference = {
-  event: 'confirmed' | 'cancelled';
+  event: 'requested' | 'confirmed' | 'cancelled';
   email: boolean;
   push: boolean;
 };
@@ -198,11 +198,11 @@ export function NotificationSettings({ businessId }: { businessId?: string }) {
           <Button variant="ghost" className="mt-2" onClick={() => void query.refetch()}>Zkusit znovu</Button>
         </div>
       ) : (
-        (['confirmed', 'cancelled'] as const).map((event) => {
+        (formal ? ['requested', 'confirmed', 'cancelled'] as const : ['confirmed', 'cancelled'] as const).map((event) => {
           const current = query.data?.find((preference) => preference.event === event);
           return (
             <fieldset key={event} className="mt-4 border-t border-line pt-3">
-              <legend className="font-bold text-ink">{event === 'confirmed' ? 'Potvrzená rezervace' : 'Zrušená rezervace'}</legend>
+              <legend className="font-bold text-ink">{event === 'requested' ? 'Nová žádost o rezervaci' : event === 'confirmed' ? 'Potvrzená rezervace' : 'Zrušená rezervace'}</legend>
               <div className="mt-1 flex flex-wrap gap-x-5">
                 {(['email', 'push'] as const).map((channel) => (
                   <label key={channel} className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-medium text-ink">

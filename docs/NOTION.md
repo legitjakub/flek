@@ -36,6 +36,8 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 
 ## Todolist
 
+- [x] Nahradit nevhodnou resortovou fotografii wellness služeb neutrálním spa snímkem; jednorázová migrace opravuje katalog i existující služby a obálky (14. 9. 2026)
+
 Rozdělení vychází z auditu 13. 9. 2026 (bezpečnostní audit ChatGPT ověřený proti kódu a produkční databázi a doplněný o chybějící oblasti).
 
 ### Fáze A — demo pilot (hotovo 13. 9.)

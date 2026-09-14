@@ -36,7 +36,7 @@ Supabase advisor nadále hlásí vypnutou ochranu proti prolomeným heslům; na 
 
 ## Fotografie a Google hodnocení
 
-Lokální ilustrační fotografie existují v `public/images/services` a mají rozlišení podle aktivity; dřívější tvrzení, že sport nemá fotky, už neplatí. Některá ukázková data stále odkazují na Unsplash. Vybraná fotografie podniku má přednost před odvozenou ilustrací. Nahrávání vlastních fotografií přes UI není implementované; historické Storage politiky zůstávají samostatnou oblastí pro kontrolu před ostrým provozem.
+Lokální ilustrační fotografie existují v `public/images/services` a mají rozlišení podle aktivity; dřívější tvrzení, že sport nemá fotky, už neplatí. Katalog wellness používá neutrální spa snímek místo dřívější resortové fotografie. Některá ukázková data stále odkazují na Unsplash. Vybraná fotografie podniku má přednost před odvozenou ilustrací. Nahrávání vlastních fotografií přes UI není implementované; historické Storage politiky zůstávají samostatnou oblastí pro kontrolu před ostrým provozem.
 
 Google hodnocení se zobrazí jen pro správně přiřazené Place ID a funkční serverové Places API s billingem. Chybějící odpověď se nenahrazuje fiktivními hvězdičkami. Aktuální test rezervací neověřuje billing ani konfiguraci Google Cloud.
 

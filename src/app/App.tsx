@@ -1,5 +1,5 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Component, Suspense, lazy, type ReactNode } from 'react';
+import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Component, Suspense, lazy, useEffect, useRef, type ReactNode } from 'react';
 import { RouterProvider, matchPath, useRouter, Link } from './router';
 import { CustomerShell } from './CustomerShell';
 import { SessionProvider } from '../features/auth/session';
@@ -58,6 +58,7 @@ const AdminMetricsPage = lazy(() =>
 );
 import { errorMessage } from '../lib/errors';
 import { Button, LoadingList } from '../components/ui';
+import { inventoryVersion } from '../lib/api';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -68,6 +69,25 @@ const queryClient = new QueryClient({
     mutations: { retry: 0, networkMode: 'always' },
   },
 });
+
+function InventoryWatcher() {
+  const client = useQueryClient();
+  const previous = useRef<number | null>(null);
+  const revision = useQuery({
+    queryKey: ['inventory-version'],
+    queryFn: inventoryVersion,
+    refetchInterval: 5_000,
+    staleTime: 0,
+  });
+  useEffect(() => {
+    if (revision.data == null) return;
+    if (previous.current != null && previous.current !== revision.data) {
+      void client.invalidateQueries({ predicate: (query) => ['discovery', 'offer', 'business-offers', 'favorites'].includes(String(query.queryKey[0])) });
+    }
+    previous.current = revision.data;
+  }, [revision.data, client]);
+  return null;
+}
 
 /** Merchant and admin surfaces bring their own frame; the customer app wears the shell. */
 const ROUTES: { path: string; render: (params: Record<string, string>) => ReactNode; shell: boolean }[] = [
@@ -186,6 +206,7 @@ export function App() {
   return (
     <Boundary>
       <QueryClientProvider client={queryClient}>
+        <InventoryWatcher />
         <SessionProvider>
           <RouterProvider>
             <FirstVisitIntro />

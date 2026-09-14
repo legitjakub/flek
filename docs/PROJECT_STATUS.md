@@ -1,6 +1,6 @@
 # FLEK — živý přehled projektu
 
-> Poslední kontrola: 13. 9. 2026
+> Poslední kontrola: 14. 9. 2026
 > Zdroj pravdy: repozitář FLEK v této složce. Tento soubor shrnuje stav produktu; technické detaily a akceptační důkazy zůstávají v odkazovaných dokumentech.
 
 ## Co FLEK řeší
@@ -111,6 +111,7 @@ Podrobné důkazy jsou v [VERIFICATION.md](../VERIFICATION.md), omezení v [LIMI
 
 | Datum | Změna | Stav |
 | --- | --- | --- |
+| 14. 9. 2026 | Wellness katalog: odstraněna nevhodná resortová fotografie `photo-1596178065887-1198b6148b2b`; vířivka, parní lázeň a odpočinková procedura používají neutrální spa snímek a jednorázová migrace opravuje i existující služby a obálky | migrace připravena pro produkci; původní URL zůstává pouze jako podmínka v opravné migraci |
 | 14. 9. 2026 | Mapa: vrácený plný náhled po klepnutí na špendlík (fotka, sleva, přeškrtnutá původní cena, podnik, čtvrť a vzdálenost, délka, Navigovat a Detail) místo kompaktního řádku; kamera po změření karty posune vybraný špendlík nad ni | build, 84 unit testů; na 375/390/1280 px vybraný špendlík nad kartou, bez přetečení a chyb v konzoli |
 | 14. 9. 2026 | Nová paleta „Noční ultramarín“ místo Mandarinky (vybraná ze tří variant ukázaných na skutečné aplikaci): tokeny včetně rolí značky na tmavém a na mapě, logo, ikony aplikace (SVG i PNG), mapa, obrázek služby bez fotky, manifest, e-mailové šablony (repozitář i Supabase) a e-maily upozornění | build, 84 unit testů, všechny textové dvojice tokenů WCAG AA, 57 snímků na 375/390/1280 px bez přetečení a chyb, vizuální kontrola snímků |
 | 14. 9. 2026 | Oprava vratek (P0 z auditu ChatGPT): platba je vrácená, až když Stripe vratku potvrdí; čekající vratky se sledují dál, selhané (i dodatečně) se vrátí na zaplaceno a jdou člověku; webhook poslouchá `refund.created/updated/failed` a stav si načte ze Stripe; zákazník vidí „Vracíme peníze“ | migrace a funkce v produkci, události přidané do webhooku v sandboxu; build, 84 unit testů, 100/100 akceptačních kontrol včetně nové kontroly s kartou `pm_card_refundFail`, `tests/stripe-refunds.sql` |

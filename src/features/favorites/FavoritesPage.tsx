@@ -116,9 +116,6 @@ export function FavoritesPage() {
                   to={`/podnik/${place.id}?from=%2Foblibene`}
                   className="group flex min-h-18 items-center gap-3 px-4 py-3 transition-colors hover:bg-surface"
                 >
-                  <span aria-hidden="true" className="grid size-11 shrink-0 place-items-center rounded-full bg-accent-soft text-base font-extrabold text-accent">
-                    {place.display_name.trim().charAt(0).toLocaleUpperCase('cs-CZ')}
-                  </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-base font-bold text-ink">{place.display_name}</span>
                     <span className="mt-0.5 flex items-center gap-1 truncate text-sm text-muted">

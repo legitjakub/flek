@@ -5,7 +5,13 @@ export type BusinessStatus = 'pending' | 'approved' | 'rejected' | 'suspended';
 export type MemberRole = 'owner' | 'manager';
 export type OfferStatus = 'draft' | 'published' | 'cancelled';
 export type BookingStatus =
+  | 'pending_payment'
+  | 'pending_merchant'
+  | 'capturing'
   | 'confirmed'
+  | 'expired'
+  | 'rejected'
+  | 'payment_failed'
   | 'cancelled_by_customer'
   | 'cancelled_by_merchant'
   | 'completed'
@@ -146,6 +152,11 @@ export type CustomerBooking = {
   can_cancel: boolean;
   cancellation_deadline: string;
   server_now: string;
+  confirmation_version?: number;
+  checkout_expires_at?: string | null;
+  confirmation_expires_at?: string | null;
+  confirmed_at?: string | null;
+  authorization_state?: 'none' | 'authorized' | 'release_pending' | 'released' | 'captured';
 };
 
 /** Raw `bookings` row: what the admin list RPCs return, without the customer view's extras. */
@@ -288,7 +299,7 @@ export type Payment = {
   refund_requested_at?: string | null;
 };
 
-export type PaymentsMode = { provider: 'stripe'; test: boolean };
+export type PaymentsMode = { provider: 'stripe'; test: boolean; manual_confirmation?: boolean };
 
 /** What the customer sees after coming back from Stripe Checkout. */
 export type PaymentState = {
@@ -303,6 +314,12 @@ export type PaymentState = {
   failure_reason: string | null;
   booking_id: string | null;
   reservation_code: string | null;
+  confirmation_version?: number;
+  booking_status?: BookingStatus | null;
+  confirmation_expires_at?: string | null;
+  checkout_expires_at?: string | null;
+  authorization_state?: 'none' | 'authorized' | 'release_pending' | 'released' | 'captured';
+  server_now?: string;
 };
 
 export type BusinessPaymentsStatus = {

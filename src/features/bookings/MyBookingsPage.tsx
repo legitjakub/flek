@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Phone, QrCode, Ticket, X } from 'lucide-react';
-import { cancelBooking, myBookings } from '../../lib/api';
+import { cancelBooking, cancelPendingBooking, myBookings } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
 import { clockTime, dayLabel } from '../../lib/time';
@@ -12,6 +12,7 @@ import { useSession } from '../auth/session';
 import { Voucher } from './Voucher';
 import { StatusBadge } from '../../components/StatusBadge';
 import type { CustomerBooking } from '../../types/database';
+import { ConfirmationCountdown } from '../../components/ConfirmationCountdown';
 
 export function MyBookingsPage() {
   const { userId } = useSession();
@@ -27,10 +28,13 @@ export function MyBookingsPage() {
     queryFn: myBookings,
     enabled: Boolean(userId),
     refetchOnWindowFocus: true,
+    refetchInterval: (current) => current.state.data?.some((row) => row.status === 'pending_payment' || row.status === 'pending_merchant' || row.status === 'capturing') ? 3_000 : false,
   });
 
   const cancel = useMutation({
-    mutationFn: (booking: CustomerBooking) => cancelBooking(booking.id),
+    mutationFn: (booking: CustomerBooking) => ['pending_payment', 'pending_merchant'].includes(booking.status)
+      ? cancelPendingBooking(booking.id).then(() => undefined)
+      : cancelBooking(booking.id),
     onSuccess: async () => {
       setToCancel(null);
       setFailure(null);
@@ -61,7 +65,7 @@ export function MyBookingsPage() {
   }
 
   const all = query.data ?? [];
-  const upcoming = all.filter((b) => b.status === 'confirmed' && Date.parse(b.start_at_snapshot) > Date.parse(now));
+  const upcoming = all.filter((b) => ['pending_payment', 'pending_merchant', 'capturing', 'confirmed'].includes(b.status) && Date.parse(b.start_at_snapshot) > Date.parse(now));
   const history = all.filter((b) => !upcoming.includes(b));
   const rows = tab === 'upcoming' ? upcoming : history;
 
@@ -119,11 +123,6 @@ export function MyBookingsPage() {
               <div className="p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
-                    {!live ? (
-                      <p className="tnum font-mono text-sm font-bold tracking-[0.1em] text-muted">
-                        {booking.reservation_code}
-                      </p>
-                    ) : null}
                     <p className={cx('tnum text-base font-bold text-ink', !live && 'mt-1')}>
                       {dayLabel(booking.start_at_snapshot, now)} {clockTime(booking.start_at_snapshot)}–
                       {clockTime(booking.end_at_snapshot)}
@@ -137,7 +136,7 @@ export function MyBookingsPage() {
                     ) : booking.payment_status ? (
                       <StatusBadge
                         status={booking.payment_status}
-                        label={booking.payment_status === 'pending' ? 'Čeká na platbu' : undefined}
+                        label={booking.payment_status === 'pending' && booking.authorization_state === 'authorized' ? 'Částka blokována' : booking.payment_status === 'pending' ? 'Čeká na platbu' : undefined}
                       />
                     ) : null}
                   </span>
@@ -162,6 +161,17 @@ export function MyBookingsPage() {
 
                 {booking.cancellation_reason ? (
                   <p className="mt-2 text-sm text-danger">Důvod: {booking.cancellation_reason}</p>
+                ) : null}
+
+                {booking.status === 'pending_merchant' ? (
+                  <div className="mt-4 rounded-xl bg-accent-soft p-3 text-sm text-ink">
+                    <p className="font-bold">Čekáme na potvrzení podniku</p>
+                    <p className="mt-1 text-muted">Peníze ještě nebyly strženy. Když podnik včas nepotvrdí, blokace se uvolní.</p>
+                    <p className="mt-2"><ConfirmationCountdown deadline={booking.confirmation_expires_at} /></p>
+                    <Button variant="secondary" size="sm" className="mt-3" onClick={() => setToCancel(booking)}>Zrušit žádost</Button>
+                  </div>
+                ) : booking.status === 'capturing' ? (
+                  <p className="mt-4 rounded-xl bg-accent-soft p-3 text-sm font-bold text-ink">Podnik potvrdil. Dokončujeme platbu a připravujeme kód.</p>
                 ) : null}
 
                 {booking.status === 'confirmed' ? (
@@ -260,7 +270,9 @@ export function MyBookingsPage() {
         }
       >
         <p className="text-sm text-ink">
-          Termín se vrátí do nabídky a někdo jiný ho může využít. Vrátíme ti celou zaplacenou částku.
+          {toCancel && ['pending_payment', 'pending_merchant'].includes(toCancel.status)
+            ? 'Žádost zrušíme a případná blokace částky na kartě se uvolní.'
+            : 'Termín se vrátí do nabídky a někdo jiný ho může využít. Vrátíme ti celou zaplacenou částku.'}
         </p>
         {failure ? (
           <div className="mt-3">

@@ -64,6 +64,7 @@ Jeden řádek na rozhodnutí, chronologicky. Kde bylo zadání nejednoznačné, 
 - Počet sledujících se podniku ukazuje až od pěti a je formulovaný jako publikum, ne jako doručené oznámení. Žádné push doručování neexistuje a tvrdit opak by znamenalo, že tu větu podnik zopakuje zákazníkům.
 - Fotku služby vybírá partner ze seznamu činností, ne algoritmus z kategorie. Do teď `services.image_url` nenastavovala **žádná** partnerská obrazovka — sloupec existoval a `save_service` ho přijímal, ale nebylo ho čím naplnit, takže se fotka dědila podle otisku ID. Navíc tři z dvanácti ukázkových snímků byly zařazené ve špatné kategorii: jóga mohla ukazovat kosmetiku, sauna posilovnu, manikúra bazén resortu. Katalog je pojmenovaný podle toho, co na fotce **je**, ne podle kategorie, do které byla založená.
 - Několik činností v kategorii sdílí jeden snímek záměrně. Jedna pravdivá fotografie je lepší než dvě, z nichž jedna je špatně.
+- Wellness služby sdílí neutrální spa snímek, který nenaznačuje konkrétní resort ani bazén. Tím zůstává fotografie použitelná pro vířivku, páru i odpočinkovou proceduru a nepřisuzuje podniku vybavení, které nemusí mít.
 - Nahrávání vlastních fotek partnerem zamítnuto z bezpečnostních důvodů: neomoderovaný obsah ve veřejném bucketu. Politika úložiště v databázi zůstává z dřívější migrace, aplikace ji nepoužívá.
 - Výběr se sleduje podle činnosti, ne podle fotky. Porovnávání přes `image_url` rozsvítilo všechny dlaždice, které snímek sdílejí — výběr „Dámský střih" vypadal, jako by bylo vybráno čtvero.
 - Název doplněný výběrem jde opravit dalším výběrem, název napsaný rukou ne. Partner, který se překlikne, potřebuje opravit obojí; partner, který prodává „Pánský střih s mytím", chce jen tu fotku.
@@ -117,4 +118,3 @@ Jeden řádek na rozhodnutí, chronologicky. Kde bylo zadání nejednoznačné, 
 - Značka a ink mají mezi sebou jen 2,1 : 1, proto má značka na tmavých blocích dvě podoby: `brand-on-dark` `#8797FF` pro text (kód rezervace, ušetřená částka, 7,0 : 1) a `brand-bright` `#4D67FB` pro grafiku (špendlík v logu na tmavém, prstenec shluku na mapě, špendlík v ikoně aplikace).
 - Role značky jsou tokeny (`brand-ink`, `brand-on-dark`, `brand-bright`, `ink-hover`, `promo`, `promo-ink`), ne natvrdo zapsané barvy v komponentách. Příští změna palety je tak jen změna hodnot ve `src/styles.css` plus statické soubory, které CSS nečtou: ikony (SVG a PNG), obrázek služby bez fotky, `theme-color` a e-maily.
 - Promo blok je jednobarevný `#CFD4FF`, bez přechodu.
-

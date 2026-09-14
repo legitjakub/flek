@@ -25,6 +25,7 @@ import { unavailableReason } from './unavailable';
 import { GooglePlaceRating } from '../ratings/GooglePlaceRating';
 import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
 import { SERVICE_PLACEHOLDER, serviceIllustration } from '../../lib/serviceIllustrations';
+import { CapacityLabel } from '../../components/CapacityLabel';
 
 export function OfferDetailPage({ offerId }: { offerId: string }) {
   const { search, navigate } = useRouter();
@@ -135,7 +136,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
   const image = source === failedPhoto ? SERVICE_PLACEHOLDER : source;
   const savings = offer.original_price_cents - offer.deal_price_cents;
   const minutesAway = Math.round((Date.parse(offer.start_at) - Date.parse(now)) / 60000);
-  const lastSeat = offer.capacity_remaining === 1 && offer.capacity_total > 1;
+  const showCapacity = offer.capacity_total > 1;
   const cutoffMinutes = Math.round((Date.parse(offer.booking_cutoff_at) - Date.parse(now)) / 60000);
   const cancellationAt = cancellationDeadline(offer.start_at, offer.cancellation_window_minutes);
   const cancellationCopy = Date.parse(cancellationAt) <= Date.parse(now)
@@ -299,12 +300,12 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             </div>
           </div>
 
-          {(minutesAway > 0 && minutesAway <= 120) || (offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60) || lastSeat ? (
+          {(minutesAway > 0 && minutesAway <= 120) || (offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60) || showCapacity ? (
             <p className="tnum mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-line pt-3 text-sm text-muted">
               {minutesAway > 0 && minutesAway <= 120 ? <span className="font-bold text-accent">Začíná {relativeTime(offer.start_at, now)}</span> : null}
               {minutesAway > 0 && minutesAway <= 120 && offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60 ? <span aria-hidden="true">·</span> : null}
               {offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60 ? <span>Rezervovat ještě <strong className="text-ink">{cutoffMinutes} min</strong></span> : null}
-              {lastSeat ? <span className="font-bold text-warning">{(minutesAway > 0 && minutesAway <= 120) || (offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60) ? '· ' : ''}Poslední místo</span> : null}
+              {showCapacity ? <CapacityLabel remaining={offer.capacity_remaining} total={offer.capacity_total} /> : null}
             </p>
           ) : null}
 

@@ -11,6 +11,7 @@ import { SERVICE_PLACEHOLDER, serviceIllustration } from '../../lib/serviceIllus
 import { thumbnail } from '../../lib/thumbnail';
 import { clockTime, dayLabel, duration } from '../../lib/time';
 import type { SearchRow } from '../../types/database';
+import { CapacityLabel } from '../../components/CapacityLabel';
 
 /**
  * What a tapped pin opens: the appointment as a card with its photo, over the bottom of the
@@ -144,10 +145,10 @@ function PreviewCard({
         </button>
       </div>
 
-      <div className="relative px-4 pb-4">
-        <VenueBadge name={offer.business_name} logo={offer.logo_url} />
-        <h3 className="mt-2 truncate text-lg leading-snug font-extrabold tracking-tight text-ink">{offer.service_name}</h3>
+      <div className="relative p-4">
+        <h3 className="truncate text-lg leading-snug font-extrabold tracking-tight text-ink">{offer.service_name}</h3>
         <p className="truncate text-sm text-muted">{place}</p>
+        <CapacityLabel remaining={offer.capacity_remaining} total={offer.capacity_total} />
 
         <div className="mt-3 flex items-end justify-between gap-3">
           <p className="tnum flex min-w-0 items-center gap-1.5 text-sm">
@@ -183,19 +184,5 @@ function PreviewCard({
         </div>
       </div>
     </article>
-  );
-}
-
-/** The venue's logo, or its initial, sitting across the edge of the photo. */
-function VenueBadge({ name, logo }: { name: string; logo: string | null }) {
-  const [broken, setBroken] = useState(false);
-  const ring = 'relative -mt-7 size-14 rounded-full border-4 border-card shadow-card';
-  if (logo && !broken) {
-    return <img src={logo} alt="" onError={() => setBroken(true)} className={cx(ring, 'bg-card object-cover')} />;
-  }
-  return (
-    <span aria-hidden="true" className={cx(ring, 'grid place-items-center bg-brand text-xl font-extrabold text-brand-ink')}>
-      {name.trim().charAt(0).toLocaleUpperCase('cs-CZ')}
-    </span>
   );
 }

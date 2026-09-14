@@ -9,6 +9,7 @@ import { GooglePlaceRating } from '../ratings/GooglePlaceRating';
 import type { SearchRow } from '../../types/database';
 import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
 import { SERVICE_PLACEHOLDER, serviceIllustration } from '../../lib/serviceIllustrations';
+import { CapacityLabel } from '../../components/CapacityLabel';
 
 /**
  * The card the whole product is read through. Time leads, price closes, the discount only
@@ -39,7 +40,6 @@ export function OfferCard({
   const showPhoto = Boolean(photo) && !compact;
   const minutesAway = Math.round((Date.parse(offer.start_at) - Date.parse(now)) / 60000);
   const startingSoon = minutesAway > 0 && minutesAway <= 120;
-  const lastSeat = offer.capacity_remaining === 1 && offer.capacity_total > 1;
   const away = formatDistance(offer.distance_m);
 
   return (
@@ -77,7 +77,6 @@ export function OfferCard({
 
           {/* Identity on the image: the scrim exists so white text survives a pale photo. */}
           <div className="absolute inset-x-0 bottom-0 flex items-center gap-2 bg-gradient-to-t from-ink/75 to-transparent px-3 pt-8 pb-3">
-            <VenueMark name={offer.business_name} logo={offer.logo_url} />
             <span className="truncate text-base font-bold text-card">{offer.business_name}</span>
           </div>
         </div>
@@ -111,12 +110,7 @@ export function OfferCard({
             placeId={offer.google_place_id}
             withSeparator
           />
-          {lastSeat ? (
-            <>
-              <span aria-hidden="true">·</span>
-              <span className="font-bold text-ink">Poslední místo</span>
-            </>
-          ) : null}
+          <CapacityLabel remaining={offer.capacity_remaining} total={offer.capacity_total} />
         </p>
 
         {/*
@@ -159,30 +153,5 @@ export function OfferCard({
         </div>
       </div>
     </Link>
-  );
-}
-
-/** Every seeded venue has an empty logo_url, so the initial is the normal case, not a fallback. */
-function VenueMark({ name, logo }: { name: string; logo?: string | null }) {
-  const [broken, setBroken] = useState(false);
-  if (logo && !broken) {
-    return (
-      <img
-        src={logo}
-        onError={() => setBroken(true)}
-        alt=""
-        width={56}
-        height={56}
-        className="size-7 shrink-0 rounded-full bg-card object-cover"
-      />
-    );
-  }
-  return (
-    <span
-      aria-hidden="true"
-      className="grid size-7 shrink-0 place-items-center rounded-full bg-card text-sm font-bold text-ink"
-    >
-      {name.trim().charAt(0).toUpperCase()}
-    </span>
   );
 }

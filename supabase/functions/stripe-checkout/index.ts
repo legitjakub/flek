@@ -29,6 +29,11 @@ Deno.serve(async (request) => {
   if (payment.provider !== 'stripe') return json(request, { error: 'WRONG_PROVIDER' }, 409);
   if (payment.status === 'paid') return json(request, { state: 'paid' });
   if (payment.status !== 'pending') return json(request, { error: 'PAYMENT_CLOSED' }, 409);
+  const manual = payment.confirmation_version === 1;
+  if (manual) {
+    const { data: context, error } = await db.rpc('confirmation_checkout_context', { p_payment_id: payment.id });
+    if (error || !context?.allowed) return json(request, { error: 'PAYMENT_CLOSED' }, 409);
+  }
 
   const { data: offer } = await db
     .from('offers')
@@ -73,6 +78,7 @@ Deno.serve(async (request) => {
           },
         }],
         payment_intent_data: {
+          capture_method: manual ? 'manual' : undefined,
           application_fee_amount: offer.service_fee_cents,
           transfer_data: { destination: business.stripe_account_id },
           description: `FLEK · ${service.name} · ${business.display_name}`,

@@ -87,10 +87,6 @@ export function NewPasswordForm({ formal }: { formal: boolean }) {
   });
 
   useEffect(() => {
-    if (session && state === 'checking') setState('ready');
-  }, [session, state]);
-
-  useEffect(() => {
     if (!ready || attempted.current) return;
     attempted.current = true;
 
@@ -104,7 +100,7 @@ export function NewPasswordForm({ formal }: { formal: boolean }) {
         setProblem(/expired/i.test(callbackError) ? 'Odkaz vypršel.' : 'Odkaz není platný nebo už byl použitý.');
         return;
       }
-      if (session) {
+      if (session && !tokenHash && !code) {
         setState('ready');
         return;
       }

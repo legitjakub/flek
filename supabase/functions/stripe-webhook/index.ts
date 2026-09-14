@@ -48,18 +48,58 @@ async function handle(event: Stripe.Event, stripe: Stripe, db: SupabaseClient) {
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session;
-      if (session.payment_status !== 'paid') return;
       const paymentId = session.metadata?.payment_id ?? session.client_reference_id;
       const intent = typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id;
       if (!paymentId || !intent) return;
+      const { data: payment } = await db.from('payments').select('confirmation_version').eq('id', paymentId).maybeSingle();
+      if (payment?.confirmation_version === 1) {
+        const current = await stripe.paymentIntents.retrieve(intent);
+        if (current.status === 'requires_capture') {
+          await rpc(db, 'confirmation_authorized', {
+            p_payment_id: paymentId, p_intent: intent, p_session: session.id,
+            p_amount: current.amount, p_currency: current.currency, p_livemode: event.livemode,
+          });
+        } else if (current.status === 'succeeded') {
+          await rpc(db, 'confirmation_payment_observed', { p_payment_id: paymentId, p_outcome: 'captured', p_intent: intent, p_amount: current.amount_received });
+        }
+        return;
+      }
+      if (session.payment_status !== 'paid') return;
       await paid(stripe, db, paymentId, intent, session.amount_total ?? 0, session.currency ?? '', event.livemode, session.id);
+      return;
+    }
+    case 'payment_intent.amount_capturable_updated': {
+      const intent = event.data.object as Stripe.PaymentIntent;
+      const paymentId = intent.metadata?.payment_id;
+      if (!paymentId) return;
+      const { data: payment } = await db.from('payments').select('confirmation_version, checkout_session_id').eq('id', paymentId).maybeSingle();
+      if (payment?.confirmation_version !== 1 || !payment.checkout_session_id) return;
+      await rpc(db, 'confirmation_authorized', {
+        p_payment_id: paymentId, p_intent: intent.id, p_session: payment.checkout_session_id,
+        p_amount: intent.amount, p_currency: intent.currency, p_livemode: event.livemode,
+      });
       return;
     }
     case 'payment_intent.succeeded': {
       const intent = event.data.object as Stripe.PaymentIntent;
       const paymentId = intent.metadata?.payment_id;
       if (!paymentId) return;
+      const { data: payment } = await db.from('payments').select('confirmation_version').eq('id', paymentId).maybeSingle();
+      if (payment?.confirmation_version === 1) {
+        await rpc(db, 'confirmation_payment_observed', { p_payment_id: paymentId, p_outcome: 'captured', p_intent: intent.id, p_amount: intent.amount_received });
+        return;
+      }
       await paid(stripe, db, paymentId, intent.id, intent.amount_received, intent.currency, event.livemode, null);
+      return;
+    }
+    case 'payment_intent.canceled': {
+      const intent = event.data.object as Stripe.PaymentIntent;
+      const paymentId = intent.metadata?.payment_id;
+      if (!paymentId) return;
+      const { data: payment } = await db.from('payments').select('confirmation_version').eq('id', paymentId).maybeSingle();
+      if (payment?.confirmation_version === 1) {
+        await rpc(db, 'confirmation_payment_observed', { p_payment_id: paymentId, p_outcome: 'released', p_intent: intent.id, p_amount: 0 });
+      }
       return;
     }
     case 'checkout.session.expired': {

@@ -46,36 +46,30 @@ export function ConfirmationPage() {
   const merchant = session?.user.user_metadata?.signup_role === 'merchant' || pending.current.merchant;
 
   useEffect(() => {
-    // detectSessionInUrl may finish while our explicit callback handler is running. A real
-    // session is authoritative and always wins over a transient PKCE exchange error.
-    if (!session) return;
-    setState('success');
-    setMessage('E-mail je potvrzený a účet je připravený.');
-    clearPending();
-  }, [session]);
-
-  useEffect(() => {
     if (!ready || attempted.current) return;
     attempted.current = true;
 
     async function confirm() {
-      if (session) {
+      // Only reuse an existing session when this is a plain visit. A confirmation link must
+      // always verify its own token; otherwise a session for another account can make an
+      // invalid or expired link look successful.
+      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const callbackError = search.get('error_description') ?? hash.get('error_description');
+      const tokenHash = search.get('token_hash') ?? hash.get('token_hash');
+      const code = search.get('code');
+      if (session && !callbackError && !tokenHash && !code) {
         setState('success');
         setMessage('E-mail je potvrzený a účet je připravený.');
         clearPending();
         return;
       }
 
-      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-      const callbackError = search.get('error_description') ?? hash.get('error_description');
       if (callbackError) {
         setState('error');
         setMessage(/expired/i.test(callbackError) ? 'Potvrzovací odkaz vypršel.' : 'Potvrzovací odkaz není platný nebo už byl použitý.');
         return;
       }
 
-      const tokenHash = search.get('token_hash') ?? hash.get('token_hash');
-      const code = search.get('code');
       if (!tokenHash && !code) {
         setState('login');
         setMessage('Odkaz neobsahuje ověřovací údaje. Pokud už jsi e-mail potvrdil/a, stačí se přihlásit.');

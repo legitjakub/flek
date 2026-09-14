@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -44,6 +44,7 @@ export function AuthPage() {
   const [resending, setResending] = useState(false);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
   const formal = merchant;
+  const attempt = useRef(0);
 
   const form = useForm<SignupValues>({
     resolver: zodResolver(mode === 'signup' ? signupSchema : loginSchema.extend({ first_name: z.string(), last_name: z.string() })),
@@ -51,7 +52,27 @@ export function AuthPage() {
     mode: 'onTouched',
   });
 
+  function changeMode(next: typeof mode) {
+    attempt.current += 1;
+    setMode(next);
+    setConfirmSent(false);
+    setFailure(null);
+    setResendMessage(null);
+    setResending(false);
+    form.clearErrors();
+    form.setValue('password', '');
+    const params = new URLSearchParams(search);
+    params.set('mode', next);
+    navigate(`/prihlaseni?${params}`, { replace: true });
+  }
+
+  useEffect(() => {
+    const next = requested === 'signup' || requested === 'forgot' || requested === 'reset' ? requested : 'login';
+    if (next !== mode) changeMode(next);
+  }, [requested]);
+
   async function submit(values: SignupValues) {
+    const currentAttempt = ++attempt.current;
     setFailure(null);
     setConfirmSent(false);
     try {
@@ -75,6 +96,7 @@ export function AuthPage() {
           },
         });
         if (error) throw error;
+        if (currentAttempt !== attempt.current) return;
         // With e-mail confirmation switched on, sign-up returns no session. Navigating here
         // would drop the customer back into the app still signed out, which reads as
         // "registration is broken" — so say what actually has to happen next.
@@ -84,15 +106,16 @@ export function AuthPage() {
           return;
         }
       }
-      navigate(returnTo, { replace: true });
+      if (currentAttempt === attempt.current) navigate(returnTo, { replace: true });
     } catch (error) {
-      setFailure(errorMessage(error));
+      if (currentAttempt === attempt.current) setFailure(errorMessage(error));
     }
   }
 
   const isSignup = mode === 'signup';
 
   async function resendConfirmation() {
+    const currentAttempt = attempt.current;
     const email = confirmationEmail || form.getValues('email');
     if (!email) return;
     setResending(true);
@@ -104,8 +127,10 @@ export function AuthPage() {
         options: { emailRedirectTo: `${window.location.origin}/potvrzeni` },
       });
       if (error) throw error;
+      if (currentAttempt !== attempt.current) return;
       setResendMessage('Nový potvrzovací e-mail je odeslaný. Starší odkaz už nemusí fungovat.');
     } catch (error) {
+      if (currentAttempt !== attempt.current) return;
       const message = errorMessage(error);
       setResendMessage(
         /rate|limit|security|seconds?/i.test(message)
@@ -113,7 +138,7 @@ export function AuthPage() {
           : message,
       );
     } finally {
-      setResending(false);
+      if (currentAttempt === attempt.current) setResending(false);
     }
   }
 
@@ -142,13 +167,13 @@ export function AuthPage() {
       ) : null}
 
       {mode === 'forgot' ? (
-        <ForgotPasswordForm formal={formal} initialEmail={form.getValues('email')} onBack={() => setMode('login')} />
+        <ForgotPasswordForm formal={formal} initialEmail={form.getValues('email')} onBack={() => changeMode('login')} />
       ) : null}
       {mode === 'reset' ? <NewPasswordForm formal={formal} /> : null}
 
       {confirmSent ? (
         <div className="mt-6 rounded-2xl bg-card shadow-card p-5 sm:p-6">
-          <h2 className="text-lg font-extrabold">Potvrď svůj e-mail</h2>
+          <h2 className="text-lg font-extrabold">{formal ? 'Potvrďte svůj e-mail' : 'Potvrď svůj e-mail'}</h2>
           <p className="mt-2 text-base leading-relaxed text-muted">
             Poslali jsme odkaz na <strong className="text-ink">{confirmationEmail || form.getValues('email')}</strong>. Otevři ho a účet se
             aktivuje. Mrkni i do složky s nevyžádanou poštou.
@@ -161,17 +186,17 @@ export function AuthPage() {
             <Button
               variant="ghost"
               onClick={() => {
-                setConfirmSent(false);
-                setMode('login');
+                changeMode('login');
               }}
             >
               Přihlásit se
             </Button>
+            <Button variant="ghost" onClick={() => changeMode('signup')}>Opravit e-mail</Button>
           </div>
         </div>
       ) : null}
 
-      <form hidden={confirmSent || mode === 'forgot' || mode === 'reset'} className="mt-6 flex flex-col gap-4 rounded-2xl bg-card shadow-card p-5 sm:p-6" onSubmit={form.handleSubmit(submit)} noValidate>
+      {!confirmSent && (mode === 'login' || mode === 'signup') ? <form className="mt-6 flex flex-col gap-4 rounded-2xl bg-card shadow-card p-5 sm:p-6" onSubmit={form.handleSubmit(submit)} noValidate>
         {isSignup ? (
           <div className="grid grid-cols-2 gap-3">
             <Field id="first_name" label="Jméno" error={form.formState.errors.first_name?.message}>
@@ -217,8 +242,7 @@ export function AuthPage() {
             type="button"
             className="-mt-2 min-h-11 self-start text-sm font-bold text-ink underline underline-offset-4"
             onClick={() => {
-              setFailure(null);
-              setMode('forgot');
+              changeMode('forgot');
             }}
           >
             Zapomenuté heslo?
@@ -234,15 +258,14 @@ export function AuthPage() {
         <Button type="submit" size="lg" loading={form.formState.isSubmitting}>
           {isSignup ? 'Vytvořit účet' : 'Přihlásit se'}
         </Button>
-      </form>
+      </form> : null}
 
       <button
         type="button"
         hidden={mode === 'forgot' || mode === 'reset'}
         className="mt-5 min-h-11 w-full text-sm font-bold text-ink underline underline-offset-4"
         onClick={() => {
-          setFailure(null);
-          setMode(isSignup ? 'login' : 'signup');
+          changeMode(isSignup ? 'login' : 'signup');
         }}
       >
         {isSignup ? 'Už mám účet — přihlásit se' : 'Nemám účet — vytvořit'}

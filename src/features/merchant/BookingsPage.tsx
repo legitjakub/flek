@@ -1,11 +1,11 @@
 import { ChevronDown } from 'lucide-react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { merchantBookings, merchantLookupBooking } from '../../lib/api';
+import { merchantBookings, merchantLookupBooking, respondToBooking } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
 import { clockTime, dayBounds, dayLabel } from '../../lib/time';
-import { serverNow, useServerNow } from '../../lib/clock';
+import { relativeTime, serverNow, useServerNow } from '../../lib/clock';
 import { Banner, Button, EmptyState, ErrorState, Field, Input, LoadingList, Tabs } from '../../components/ui';
 import { useRouter } from '../../app/router';
 import { MerchantShell } from './MerchantShell';
@@ -13,6 +13,7 @@ import { ScanButton, ScanVoucherSheet } from './ScanVoucherSheet';
 import { ResolveButtons } from './ResolveButtons';
 import { StatusBadge } from '../../components/StatusBadge';
 import type { MerchantBooking, MerchantBookingDetail } from '../../types/database';
+import { ConfirmationCountdown } from '../../components/ConfirmationCountdown';
 
 type Tab = 'today' | 'upcoming' | 'history';
 
@@ -43,6 +44,7 @@ function Bookings({ businessId }: { businessId: string }) {
     queryKey: ['merchant-bookings', businessId, 'all', historyDays],
     queryFn: () => merchantBookings(businessId, dayBounds(serverNow(), -historyDays).from),
     refetchOnWindowFocus: true,
+    refetchInterval: (current) => current.state.data?.some((row) => row.status === 'pending_merchant' || row.status === 'capturing') ? 3_000 : false,
   });
 
   const day = dayBounds(now);
@@ -197,7 +199,7 @@ function Bookings({ businessId }: { businessId: string }) {
 }
 
 function isCancelled(booking: MerchantBooking): boolean {
-  return booking.status === 'cancelled_by_customer' || booking.status === 'cancelled_by_merchant';
+  return ['cancelled_by_customer', 'cancelled_by_merchant', 'expired', 'rejected', 'payment_failed'].includes(booking.status);
 }
 
 function BookingRow({
@@ -210,6 +212,12 @@ function BookingRow({
   showContact?: boolean;
 }) {
   const detail = booking as MerchantBookingDetail;
+  const queryClient = useQueryClient();
+  const decision = useMutation({
+    mutationFn: (accept: boolean) => respondToBooking(booking.id, accept),
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: ['merchant-bookings'] }),
+  });
+  const terminal = isCancelled(booking);
   return (
     <div className="flex flex-wrap items-start justify-between gap-4">
       <div className="min-w-0">
@@ -224,7 +232,7 @@ function BookingRow({
             "Vy dostanete 365 Kč" on it promised money that will never arrive. */}
         <p className="text-sm text-muted">
           {booking.customer_label} ·{' '}
-          {booking.status === 'cancelled_by_customer' || booking.status === 'cancelled_by_merchant' ? (
+          {terminal || booking.status === 'pending_payment' ? (
             'bez výplaty'
           ) : (
             <>
@@ -241,7 +249,9 @@ function BookingRow({
             />
           ) : null}
         </div>
-        <p className="tnum mt-1 font-mono text-sm font-bold tracking-[0.1em] text-ink">{booking.reservation_code}</p>
+        {['confirmed', 'completed', 'no_show'].includes(booking.status) ? (
+          <p className="tnum mt-1 font-mono text-sm font-bold tracking-[0.1em] text-ink">{booking.reservation_code}</p>
+        ) : null}
         {showContact && detail.phone ? (
           <p className="mt-1 text-sm text-muted">
             {detail.first_name} {detail.last_name} ·{' '}
@@ -251,7 +261,16 @@ function BookingRow({
           </p>
         ) : null}
       </div>
-      {booking.status === 'confirmed' ? <ResolveButtons booking={booking} /> : null}
+      {booking.status === 'pending_merchant' ? (
+        <div className="w-full rounded-xl border border-warning/30 bg-warning-soft p-3 sm:w-auto" aria-label="Potvrzení rezervace">
+          <p className="text-sm"><ConfirmationCountdown deadline={booking.confirmation_expires_at} formal /></p>
+          <p className="mt-1 text-xs text-muted">FLEK začíná {relativeTime(booking.start_at_snapshot, now)}. Částka zákazníka je blokovaná.</p>
+          <div className="mt-3 flex gap-2">
+            <Button className="flex-1" loading={decision.isPending} onClick={() => decision.mutate(true)}>Potvrdit</Button>
+            <Button className="flex-1" variant="secondary" disabled={decision.isPending} onClick={() => decision.mutate(false)}>Odmítnout</Button>
+          </div>
+        </div>
+      ) : booking.status === 'confirmed' ? <ResolveButtons booking={booking} /> : null}
     </div>
   );
 }

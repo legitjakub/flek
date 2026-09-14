@@ -2,7 +2,7 @@ import { FunctionsHttpError } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { result } from './errors';
 import { noteServerNow } from './clock';
-import type { AdminBooking, AdminBusiness, AdminMetrics, AdminUser, Business, Category, CustomerBooking, CustomerMetrics, FavoriteBusiness, FavoriteOffer, MerchantBooking, MerchantBookingDetail, MerchantMetrics, MerchantOffer, OfferDetail, Payment, Profile, PublicBusiness, ReferralClaim, ReferralStats, PaymentsMode, PaymentState, BusinessPaymentsStatus, SearchRow, ServicePhoto, Service, SortKey, BusinessBilling, AdminAuditEntry } from '../types/database';
+import type { AdminBooking, AdminBusiness, AdminMetrics, AdminUser, Business, BookingStatus, Category, CustomerBooking, CustomerMetrics, FavoriteBusiness, FavoriteOffer, MerchantBooking, MerchantBookingDetail, MerchantMetrics, MerchantOffer, OfferDetail, Payment, Profile, PublicBusiness, ReferralClaim, ReferralStats, PaymentsMode, PaymentState, BusinessPaymentsStatus, SearchRow, ServicePhoto, Service, SortKey, BusinessBilling, AdminAuditEntry } from '../types/database';
 
 /** Records the server clock carried by any payload that exposes it. */
 function withClock<T extends { server_now?: string }>(rows: T[]): T[] {
@@ -59,6 +59,10 @@ export async function serverClock(): Promise<string> {
   return now;
 }
 
+export async function inventoryVersion(): Promise<number> {
+  return (await result<number>(supabase.rpc('inventory_version'))) ?? 0;
+}
+
 export async function listCategories(): Promise<Category[]> {
   return (await result<Category[]>(supabase.from('categories').select('*').order('sort_order'))) ?? [];
 }
@@ -106,7 +110,9 @@ export async function openCheckout(paymentId: string): Promise<{ url?: string; s
 }
 
 export async function paymentState(paymentId: string): Promise<PaymentState> {
-  return await result<PaymentState>(supabase.rpc('my_payment_state', { p_payment_id: paymentId }));
+  const state = await result<PaymentState>(supabase.rpc('my_payment_state', { p_payment_id: paymentId }));
+  noteServerNow(state.server_now);
+  return state;
 }
 
 export async function businessPaymentsStatus(businessId: string): Promise<BusinessPaymentsStatus> {
@@ -142,7 +148,16 @@ export async function rateBooking(bookingId: string, rating: number): Promise<vo
 }
 
 export async function myBookings(): Promise<CustomerBooking[]> {
-  return withClock((await result<CustomerBooking[]>(supabase.rpc('my_bookings'))) ?? []);
+  const [bookings, details] = await Promise.all([
+    result<CustomerBooking[]>(supabase.rpc('my_bookings')),
+    result<Array<Partial<CustomerBooking> & { id: string }>>(supabase.rpc('confirmation_details', { p_business_id: null })),
+  ]);
+  const extra = new Map((details ?? []).map((row) => [row.id, row]));
+  return withClock((bookings ?? []).map((row) => ({ ...row, ...extra.get(row.id) })));
+}
+
+export async function cancelPendingBooking(bookingId: string): Promise<BookingStatus> {
+  return await result<BookingStatus>(supabase.rpc('cancel_pending_booking', { p_booking_id: bookingId }));
 }
 
 /* ----------------------------------------------------------------- favourites */
@@ -295,11 +310,16 @@ export async function merchantOffers(businessId: string, from?: string, until?: 
 }
 
 export async function merchantBookings(businessId: string, from?: string, until?: string): Promise<MerchantBooking[]> {
-  return withClock(
-    (await result<MerchantBooking[]>(
-      supabase.rpc('merchant_bookings', { p_business_id: businessId, p_from: from ?? null, p_until: until ?? null }),
-    )) ?? [],
-  );
+  const [bookings, details] = await Promise.all([
+    result<MerchantBooking[]>(supabase.rpc('merchant_bookings', { p_business_id: businessId, p_from: from ?? null, p_until: until ?? null })),
+    result<Array<Partial<MerchantBooking> & { id: string }>>(supabase.rpc('confirmation_details', { p_business_id: businessId })),
+  ]);
+  const extra = new Map((details ?? []).map((row) => [row.id, row]));
+  return withClock((bookings ?? []).map((row) => ({ ...row, ...extra.get(row.id) })));
+}
+
+export async function respondToBooking(bookingId: string, accept: boolean): Promise<BookingStatus> {
+  return await result<BookingStatus>(supabase.rpc('respond_to_booking', { p_booking_id: bookingId, p_accept: accept }));
 }
 
 export async function merchantLookupBooking(code: string): Promise<MerchantBookingDetail | null> {

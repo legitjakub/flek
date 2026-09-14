@@ -182,7 +182,9 @@ export function BookingSheet({
       ) : null}
 
       <p className="mt-5 rounded-xl bg-surface px-3 py-2 text-sm text-muted">
-        Zaplatíš kartou, Apple Pay nebo Google Pay na zabezpečené stránce Stripe a vrátíme tě sem s rezervačním kódem. Když zrušíš včas, vrátíme ti celou částku.
+        {mode.data?.manual_confirmation
+          ? 'Na Stripe částku nejdřív jen zablokujeme. Podnik má krátký čas na potvrzení a teprve potom ji strhneme. Když nepotvrdí, blokace se uvolní.'
+          : 'Zaplatíš kartou, Apple Pay nebo Google Pay na zabezpečené stránce Stripe a vrátíme tě sem s rezervačním kódem. Když zrušíš včas, vrátíme ti celou částku.'}
       </p>
       {mode.data?.test ? (
         <p className="tnum mt-2 rounded-xl border border-warning/30 bg-warning/8 px-3 py-2 text-sm text-ink">
