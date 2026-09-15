@@ -12,7 +12,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 | Web | https://www.app-flek.eu (původní https://flek-nine.vercel.app funguje dál) |
 | Kód | https://github.com/legitjakub/flek (větev `main`) |
 | Poslední nasazení | 15. 9. 2026 (vždy poslední commit ve větvi `main`) |
-| Testy | unit testy a build v CI při každém pushi, akceptační kontroly proti hostované databázi (15. 9.: 101/101), SQL testy potvrzování rezervací a WhatsAppu |
+| Testy | unit testy a build v CI při každém pushi, akceptační kontroly proti hostované databázi (15. 9.: 101/101 bez potvrzování, 106/106 s potvrzováním), SQL testy potvrzování rezervací a WhatsAppu |
 | Potvrzování rezervací podnikem | **zapnuté pro demo podniky** (15. 9., akceptace 106/106 a průchod se skutečnými testovacími platbami); pro všechny čeká na tvůj souhlas s přepnutím |
 | WhatsApp | pro podniky i zákazníky, výchozí zapnutý a vypínatelný v nastavení upozornění, ověření čísla jedním klepnutím; čeká na účet Meta a pět šablon |
 | Data v produkci (13. 9.) | 18 schválených podniků, 330 nabídek, 321 rezervací, 16 účtů (12 demo, 4 ostatní), od 13. 9. platby jen přes Stripe (test), 16 demo podniků s testovacím Stripe účtem |
@@ -129,7 +129,7 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 2. Filtruje podle času (Vše, Teď, Do 2 h, Dnes, Zítra), denní doby (Ráno, Odpoledne, Večer), kategorie, minimální slevy a maximální ceny; řadí podle doporučení, vzdálenosti, slevy, ceny nebo začátku.
 3. Na detailu vidí konečnou cenu včetně poplatku a úsporu proti běžné ceně. Když má služba víc volných časů, vybere si ho přímo v kartě („Vyber si čas“); karty ve feedu a na mapě ukazují další časy téže služby. Pod detailem je karusel „Mohlo by se ti líbit“ s dalšími FLEKy podniku a okolí.
 4. Rezervuje a zaplatí kartou, Apple Pay nebo Google Pay na stránce Stripe Checkout (v pilotu testovací karta 4242 4242 4242 4242). Místo obsadí webhook Stripe, zákazník se vrátí na kód rezervace. Bez účtu může prohlížet, k rezervaci se musí přihlásit. Zapomenuté heslo si obnoví odkazem z e-mailu.
-   - Po zapnutí potvrzování (připravené, zatím vypnuté): místo se mu podrží 3 minuty na zaplacení, částka se na kartě jen zablokuje a podnik má na potvrzení 10, 5 nebo 3 minuty podle toho, jak brzy termín začíná. Zákazník vidí odpočet a může žádost zrušit. Po potvrzení se platba strhne a zobrazí se „🔥 FLEK je tvůj!“ s kódem; když podnik nepotvrdí, blokace se uvolní a nic nezaplatí.
+   - S potvrzováním (od 15. 9. u demo podniků, pro všechny po přepnutí): místo se mu podrží 3 minuty na zaplacení, částka se na kartě jen zablokuje a podnik má na potvrzení 10, 5 nebo 3 minuty podle toho, jak brzy termín začíná. Zákazník vidí odpočet a může žádost zrušit. Po potvrzení se platba strhne a zobrazí se „🔥 FLEK je tvůj!“ s kódem; když podnik nepotvrdí, blokace se uvolní a nic nezaplatí.
 5. Dostane rezervační kód a QR, najde je v Rezervacích. O potvrzení a zrušení ví ze zvonku v aplikaci, e-mailem, (když si zapne) oznámením na telefonu a na WhatsApp, jakmile si jedním klepnutím ověří číslo (výchozí zapnuto, vypíná se v Profilu).
 6. Zdarma může zrušit do 60 minut před začátkem (podnik si lhůtu může změnit) nebo do 10 minut od rezervace, podle toho, co nastane později.
 7. Oblíbené podniky může sledovat a vidí u nich nové FLEKy; může pozvat kamaráda odkazem `/r/kód` a nainstalovat si appku na plochu.
@@ -140,7 +140,7 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 2. Přidá služby z připravených šablon podle kategorie nebo vlastní.
 3. Zveřejní FLEK: čas, kapacita a částka, kterou chce dostat. Sleva pro zákazníka musí být aspoň 10 % a cena aspoň 15 % běžné ceny; server hlídá i kolize termínů.
 4. Dostane upozornění na novou rezervaci a storno (v aplikaci vždy, e-mail a push podle nastavení v Provozovně), u pultu ověří kód zákazníka, případně označí „Nedorazil“.
-   - Po zapnutí potvrzování: nová žádost se ukáže nahoře na Přehledu a v Rezervacích s odpočtem („Potvrďte do 04:18“) a tlačítky Potvrdit / Nemohu přijmout, s bannerem a zvukem. Po ověření WhatsAppu v Provozovně (jedno klepnutí, číslo provozovny je předvyplněné) přijde žádost i tam a jde vyřídit tlačítkem ve zprávě; přijdou tam i zrušení a vypršení.
+   - S potvrzováním (od 15. 9. u demo podniků): nová žádost se ukáže nahoře na Přehledu a v Rezervacích s odpočtem („Potvrďte do 04:18“) a tlačítky Potvrdit / Nemohu přijmout, s bannerem a zvukem. Po ověření WhatsAppu v Provozovně (jedno klepnutí, číslo provozovny je předvyplněné) přijde žádost i tam a jde vyřídit tlačítkem ve zprávě; přijdou tam i zrušení a vypršení.
 5. Vidí metriky: rezervace, výplaty a naplněnost.
 
 ### Admin (`/admin`)
