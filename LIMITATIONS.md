@@ -59,7 +59,8 @@ Více provozoven na účet je podporováno přepínačem v partnerské části. 
 
 ## Potvrzování rezervací a WhatsApp (15. 9. 2026)
 
-- Potvrzování podnikem je v databázi i nasazených funkcích, ale **vypnuté** (`manual_confirmation_enabled = false`), dokud v Stripe nejsou přidané události `payment_intent.amount_capturable_updated`, `payment_intent.canceled` a `payment_intent.payment_failed`. Sonda 15. 9. ve 14:46 to potvrdila: Stripe autorizoval testovací platbu, ale událost nepřišla a rezervace zůstala ve stavu čekání na platbu. Akceptační skript v režimu potvrzování zatím neběžel.
+- Potvrzování podnikem je od 15. 9. zapnuté **jen pro demo podniky** (`manual_confirmation_enabled = 'demo'`). Skutečné podniky rezervují dál bez potvrzení, dokud přepínač nebude `'true'`; texty pro podniky („Když si ho někdo rezervuje…“, „10 minut od zaplacení“) popisují původní tok a změní se s přepnutím.
+- Průchod se skutečnou platbou prošel jen s testovací kartou zadanou na serveru (`stripe-test-pay`), ne přes formulář Stripe Checkout, Apple Pay ani Google Pay.
 - Po sondě zůstala ve Stripe (testovací režim) autorizovaná, nestržená platba 390 Kč zákazníka `demo-6`: bez události FLEK nezná její PaymentIntent, takže ji úklidový job zrušit nemohl. Stripe nestrženou autorizaci sám zruší do 7 dnů; platba `0d10cb4d…` v databázi zůstane ve stavu `release_pending`, dokud nepřijde `payment_intent.canceled`.
 - Opuštěný Checkout drží místo až 3 minuty. Platba dokončená po uplynutí holdu se nerezervuje, autorizace se uvolní a zákazník uvidí „Čas na zaplacení vypršel“.
 - Uvolnění blokace na kartě trvá podle banky; u Apple Pay a Google Pay se může blokace ve výpisu tvářit jako platba. Na skutečném telefonu to zatím nikdo nevyzkoušel.

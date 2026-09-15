@@ -13,7 +13,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 | Kód | https://github.com/legitjakub/flek (větev `main`) |
 | Poslední nasazení | 15. 9. 2026 (vždy poslední commit ve větvi `main`) |
 | Testy | unit testy a build v CI při každém pushi, akceptační kontroly proti hostované databázi (15. 9.: 101/101), SQL testy potvrzování rezervací a WhatsAppu |
-| Potvrzování rezervací podnikem | hotové v databázi, aplikaci i nasazených funkcích, **zatím vypnuté**; zapne se po přidání tří událostí ve Stripe (sonda 15. 9.: zatím chybí), nejdřív pro demo podniky |
+| Potvrzování rezervací podnikem | **zapnuté pro demo podniky** (15. 9., akceptace 106/106 a průchod se skutečnými testovacími platbami); pro všechny čeká na tvůj souhlas s přepnutím |
 | WhatsApp | pro podniky i zákazníky, výchozí zapnutý a vypínatelný v nastavení upozornění, ověření čísla jedním klepnutím; čeká na účet Meta a pět šablon |
 | Data v produkci (13. 9.) | 18 schválených podniků, 330 nabídek, 321 rezervací, 16 účtů (12 demo, 4 ostatní), od 13. 9. platby jen přes Stripe (test), 16 demo podniků s testovacím Stripe účtem |
 | Pro AI agenty | `AGENTS.md` v kořeni repozitáře (Claude Code ho načítá přes `CLAUDE.md`) |
@@ -36,9 +36,11 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 - [ ] **Propojit podnik „Kubova“ se Stripe.** Partner → Provozovna → „Propojit se Stripe“ (v testovacím režimu stačí testovací údaje). Bez propojení podnik nemůže zveřejnit FLEK.
 - [x] **Odhlásit se z Endory.** Přihlášení už vypršelo (13. 9.), DNS záznamy pro Resend jsou uložené a ověřené.
 - [x] **Nasadit funkce pro potvrzování rezervací.** Push do `main` je nasadil sám přes GitHub integraci, `stripe-checkout` a `stripe-test-pay` doplnil Claude (15. 9.).
-- [ ] **Přidat události do testovacího webhooku ve Stripe:** `payment_intent.amount_capturable_updated`, `payment_intent.canceled`, `payment_intent.payment_failed`. Claude 15. 9. zkusil jednu testovací platbu v režimu potvrzování a událost nepřišla, takže tam zatím nejsou. Potom dej vědět: agent zapne potvrzování pro demo podniky, pustí testy a při zeleném výsledku pro všechny.
-- [ ] **Založit WhatsApp u Meta** podle `docs/PRED_SPUSTENIM.md`: pro pilot stačí testovací číslo v aplikaci Meta (bez ověření firmy, zprávy až na 5 přidaných čísel), webhook, pět šablon s texty z dokumentu a klíče do Supabase secrets. Pak pošli agentovi zobrazované číslo a na telefonu vyzkoušej „Ověřit ve WhatsAppu“ v Profilu i v Provozovně.
-- [ ] **Zkontrolovat SMTP odesílatele v Supabase Auth** (`…@mail.app-flek.eu`, uživatel `resend`) a vyzkoušet registraci nové adresy s odkazem otevřeným v jiném prohlížeči.
+- [x] **Přidat události do testovacího webhooku ve Stripe.** Claude je 15. 9. přidal bez Dashboardu přes admin funkci `stripe-webhook-setup` (klíč zůstal v Supabase), zapnul potvrzování pro demo podniky a testy prošly.
+- [ ] **Zapnout potvrzování pro všechny podniky.** Automatický režim agentovi přepnutí zamítl jako produkční nasazení. Buď to v chatu výslovně povol, nebo v Supabase → SQL Editor spusť `update private.settings set value = 'true' where key = 'manual_confirmation_enabled';` a řekni agentovi, ať upraví dva texty pro podniky.
+- [ ] **Založit WhatsApp u Meta** podle `docs/PRED_SPUSTENIM.md`: pro pilot stačí testovací číslo v aplikaci Meta (bez ověření firmy, zprávy až na 5 přidaných čísel), webhook, pět šablon s texty z dokumentu a klíče do Supabase secrets. Pak pošli agentovi zobrazované číslo a na telefonu vyzkoušej „Ověřit ve WhatsAppu“ v Profilu i v Provozovně. Agent to 15. 9. zkusil: v Chromu nejsi u Meta for Developers přihlášený a klíče do Supabase vložit nesmí.
+- [x] **Zkontrolovat SMTP odesílatele v Supabase Auth.** Uložené správně (15. 9.): zapnuté, odesílatel `ucet@mail.app-flek.eu`, jméno FLEK, uživatel `resend`, port 465.
+- [ ] **Vyzkoušet registraci nové adresy** s odkazem otevřeným v jiném prohlížeči (agent účty zakládat nesmí).
 
 ## Todolist
 
@@ -72,7 +74,8 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 - [x] Upozornění na potvrzenou a zrušenou rezervaci pro zákazníka i podnik: v aplikaci, e-mailem a push, nastavitelné (13. 9.)
 - [ ] Připomínka před termínem a e-mail o vratce
 - [x] Potvrzování rezervací podnikem: hold před Checkoutem, autorizace platby, potvrzení do 10/5/3 minut, stržení až po potvrzení, stavy pro zákazníka i podnik, testy (15. 9.; dokončení verze ChatGPT s 15 opravami)
-- [ ] Zapnout potvrzování: události ve Stripe, `demo` → testy → `true` (funkce nasazené 15. 9.)
+- [x] Potvrzování pro demo podniky: události ve Stripe, `demo`, akceptace 106/106, průchod se skutečnými testovacími platbami (15. 9.)
+- [ ] Potvrzování pro všechny (`true`) a úprava dvou textů pro podniky
 - [x] WhatsApp upozornění pro podniky v kódu: párování čísla kódem, šablona s tlačítky Potvrdit / Nemohu přijmout, podepsaný webhook (15. 9.)
 - [x] WhatsApp i pro zákazníky, výchozí zapnutý, vypínatelný u každé události, ověření čísla jedním klepnutím, výzvy u podniku a po rezervaci, pět šablon (15. 9.)
 - [ ] WhatsApp účet Meta, pět schválených šablon a skutečný test s telefonem
@@ -171,14 +174,14 @@ Schvaluje provozovny, kontroluje nabídky a rezervace, spravuje uživatele, vid�
 | Databáze, přihlašování, soubory | Supabase (projekt `yupkrntknbkvmlajwlph`) | PostgreSQL + PostGIS, Auth, Storage, zabezpečení RLS |
 | Realtime upozornění | Supabase Realtime | záložně se aplikace ptá každých 15 s |
 | Pravidelná údržba | Supabase `pg_cron`, job `flek-maintenance` | každých 15 min dokončí rezervace 24 h po konci |
-| Potvrzování rezervací | Edge Function `booking-confirmation`, cron `flek-confirmation-expiry` (každých 30 s) | strhne platbu po potvrzení nebo uvolní autorizaci, vrací místa po vypršení; přepínač `manual_confirmation_enabled` v `private.settings` |
+| Potvrzování rezervací | Edge Function `booking-confirmation`, cron `flek-confirmation-expiry` (každých 30 s) | strhne platbu po potvrzení nebo uvolní autorizaci, vrací místa po vypršení; přepínač `manual_confirmation_enabled` v `private.settings` (od 15. 9. `demo`) |
 | WhatsApp | Meta WhatsApp Cloud API, Edge Function `whatsapp-webhook` (odesílá `notification-delivery`), cron `flek-whatsapp-events-cleanup` | podniky i zákazníci, pět šablon; čeká na účet Meta; webhook `https://yupkrntknbkvmlajwlph.supabase.co/functions/v1/whatsapp-webhook` |
 | Obnova demo nabídek | `pg_cron`, job `flek-demo-refresh` (každé ráno) | doplní demo FLEKy na 3 dny dopředu; před ostrým provozem vypnout |
 | Mazání staré analytiky | `pg_cron`, job `flek-analytics-retention` (každé ráno) | smaže události starší 180 dní |
 | Kontrola kódu | GitHub Actions (`.github/workflows/ci.yml`) | build, unit testy a audit závislostí při každém pushi; secret scanning a Dependabot |
 | Bezpečnostní hlavičky | Vercel (`vercel.json`) | CSP s allowlistem domén; nová služba se musí přidat |
 | Platby | Stripe Connect (testovací režim, sandbox FLEK) | Checkout, destination charges, účty podniků přes Accounts v2; klíče v Supabase secrets |
-| Platební Edge Functions | Supabase: `stripe-checkout`, `stripe-webhook`, `stripe-connect`, `stripe-refunds`, `stripe-test-pay` | webhook: `https://yupkrntknbkvmlajwlph.supabase.co/functions/v1/stripe-webhook`; funkce z `supabase/config.toml` nasazuje push do `main` (GitHub integrace) |
+| Platební Edge Functions | Supabase: `stripe-checkout`, `stripe-webhook`, `stripe-connect`, `stripe-refunds`, `stripe-test-pay`, `stripe-webhook-setup` (jen admin: doplní události webhooku) | webhook: `https://yupkrntknbkvmlajwlph.supabase.co/functions/v1/stripe-webhook`; funkce z `supabase/config.toml` nasazuje push do `main` (GitHub integrace) |
 | Údržba plateb | `pg_cron`, job `flek-stripe-maintenance` (každých 5 min) | vrátí zaplacené platby bez rezervace po 60 min, uzavře opuštěné pokusy, dožene frontu vratek |
 | Doména | www.app-flek.eu: DNS v Endoře (freehosting), web na Vercelu | kořenová doména a e-mailové schránky zůstávají u Seznamu |
 | E-maily | Resend, odesílací subdoména `mail.app-flek.eu` | SMTP pro Supabase Auth (ověření účtu, obnova hesla) i upozornění na rezervace |
@@ -259,6 +262,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 15. 9. 2026 | Potvrzování rezervací zapnuté pro demo podniky: události ve Stripe doplněné admin funkcí, akceptace 106/106 v režimu potvrzování, průchod se skutečnými testovacími platbami (potvrzení i odmítnutí); pro všechny čeká na souhlas; neuložené kopie Codexu uklizené do zálohy |
 | 15. 9. 2026 | Víc časů jedné služby na jedné kartě a výběr času na detailu, stejně vysoké karty v náhledu na mapě, karusel „Mohlo by se ti líbit“, fotka kategorie a nový obrázek pro službu bez fotky; WhatsApp i pro zákazníky, výchozí zapnutý a vypínatelný v nastavení, ověření čísla jedním klepnutím; nasazené platební funkce, potvrzování čeká na události ve Stripe |
 | 15. 9. 2026 | Potvrzování rezervací podnikem dokončené po ChatGPT (zatím vypnuté): místo se drží před platbou, peníze se strhnou až po potvrzení, podnik má 10/5/3 minuty, žádosti nahoře v partnerské části s bannerem a zvukem, zákazník vidí odpočet a „🔥 FLEK je tvůj!“; WhatsApp upozornění připravená na účet Meta; registrace existujícího e-mailu nabídne přihlášení; wellness fotka opravená i v databázi |
 | 14. 9. 2026 | Mapa: zpátky plný náhled s fotkou, slevou, původní cenou, vzdáleností a tlačítky Navigovat a Detail; vybraný špendlík zůstane nad kartou |

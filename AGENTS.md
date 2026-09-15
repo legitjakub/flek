@@ -40,7 +40,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik zveř
 | `src/lib/api.ts` | všechna volání Supabase RPC |
 | `src/lib/pricing.ts` | výpočet ceny a poplatku (zrcadlí SQL, test `tests/fixtures/fee-vector.json`) |
 | `src/types/database.ts` | ručně psané typy, **negenerovat** |
-| `supabase/functions` | Edge Functions: `stripe-checkout`, `stripe-webhook`, `stripe-connect` (Accounts v2), `stripe-refunds`, `stripe-test-pay` (jen test), `booking-confirmation` (capture nebo uvolnění autorizace po rozhodnutí podniku), sdílené `_shared/stripe.ts`; `notification-delivery` (e-mail přes Resend, Web Push a WhatsApp z fronty), `whatsapp-webhook` (Meta Cloud API, podpis `X-Hub-Signature-256`), sdílené `_shared/whatsapp.ts` |
+| `supabase/functions` | Edge Functions: `stripe-checkout`, `stripe-webhook`, `stripe-connect` (Accounts v2), `stripe-refunds`, `stripe-test-pay` (jen test), `stripe-webhook-setup` (jen admin: doplní události webhooku), `booking-confirmation` (capture nebo uvolnění autorizace po rozhodnutí podniku), sdílené `_shared/stripe.ts`; `notification-delivery` (e-mail přes Resend, Web Push a WhatsApp z fronty), `whatsapp-webhook` (Meta Cloud API, podpis `X-Hub-Signature-256`), sdílené `_shared/whatsapp.ts` |
 | `supabase/migrations` | schéma, RLS a všechny RPC; názvy souborů = verze v hostované DB |
 | `tests` | unit testy (Vitest), `integration.test.ts` (potřebuje Docker), `pilot-maintenance.sql`, `stripe-refunds.sql`, `manual-confirmation.sql` a `whatsapp-notifications.sql` (SQL v transakci s rollbackem) |
 | `scripts` | `acceptance.mjs` (API kontroly), `sync-notion.mjs`, lokální Supabase |

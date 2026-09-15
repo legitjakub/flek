@@ -18,7 +18,7 @@ Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B). Úkoly na 
   - vratky i obsazení místa řeší webhook.
   - Skutečné peníze se nestrhávají.
 - 16 demo podniků má testovací účet Stripe. Demo FLEKy se každé ráno doplní na 3 dny dopředu.
-- **Potvrzování rezervací podnikem** (hold před Checkoutem, autorizace, potvrzení do 10/5/3 minut, stržení až potom) je v databázi i nasazených funkcích, ale vypnuté (`manual_confirmation_enabled = false`). Zapne se po přidání tří událostí ve Stripe, nejdřív pro demo podniky. Sonda 15. 9. potvrdila, že události zatím chybí.
+- **Potvrzování rezervací podnikem** (hold před Checkoutem, autorizace, potvrzení do 10/5/3 minut, stržení až potom) je od 15. 9. zapnuté pro demo podniky (`manual_confirmation_enabled = 'demo'`): události ve Stripe jsou doplněné, akceptace 106/106 a průchod se skutečnými testovacími platbami prošly. Pro všechny (`'true'`) čeká na výslovný souhlas.
 - **WhatsApp** pro podniky i zákazníky (výchozí zapnutý, ověření čísla jedním klepnutím, vypínatelný v nastavení upozornění) je v kódu a databázi, čeká na účet Meta, pět šablon a secrets.
 - Ověřeno: 101/101 akceptačních kontrol se skutečnými testovacími platbami Stripe (původní režim), SQL testy potvrzování a WhatsAppu, build a unit testy v CI.
 
@@ -41,8 +41,10 @@ Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B). Úkoly na 
 ### Potvrzování rezervací a WhatsApp
 
 - [x] **Edge Functions nasazené** (15. 9.): push do `main` nasadil přes GitHub integraci Supabase funkce z `supabase/config.toml` (`stripe-webhook`, `notification-delivery`, `whatsapp-webhook`, `booking-confirmation`, `stripe-refunds`), `stripe-checkout` a `stripe-test-pay` nasadil agent přes MCP. Webhook prošel akceptací 101/101.
-- [ ] **Stripe webhook (testovací i ostrý):** přidat události `payment_intent.amount_capturable_updated`, `payment_intent.canceled` a `payment_intent.payment_failed` k dosavadním. Bez nich se autorizace z Checkoutu ke žádosti nedostane a zákazník čeká, dokud hold nevyprší. Sonda 15. 9. ve 14:46 ukázala, že v testovacím webhooku zatím nejsou. Pak dát vědět agentovi, zapne `demo` a projde testy.
-- [ ] **Ruční test na telefonu** po zapnutí pro demo podniky: zaplatit Apple Pay nebo Google Pay a kartou 4242, zkontrolovat, že banka ukáže jen blokaci, potvrdit v partnerské části druhým účtem a ověřit kód; podruhé zvolit Nemohu přijmout a ověřit, že blokace zmizí.
+- [x] **Testovací Stripe webhook:** události `payment_intent.amount_capturable_updated`, `payment_intent.canceled` a `payment_intent.payment_failed` doplnil agent 15. 9. admin funkcí `stripe-webhook-setup` (najde endpoint této aplikace a přidá chybějící události, klíč zůstává v Supabase secrets).
+- [ ] **Ostrý Stripe webhook:** po jeho vytvoření a vložení ostrých klíčů stačí jako admin zavolat `stripe-webhook-setup` (nejdřív s `{"dry_run": true}`), doplní stejné události.
+- [ ] **Povolit přepnutí potvrzování na všechny** (`update private.settings set value = 'true' where key = 'manual_confirmation_enabled'`). Automatický režim agentovi přepnutí zamítl jako produkční nasazení; stačí výslovný souhlas v chatu, nebo příkaz spustit v Supabase SQL Editoru.
+- [ ] **Ruční test na telefonu** (demo podniky už potvrzují): zaplatit Apple Pay nebo Google Pay a kartou 4242 přímo na stránce Stripe Checkout, zkontrolovat, že banka ukáže jen blokaci, potvrdit v partnerské části druhým účtem a ověřit kód; podruhé zvolit Nemohu přijmout a ověřit, že blokace zmizí. Agent prošel stejný tok s testovací kartou zadanou na serveru (číslo karty do formuláře psát nesmí).
 - [ ] **Meta — WhatsApp Business Platform:**
   1. **Pro pilot stačí testovací číslo:** Meta for Developers → nová aplikace typu Business → produkt WhatsApp → „API Setup“. Testovací číslo nepotřebuje ověření firmy, ale posílá zprávy jen na nejvýš 5 čísel přidaných v „To“ (Jakub, demo telefon podniku). Pro ostrý provoz: Business portfolio s ověřením firmy, WhatsApp Business Account a vlastní číslo pro FLEK (nesmí být zároveň v aplikaci WhatsApp), zobrazované jméno „FLEK“.
   2. System user s trvalým tokenem a oprávněními `whatsapp_business_messaging` a `whatsapp_business_management` (testovací token platí jen 24 hodin). Zkopírovat App Secret a Phone number ID.
@@ -98,7 +100,7 @@ Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B). Úkoly na 
   5. Supabase → Edge Functions → Secrets: `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_TEMPLATE_BOOKING_REQUEST` (`flek_booking_request`), `WHATSAPP_TEMPLATE_BUSINESS_CONFIRMED`, `WHATSAPP_TEMPLATE_BUSINESS_CANCELLED`, `WHATSAPP_TEMPLATE_CUSTOMER_CONFIRMED`, `WHATSAPP_TEMPLATE_CUSTOMER_CANCELLED` (názvy šablon výše), `WHATSAPP_TEMPLATE_LANGUAGE` (`cs`), volitelně `WHATSAPP_GRAPH_VERSION` (výchozí `v25.0`). Šablonu, která ještě není schválená, stačí nevyplnit: ta zpráva se přeskočí. Nikdy do chatu ani repozitáře.
   6. Říct agentovi zobrazované číslo FLEK; zapíše ho do `private.settings` (`whatsapp_display_number`). Tím se WhatsApp objeví v Provozovně, v Profilu a ve výzvách.
   7. Na svém telefonu: v Profilu i v Provozovně demo podniku klepnout na „Ověřit ve WhatsAppu“ (má se otevřít WhatsApp s připravenou zprávou), zprávu odeslat, nechat přijít žádost a vyzkoušet obě tlačítka, opakované klepnutí a zprávu zákazníkovi s kódem.
-- [ ] **E-mail při registraci:** v Supabase → Authentication → SMTP zkontrolovat odesílatele `…@mail.app-flek.eu` a uživatele `resend` (uložení minule spadlo na časový limit), pak zaregistrovat novou adresu, otevřít odkaz v jiném prohlížeči a ověřit přihlášení.
+- [ ] **E-mail při registraci:** SMTP v Supabase Auth je uložené správně (ověřeno 15. 9.: zapnuté, odesílatel `ucet@mail.app-flek.eu`, uživatel `resend`, port 465). Zbývá zaregistrovat novou adresu, otevřít odkaz v jiném prohlížeči a ověřit přihlášení.
 
 ### Supabase a infrastruktura
 
@@ -160,8 +162,8 @@ Každý bod je samostatný úkol. Po dokončení agent aktualizuje dokumentaci p
 
 ### Potvrzování rezervací
 
-- [ ] Po přidání událostí ve Stripe (funkce jsou nasazené, sonda 15. 9. události nenašla): `update private.settings set value = 'demo' where key = 'manual_confirmation_enabled'`, spustit `tests/manual-confirmation.sql`, `npm run test:acceptance` (projde režim potvrzování) a klikací průchod zákazník + podnik na 375/390/1280 px se skutečnou testovací platbou.
-- [ ] Když je `demo` zelené, přepnout na `'true'` (Jakub souhlasil předem) a ve stejné změně upravit text na stránce pro podniky („Když si ho někdo rezervuje…“) a nápovědu k lhůtě zrušení v Provozovně („10 minut od zaplacení“ → od potvrzení).
+- [x] Události ve Stripe, `manual_confirmation_enabled = 'demo'`, `npm run test:acceptance` v režimu potvrzování (106/106) a průchod zákazník (375 px) + podnik (390 px) se skutečnými testovacími platbami: potvrzení → kód a stržení, odmítnutí → uvolněná blokace (15. 9.).
+- [ ] Přepnout na `'true'` (automatický režim přepnutí zamítl, čeká na výslovný souhlas) a ve stejné změně upravit text na stránce pro podniky („Když si ho někdo rezervuje…“) a nápovědu k lhůtě zrušení v Provozovně („10 minut od zaplacení“ → od potvrzení).
 - [x] Opravy nasazené verze ChatGPT, oba SQL testy, akceptační skript pro oba režimy, unit testy stavů (15. 9.).
 - [x] WhatsApp v kódu: párování, šablona, webhook s ověřením podpisu, rozhodnutí přes `decide_booking` (15. 9.).
 - [x] WhatsApp pro zákazníky, výchozí zapnutý a vypínatelný po událostech, ověření jedním klepnutím, pět šablon (15. 9.).
