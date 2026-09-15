@@ -49,7 +49,7 @@ Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B). Úkoly na 
 - [ ] **Meta — WhatsApp Business Platform:**
   1. **Pro pilot stačí testovací číslo:** Meta for Developers → nová aplikace typu Business → produkt WhatsApp → „API Setup“. Testovací číslo nepotřebuje ověření firmy, ale posílá zprávy jen na nejvýš 5 čísel přidaných v „To“ (Jakub, demo telefon podniku). Pro ostrý provoz: Business portfolio s ověřením firmy, WhatsApp Business Account a vlastní číslo pro FLEK (nesmí být zároveň v aplikaci WhatsApp), zobrazované jméno „FLEK“.
   2. System user s trvalým tokenem a oprávněními `whatsapp_business_messaging` a `whatsapp_business_management` (testovací token platí jen 24 hodin). Zkopírovat App Secret a Phone number ID.
-  3. Webhook: callback `https://yupkrntknbkvmlajwlph.supabase.co/functions/v1/whatsapp-webhook`, verify token náhodný řetězec aspoň 16 znaků, odebírat pole `messages`.
+  3. Webhook: callback `https://yupkrntknbkvmlajwlph.supabase.co/functions/v1/whatsapp-webhook`, verify token náhodný řetězec aspoň 16 znaků, odebírat pole `messages`. Nejdřív ulož v Supabase secrets `WHATSAPP_VERIFY_TOKEN` (stejný řetězec) a `WHATSAPP_APP_SECRET` (bod 5), jinak Meta webhook při „Verify and save“ neověří.
   4. Pět šablon kategorie **Utility**, jazyk čeština (`cs`). Parametry musí zůstat v tomto pořadí (posílá je `claim_whatsapp_deliveries`):
      - `flek_booking_request` (podniku, žádost o potvrzení), tlačítka: dvě rychlé odpovědi s texty přesně **Potvrdit** a **Nemohu přijmout**:
        ```
