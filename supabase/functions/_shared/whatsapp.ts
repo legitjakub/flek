@@ -1,6 +1,6 @@
 /**
- * WhatsApp Cloud API (Meta) for partner notifications: the signature check, the webhook parser, the
- * request template and the replies. No Deno or npm imports, so the unit tests run it as it is.
+ * WhatsApp Cloud API (Meta) for venues and customers: the signature check, the webhook parser, the
+ * templates and the replies. No Deno or npm imports, so the unit tests run it as it is.
  *
  * Nothing here decides a booking. The webhook hands the parsed button to `whatsapp_decide`, which
  * runs the same `private.decide_booking` as the app, after checking the number, the message it
@@ -105,7 +105,28 @@ export function actionPayload(accept: boolean, token: string): string {
   return `FLEK1.${accept ? 'a' : 'r'}.${token}`;
 }
 
-export type RequestJob = { to: string; token: string; when: string; service: string; payout: string; deadline: string };
+export type WhatsAppTemplate =
+  | 'business_request'
+  | 'business_confirmed'
+  | 'business_cancelled'
+  | 'customer_confirmed'
+  | 'customer_cancelled';
+
+/**
+ * The Supabase secret holding the approved Meta template name of each message. A message whose
+ * secret is missing is skipped, so templates can be approved one at a time. The texts and the order
+ * of their parameters are in docs/PRED_SPUSTENIM.md.
+ */
+export const TEMPLATE_SECRETS: Record<WhatsAppTemplate, string> = {
+  business_request: 'WHATSAPP_TEMPLATE_BOOKING_REQUEST',
+  business_confirmed: 'WHATSAPP_TEMPLATE_BUSINESS_CONFIRMED',
+  business_cancelled: 'WHATSAPP_TEMPLATE_BUSINESS_CANCELLED',
+  customer_confirmed: 'WHATSAPP_TEMPLATE_CUSTOMER_CONFIRMED',
+  customer_cancelled: 'WHATSAPP_TEMPLATE_CUSTOMER_CANCELLED',
+};
+
+/** What `claim_whatsapp_deliveries` hands over for one message: parameters in the template's order. */
+export type TemplateJob = { to: string; template: WhatsAppTemplate; params: string[]; token: string | null };
 
 /** Meta refuses text parameters with line breaks, tabs or runs of spaces. */
 function parameter(value: string): { type: 'text'; text: string } {
@@ -113,25 +134,24 @@ function parameter(value: string): { type: 'text'; text: string } {
 }
 
 /**
- * The approved utility template "Nová rezervace čeká na potvrzení" with four body parameters
- * (termín, služba, výplata, potvrďte do) and two quick replies, Potvrdit and Nemohu přijmout.
- * The exact template text is in docs/PRED_SPUSTENIM.md.
+ * An approved utility template with its body parameters. Only the venue's request carries buttons:
+ * quick replies Potvrdit and Nemohu přijmout, each with the message's one-time token.
  */
-export function bookingRequestMessage(job: RequestJob, template: string, language: string) {
+export function templateMessage(job: TemplateJob, name: string, language: string) {
+  const components: Record<string, unknown>[] = [{ type: 'body', parameters: job.params.map(parameter) }];
+  if (job.template === 'business_request') {
+    if (!job.token) throw new Error('WHATSAPP_TOKEN_MISSING');
+    components.push(
+      { type: 'button', sub_type: 'quick_reply', index: '0', parameters: [{ type: 'payload', payload: actionPayload(true, job.token) }] },
+      { type: 'button', sub_type: 'quick_reply', index: '1', parameters: [{ type: 'payload', payload: actionPayload(false, job.token) }] },
+    );
+  }
   return {
     messaging_product: 'whatsapp',
     recipient_type: 'individual',
     to: job.to.replace(/\D/g, ''),
     type: 'template',
-    template: {
-      name: template,
-      language: { code: language },
-      components: [
-        { type: 'body', parameters: [parameter(job.when), parameter(job.service), parameter(job.payout), parameter(job.deadline)] },
-        { type: 'button', sub_type: 'quick_reply', index: '0', parameters: [{ type: 'payload', payload: actionPayload(true, job.token) }] },
-        { type: 'button', sub_type: 'quick_reply', index: '1', parameters: [{ type: 'payload', payload: actionPayload(false, job.token) }] },
-      ],
-    },
+    template: { name, language: { code: language }, components },
   };
 }
 
@@ -193,12 +213,16 @@ export function decisionReply(result: { result?: string; status?: string; decide
   }
 }
 
-export function pairingReply(result: { result?: string; business?: string | null } | null): string | null {
+export function pairingReply(result: { result?: string; kind?: string; business?: string | null } | null): string | null {
+  if (result?.result === 'paired' && result.kind === 'customer') {
+    return 'Hotovo ✅ Potvrzené FLEKy s rezervačním kódem a změny tvých rezervací ti budeme posílat sem. Vypnout to můžeš v aplikaci FLEK v Profilu.';
+  }
   if (result?.result === 'paired') {
-    return `Hotovo ✅ Nové žádosti o rezervaci pro ${result.business ?? 'vaši provozovnu'} vám budeme posílat sem. Vypnout to můžete v aplikaci FLEK Partner v sekci Provozovna.`;
+    return `Hotovo ✅ Žádosti o rezervaci a změny rezervací pro ${result.business ?? 'vaši provozovnu'} vám budeme posílat sem. Vypnout to můžete v aplikaci FLEK Partner v sekci Provozovna.`;
   }
   if (result?.result === 'failed') {
-    return 'Kód nesedí, vypršel, nebo ho posíláte z jiného čísla, než jste zadali v aplikaci. V aplikaci FLEK Partner si prosím vygenerujte nový.';
+    // Nobody knows yet whether a venue or a customer wrote, so the answer addresses neither.
+    return 'Kód nesedí, vypršel, nebo nepřišel z čísla zadaného v aplikaci FLEK. Nový kód vytvoří tlačítko Ověřit ve WhatsAppu.';
   }
   return null;
 }

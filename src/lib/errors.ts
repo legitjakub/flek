@@ -30,6 +30,13 @@ const messages:Record<string,string>={
  'Invalid login credentials':'E-mail nebo heslo nesouhlasí.','User already registered':'Tento e-mail už má účet. Přihlas se.',
  'Email not confirmed':'Nejdřív potvrď svůj e-mail.','Email rate limit exceeded':'Zkus to prosím znovu za chvíli.',
 };
+/** The same codes said to a customer, where the shared text above is written for a partner. */
+const customerMessages:Record<string,string>={
+ INVALID_PHONE:'Zkontroluj telefonní číslo. České číslo stačí napsat bez předvolby, zahraniční s + na začátku.',
+ CONSENT_REQUIRED:'Pro zprávy na WhatsApp potřebujeme tvůj souhlas.',
+ WHATSAPP_UNAVAILABLE:'Zprávy na WhatsApp zatím nejsou dostupné.',
+ WHATSAPP_PAIRING_RATE_LIMITED:'Kód sis nechal/a vytvořit už několikrát. Zkus to prosím za hodinu.',
+};
 /*
  * The customer app tyká and the merchant console vyká. Specific codes are already written for
  * their audience; the generic fallbacks were customer-only, so a partner was told
@@ -41,7 +48,8 @@ const fallbacks={
 };
 export function errorMessage(error:unknown,audience:'customer'|'merchant'='customer'){
  const message=error instanceof Error?error.message:typeof error==='object'&&error&&'message'in error?String(error.message):'';
- const mapped=Object.entries(messages).find(([code])=>message.includes(code));
+ const mapped=(audience==='customer'?Object.entries(customerMessages).find(([code])=>message.includes(code)):undefined)
+  ??Object.entries(messages).find(([code])=>message.includes(code));
  if(mapped)return mapped[1];
  if(message.includes('letní čas'))return message;
  if(/fetch|network|offline|timeout/i.test(message))return fallbacks[audience].network;

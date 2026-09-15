@@ -5,6 +5,7 @@ import { serverNow, useClockEpoch } from '../../lib/clock';
 import type { Point } from '../../lib/geo';
 import type { SearchRow } from '../../types/database';
 import { windowFor, wideningSteps, type Filters, type When } from './filters';
+import { groupSlots } from './slots';
 
 /**
  * `applied` is the rung of the widening ladder these rows actually came from — not what was
@@ -40,10 +41,13 @@ export async function discover(point: Point, filters: Filters): Promise<Discover
       max_price_cents: filters.max_price_cents,
       sort: filters.sort,
       daypart: filters.daypart,
-      limit: 30,
+      // Several times of one service become one card, so ask for more rows than cards are shown.
+      limit: 50,
     });
-    if (rows.length > best.rows.length) best = { rows, note: step.note, applied: { when: step.when, radius_m: step.radius_m } };
-    if (rows.length >= MIN_RESULTS) break;
+    // What counts is how many different FLEKs the customer gets, not how many times they have.
+    const cards = groupSlots(rows).length;
+    if (cards > groupSlots(best.rows).length) best = { rows, note: step.note, applied: { when: step.when, radius_m: step.radius_m } };
+    if (cards >= MIN_RESULTS) break;
   }
   track('search_performed', {
     // A district is enough for "where is the marketplace thin"; the server rounds the same way.

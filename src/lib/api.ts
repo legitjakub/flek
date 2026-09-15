@@ -119,21 +119,28 @@ export async function businessPaymentsStatus(businessId: string): Promise<Busine
   return await result<BusinessPaymentsStatus>(supabase.rpc('business_payments_status', { p_business_id: businessId }));
 }
 
-export async function whatsappSettings(businessId: string): Promise<WhatsAppSettings> {
+/** `businessId` null is the signed-in customer's own number. */
+export async function whatsappSettings(businessId: string | null): Promise<WhatsAppSettings> {
   const settings = await result<WhatsAppSettings>(supabase.rpc('whatsapp_settings', { p_business_id: businessId }));
   noteServerNow(settings.server_now);
   return settings;
 }
 
-export async function whatsappStartPairing(businessId: string, phone: string, consentVersion: string): Promise<WhatsAppPairing> {
-  const pairing = await result<WhatsAppPairing>(supabase.rpc('whatsapp_start_pairing', {
-    p_business_id: businessId, p_phone: phone, p_consent_version: consentVersion,
+/** Stores the code the app put into the WhatsApp message; without `phone` the number on file is used. */
+export async function whatsappStartPairing(pairing: {
+  businessId: string | null;
+  phone: string | null;
+  consentVersion: string;
+  code: string;
+}): Promise<WhatsAppPairing> {
+  const started = await result<WhatsAppPairing>(supabase.rpc('whatsapp_start_pairing', {
+    p_business_id: pairing.businessId, p_phone: pairing.phone, p_consent_version: pairing.consentVersion, p_code: pairing.code,
   }));
-  noteServerNow(pairing.server_now);
-  return pairing;
+  noteServerNow(started.server_now);
+  return started;
 }
 
-export async function whatsappDisable(businessId: string): Promise<void> {
+export async function whatsappDisable(businessId: string | null): Promise<void> {
   await result(supabase.rpc('whatsapp_disable', { p_business_id: businessId }));
 }
 

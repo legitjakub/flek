@@ -7,6 +7,7 @@ import { Link, useRouter } from '../../app/router';
 import { OfferCard } from '../discovery/OfferCard';
 import { FavoriteButton } from '../favorites/FavoriteButton';
 import { unavailableCopy, type UnavailableReason } from './unavailable';
+import { groupSlots } from '../discovery/slots';
 import type { OfferDetail } from '../../types/database';
 
 /** Below this a "similar" strip is two lonely cards that make the market look empty. */
@@ -50,12 +51,15 @@ export function UnavailableOfferRecovery({
         max_price_cents: null,
         sort: 'soonest',
         daypart: null,
-        limit: MAX_ALTERNATIVES + 1,
+        limit: 20,
       }),
     staleTime: 60_000,
   });
 
-  const alternatives = (similar.data ?? []).filter((row) => row.id !== offer.id).slice(0, MAX_ALTERNATIVES);
+  // Other times of this very service are offered by the time picker above, so they are not "similar".
+  const alternatives = groupSlots((similar.data ?? []).filter((row) => row.id !== offer.id))
+    .filter((group) => !(group.lead.business_id === offer.business_id && group.lead.service_id === offer.service_id))
+    .slice(0, MAX_ALTERNATIVES);
   const discoveryHref = `/?category=${encodeURIComponent(offer.category_slug)}&when=week`;
 
   return (
@@ -101,8 +105,8 @@ export function UnavailableOfferRecovery({
         <div className="mt-6 border-t border-line pt-5">
           <h3 className="text-base font-extrabold">Volné právě teď</h3>
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
-            {alternatives.map((row) => (
-              <OfferCard key={row.id} offer={row} now={now} />
+            {alternatives.map((group) => (
+              <OfferCard key={group.key} offer={group.lead} slots={group.slots} now={now} />
             ))}
           </div>
           <Link

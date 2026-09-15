@@ -15,7 +15,18 @@ describe('serviceIllustration', () => {
     expect(serviceIllustration('Osobní trénink')).toBe('/images/services/personal-training-prague.jpg');
   });
 
-  it('uses the universal FLEK picture instead of an unrelated venue cover', () => {
-    expect(serviceIllustration('Půjčení kola', null, '/images/services/tennis-prague.jpg')).toBe(SERVICE_PLACEHOLDER);
+  it('matches the other kinds of service by name, and not on fragments of unrelated words', () => {
+    expect(serviceIllustration('Ranní jóga')).toBe('/images/services/yoga-prague.jpg');
+    expect(serviceIllustration('Privátní sauna')).toBe('/images/services/sauna-prague.jpg');
+    expect(serviceIllustration('Relaxační masáž')).toMatch(/images\.unsplash\.com/);
+    // "vlastní" is not "vlasy", and "trasa" is not "řasy".
+    expect(serviceIllustration('Vlastní lekce na trase', null, null)).toBe(SERVICE_PLACEHOLDER);
+  });
+
+  it('falls back to a photo of the category before FLEK\'s own picture', () => {
+    expect(serviceIllustration('Kurz lukostřelby', null, 'sport')).toBe('/images/services/group-class-prague.jpg');
+    expect(serviceIllustration('Speciální balíček', null, 'krasa')).toMatch(/images\.unsplash\.com/);
+    expect(serviceIllustration('Půjčení kola', null, 'neznama-kategorie')).toBe(SERVICE_PLACEHOLDER);
+    expect(serviceIllustration('Půjčení kola')).toBe(SERVICE_PLACEHOLDER);
   });
 });

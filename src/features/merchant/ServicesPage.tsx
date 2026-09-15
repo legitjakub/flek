@@ -49,7 +49,7 @@ function Services({ business }: { business: Business }) {
 
       <ul className="grid gap-3 md:grid-cols-2">
         {(services.data ?? []).map((service) => {
-          const image = serviceIllustration(service.name, service.image_url, business.cover_url);
+          const image = serviceIllustration(service.name, service.image_url, service.category_slug);
           return (
             <li key={service.id}>
               <button
@@ -172,7 +172,7 @@ function ServiceSheet({
     save.mutate();
   }
 
-  const previewImage = serviceIllustration(trimmedName, imageUrl, business.cover_url);
+  const previewImage = serviceIllustration(trimmedName, imageUrl, category);
 
   return (
     <Sheet

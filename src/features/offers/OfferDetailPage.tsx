@@ -1,7 +1,7 @@
 import { ArrowLeft, CalendarDays, CalendarPlus, ChevronDown, Clock3, MapPin, Banknote, Check } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { getOfferDetail, setFavorite } from '../../lib/api';
+import { businessOffers, getOfferDetail, setFavorite } from '../../lib/api';
 import { track } from '../../lib/analytics';
 import { relativeTime, useServerNow } from '../../lib/clock';
 import { money, distance as formatDistance } from '../../lib/format';
@@ -26,6 +26,9 @@ import { GooglePlaceRating } from '../ratings/GooglePlaceRating';
 import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
 import { SERVICE_PLACEHOLDER, serviceIllustration } from '../../lib/serviceIllustrations';
 import { CapacityLabel } from '../../components/CapacityLabel';
+import { TimePicker } from './TimePicker';
+import { Recommendations } from './Recommendations';
+import { WhatsAppPrompt } from '../notifications/WhatsApp';
 
 export function OfferDetailPage({ offerId }: { offerId: string }) {
   const { search, navigate } = useRouter();
@@ -48,6 +51,30 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
     refetchInterval: 60_000,
   });
   const offer = query.data ?? null;
+
+  // Every free offer at this venue: the other times of this service for the picker, the venue's other
+  // services for the recommendations. Same key as the venue page, so the cache is shared and the
+  // inventory watcher keeps it fresh.
+  const venueOffers = useQuery({
+    queryKey: ['business-offers', offer?.business_id, point.lat, point.lng],
+    queryFn: () => businessOffers(offer!.business_id, point),
+    enabled: Boolean(offer?.business_id),
+    staleTime: 30_000,
+  });
+  const [switchingTo, setSwitchingTo] = useState<string | null>(null);
+
+  /** Moves the page to another time of the same service, with its detail loaded first so nothing flashes. */
+  async function pickTime(id: string) {
+    setSwitchingTo(id);
+    try {
+      await queryClient.ensureQueryData({ queryKey: ['offer', id], queryFn: () => getOfferDetail(id, point) });
+    } catch {
+      // The page for that time shows its own error and a retry.
+    }
+    const params = new URLSearchParams(search);
+    for (const key of ['platba', 'zruseno', 'rezervovat', 'sledovat']) params.delete(key);
+    navigate(`/nabidka/${id}${params.size ? `?${params}` : ''}`, { replace: true, scroll: false });
+  }
 
   useEffect(() => {
     if (offer) track('offer_viewed', { offer_id: offer.id, business_id: offer.business_id });
@@ -134,7 +161,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
     return <BookingSuccess code={code} offer={offer} now={now} confirmedByMerchant={confirmedByMerchant} />;
   }
 
-  const source = serviceIllustration(offer.service_name, offer.image_url, offer.cover_url);
+  const source = serviceIllustration(offer.service_name, offer.image_url, offer.category_slug);
   const image = source === failedPhoto ? SERVICE_PLACEHOLDER : source;
   const savings = offer.original_price_cents - offer.deal_price_cents;
   const minutesAway = Math.round((Date.parse(offer.start_at) - Date.parse(now)) / 60000);
@@ -282,6 +309,13 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
               {duration(offer.start_at, offer.end_at)} min
             </span>
           </div>
+          <TimePicker
+            offer={offer}
+            slots={(venueOffers.data ?? []).filter((row) => row.service_id === offer.service_id)}
+            now={now}
+            pendingId={switchingTo}
+            onPick={(id) => void pickTime(id)}
+          />
           {/*
             One row, two ends. The two numbers a person compares stay together on the left
             and the percentage goes to the right edge, so the row spans the card instead of
@@ -398,6 +432,15 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
               <p className="mt-2 text-base leading-relaxed text-muted">Zrušit můžeš zdarma {cancellationCopy} a vrátíme ti celou částku.{Date.parse(cancellationAt) > Date.parse(now) ? ' Když rezervuješ později, máš na zrušení 10 minut od rezervace.' : ''}</p>
             </>
           ) : null}
+          {/* A slot that can no longer be booked already offers alternatives in the recovery block above. */}
+          {offer.bookable || !reason ? (
+            <Recommendations
+              offer={offer}
+              venueRows={venueOffers.data ?? []}
+              point={storedPoint() ?? { lat: offer.latitude, lng: offer.longitude }}
+              now={now}
+            />
+          ) : null}
         </div>
       </div>
 
@@ -480,6 +523,10 @@ function BookingSuccess({
           <FavoriteButton variant="cta" businessId={offer.business_id} businessName={offer.business_name} />
         </div>
         <p className="mt-2 text-sm text-muted">Nové FLEKy uvidíš v Oblíbených.</p>
+      </div>
+
+      <div className="mt-6">
+        <WhatsAppPrompt context="booked" />
       </div>
 
       <div className="mt-6">

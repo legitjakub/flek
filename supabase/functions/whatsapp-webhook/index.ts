@@ -9,6 +9,8 @@ import { decisionReply, pairingReply, parseWebhook, textMessage, timingSafeEqual
  * database (`whatsapp_decide`, `whatsapp_pair`), which deduplicates Meta's repeated deliveries;
  * this function only parses, forwards and sends the short reply.
  *
+ * A pairing code can come from a venue or a customer; the reply addresses whichever the database paired.
+ *
  * Secrets: WHATSAPP_APP_SECRET, WHATSAPP_VERIFY_TOKEN, WHATSAPP_ACCESS_TOKEN, WHATSAPP_PHONE_NUMBER_ID.
  */
 Deno.serve(async (request) => {
@@ -76,7 +78,7 @@ async function call(db: SupabaseClient, name: string, args: Record<string, unkno
   return data;
 }
 
-/** A free-form reply inside the 24-hour window the partner's own message has just opened. */
+/** A free-form reply inside the 24-hour window the sender's own message has just opened. */
 async function reply(to: string, body: string | null, replyTo: string) {
   const token = Deno.env.get('WHATSAPP_ACCESS_TOKEN');
   const phoneNumberId = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID');

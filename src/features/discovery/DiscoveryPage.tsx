@@ -12,6 +12,7 @@ import { useDiscoveryState } from './useDiscoveryState';
 import { LocationChip } from './LocationChip';
 import { FilterBar, plural } from './FilterBar';
 import { useMemo } from 'react';
+import { groupSlots } from './slots';
 
 export function DiscoveryPage() {
   const { point, setPoint, filters, setFilters } = useDiscoveryState();
@@ -19,7 +20,10 @@ export function DiscoveryPage() {
   const now = useServerNow();
   const categories = useQuery({ queryKey: ['categories'], queryFn: listCategories, staleTime: 3_600_000 });
   const discovery = useDiscovery(point, filters);
-  const rows = discovery.data?.rows ?? [];
+  // One card per service and venue; its other times ride along on the card.
+  const groups = useMemo(() => groupSlots(discovery.data?.rows ?? []), [discovery.data?.rows]);
+  const rows = useMemo(() => groups.map((group) => group.lead), [groups]);
+  const slotsFor = useMemo(() => Object.fromEntries(groups.map((group) => [group.lead.id, group.slots])), [groups]);
   const customized = activeCount(filters) > 0 || filters.when !== DEFAULT_FILTERS.when;
   const sections = useMemo(() => customized
     ? (rows.length ? [{ key: 'all', title: 'V okolí', rows }] : [])
@@ -66,7 +70,7 @@ export function DiscoveryPage() {
           </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {section.rows.map((offer, index) => (
-              <OfferCard key={offer.id} offer={offer} now={now} priority={sectionIndex === 0 && index === 0} />
+              <OfferCard key={offer.id} offer={offer} slots={slotsFor[offer.id]} now={now} priority={sectionIndex === 0 && index === 0} />
             ))}
           </div>
         </section>

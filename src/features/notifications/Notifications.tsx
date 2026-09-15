@@ -5,6 +5,7 @@ import { Link } from '../../app/router';
 import { Button, Sheet } from '../../components/ui';
 import { supabase } from '../../lib/supabase';
 import { useSession } from '../auth/session';
+import { useWhatsAppSettings } from './WhatsApp';
 
 type Notice = {
   id: string;
@@ -20,7 +21,13 @@ type Preference = {
   event: 'requested' | 'confirmed' | 'cancelled';
   email: boolean;
   push: boolean;
+  /** On unless switched off; messages go only to a verified number. */
+  whatsapp: boolean;
 };
+
+type Channel = 'email' | 'push' | 'whatsapp';
+
+const DEFAULTS: Record<Channel, boolean> = { email: true, push: false, whatsapp: true };
 
 const NOTIFICATIONS_ENABLED = import.meta.env.VITE_NOTIFICATIONS_ENABLED === 'true';
 
@@ -145,10 +152,13 @@ export function NotificationSettings({ businessId }: { businessId?: string }) {
     queryFn: () => rpc<Preference[]>('my_notification_preferences', { p_scope: scope }),
     enabled: NOTIFICATIONS_ENABLED && Boolean(userId),
   });
+  // WhatsApp gets its column once FLEK has a number to send from, like the other channels: on by default.
+  const whatsapp = useWhatsAppSettings(businessId);
+  const channels: Channel[] = whatsapp.data?.available ? ['email', 'push', 'whatsapp'] : ['email', 'push'];
 
   if (!NOTIFICATIONS_ENABLED || !userId) return null;
 
-  async function save(event: Preference['event'], channel: 'email' | 'push', value: boolean) {
+  async function save(event: Preference['event'], channel: Channel, value: boolean) {
     setBusy(true);
     setMessage('');
     try {
@@ -169,12 +179,13 @@ export function NotificationSettings({ businessId }: { businessId?: string }) {
         await rpc('save_push_subscription', { p_subscription: subscription.toJSON() });
       }
 
-      const current = query.data?.find((preference) => preference.event === event) ?? { email: true, push: false };
+      const current = query.data?.find((preference) => preference.event === event) ?? DEFAULTS;
       await rpc('save_notification_preference', {
         p_scope: scope,
         p_event: event,
         p_email: channel === 'email' ? value : current.email,
         p_push: channel === 'push' ? value : current.push,
+        p_whatsapp: channel === 'whatsapp' ? value : current.whatsapp,
       });
       await queryClient.invalidateQueries({ queryKey });
       setMessage('Nastavení je uložené.');
@@ -204,16 +215,16 @@ export function NotificationSettings({ businessId }: { businessId?: string }) {
             <fieldset key={event} className="mt-4 border-t border-line pt-3">
               <legend className="font-bold text-ink">{event === 'requested' ? 'Nová žádost o rezervaci' : event === 'confirmed' ? 'Potvrzená rezervace' : 'Zrušená rezervace'}</legend>
               <div className="mt-1 flex flex-wrap gap-x-5">
-                {(['email', 'push'] as const).map((channel) => (
+                {channels.map((channel) => (
                   <label key={channel} className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-medium text-ink">
                     <input
                       type="checkbox"
                       className="size-5 accent-accent"
-                      checked={current?.[channel] ?? channel === 'email'}
+                      checked={current?.[channel] ?? DEFAULTS[channel]}
                       disabled={busy || query.isPending}
                       onChange={(eventTarget) => void save(event, channel, eventTarget.target.checked)}
                     />
-                    {channel === 'email' ? 'E-mail' : 'Oznámení na telefonu'}
+                    {channel === 'email' ? 'E-mail' : channel === 'push' ? 'Oznámení na telefonu' : 'WhatsApp'}
                   </label>
                 ))}
               </div>
@@ -221,6 +232,15 @@ export function NotificationSettings({ businessId }: { businessId?: string }) {
           );
         })
       )}
+
+      {whatsapp.data?.available && whatsapp.data.status !== 'verified' && !query.isError ? (
+        <p className="mt-3 text-sm text-muted">
+          {formal ? 'Na WhatsApp začnou zprávy chodit, až níže ověříte číslo.' : 'Na WhatsApp začnou zprávy chodit, až níže ověříš číslo.'}
+        </p>
+      ) : null}
+      {formal && whatsapp.data?.status === 'verified' && !whatsapp.data.mine ? (
+        <p className="mt-3 text-sm text-muted">Na WhatsApp provozovny chodí zprávy podle nastavení člena, který číslo ověřil.</p>
+      ) : null}
 
       <Button
         variant="ghost"

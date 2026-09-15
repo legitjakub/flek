@@ -10,6 +10,7 @@ import type { SearchRow } from '../../types/database';
 import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
 import { SERVICE_PLACEHOLDER, serviceIllustration } from '../../lib/serviceIllustrations';
 import { CapacityLabel } from '../../components/CapacityLabel';
+import { slotLabels, visibleSlots } from './slots';
 
 /**
  * The card the whole product is read through. Time leads, price closes, the discount only
@@ -21,11 +22,14 @@ import { CapacityLabel } from '../../components/CapacityLabel';
  */
 export function OfferCard({
   offer,
+  slots,
   now,
   compact,
   priority,
 }: {
   offer: SearchRow;
+  /** Every free time of this service at this venue, the card's own included. */
+  slots?: SearchRow[];
   now: string;
   /** Drops the photograph — for the preview card floating over the map. */
   compact?: boolean;
@@ -35,12 +39,14 @@ export function OfferCard({
   const { path, search } = useRouter();
   const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
   const origin = `${path}${search.size ? `?${search}` : ''}`;
-  const source = serviceIllustration(offer.service_name, offer.image_url, offer.cover_url);
+  const source = serviceIllustration(offer.service_name, offer.image_url, offer.category_slug);
   const photo = source === failedPhoto ? SERVICE_PLACEHOLDER : source;
   const showPhoto = Boolean(photo) && !compact;
   const minutesAway = Math.round((Date.parse(offer.start_at) - Date.parse(now)) / 60000);
   const startingSoon = minutesAway > 0 && minutesAway <= 120;
   const away = formatDistance(offer.distance_m);
+  const otherLabels = slotLabels((slots ?? []).filter((slot) => slot.id !== offer.id), now, { after: offer });
+  const otherTimes = visibleSlots(otherLabels);
 
   return (
     <Link
@@ -114,12 +120,30 @@ export function OfferCard({
         </p>
 
         {/*
+          The other times of the same FLEK, as plain labels: the whole card is a link, so a time
+          is picked on the detail page, not here.
+        */}
+        {otherTimes.shown.length ? (
+          <p className="mt-auto flex flex-wrap items-center gap-1.5" aria-label={`Další časy: ${otherLabels.map((time) => time.spoken).join('; ')}`}>
+            <span className="text-xs font-bold text-muted" aria-hidden="true">Další časy</span>
+            {otherTimes.shown.map((time) => (
+              <span key={time.id} aria-hidden="true" className="tnum rounded-full border border-line px-2 py-0.5 text-xs font-bold text-ink">
+                {time.label}
+              </span>
+            ))}
+            {otherTimes.more ? (
+              <span aria-hidden="true" className="tnum rounded-full bg-accent-soft px-2 py-0.5 text-xs font-bold text-accent">+{otherTimes.more}</span>
+            ) : null}
+          </p>
+        ) : null}
+
+        {/*
           Centred, not bottom-aligned. The price column is two lines (price, then the struck
           original with the discount badge) while the time column is usually one, so aligning
           their bottoms left a hole under the time exactly the height of the second price
           line — it read as a missing element rather than as spacing.
         */}
-        <div className="mt-auto flex items-center justify-between gap-3 border-t border-line pt-3">
+        <div className={`${otherTimes.shown.length ? '' : 'mt-auto '}flex items-center justify-between gap-3 border-t border-line pt-3`}>
           <div className="flex min-w-0 items-center gap-2.5">
             <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent">
               <CalendarDays size={16} aria-hidden="true" />

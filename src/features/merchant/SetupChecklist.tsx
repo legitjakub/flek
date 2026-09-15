@@ -4,6 +4,7 @@ import { Check } from 'lucide-react';
 import { businessBilling, businessPaymentsStatus, merchantOffers } from '../../lib/api';
 import { Link } from '../../app/router';
 import { useServices } from './useBusiness';
+import { useWhatsAppSettings } from '../notifications/WhatsApp';
 import type { Business } from '../../types/database';
 
 const PREVIEWED = 'flek.merchant.previewed.';
@@ -30,6 +31,7 @@ export function SetupChecklist({ business }: { business: Business }) {
     queryFn: () => businessPaymentsStatus(business.id),
     staleTime: 60_000,
   });
+  const whatsapp = useWhatsAppSettings(business.id);
   const [previewed, setPreviewed] = useState(() => {
     try {
       return window.localStorage.getItem(PREVIEWED + business.id) === '1';
@@ -38,7 +40,7 @@ export function SetupChecklist({ business }: { business: Business }) {
     }
   });
 
-  if (services.isPending || offers.isPending || billing.isPending || payments.isPending) return null;
+  if (services.isPending || offers.isPending || billing.isPending || payments.isPending || whatsapp.isLoading) return null;
 
   const approved = business.status === 'approved';
   const steps = [
@@ -51,11 +53,16 @@ export function SetupChecklist({ business }: { business: Business }) {
       to: '/partner/provozovna',
     },
     { key: 'payments', label: 'Platby přes Stripe', done: Boolean(payments.data?.charges_enabled), to: '/partner/provozovna' },
+    // Only once FLEK can send WhatsApp; switching it off counts as a decision, not as a missing step.
+    ...(whatsapp.data?.available
+      ? [{ key: 'whatsapp', label: 'WhatsApp upozornění', done: ['verified', 'disabled'].includes(whatsapp.data.status), to: '/partner/provozovna' }]
+      : []),
     { key: 'service', label: 'První služba', done: (services.data ?? []).some((s) => s.is_active), to: '/partner/sluzby' },
     { key: 'offer', label: 'První FLEK', done: (offers.data ?? []).length > 0, to: approved ? '/partner/nabidky' : undefined },
     { key: 'preview', label: 'Zobrazit jako zákazník', done: previewed, href: approved ? `/podnik/${business.id}` : undefined },
   ];
-  if (steps.every((step) => step.done)) return null;
+  // WhatsApp alone does not bring the list back for a venue that is otherwise set up; Provozovna offers it there.
+  if (steps.every((step) => step.done || step.key === 'whatsapp')) return null;
   const next = steps.find((step) => !step.done);
 
   return (

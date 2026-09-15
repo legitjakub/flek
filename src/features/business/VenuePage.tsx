@@ -7,6 +7,7 @@ import { navigationHref } from '../../lib/maps';
 import { EmptyState, ErrorState, LoadingList, Skeleton } from '../../components/ui';
 import { Link, useRouter } from '../../app/router';
 import { OfferCard } from '../discovery/OfferCard';
+import { groupSlots } from '../discovery/slots';
 import { FavoriteButton } from '../favorites/FavoriteButton';
 import { GooglePlaceRating } from '../ratings/GooglePlaceRating';
 
@@ -75,6 +76,8 @@ export function VenuePage({ businessId }: { businessId: string }) {
 
   const business = venue.data;
   const rows = offers.data ?? [];
+  // One card per service; its other times are listed on the card.
+  const services = groupSlots(rows);
 
   return (
     <main className="page-container py-4 pb-10">
@@ -138,8 +141,8 @@ export function VenuePage({ businessId }: { businessId: string }) {
               and the same name nine times over, which buries the only things that differ:
               the service, the time and the price.
             */}
-            {rows.map((offer) => (
-              <OfferCard key={offer.id} offer={offer} now={now} compact />
+            {services.map((group) => (
+              <OfferCard key={group.key} offer={group.lead} slots={group.slots} now={now} compact />
             ))}
           </div>
         ) : null}

@@ -14,6 +14,7 @@ import { FilterBar, plural } from './FilterBar';
 import { useDiscoveryState } from './useDiscoveryState';
 import { useDiscovery } from './useDiscovery';
 import { groupMapOffers } from './mapOffers';
+import { groupSlots, slotLabels } from './slots';
 import { MapPreviewCard } from './MapPreviewCard';
 import { locate } from '../../lib/geo';
 import { serviceIllustration } from '../../lib/serviceIllustrations';
@@ -66,6 +67,8 @@ export function MapPage() {
   const categories = useQuery({ queryKey: ['categories'], queryFn: listCategories, staleTime: 3_600_000 });
   const rows = discovery.data?.rows;
   const groups = useMemo(() => groupMapOffers(rows ?? []), [rows]);
+  // The list beside the map shows one row per service and venue, like the feed.
+  const listed = useMemo(() => groupSlots(rows ?? []), [rows]);
   const selectedOffers = groups
     .filter((group) => openGroup.includes(group.id))
     .flatMap((group) => group.offers)
@@ -78,7 +81,7 @@ export function MapPage() {
       id: group.id, lat: group.lat, lng: group.lng,
       label: `${group.offers.length > 1 ? 'od ' : ''}${money(group.minPrice)}`,
       count: group.offers.length, price: group.minPrice,
-      image: thumbnail(serviceIllustration(first.service_name, first.image_url, first.cover_url)),
+      image: thumbnail(serviceIllustration(first.service_name, first.image_url, first.category_slug)),
       description: group.offers.length === 1
         ? `${first.service_name}, ${first.business_name}, ${markerTime.format(new Date(first.start_at))}, ${money(group.minPrice)}. Zobrazit náhled.`
         : `${first.business_name}: ${group.offers.length} termíny, od ${money(group.minPrice)}. Zobrazit termíny.`,
@@ -127,18 +130,18 @@ export function MapPage() {
     <main className="map-page map-full relative flex">
       <h1 className="sr-only">Volné FLEKy na mapě</h1>
 
-      {rows?.length ? (
+      {listed.length ? (
         <section className="hidden w-[360px] shrink-0 flex-col border-r border-line bg-card lg:flex" aria-label="Nabídky na mapě">
           <div className="border-b border-line px-5 py-4">
-            <h2 className="text-lg font-extrabold">{rows.length} {plural(rows.length)} v okolí</h2>
+            <h2 className="text-lg font-extrabold">{listed.length} {plural(listed.length)} v okolí</h2>
             <p className="mt-1 text-sm text-muted">Vyber si aktivitu a svůj čas.</p>
           </div>
           <ul className="min-h-0 flex-1 divide-y divide-line overflow-y-auto overscroll-contain">
-            {rows.map((offer) => {
+            {listed.map(({ lead: offer, slots }) => {
               const group = groups.find((g) => g.offers.some((o) => o.id === offer.id))?.id ?? null;
               return (
                 <li key={offer.id} onMouseEnter={() => setHighlighted(group)} onMouseLeave={() => setHighlighted(null)} onFocus={() => setHighlighted(group)} onBlur={() => setHighlighted(null)}>
-                  <MapOffer offer={offer} now={now} to={detailHref(offer.id)} />
+                  <MapOffer offer={offer} slots={slots} now={now} to={detailHref(offer.id)} />
                 </li>
               );
             })}
@@ -191,7 +194,7 @@ export function MapPage() {
               filters={filters}
               onChange={setFilters}
               categories={categories.data ?? []}
-              resultCount={rows?.length ?? 0}
+              resultCount={listed.length}
               pending={discovery.isFetching}
               applied={discovery.data?.applied}
               note={discovery.data?.note}
@@ -240,8 +243,9 @@ export function MapPage() {
 }
 
 /** One appointment in the list beside the map on wide screens. */
-function MapOffer({ offer, now, to }: { offer: SearchRow; now: string; to: string }) {
-  const photo = thumbnail(serviceIllustration(offer.service_name, offer.image_url, offer.cover_url));
+function MapOffer({ offer, slots, now, to }: { offer: SearchRow; slots: SearchRow[]; now: string; to: string }) {
+  const photo = thumbnail(serviceIllustration(offer.service_name, offer.image_url, offer.category_slug));
+  const others = slotLabels(slots.filter((slot) => slot.id !== offer.id), now, { after: offer });
   return (
     <Link
       to={to}
@@ -277,6 +281,11 @@ function MapOffer({ offer, now, to }: { offer: SearchRow; now: string; to: strin
           </span>
           <DiscountBadge pct={offer.discount_pct} className="shrink-0" />
         </span>
+        {others.length ? (
+          <span className="tnum truncate text-xs font-bold text-accent">
+            Další časy: {others.map((time) => time.label).join(' · ')}
+          </span>
+        ) : null}
       </span>
     </Link>
   );

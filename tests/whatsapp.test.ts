@@ -1,9 +1,9 @@
 import { createHmac } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import {
-  actionPayload, bookingRequestMessage, decisionReply, pairingReply, parseWebhook, textMessage, timingSafeEqual, verifySignature,
+  TEMPLATE_SECRETS, actionPayload, decisionReply, pairingReply, parseWebhook, templateMessage, textMessage, timingSafeEqual, verifySignature,
 } from '../supabase/functions/_shared/whatsapp';
-import { displayPhone, whatsappLink } from '../src/lib/phone';
+import { displayPhone, pairingCode, whatsappLink } from '../src/lib/phone';
 
 const SECRET = 'test-app-secret-0123456789';
 const sign = (raw: Uint8Array<ArrayBuffer>, secret = SECRET) => `sha256=${createHmac('sha256', secret).update(raw).digest('hex')}`;
@@ -71,8 +71,9 @@ describe('WhatsApp webhook parser', () => {
 
 describe('WhatsApp messages', () => {
   it('sends the request template with clean parameters and one-time payloads on both buttons', () => {
-    const message = bookingRequestMessage({
-      to: '+420 777 123 456', token: 'tok_0123456789abcdefghij', when: 'dnes 14:30', service: 'Střih\n(45 min)', payout: '750 Kč', deadline: '14:08',
+    const message = templateMessage({
+      to: '+420 777 123 456', template: 'business_request', token: 'tok_0123456789abcdefghij',
+      params: ['dnes 14:30', 'Střih\n(45 min)', '750 Kč', '14:08'],
     }, 'flek_booking_request', 'cs');
     expect(message.to).toBe('420777123456');
     expect(message.template.language).toEqual({ code: 'cs' });
@@ -84,8 +85,32 @@ describe('WhatsApp messages', () => {
       { type: 'button', sub_type: 'quick_reply', index: '0', parameters: [{ type: 'payload', payload: 'FLEK1.a.tok_0123456789abcdefghij' }] },
       { type: 'button', sub_type: 'quick_reply', index: '1', parameters: [{ type: 'payload', payload: 'FLEK1.r.tok_0123456789abcdefghij' }] },
     ]);
+    // A request without its token would carry buttons that decide nothing; it is not sent at all.
+    expect(() => templateMessage({ to: '+420777123456', template: 'business_request', token: null, params: [] }, 'x', 'cs')).toThrow();
     expect(actionPayload(false, 'abc')).toBe('FLEK1.r.abc');
     expect(textMessage('+420777123456', 'Ahoj', 'wamid.TAP')).toMatchObject({ to: '420777123456', text: { body: 'Ahoj' }, context: { message_id: 'wamid.TAP' } });
+  });
+
+  it('sends confirmations and cancellations without buttons, each under its own template secret', () => {
+    const message = templateMessage({
+      to: '+420777888999', template: 'customer_confirmed', token: null,
+      params: ['Salon Petra', 'zítra 9:00', 'Střih (45 min)', 'FLEK-7K2Q'],
+    }, 'flek_customer_confirmed', 'cs');
+    expect(message.template.name).toBe('flek_customer_confirmed');
+    expect(message.template.components).toEqual([{
+      type: 'body',
+      parameters: [{ type: 'text', text: 'Salon Petra' }, { type: 'text', text: 'zítra 9:00' }, { type: 'text', text: 'Střih (45 min)' }, { type: 'text', text: 'FLEK-7K2Q' }],
+    }]);
+    // An empty parameter is refused by Meta; a dash keeps the message readable.
+    expect(templateMessage({ to: '1', template: 'business_cancelled', token: null, params: ['dnes 9:00', '  ', 'Rezervace byla zrušena'] }, 'x', 'cs')
+      .template.components[0]).toMatchObject({ parameters: [{ text: 'dnes 9:00' }, { text: '–' }, { text: 'Rezervace byla zrušena' }] });
+    expect(TEMPLATE_SECRETS).toEqual({
+      business_request: 'WHATSAPP_TEMPLATE_BOOKING_REQUEST',
+      business_confirmed: 'WHATSAPP_TEMPLATE_BUSINESS_CONFIRMED',
+      business_cancelled: 'WHATSAPP_TEMPLATE_BUSINESS_CANCELLED',
+      customer_confirmed: 'WHATSAPP_TEMPLATE_CUSTOMER_CONFIRMED',
+      customer_cancelled: 'WHATSAPP_TEMPLATE_CUSTOMER_CANCELLED',
+    });
   });
 
   it('answers with the outcome the database reports', () => {
@@ -99,8 +124,10 @@ describe('WhatsApp messages', () => {
     // A repeated delivery of the same tap gets no second message.
     expect(decisionReply({ result: 'duplicate' })).toBeNull();
     expect(decisionReply(null)).toBeNull();
-    expect(pairingReply({ result: 'paired', business: 'Salon Petra' })).toMatch(/Salon Petra/);
-    expect(pairingReply({ result: 'failed' })).toMatch(/nový/);
+    expect(pairingReply({ result: 'paired', kind: 'business', business: 'Salon Petra' })).toMatch(/Salon Petra.*vám/);
+    // The customer part of FLEK is on first-name terms, the partner part is formal.
+    expect(pairingReply({ result: 'paired', kind: 'customer', business: null })).toMatch(/ti budeme.*můžeš/);
+    expect(pairingReply({ result: 'failed' })).toMatch(/Nový kód/);
     expect(pairingReply({ result: 'blocked' })).toBeNull();
     expect(pairingReply({ result: 'ignored' })).toBeNull();
   });
@@ -110,5 +137,9 @@ describe('WhatsApp messages', () => {
     expect(displayPhone('+4915123456789')).toBe('+4915123456789');
     expect(displayPhone(null)).toBe('');
     expect(whatsappLink('+420 222 333 444', 'FLEK 123456')).toBe('https://wa.me/420222333444?text=FLEK%20123456');
+    // The app's pairing code: always six digits, leading zeros kept, from the browser's secure random source.
+    expect(pairingCode((values) => { values[0] = 4217; })).toBe('004217');
+    expect(pairingCode((values) => { values[0] = 4_294_967_295; })).toBe('967295');
+    expect(pairingCode()).toMatch(/^[0-9]{6}$/);
   });
 });

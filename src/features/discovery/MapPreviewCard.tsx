@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, Clock3, Navigation, X } from 'lucide-react';
 import { Link } from '../../app/router';
 import { buttonClass, cx } from '../../components/ui';
@@ -12,6 +12,7 @@ import { thumbnail } from '../../lib/thumbnail';
 import { clockTime, dayLabel, duration } from '../../lib/time';
 import type { SearchRow } from '../../types/database';
 import { CapacityLabel } from '../../components/CapacityLabel';
+import { groupSlots, slotLabels, type SlotGroup } from './slots';
 
 /**
  * What a tapped pin opens: the appointment as a card with its photo, over the bottom of the
@@ -31,8 +32,10 @@ export function MapPreviewCard({
   onClose: () => void;
   className?: string;
 }) {
-  const carousel = useSnapCarousel<HTMLUListElement>(offers.length, offers.map((offer) => offer.id).join(':'));
-  const many = offers.length > 1;
+  // One card per service at this address; its times are picked on the card.
+  const groups = useMemo(() => groupSlots(offers), [offers]);
+  const carousel = useSnapCarousel<HTMLUListElement>(groups.length, groups.map((group) => group.key).join(':'));
+  const many = groups.length > 1;
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -43,7 +46,7 @@ export function MapPreviewCard({
   }, [onClose]);
 
   return (
-    <section className={cx('pointer-events-none', className)} aria-label={many ? `${offers.length} termíny na tomto místě` : 'Vybraný termín'}>
+    <section className={cx('pointer-events-none', className)} aria-label={many ? `${groups.length} ${groups.length < 5 ? 'služby' : 'služeb'} na tomto místě` : 'Vybraný termín'}>
       <ul
         ref={carousel.viewportRef}
         tabIndex={many ? 0 : -1}
@@ -51,19 +54,21 @@ export function MapPreviewCard({
         onKeyDown={carousel.onKeyDown}
         className="rail pointer-events-auto flex snap-x snap-mandatory scroll-px-3 gap-3 overflow-x-auto overscroll-x-contain px-3 pb-3 -mb-3 touch-pan-x"
       >
-        {offers.map((offer, index) => (
+        {groups.map((group, index) => (
           <li
-            key={offer.id}
+            key={group.key}
             data-snap-item
-            aria-label={many ? `Termín ${index + 1} z ${offers.length}` : undefined}
-            className={cx('shrink-0 snap-start snap-always', many ? 'w-[calc(100%_-_2.25rem)] max-w-sm' : 'w-full max-w-sm')}
+            aria-label={many ? `Služba ${index + 1} z ${groups.length}` : undefined}
+            // A flex item, so every card stretches to the tallest one in the row: a capacity label or a row of
+            // times on one card no longer leaves the others shorter and floating higher.
+            className={cx('flex shrink-0 snap-start snap-always', many ? 'w-[calc(100%_-_2.25rem)] max-w-sm' : 'w-full max-w-sm')}
           >
             <PreviewCard
-              offer={offer}
+              group={group}
               now={now}
-              to={detailHref(offer.id)}
+              detailHref={detailHref}
               onClose={onClose}
-              position={many ? `${index + 1} / ${offers.length}` : null}
+              position={many ? `${index + 1} / ${groups.length}` : null}
             />
           </li>
         ))}
@@ -74,7 +79,7 @@ export function MapPreviewCard({
             type="button"
             onClick={() => carousel.goTo(carousel.index - 1)}
             disabled={!carousel.canGoBack}
-            aria-label="Předchozí termín"
+            aria-label="Předchozí služba"
             className="grid size-11 place-items-center rounded-full bg-card text-ink shadow-card disabled:opacity-40"
           >
             <ChevronLeft size={20} aria-hidden="true" />
@@ -83,7 +88,7 @@ export function MapPreviewCard({
             type="button"
             onClick={() => carousel.goTo(carousel.index + 1)}
             disabled={!carousel.canGoForward}
-            aria-label="Další termín"
+            aria-label="Další služba"
             className="grid size-11 place-items-center rounded-full bg-card text-ink shadow-card disabled:opacity-40"
           >
             <ChevronRight size={20} aria-hidden="true" />
@@ -101,26 +106,29 @@ export function MapPreviewCard({
  * the card and passes its real height as the area the camera has to avoid.
  */
 function PreviewCard({
-  offer,
+  group,
   now,
-  to,
+  detailHref,
   onClose,
   position,
 }: {
-  offer: SearchRow;
+  group: SlotGroup;
   now: string;
-  to: string;
+  detailHref: (id: string) => string;
   onClose: () => void;
   position: string | null;
 }) {
-  const source = serviceIllustration(offer.service_name, offer.image_url, offer.cover_url);
+  const [selectedId, setSelectedId] = useState(group.lead.id);
+  const offer: SearchRow = group.slots.find((slot) => slot.id === selectedId) ?? group.lead;
+  const times = group.slots.length > 1 ? slotLabels(group.slots, now, { priceCents: offer.deal_price_cents }) : [];
+  const source = serviceIllustration(offer.service_name, offer.image_url, offer.category_slug);
   const [failed, setFailed] = useState(false);
   const photo = failed ? SERVICE_PLACEHOLDER : (thumbnail(source, 720, false) ?? SERVICE_PLACEHOLDER);
   const away = distance(offer.distance_m);
   const place = [offer.business_name, offer.district, away].filter(Boolean).join(' · ');
 
   return (
-    <article className="overflow-hidden rounded-3xl bg-card shadow-lift">
+    <article className="flex w-full flex-col overflow-hidden rounded-3xl bg-card shadow-lift">
       <div className="relative h-28 bg-accent-soft sm:h-32 [@media(max-height:720px)]:h-20">
         <img src={photo} alt="" decoding="async" onError={() => setFailed(true)} className="size-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-ink/35 to-transparent" aria-hidden="true" />
@@ -145,12 +153,38 @@ function PreviewCard({
         </button>
       </div>
 
-      <div className="relative p-4">
+      <div className="relative flex flex-1 flex-col p-4">
         <h3 className="truncate text-lg leading-snug font-extrabold tracking-tight text-ink">{offer.service_name}</h3>
         <p className="truncate text-sm text-muted">{place}</p>
-        <CapacityLabel remaining={offer.capacity_remaining} total={offer.capacity_total} />
+        <div className="mt-1 flex min-h-5 items-center empty:hidden">
+          <CapacityLabel remaining={offer.capacity_remaining} total={offer.capacity_total} />
+        </div>
 
-        <div className="mt-3 flex items-end justify-between gap-3">
+        {times.length ? (
+          <div role="group" aria-label={`${times.length} ${times.length < 5 ? "časy" : "časů"}, vyber si`} className="rail -mx-4 mt-2 flex gap-1.5 overflow-x-auto px-4">
+            {times.map((time) => {
+              const selected = time.id === offer.id;
+              return (
+                <button
+                  key={time.id}
+                  type="button"
+                  aria-pressed={selected}
+                  aria-label={time.spoken}
+                  onClick={() => setSelectedId(time.id)}
+                  className={cx(
+                    'tnum inline-flex min-h-11 shrink-0 items-center gap-1 rounded-full border px-3 text-sm font-bold transition-colors',
+                    selected ? 'border-ink bg-ink text-accent-ink' : 'border-line bg-card text-ink hover:bg-surface',
+                  )}
+                >
+                  {time.label}
+                  {time.priceCents !== null ? <span className={cx('text-xs font-normal', selected ? 'text-accent-ink/80' : 'text-muted')}>{money(time.priceCents)}</span> : null}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+
+        <div className="mt-auto flex items-end justify-between gap-3 pt-3">
           <p className="tnum flex min-w-0 items-center gap-1.5 text-sm">
             <Clock3 size={15} aria-hidden="true" className="shrink-0 text-accent" />
             <span className="truncate">
@@ -178,7 +212,7 @@ function PreviewCard({
             <Navigation size={16} aria-hidden="true" />
             Navigovat
           </a>
-          <Link to={to} className={buttonClass({ shape: 'pill' })}>
+          <Link to={detailHref(offer.id)} className={buttonClass({ shape: 'pill' })}>
             Detail
           </Link>
         </div>

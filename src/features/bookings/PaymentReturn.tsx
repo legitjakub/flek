@@ -8,6 +8,7 @@ import { useServerNow } from '../../lib/clock';
 import { Banner, Button, ErrorState, Spinner, buttonClass } from '../../components/ui';
 import { Link } from '../../app/router';
 import { confirmationView, waitingLine } from './confirmationView';
+import { WhatsAppPrompt } from '../notifications/WhatsApp';
 
 /** Past this, a request that neither the merchant nor Stripe has moved is left to the bookings page. */
 const GIVE_UP_AFTER_MS = 12 * 60_000;
@@ -120,6 +121,7 @@ export function PaymentReturn({
       ) : view.action === 'find_other' ? (
         <Link to="/" className={buttonClass({ shape: 'pill' }) + ' mt-6'}>Najít jiný FLEK</Link>
       ) : null}
+      {view.kind === 'waiting' ? <div className="mt-8 w-full"><WhatsAppPrompt context="waiting" /></div> : null}
     </main>
   );
 }

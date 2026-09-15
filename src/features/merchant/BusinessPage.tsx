@@ -12,7 +12,8 @@ import { useRouter } from '../../app/router';
 import { DEFAULT_POINT } from '../../lib/geo';
 import type { Business } from '../../types/database';
 import { NotificationSettings } from '../notifications/Notifications';
-import { BookingConfirmationInfo, WhatsAppNotifications } from './WhatsAppNotifications';
+import { BookingConfirmationInfo } from './BookingConfirmationInfo';
+import { WhatsAppSettingsSection } from '../notifications/WhatsApp';
 
 type Values = {
   display_name: string;
@@ -96,7 +97,7 @@ export function MerchantBusinessPage() {
           <StripePayouts business={business} />
           <BookingConfirmationInfo business={business} />
           <NotificationSettings businessId={business.id} />
-          <WhatsAppNotifications business={business} />
+          <WhatsAppSettingsSection businessId={business.id} />
           <BusinessForm business={business} />
         </div>
       )}

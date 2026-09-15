@@ -350,10 +350,15 @@ export type ConfirmationQuote = { manual: boolean; window_seconds: number | null
 export type WhatsAppSettings = {
   /** Whether FLEK has a WhatsApp number to pair with at all. */
   available: boolean;
+  /** A venue's number (Provozovna) or the signed-in customer's own (Profil). */
+  kind: 'business' | 'customer';
   status: 'off' | 'pending' | 'expired' | 'verified' | 'disabled';
+  /** The saved number, or the one it would be: the venue's phone, or the customer's from their profile. */
   phone: string | null;
   pairing_expires_at: string | null;
   verified_at: string | null;
+  /** Whether the signed-in person verified it. A venue's messages follow that member's preferences. */
+  mine: boolean;
   flek_number: string | null;
   consent_version: string;
   server_now: string;

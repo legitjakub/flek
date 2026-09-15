@@ -240,7 +240,7 @@ export function CreateOfferSheet({
                     </>
                   ) : (
                     <>
-                      Tahle služba nemá fotku, použije se fotka provozovny.{' '}
+                      Tahle služba nemá vlastní fotku, zákazníci uvidí ilustrační fotku podle druhu služby.{' '}
                       <Link to="/partner/sluzby" className="font-bold text-accent underline underline-offset-2">
                         Vyberte ji u služby
                       </Link>

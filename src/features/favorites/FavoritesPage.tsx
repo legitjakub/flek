@@ -6,6 +6,7 @@ import { useServerNow } from '../../lib/clock';
 import { EmptyState, ErrorState, LoadingList, buttonClass } from '../../components/ui';
 import { Link } from '../../app/router';
 import { OfferCard } from '../discovery/OfferCard';
+import { groupSlots } from '../discovery/slots';
 import { GooglePlaceRating } from '../ratings/GooglePlaceRating';
 import { useSession } from '../auth/session';
 
@@ -94,8 +95,8 @@ export function FavoritesPage() {
             </h2>
           </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {news.map((offer) => (
-              <OfferCard key={offer.id} offer={offer} now={now} />
+            {groupSlots(news).map((group) => (
+              <OfferCard key={group.key} offer={group.lead} slots={group.slots} now={now} />
             ))}
           </div>
         </section>
