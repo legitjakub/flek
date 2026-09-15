@@ -18,8 +18,8 @@ Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B). Úkoly na 
   - vratky i obsazení místa řeší webhook.
   - Skutečné peníze se nestrhávají.
 - 16 demo podniků má testovací účet Stripe. Demo FLEKy se každé ráno doplní na 3 dny dopředu.
-- **Potvrzování rezervací podnikem** (hold před Checkoutem, autorizace, potvrzení do 10/5/3 minut, stržení až potom) je v databázi, ale vypnuté (`manual_confirmation_enabled = false`). Zapne se po nasazení funkcí a přidání událostí ve Stripe, nejdřív pro demo podniky.
-- **WhatsApp upozornění** pro podniky jsou v kódu a databázi, čekají na účet Meta a schválenou šablonu.
+- **Potvrzování rezervací podnikem** (hold před Checkoutem, autorizace, potvrzení do 10/5/3 minut, stržení až potom) je v databázi i nasazených funkcích, ale vypnuté (`manual_confirmation_enabled = false`). Zapne se po přidání tří událostí ve Stripe, nejdřív pro demo podniky. Sonda 15. 9. potvrdila, že události zatím chybí.
+- **WhatsApp** pro podniky i zákazníky (výchozí zapnutý, ověření čísla jedním klepnutím, vypínatelný v nastavení upozornění) je v kódu a databázi, čeká na účet Meta, pět šablon a secrets.
 - Ověřeno: 101/101 akceptačních kontrol se skutečnými testovacími platbami Stripe (původní režim), SQL testy potvrzování a WhatsAppu, build a unit testy v CI.
 
 ---
@@ -40,26 +40,64 @@ Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B). Úkoly na 
 
 ### Potvrzování rezervací a WhatsApp
 
-- [ ] **Schválit nasazení Edge Functions** `stripe-webhook`, `stripe-checkout`, `stripe-test-pay`, `notification-delivery` a `whatsapp-webhook` (s `verify_jwt = false`). Automatický režim agenta nasazení platebního webhooku sám odmítl, takže ho agent udělá až se souhlasem. `booking-confirmation` už běží.
-- [ ] **Stripe webhook (testovací i ostrý):** přidat události `payment_intent.amount_capturable_updated`, `payment_intent.canceled` a `payment_intent.payment_failed` k dosavadním. Bez nich se autorizace z Checkoutu ke žádosti nedostane a zákazník čeká, dokud hold nevyprší.
+- [x] **Edge Functions nasazené** (15. 9.): push do `main` nasadil přes GitHub integraci Supabase funkce z `supabase/config.toml` (`stripe-webhook`, `notification-delivery`, `whatsapp-webhook`, `booking-confirmation`, `stripe-refunds`), `stripe-checkout` a `stripe-test-pay` nasadil agent přes MCP. Webhook prošel akceptací 101/101.
+- [ ] **Stripe webhook (testovací i ostrý):** přidat události `payment_intent.amount_capturable_updated`, `payment_intent.canceled` a `payment_intent.payment_failed` k dosavadním. Bez nich se autorizace z Checkoutu ke žádosti nedostane a zákazník čeká, dokud hold nevyprší. Sonda 15. 9. ve 14:46 ukázala, že v testovacím webhooku zatím nejsou. Pak dát vědět agentovi, zapne `demo` a projde testy.
 - [ ] **Ruční test na telefonu** po zapnutí pro demo podniky: zaplatit Apple Pay nebo Google Pay a kartou 4242, zkontrolovat, že banka ukáže jen blokaci, potvrdit v partnerské části druhým účtem a ověřit kód; podruhé zvolit Nemohu přijmout a ověřit, že blokace zmizí.
 - [ ] **Meta — WhatsApp Business Platform:**
-  1. Business portfolio a ověření firmy (Business Verification).
-  2. WhatsApp Business Account a telefonní číslo pro FLEK (nesmí být zároveň v aplikaci WhatsApp), zobrazované jméno „FLEK“.
-  3. Aplikace v Meta for Developers s produktem WhatsApp. System user s trvalým tokenem a oprávněními `whatsapp_business_messaging` a `whatsapp_business_management`. Zkopírovat App Secret a Phone number ID.
-  4. Webhook: callback `https://yupkrntknbkvmlajwlph.supabase.co/functions/v1/whatsapp-webhook`, verify token náhodný řetězec aspoň 16 znaků, odebírat pole `messages`.
-  5. Šablona kategorie **Utility**, jazyk čeština (`cs`), název `flek_booking_request`. Tělo přesně:
-     ```
-     Nová rezervace čeká na potvrzení.
-     Termín: {{1}}
-     Služba: {{2}}
-     Vy dostanete: {{3}}
-     Potvrďte do {{4}}, jinak žádost vyprší a zákazník nic nezaplatí.
-     ```
-     Ukázkové hodnoty pro schválení: `dnes 14:30`, `Pánský střih (45 min)`, `750 Kč`, `14:08`. Tlačítka: dvě rychlé odpovědi s texty přesně **Potvrdit** a **Nemohu přijmout** (webhook je čte jako zálohu).
-  6. Supabase → Edge Functions → Secrets: `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_TEMPLATE_BOOKING_REQUEST` (`flek_booking_request`), `WHATSAPP_TEMPLATE_LANGUAGE` (`cs`), volitelně `WHATSAPP_GRAPH_VERSION` (výchozí `v25.0`). Nikdy do chatu ani repozitáře.
-  7. Říct agentovi zobrazované číslo FLEK; zapíše ho do `private.settings` (`whatsapp_display_number`) a tím se v Provozovně objeví párování.
-  8. Propojit číslo jednoho demo podniku, nechat přijít žádost a vyzkoušet obě tlačítka i opakované klepnutí.
+  1. **Pro pilot stačí testovací číslo:** Meta for Developers → nová aplikace typu Business → produkt WhatsApp → „API Setup“. Testovací číslo nepotřebuje ověření firmy, ale posílá zprávy jen na nejvýš 5 čísel přidaných v „To“ (Jakub, demo telefon podniku). Pro ostrý provoz: Business portfolio s ověřením firmy, WhatsApp Business Account a vlastní číslo pro FLEK (nesmí být zároveň v aplikaci WhatsApp), zobrazované jméno „FLEK“.
+  2. System user s trvalým tokenem a oprávněními `whatsapp_business_messaging` a `whatsapp_business_management` (testovací token platí jen 24 hodin). Zkopírovat App Secret a Phone number ID.
+  3. Webhook: callback `https://yupkrntknbkvmlajwlph.supabase.co/functions/v1/whatsapp-webhook`, verify token náhodný řetězec aspoň 16 znaků, odebírat pole `messages`.
+  4. Pět šablon kategorie **Utility**, jazyk čeština (`cs`). Parametry musí zůstat v tomto pořadí (posílá je `claim_whatsapp_deliveries`):
+     - `flek_booking_request` (podniku, žádost o potvrzení), tlačítka: dvě rychlé odpovědi s texty přesně **Potvrdit** a **Nemohu přijmout**:
+       ```
+       Nová rezervace čeká na potvrzení.
+       Termín: {{1}}
+       Služba: {{2}}
+       Vy dostanete: {{3}}
+       Potvrďte do {{4}}, jinak žádost vyprší a zákazník nic nezaplatí.
+       ```
+       Ukázky: `dnes 14:30`, `Pánský střih (45 min)`, `750 Kč`, `14:08`.
+     - `flek_business_confirmed` (podniku, nová rezervace bez potvrzování):
+       ```
+       Máte novou potvrzenou rezervaci.
+       Termín: {{1}}
+       Služba: {{2}}
+       Vy dostanete: {{3}}
+       Kód zákazníka ověříte v aplikaci FLEK Partner.
+       ```
+       Ukázky: `zítra 9:00`, `Masáž zad (60 min)`, `586 Kč`.
+     - `flek_business_cancelled` (podniku, zrušení, vypršení, selhání platby):
+       ```
+       Změna rezervace ve FLEKu.
+       Termín: {{1}}
+       Služba: {{2}}
+       Stav: {{3}}
+       Podrobnosti najdete v aplikaci FLEK Partner v Rezervacích.
+       ```
+       Ukázky: `st 17. 9. 18:15`, `Pánský střih (45 min)`, `Rezervace byla zrušena`.
+     - `flek_customer_confirmed` (zákazníkovi, potvrzený FLEK):
+       ```
+       Tvůj FLEK je potvrzený.
+       Podnik: {{1}}
+       Termín: {{2}}
+       Služba: {{3}}
+       Rezervační kód: {{4}}
+       Kód ukážeš v podniku, rezervaci najdeš i v aplikaci FLEK.
+       ```
+       Ukázky: `Studio Dobrá hodina`, `dnes 17:00`, `Pánský střih (45 min)`, `FLEK-7K2QHM`.
+     - `flek_customer_cancelled` (zákazníkovi, zrušení nebo nepotvrzená žádost):
+       ```
+       Změna tvé rezervace ve FLEKu.
+       Podnik: {{1}}
+       Termín: {{2}}
+       Služba: {{3}}
+       Stav: {{4}}
+       Co to znamená pro platbu, najdeš v aplikaci FLEK v Rezervacích.
+       ```
+       Ukázky: `Studio Dobrá hodina`, `zítra 13:00`, `Pánský střih (45 min)`, `Podnik rezervaci nepotvrdil`.
+  5. Supabase → Edge Functions → Secrets: `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_TEMPLATE_BOOKING_REQUEST` (`flek_booking_request`), `WHATSAPP_TEMPLATE_BUSINESS_CONFIRMED`, `WHATSAPP_TEMPLATE_BUSINESS_CANCELLED`, `WHATSAPP_TEMPLATE_CUSTOMER_CONFIRMED`, `WHATSAPP_TEMPLATE_CUSTOMER_CANCELLED` (názvy šablon výše), `WHATSAPP_TEMPLATE_LANGUAGE` (`cs`), volitelně `WHATSAPP_GRAPH_VERSION` (výchozí `v25.0`). Šablonu, která ještě není schválená, stačí nevyplnit: ta zpráva se přeskočí. Nikdy do chatu ani repozitáře.
+  6. Říct agentovi zobrazované číslo FLEK; zapíše ho do `private.settings` (`whatsapp_display_number`). Tím se WhatsApp objeví v Provozovně, v Profilu a ve výzvách.
+  7. Na svém telefonu: v Profilu i v Provozovně demo podniku klepnout na „Ověřit ve WhatsAppu“ (má se otevřít WhatsApp s připravenou zprávou), zprávu odeslat, nechat přijít žádost a vyzkoušet obě tlačítka, opakované klepnutí a zprávu zákazníkovi s kódem.
 - [ ] **E-mail při registraci:** v Supabase → Authentication → SMTP zkontrolovat odesílatele `…@mail.app-flek.eu` a uživatele `resend` (uložení minule spadlo na časový limit), pak zaregistrovat novou adresu, otevřít odkaz v jiném prohlížeči a ověřit přihlášení.
 
 ### Supabase a infrastruktura
@@ -122,10 +160,12 @@ Každý bod je samostatný úkol. Po dokončení agent aktualizuje dokumentaci p
 
 ### Potvrzování rezervací
 
-- [ ] Po nasazení funkcí a přidání událostí ve Stripe: `update private.settings set value = 'demo' where key = 'manual_confirmation_enabled'`, spustit `tests/manual-confirmation.sql`, `npm run test:acceptance` (projde režim potvrzování) a klikací průchod zákazník + podnik na 375/390/1280 px se skutečnou testovací platbou.
+- [ ] Po přidání událostí ve Stripe (funkce jsou nasazené, sonda 15. 9. události nenašla): `update private.settings set value = 'demo' where key = 'manual_confirmation_enabled'`, spustit `tests/manual-confirmation.sql`, `npm run test:acceptance` (projde režim potvrzování) a klikací průchod zákazník + podnik na 375/390/1280 px se skutečnou testovací platbou.
 - [ ] Když je `demo` zelené, přepnout na `'true'` (Jakub souhlasil předem) a ve stejné změně upravit text na stránce pro podniky („Když si ho někdo rezervuje…“) a nápovědu k lhůtě zrušení v Provozovně („10 minut od zaplacení“ → od potvrzení).
 - [x] Opravy nasazené verze ChatGPT, oba SQL testy, akceptační skript pro oba režimy, unit testy stavů (15. 9.).
 - [x] WhatsApp v kódu: párování, šablona, webhook s ověřením podpisu, rozhodnutí přes `decide_booking` (15. 9.).
+- [x] WhatsApp pro zákazníky, výchozí zapnutý a vypínatelný po událostech, ověření jedním klepnutím, pět šablon (15. 9.).
+- [ ] Po zapnutí WhatsAppu: projít výzvy na obrazovce čekání na potvrzení a „🔥 FLEK je tvůj!“ se skutečnou testovací platbou.
 
 ### E-maily a upozornění
 

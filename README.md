@@ -134,6 +134,8 @@ Aktuální stav ověření a to, co ještě není hotové, je v [VERIFICATION.md
 - **Hlavičky:** CSP a další bezpečnostní hlavičky jsou ve `vercel.json`. Přidáváte-li externí službu (dlaždice, obrázky, API), doplňte její doménu do CSP.
 - **E-maily a obnova hesla:** Supabase Auth posílá přes SMTP Resend z `mail.app-flek.eu`; Site URL je `https://www.app-flek.eu` a v Redirect URLs jsou `/potvrzeni` a `/prihlaseni**` (lokálně v `supabase/config.toml`). Šablony jsou v `supabase/templates`.
 - **Upozornění na rezervace:** zvonek a nastavení zapíná `VITE_NOTIFICATIONS_ENABLED=true`, Web Push potřebuje `VITE_VAPID_PUBLIC_KEY`. Funkce `notification-delivery` potřebuje v Supabase secrets `RESEND_API_KEY`, `NOTIFICATION_FROM`, `VAPID_PUBLIC_KEY` a `VAPID_PRIVATE_KEY`; frontu kontroluje `select status, count(*) from private.notification_delivery group by 1`.
+- **WhatsApp:** podniky i zákazníci, výchozí zapnutý, jen na číslo ověřené zprávou „FLEK 123456“ z toho čísla. Aktivuje ho číslo FLEK v `private.settings` (`whatsapp_display_number`); `notification-delivery` a `whatsapp-webhook` potřebují secrets `WHATSAPP_*` včetně pěti názvů šablon (texty a postup v [docs/PRED_SPUSTENIM.md](docs/PRED_SPUSTENIM.md)). Chybějící šablona zprávu jen přeskočí.
+- **Nasazení funkcí:** push do `main` nasadí Edge Functions uvedené v `supabase/config.toml` (GitHub integrace Supabase); ostatní jdou přes Supabase CLI nebo MCP.
 - **Demo data:** job `flek-demo-refresh` každé ráno doplní demo FLEKy. Před ostrým provozem na této databázi: `select cron.unschedule('flek-demo-refresh');`.
 - **Audit:** každá admin změna je v záložce Administrace → Audit; záznamy nejde upravit ani smazat.
 

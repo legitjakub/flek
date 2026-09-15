@@ -59,12 +59,24 @@ Více provozoven na účet je podporováno přepínačem v partnerské části. 
 
 ## Potvrzování rezervací a WhatsApp (15. 9. 2026)
 
-- Potvrzování podnikem je v databázi, ale **vypnuté** (`manual_confirmation_enabled = false`), dokud nejsou nasazené `stripe-webhook`, `stripe-checkout`, `stripe-test-pay` a v Stripe přidané události `payment_intent.amount_capturable_updated`, `payment_intent.canceled` a `payment_intent.payment_failed`. Akceptační skript v režimu potvrzování zatím neběžel.
+- Potvrzování podnikem je v databázi i nasazených funkcích, ale **vypnuté** (`manual_confirmation_enabled = false`), dokud v Stripe nejsou přidané události `payment_intent.amount_capturable_updated`, `payment_intent.canceled` a `payment_intent.payment_failed`. Sonda 15. 9. ve 14:46 to potvrdila: Stripe autorizoval testovací platbu, ale událost nepřišla a rezervace zůstala ve stavu čekání na platbu. Akceptační skript v režimu potvrzování zatím neběžel.
+- Po sondě zůstala ve Stripe (testovací režim) autorizovaná, nestržená platba 390 Kč zákazníka `demo-6`: bez události FLEK nezná její PaymentIntent, takže ji úklidový job zrušit nemohl. Stripe nestrženou autorizaci sám zruší do 7 dnů; platba `0d10cb4d…` v databázi zůstane ve stavu `release_pending`, dokud nepřijde `payment_intent.canceled`.
 - Opuštěný Checkout drží místo až 3 minuty. Platba dokončená po uplynutí holdu se nerezervuje, autorizace se uvolní a zákazník uvidí „Čas na zaplacení vypršel“.
 - Uvolnění blokace na kartě trvá podle banky; u Apple Pay a Google Pay se může blokace ve výpisu tvářit jako platba. Na skutečném telefonu to zatím nikdo nevyzkoušel.
 - Termín, který začíná dřív než za 15 minut, v režimu potvrzování rezervovat nejde. Při `demo` to hlídá jen `start_payment`, takže demo podnik takový FLEK chvíli ukazuje jako volný a rezervace skončí hláškou „Tento termín už bohužel není volný“.
 - Lhůta zrušení se u potvrzených žádostí počítá od potvrzení. Nápověda v Provozovně („10 minut od zaplacení“) a text na stránce pro podniky se upraví při zapnutí pro všechny.
 - Vypršení okna podniku a pozdní capture ověřuje jen `tests/manual-confirmation.sql` (posunutím deadlinu), akceptační běh je kvůli délce okna nečeká.
-- WhatsApp potřebuje ověřený účet Meta, telefonní číslo, schválenou utility šablonu a secrets (`docs/PRED_SPUSTENIM.md`). Bez nich se nic neposílá a v Provozovně je jen informace, že upozornění nejsou aktivní. Skutečné doručení ani klepnutí na tlačítko zatím neproběhlo (**IMPLEMENTOVÁNO, ALE VYŽADUJE RUČNÍ EXTERNÍ OVĚŘENÍ**).
+- WhatsApp potřebuje účet Meta (pro pilot testovací číslo, ostré číslo s ověřením firmy), pět schválených utility šablon a secrets (`docs/PRED_SPUSTENIM.md`). Bez nich se nic neposílá, zákazník WhatsApp nevidí a v Provozovně je jen informace, že upozornění nejsou aktivní. Skutečné doručení, ověření jedním klepnutím na iPhonu a Androidu ani klepnutí na tlačítko zatím neproběhlo (**IMPLEMENTOVÁNO, ALE VYŽADUJE RUČNÍ EXTERNÍ OVĚŘENÍ**). V prohlížeči je ověřený celý tok s podvrženou zprávou z WhatsAppu přímo v databázi.
+- Testovací číslo Meta pošle zprávy jen na nejvýš 5 čísel přidaných v nastavení aplikace; ostatní podniky a zákazníci je nedostanou, dokud FLEK nemá ostré číslo.
+- Ověření jedním klepnutím uloží kód ve stejném klepnutí, kdy se otevírá WhatsApp. Když síť kód uloží až po odeslání zprávy, párování selže a WhatsApp odpoví, že kód nesedí; stačí „Otevřít WhatsApp znovu“ a zprávu poslat ještě jednou.
+- Zprávy na WhatsApp provozovny se řídí nastavením upozornění člena, který číslo ověřil; ostatní členové ho mění jen pro sebe.
+- WhatsApp nechodí o vlastní akci (podnik o svém potvrzení, odmítnutí nebo zrušení, zákazník o svém zrušení); ukáže se v aplikaci a e-mailem.
 - Když Meta přijme zprávu, ale odpověď se ztratí, worker ji pošle znovu s novým tokenem; tlačítko první zprávy pak odpoví, že zprávu už nejde použít. Rozhodnout jde z druhé zprávy nebo z aplikace.
 - Rozhodnutí z WhatsAppu se v auditu připíše členovi, který číslo propojil, ne konkrétní osobě u telefonu.
+
+## Časy, doporučení a obrázky (15. 9. 2026)
+
+- Karta ve feedu a na mapě ukáže jen časy, které vrátilo aktuální hledání: s filtrem „Dnes“ nebo „Do 2 h“ chybí časy z dalších dnů. Výběr času na detailu bere všechny volné časy služby u podniku.
+- Seskupuje se podle služby, takže dvě služby se stejným názvem a jinou délkou (třeba masáž 30 a 60 minut) jsou dvě karty a na detailu si mezi nimi vybrat nejde.
+- „Mohlo by se ti líbit“ není personalizované: jiné služby podniku, stejná kategorie do 5 km od uložené polohy (jinak od podniku), pak cokoli v okolí.
+- Fotka kategorie je ilustrační a u neobvyklé služby nemusí sedět (půjčení kola dostane fotku sportovní lekce).
