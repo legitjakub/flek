@@ -1,6 +1,6 @@
 # FLEK — co zbývá před spuštěním
 
-Stav k 14. 9. 2026. Seznam všeho, co je potřeba dodělat, než FLEK začne brát skutečné peníze od skutečných zákazníků. Úkoly jsou rozdělené podle toho, **kdo je musí udělat**:
+Stav k 15. 9. 2026. Seznam všeho, co je potřeba dodělat, než FLEK začne brát skutečné peníze od skutečných zákazníků. Úkoly jsou rozdělené podle toho, **kdo je musí udělat**:
 
 - **Část 1: Musí udělat člověk.** Úkoly vyžadují účty, podpisy, peníze, osobní údaje, přihlašovací klíče nebo právníka. AI agent je udělat nesmí, nebo nemůže.
 - **Část 2: Zvládne AI agent v kódu.** Stačí mu zadat úkol, nic dalšího nepotřebuje.
@@ -18,7 +18,9 @@ Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B). Úkoly na 
   - vratky i obsazení místa řeší webhook.
   - Skutečné peníze se nestrhávají.
 - 16 demo podniků má testovací účet Stripe. Demo FLEKy se každé ráno doplní na 3 dny dopředu.
-- Ověřeno: 100/100 akceptačních kontrol se skutečnými testovacími platbami Stripe, build a unit testy v CI.
+- **Potvrzování rezervací podnikem** (hold před Checkoutem, autorizace, potvrzení do 10/5/3 minut, stržení až potom) je v databázi, ale vypnuté (`manual_confirmation_enabled = false`). Zapne se po nasazení funkcí a přidání událostí ve Stripe, nejdřív pro demo podniky.
+- **WhatsApp upozornění** pro podniky jsou v kódu a databázi, čekají na účet Meta a schválenou šablonu.
+- Ověřeno: 101/101 akceptačních kontrol se skutečnými testovacími platbami Stripe (původní režim), SQL testy potvrzování a WhatsAppu, build a unit testy v CI.
 
 ---
 
@@ -35,6 +37,30 @@ Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B). Úkoly na 
   - Zvlášť Connect webhook (události připojených účtů) s `account.updated`.
 - [ ] **Vložit ostré klíče do Supabase → Edge Functions → Secrets:** `STRIPE_SECRET_KEY` (`sk_live_…`) a `STRIPE_WEBHOOK_SECRET` (`whsec_…`). Klíče nikdy do chatu, repozitáře ani `.env` v gitu.
 - [ ] **Nastavit vzhled Checkoutu a výpis na kartě.** V Stripe nahrát logo a barvy a nastavit text výpisu (statement descriptor), např. `FLEK`.
+
+### Potvrzování rezervací a WhatsApp
+
+- [ ] **Schválit nasazení Edge Functions** `stripe-webhook`, `stripe-checkout`, `stripe-test-pay`, `notification-delivery` a `whatsapp-webhook` (s `verify_jwt = false`). Automatický režim agenta nasazení platebního webhooku sám odmítl, takže ho agent udělá až se souhlasem. `booking-confirmation` už běží.
+- [ ] **Stripe webhook (testovací i ostrý):** přidat události `payment_intent.amount_capturable_updated`, `payment_intent.canceled` a `payment_intent.payment_failed` k dosavadním. Bez nich se autorizace z Checkoutu ke žádosti nedostane a zákazník čeká, dokud hold nevyprší.
+- [ ] **Ruční test na telefonu** po zapnutí pro demo podniky: zaplatit Apple Pay nebo Google Pay a kartou 4242, zkontrolovat, že banka ukáže jen blokaci, potvrdit v partnerské části druhým účtem a ověřit kód; podruhé zvolit Nemohu přijmout a ověřit, že blokace zmizí.
+- [ ] **Meta — WhatsApp Business Platform:**
+  1. Business portfolio a ověření firmy (Business Verification).
+  2. WhatsApp Business Account a telefonní číslo pro FLEK (nesmí být zároveň v aplikaci WhatsApp), zobrazované jméno „FLEK“.
+  3. Aplikace v Meta for Developers s produktem WhatsApp. System user s trvalým tokenem a oprávněními `whatsapp_business_messaging` a `whatsapp_business_management`. Zkopírovat App Secret a Phone number ID.
+  4. Webhook: callback `https://yupkrntknbkvmlajwlph.supabase.co/functions/v1/whatsapp-webhook`, verify token náhodný řetězec aspoň 16 znaků, odebírat pole `messages`.
+  5. Šablona kategorie **Utility**, jazyk čeština (`cs`), název `flek_booking_request`. Tělo přesně:
+     ```
+     Nová rezervace čeká na potvrzení.
+     Termín: {{1}}
+     Služba: {{2}}
+     Vy dostanete: {{3}}
+     Potvrďte do {{4}}, jinak žádost vyprší a zákazník nic nezaplatí.
+     ```
+     Ukázkové hodnoty pro schválení: `dnes 14:30`, `Pánský střih (45 min)`, `750 Kč`, `14:08`. Tlačítka: dvě rychlé odpovědi s texty přesně **Potvrdit** a **Nemohu přijmout** (webhook je čte jako zálohu).
+  6. Supabase → Edge Functions → Secrets: `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_TEMPLATE_BOOKING_REQUEST` (`flek_booking_request`), `WHATSAPP_TEMPLATE_LANGUAGE` (`cs`), volitelně `WHATSAPP_GRAPH_VERSION` (výchozí `v25.0`). Nikdy do chatu ani repozitáře.
+  7. Říct agentovi zobrazované číslo FLEK; zapíše ho do `private.settings` (`whatsapp_display_number`) a tím se v Provozovně objeví párování.
+  8. Propojit číslo jednoho demo podniku, nechat přijít žádost a vyzkoušet obě tlačítka i opakované klepnutí.
+- [ ] **E-mail při registraci:** v Supabase → Authentication → SMTP zkontrolovat odesílatele `…@mail.app-flek.eu` a uživatele `resend` (uložení minule spadlo na časový limit), pak zaregistrovat novou adresu, otevřít odkaz v jiném prohlížeči a ověřit přihlášení.
 
 ### Supabase a infrastruktura
 
@@ -94,6 +120,13 @@ Každý bod je samostatný úkol. Po dokončení agent aktualizuje dokumentaci p
 - [x] **Úklid `scripts/acceptance.mjs`:** mrtvé větve demo plateb odstraněné (13. 9.).
 - [ ] **Spustit `npm run test:integration` s Dockerem.** Po přechodu na Stripe neběžel; helper `book()` teď potvrzuje platbu přes `stripe_payment_succeeded`.
 
+### Potvrzování rezervací
+
+- [ ] Po nasazení funkcí a přidání událostí ve Stripe: `update private.settings set value = 'demo' where key = 'manual_confirmation_enabled'`, spustit `tests/manual-confirmation.sql`, `npm run test:acceptance` (projde režim potvrzování) a klikací průchod zákazník + podnik na 375/390/1280 px se skutečnou testovací platbou.
+- [ ] Když je `demo` zelené, přepnout na `'true'` (Jakub souhlasil předem) a ve stejné změně upravit text na stránce pro podniky („Když si ho někdo rezervuje…“) a nápovědu k lhůtě zrušení v Provozovně („10 minut od zaplacení“ → od potvrzení).
+- [x] Opravy nasazené verze ChatGPT, oba SQL testy, akceptační skript pro oba režimy, unit testy stavů (15. 9.).
+- [x] WhatsApp v kódu: párování, šablona, webhook s ověřením podpisu, rozhodnutí přes `decide_booking` (15. 9.).
+
 ### E-maily a upozornění
 
 - [x] Potvrzení a zrušení rezervace zákazníkovi e-mailem, v aplikaci a push (13. 9.). Doplnit do e-mailu kód rezervace a storno lhůtu, ať splní potvrzení „na trvalém nosiči“.
@@ -137,12 +170,13 @@ Každý bod je samostatný úkol. Po dokončení agent aktualizuje dokumentaci p
 
 1. Hotové jsou úkoly Stripe, Supabase a právo z části 1 a sekce Platby, E-maily a Úklid dema z části 2.
 2. Produkční Supabase: aplikovat migrace (`supabase db push`), zkontrolovat advisor a vytvořit admin účet s MFA.
-3. Nasadit Edge Functions bez `stripe-test-pay` a vložit ostré secrets Stripe.
-4. Vytvořit ostré webhooky Stripe a ověřit, že testovací událost dojde (`stripe_events` v databázi).
-5. Spustit migraci `stripe_test_mode = false`.
-6. Vercel: produkční proměnné na nový projekt, doména app-flek.eu, Redirect URLs v Supabase.
-7. První podnik projde onboardingem Stripe a zveřejní FLEK.
-8. **Kontrolní platba skutečnou kartou** na malou částku, potom storno a ověření vratky na účtu.
-9. Sledovat první dny: Sentry, `private.stripe_events`, vratky a cron joby.
+3. Nasadit Edge Functions bez `stripe-test-pay` (včetně `booking-confirmation`, `notification-delivery` a `whatsapp-webhook`) a vložit ostré secrets Stripe a Meta.
+4. Vytvořit ostré webhooky Stripe se všemi událostmi včetně `payment_intent.amount_capturable_updated`, `payment_intent.canceled` a `payment_intent.payment_failed` a ověřit, že testovací událost dojde (`stripe_events` v databázi).
+5. Nastavit přepínač `manual_confirmation_enabled` pro produkci (ve stagingu ověřený `true`).
+6. Spustit migraci `stripe_test_mode = false`.
+7. Vercel: produkční proměnné na nový projekt, doména app-flek.eu, Redirect URLs v Supabase.
+8. První podnik projde onboardingem Stripe a zveřejní FLEK.
+9. **Kontrolní platba skutečnou kartou** na malou částku: podnik ji potvrdí, potom storno a ověření vratky na účtu.
+10. Sledovat první dny: Sentry, `private.stripe_events`, `private.confirmation_jobs`, vratky a cron joby.
 
 Rollback plateb: dokud je jen jeden podnik, stačí FLEK zrušit v partnerské části. Rezervace se zruší a peníze vrátí automaticky přes `stripe-refunds`.

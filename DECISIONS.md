@@ -118,3 +118,24 @@ Jeden řádek na rozhodnutí, chronologicky. Kde bylo zadání nejednoznačné, 
 - Značka a ink mají mezi sebou jen 2,1 : 1, proto má značka na tmavých blocích dvě podoby: `brand-on-dark` `#8797FF` pro text (kód rezervace, ušetřená částka, 7,0 : 1) a `brand-bright` `#4D67FB` pro grafiku (špendlík v logu na tmavém, prstenec shluku na mapě, špendlík v ikoně aplikace).
 - Role značky jsou tokeny (`brand-ink`, `brand-on-dark`, `brand-bright`, `ink-hover`, `promo`, `promo-ink`), ne natvrdo zapsané barvy v komponentách. Příští změna palety je tak jen změna hodnot ve `src/styles.css` plus statické soubory, které CSS nečtou: ikony (SVG a PNG), obrázek služby bez fotky, `theme-color` a e-maily.
 - Promo blok je jednobarevný `#CFD4FF`, bez přechodu.
+
+## Potvrzování rezervací podnikem — 15. 9. 2026
+
+Stejné zadání dostal ChatGPT (Codex), Jakub schválil jeho plán a Claude jeho rozpracovanou verzi dokončil a opravil (Jakubova volba, 14. 9. večer). Proto zůstává Codexova architektura.
+
+- **Stavy přímo v `bookings`** (`pending_payment`, `pending_merchant`, `capturing`, `confirmed`, `rejected`, `expired`, `payment_failed`), ne samostatná tabulka žádostí. Kapacita, finanční snímek, upozornění i čtecí modely už nad `bookings` stojí a jedna řada zámků (profil → podnik → nabídka → platba → rezervace) hlídá všechny přechody. Cena: každá budoucí funkce nad rezervacemi musí počítat s nedohodnutými stavy. Pomocník `private.booking_was_agreed` a test `update_offer` to hlídají.
+- **Místo se drží už před Checkoutem**, 3 minuty (Jakubova volba). Zamítnutá alternativa: nejdřív autorizovat a místo vzít až potom. O poslední místo by pak mohli autorizovat dva zákazníci a jednomu by se blokace uvolňovala za místo, které nikdy nebylo. Opuštěný Checkout drží místo nejvýš 3 minuty; limit 5 opuštěných holdů za hodinu brání blokování inventáře.
+- **Autorizace a stržení až po potvrzení** (`capture_method: manual`), ne okamžitá platba s vratkou při odmítnutí. Vratka trvá dny, stojí poplatky a zákazník by viděl stržené peníze za službu, kterou nedostal. Uvolněná blokace se nevrací, proto texty rozlišují „blokaci uvolňujeme“ a „peníze vracíme“.
+- **Jediné rozhodnutí `private.decide_booking`** pro aplikaci i WhatsApp. Kontroluje deadline samo, takže cron `flek-confirmation-expiry` jen dřív vrací místa a na správnosti nezávisí. Druhý kanál nemá vlastní logiku, kterou by šlo obejít.
+- **Okno podle začátku termínu** (10 / 5 / 3 minuty, pod 15 minut nic, vždy 10 minut rezerva před začátkem) rozhoduje server při autorizaci. Rozporný příklad ze zadání (16:00 → 17:30) se řídí tabulkou, tedy 5 minut.
+- **Kód rezervace se ukáže až po potvrzení** na úrovni pohledů, ne jen v UI: data čekající žádosti ho neobsahují.
+- **Rollout přepínačem** `false` / `demo` / `true` v `private.settings`, stejné pravidlo pro demo podniky jako `flek_demo_refresh`. Zapnout jde bez nasazení frontendu a vypnout bez ztráty rozběhnutých žádostí.
+- **Worker s číslem pokusu v idempotency klíči.** Stripe vrací uložený výsledek klíče, takže opakování po chybě musí být nový požadavek; dvojí capture nebo zrušení Stripe stejně nedovolí. Po 8 pokusech nebo trvalé chybě se capture vzdá, místo se vrátí a autorizace uvolní.
+
+## WhatsApp upozornění — 15. 9. 2026
+
+- **Oficiální Meta WhatsApp Cloud API**, žádný WhatsApp Web ani neoficiální bot. Klíče jen v Supabase secrets.
+- **Číslo se ověřuje párovacím kódem poslaným z toho čísla**, ne ověřovací šablonou ani odkazem s tokenem. Prokáže vlastnictví čísla, nepotřebuje další schválenou šablonu a žádný GET nic nemění. Kód se musí shodovat s číslem zadaným v aplikaci, takže uniklý snímek obrazovky sám nestačí.
+- **Rozhodnutí z tlačítka se váže na odeslanou zprávu.** Oficiální referenční stránka Meta ukazuje v `button.payload` text tlačítka, integrace třetích stran potvrzují vrácení vlastního payloadu. Webhook proto přijme náš jednorázový token (v databázi jen hash) i samotný text tlačítka, ale vždy jen s `context.id` zprávy, kterou FLEK na to číslo poslal. Rozpor mezi tokenem a textem tlačítka nerozhodne nic.
+- **Za podnik rozhoduje člen, který číslo propojil**, a jen dokud je členem. Nová spárování číslo přepnou do stavu čekání a staré zprávy přestanou platit.
+- Jedna WhatsApp zpráva na žádost a podnik (u člena, který číslo propojil), ne na každého člena. Výpadek WhatsAppu neblokuje e-mail ani push: WhatsApp má vlastní frontu v téže tabulce a vlastní claim.

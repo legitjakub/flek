@@ -1,6 +1,6 @@
 # FLEK — živý přehled projektu
 
-> Poslední kontrola: 14. 9. 2026
+> Poslední kontrola: 15. 9. 2026
 > Zdroj pravdy: repozitář FLEK v této složce. Tento soubor shrnuje stav produktu; technické detaily a akceptační důkazy zůstávají v odkazovaných dokumentech.
 
 ## Co FLEK řeší
@@ -52,9 +52,33 @@ Cenový model v1 je implementovaný a ověřený v hostovaném Supabase projektu
 - Zveřejnění hlídá čas, kapacitu, minimální úsporu a kolize termínů. Předchozí cenu podniku a kapacitu si služba pamatuje pro další FLEK.
 - Partner vidí odděleně „Vy dostanete“ a „Zákazník uvidí“; zákaznické obrazovky zůstávají all-in.
 
-Job `flek-maintenance` je aktivní a běží každých 15 minut: dokončí rezervace 24 hodin po konci a vrátí ukázkové platby bez rezervace starší než 30 minut. Při kontrole 13. 9. byly poslední tři běhy úspěšné; při kontrole nezůstala žádná zaplacená platba bez rezervace ani prošlá nedokončená rezervace. Vracení je zatím změna stavu demo platby, nikoliv volání skutečné banky.
+Job `flek-maintenance` je aktivní a běží každých 15 minut: dokončí rezervace 24 hodin po konci. Jeho druhá část vrací staré demo platby bez rezervace; od 13. 9. jdou platby jen přes Stripe, takže už nemá co dělat. Zaplacené Stripe platby bez rezervace řeší `flek-stripe-maintenance`.
 
-Podnik dostává upozornění přes Realtime a záložní dotaz každých 30 sekund. Upozornění i odznak jsou oddělené podle přihlášeného uživatele a provozovny; odhlášení je vymaže. Otevření rezervací odznak zhasne. Aplikace neodesílá push, SMS ani e-mail při zavřené aplikaci.
+Podnik dostává upozornění přes Realtime a záložní dotaz každých 15 sekund. Upozornění i odznak jsou oddělené podle přihlášeného uživatele a provozovny; odhlášení je vymaže. Otevření rezervací odznak zhasne. Při zavřené aplikaci chodí upozornění e-mailem a push podle nastavení (od 13. 9.), žádost o potvrzení i přes WhatsApp, jakmile bude účet Meta (viz níže). SMS nejsou.
+
+### Potvrzování rezervací podnikem
+
+Implementované a nasazené v databázi (15. 9. 2026), **zatím vypnuté**: přepínač `private.settings.manual_confirmation_enabled` je `false`, dokud nejsou nasazené Edge Functions `stripe-webhook`, `stripe-checkout` a `stripe-test-pay` a v Stripe přidané události `payment_intent.*` (viz `docs/PRED_SPUSTENIM.md`). Hodnota `demo` zapne tok jen pro podniky, jejichž všichni členové mají `@flek.test`; `true` pro všechny. Rozběhnuté žádosti po vypnutí dokončí worker.
+
+- **Hold před Checkoutem.** `start_payment` rovnou drží místo (`bookings.status = pending_payment`, 3 minuty, nejvýš do 15 minut před začátkem). Poslední místo tak dostane, kdo začal první, a nikdo neplatí za místo, které neexistuje. Opuštění Checkoutu vrátí místo hned (`cancel_pending_booking`), jinak po vypršení; 5 opuštěných holdů za hodinu zablokuje další (`HOLD_RATE_LIMITED`).
+- **Autorizace, ne platba.** Checkout vytvoří PaymentIntent s `capture_method: manual`. Webhook si vždy načte čerstvý PaymentIntent a `requires_capture` otevře podniku okno (`pending_merchant`). Neshoda částky, měny nebo session autorizaci uvolní, nikdy nerezervuje.
+- **Okno podniku ze serverového času.** Víc než 120 minut do začátku → 10 minut, 30–120 → 5 minut, 15–30 → 3 minuty, méně než 15 minut rezervovat nejde; deadline vždy nejpozději 10 minut před začátkem (`private.confirmation_deadline`).
+- **Jediné rozhodnutí.** `private.decide_booking` rozhoduje pro aplikaci (`respond_to_booking`) i WhatsApp (`whatsapp_decide`). Bere stejné zámky jako vypršení a zrušení zákazníkem (profil → podnik → nabídka → platba → rezervace), vyhraje první potvrzený přechod a rozhodnutí po deadlinu žádost rovnou vyprší. Zapíše kdo, kdy a kterým kanálem (`merchant_decided_by/at`, `decision_channel`).
+- **Capture až po potvrzení.** Worker `booking-confirmation` strhne platbu (idempotency klíč s číslem pokusu) a rezervace dostane kód a stav `confirmed`. Trvalá chyba capture vrátí místo, zruší autorizaci a oběma stranám řekne „nepodařilo se dokončit“. Capture, který dorazí po vypršení, se vrátí vratkou.
+- **Odmítnutí, vypršení, zrušení žádosti** vrátí místo přesně jednou (`capacity_released_at`) a autorizaci uvolní (`cancel`), nikdy nevrací peníze. Zrušení nabídky podnikem a pozastavení podniku adminem žádosti ukončí taky.
+- **Kód až po potvrzení.** Pohledy `customer_booking_details`, `merchant_booking_rows` i `my_payment_state` kód čekající žádosti nevrací. Úpravu nabídky blokuje běžící žádost (`OFFER_HAS_PENDING_BOOKINGS`), zmrazí ji jen skutečná rezervace.
+- **Zákazník** vidí Ověřujeme platbu → Čekáme na potvrzení podniku (odpočet, „Tenhle FLEK začíná brzy…“, Zrušit žádost) → Potvrzujeme FLEK… → 🔥 FLEK je tvůj!, nebo Tentokrát to nevyšlo / Podnik nepotvrdil včas / Podnik potvrdil, ale platbu se nepodařilo dokončit. O vratce mluví jen u skutečně stržených peněz.
+- **Podnik** má nahoře na Přehledu a v Rezervacích sekci „Vyžadují potvrzení“ (Potvrďte do 04:18, „🔥 Začíná za 18 minut“, Potvrdit / Nemohu přijmout s výsledkem ze serveru), banner se zvukem a počtem v titulku na ostatních stránkách, u nabídek počet čekajících žádostí a v Provozovně vysvětlení oken.
+- Analytika: `payment_authorized`, `confirmation_requested`, `merchant_confirmation_accepted/rejected/expired` s `confirmation_duration_ms`, `payment_capture_started/succeeded/failed`, `authorization_released`, `booking_created`.
+
+### WhatsApp upozornění pro podniky
+
+Implementované v databázi a kódu (15. 9. 2026), **bez účtu Meta neaktivní**: v Provozovně je sekce „WhatsApp upozornění“, dokud chybí číslo FLEK (`private.settings.whatsapp_display_number`), ukazuje jen, že upozornění nejsou aktivní.
+
+- Člen podniku zadá číslo (server ho normalizuje na E.164, +420 doplní) a souhlas s účelem (verze textu se ukládá). Aplikace ukáže kód „FLEK 123456“ a odkaz `wa.me` na číslo FLEK; podnik zprávu pošle z toho čísla a webhook číslo ověří. Kód platí 15 minut, v databázi je jen jeho hash, 5 pokusů z jiného čísla ho spálí, nový kód nejvýš 5× za hodinu.
+- Nová žádost (`requested`) založí jedno WhatsApp doručení na podnik u člena, který číslo propojil. `notification-delivery` pošle schválenou utility šablonu s tlačítky Potvrdit / Nemohu přijmout a v každém tlačítku jednorázový token (v databázi hash). Po skončení žádosti nebo méně než 30 s před deadlinem se neposílá.
+- `whatsapp-webhook` přijme jen POST s platným `X-Hub-Signature-256` (HMAC SHA-256 surového těla s App Secret, porovnání v konstantním čase); GET jen odpoví na ověření `hub.verify_token`. Klepnutí rozhodne přes `private.decide_booking`, jen když sedí zpráva (`context.id` nebo token), číslo, ověřené číslo podniku a členství toho, kdo číslo propojil. Každá zpráva rozhodne jednou, opakované doručení od Meta se ignoruje, odpověď přijde textem v 24h okně.
+- Stavy doručení (`sent`, `delivered`, `read`, `failed`) se zapisují i tehdy, když přijdou dřív než záznam o odeslání. Analytika `whatsapp_sent/delivered/failed/decision` nenese telefonní čísla.
 
 ## Doménová pravidla, která se nesmí obcházet
 
@@ -92,6 +116,11 @@ Nejdůležitější migrace:
 | `20260913202903_notification_delivery_fixes.sql` | pracovník doručování ověřovaný proti tajnému klíči v databázi, volání jen při splatné zprávě, upozornění mizí s rezervací a podnikem |
 | `20260914074359_stripe_refund_states.sql`, `…075058_stripe_refund_done_removed.sql`, `…075622_stripe_refund_failure_to_person.sql` | stav vratky `payments.refund_status` a RPC `stripe_refund_update`: vráceno jen po `succeeded`, čekající vratka zůstává ve frontě, selhaná jde člověku; zrušené `stripe_refund_done` |
 | `20260914080051_payment_state_refund_status.sql` | `my_payment_state` vrací i `refund_status` |
+| `20260914194131_manual_confirmation_types.sql`, `…194208_manual_confirmation.sql`, `…194608_manual_confirmation_hardening.sql`, `…194849_confirmation_notifications.sql` | první verze potvrzování rezervací od ChatGPT (Codex): nové stavy rezervace, hold, okna, worker, upozornění `requested` |
+| `20260914204208_manual_confirmation_fixes.sql` | opravy před zapnutím: maskovaný kód, `private.decide_booking` s auditem rozhodnutí, cesta „capture selhal“, neshoda bez výjimky, `confirmation_quote`, sekvence pro `inventory_version`, limit holdů, přepínač `false`/`demo`/`true`, cron 30 s |
+| `20260914204649_confirmation_offer_cancel_during_capture.sql` | nabídka zrušená během capture skončí jako zrušení podnikem, ne jako selhaná platba |
+| `20260914211826_whatsapp_notifications.sql` | WhatsApp: párování čísla, zprávy s jednorázovým tokenem, deduplikace webhooku, kanál `whatsapp` ve frontě doručení, `business_payments_status.manual_confirmation` |
+| `20260914213426_replace_wellness_catalog_photo.sql` | wellness katalog bez resortové fotografie |
 
 ## Ověření a otevřené body
 
@@ -104,6 +133,8 @@ Nejdůležitější migrace:
 - Lokální integrační sada potřebuje běžící Docker/Supabase; v tomto prostředí neběžela. Typy aplikace jsou ručně spravované, nevyměňovat je přímo za generovaný soubor.
 - Názvy souborů v `supabase/migrations/` odpovídají verzím v hostované tabulce `supabase_migrations.schema_migrations` (sladěno 13. 9. 2026 podle názvu, včetně pořadí `photo_matches_activity` před `google_place_ratings`, jak se skutečně aplikovaly). `supabase db push` proto již aplikované migrace nespustí znovu. Novou migraci po aplikaci přes MCP pojmenujte podle verze, kterou databáze zapsala.
 - Platby jdou přes Stripe Connect v testovacím režimu (Edge Functions v `supabase/functions`, klíče v Supabase secrets). Ostrý režim, události Accounts v2 a účetní doklady jsou otevřené, viz `LIMITATIONS.md`. Integrační sada nově potvrzuje platbu přes `stripe_payment_succeeded` (náhrada webhooku), lokálně zatím neběžela.
+- Potvrzování rezervací (15. 9. 2026): `tests/manual-confirmation.sql` a `tests/whatsapp-notifications.sql` prošly proti hostované databázi (rollback), akceptační běh v původním režimu 101/101, 102 unit testů, build a typová kontrola Edge Functions. **Otevřené:** nasazení `stripe-webhook`, `stripe-checkout`, `stripe-test-pay`, `notification-delivery` a `whatsapp-webhook` (nasazená je jen nová `booking-confirmation`), události `payment_intent.amount_capturable_updated`, `payment_intent.canceled` a `payment_intent.payment_failed` ve Stripe, pak `manual_confirmation_enabled = 'demo'`, akceptační běh v režimu potvrzování (skript ho už umí) a klikací průchod se skutečnou platbou, teprve potom `'true'`.
+- WhatsApp: **IMPLEMENTOVÁNO, ALE VYŽADUJE RUČNÍ EXTERNÍ OVĚŘENÍ** — účet Meta, schválená šablona, secrets a skutečné klepnutí na tlačítko. Oficiální dokumentace Meta ukazuje v `button.payload` text tlačítka; vlastní payload ze šablony podle integrací třetích stran chodí zpět, proto webhook bere i text tlačítka spolu s `context.id` odeslané zprávy.
 
 Podrobné důkazy jsou v [VERIFICATION.md](../VERIFICATION.md), omezení v [LIMITATIONS.md](../LIMITATIONS.md), technická rozhodnutí v [DECISIONS.md](../DECISIONS.md) a historické předání v [HANDOFF.md](../HANDOFF.md).
 
@@ -111,7 +142,8 @@ Podrobné důkazy jsou v [VERIFICATION.md](../VERIFICATION.md), omezení v [LIMI
 
 | Datum | Změna | Stav |
 | --- | --- | --- |
-| 14. 9. 2026 | Wellness katalog: odstraněna nevhodná resortová fotografie `photo-1596178065887-1198b6148b2b`; vířivka, parní lázeň a odpočinková procedura používají neutrální spa snímek a jednorázová migrace opravuje i existující služby a obálky | migrace připravena pro produkci; původní URL zůstává pouze jako podmínka v opravné migraci |
+| 15. 9. 2026 | Potvrzování rezervací podnikem dokončené po ChatGPT: hold před Checkoutem, autorizace a stržení až po potvrzení, okna 10/5/3 minuty ze serverového času, jediné rozhodnutí `private.decide_booking` pro aplikaci i WhatsApp, 15 oprav nasazené verze (maskovaný kód, capture u deadlinu, idempotency a strop pokusů, neshoda bez výjimky, otevřená Checkout Session, zmrazení nabídky, zámek inventáře, pozastavení podniku, údržba plateb, limit holdů, audit a analytika rozhodnutí, kolize kódu, cron). Partner: sekce „Vyžadují potvrzení“, banner a zvuk, počet žádostí u nabídek. Zákazník: čekání s odpočtem, 🔥 FLEK je tvůj!, odmítnutí a vypršení bez řeči o vratce. WhatsApp přes Meta Cloud API s párováním kódem a podepsaným webhookem. Registrace existujícího e-mailu už nehlásí odeslaný odkaz. | migrace v produkci, přepínač `false`; nasazená `booking-confirmation`, ostatní funkce čekají na souhlas s nasazením; SQL testy obou toků PASS na hostované DB, akceptace 101/101 (původní režim), 102 unit testů, build; partner na 390 a 1280 px a zákazník na 375 px s podvrženými odpověďmi API bez přetečení; WhatsApp vyžaduje účet Meta |
+| 14. 9. 2026 | Wellness katalog: odstraněna nevhodná resortová fotografie `photo-1596178065887-1198b6148b2b`; vířivka, parní lázeň a odpočinková procedura používají neutrální spa snímek a jednorázová migrace opravuje i existující služby a obálky | migrace v produkci od 15. 9. (verze `20260914213426`, 2 položky katalogu); původní URL zůstává pouze jako podmínka v opravné migraci |
 | 14. 9. 2026 | Mapa: vrácený plný náhled po klepnutí na špendlík (fotka, sleva, přeškrtnutá původní cena, podnik, čtvrť a vzdálenost, délka, Navigovat a Detail) místo kompaktního řádku; kamera po změření karty posune vybraný špendlík nad ni | build, 84 unit testů; na 375/390/1280 px vybraný špendlík nad kartou, bez přetečení a chyb v konzoli |
 | 14. 9. 2026 | Opravy z vizuální revize: shluky na mapě počítají se skutečnou výškou značek (špendlík 64 px, shluk s prstencem 86 px), takže cenovka už nepřekrývá prstenec sousedního shluku; náhled termínu na telefonu posune mapu, až se karta změří (dřív se posun počítal s prázdným slotem a špendlík zůstal pod kartou); lišta časů se zastaví na celých pilulkách a mizí jen na okraji, za kterým něco je; v kartě rezervace na detailu už nevisí tečka mezi „Zaplatíš rovnou“ a „Zrušení zdarma“ | build, 85 unit testů (nový test kolize špendlíku a shluku), prohlížeč na 375/390/1280 px: žádné překryvy značek, vybraný špendlík nad kartou (375: 363–427 px, karta od 588 px), bez přetečení |
 | 14. 9. 2026 | Nová paleta „Noční ultramarín“ místo Mandarinky (vybraná ze tří variant ukázaných na skutečné aplikaci): tokeny včetně rolí značky na tmavém a na mapě, logo, ikony aplikace (SVG i PNG), mapa, obrázek služby bez fotky, manifest, e-mailové šablony (repozitář i Supabase) a e-maily upozornění | build, 84 unit testů, všechny textové dvojice tokenů WCAG AA, 57 snímků na 375/390/1280 px bez přetečení a chyb, vizuální kontrola snímků |

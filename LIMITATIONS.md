@@ -1,6 +1,6 @@
 # Omezení pilotu
 
-Aktualizováno 14. 9. 2026. Aktuální implementaci shrnuje [přehled projektu](docs/PROJECT_STATUS.md); důkazy ověření jsou v [VERIFICATION.md](VERIFICATION.md).
+Aktualizováno 15. 9. 2026. Aktuální implementaci shrnuje [přehled projektu](docs/PROJECT_STATUS.md); důkazy ověření jsou v [VERIFICATION.md](VERIFICATION.md).
 
 ## Platby a výplaty
 
@@ -42,7 +42,7 @@ Google hodnocení se zobrazí jen pro správně přiřazené Place ID a funkčn�
 
 ## Upozornění a obsluha podniku
 
-Upozornění podniku v otevřené aplikaci funguje přes Realtime s 30sekundovým pollingem; zvuk závisí na povolení přehrávání prohlížečem. Potvrzená a zrušená rezervace navíc vytvoří upozornění v aplikaci (zvonek) pro zákazníka i členy podniku a podle nastavení e-mail a Web Push.
+Upozornění podniku v otevřené aplikaci funguje přes Realtime s 15sekundovým pollingem; zvuk závisí na povolení přehrávání prohlížečem. Potvrzená a zrušená rezervace navíc vytvoří upozornění v aplikaci (zvonek) pro zákazníka i členy podniku a podle nastavení e-mail a Web Push.
 
 - E-mail a push odcházejí přes Edge Function `notification-delivery`. Potřebuje v Supabase secrets `RESEND_API_KEY`, `NOTIFICATION_FROM`, `VAPID_PUBLIC_KEY` a `VAPID_PRIVATE_KEY` a ověřenou doménu `mail.app-flek.eu` v Resendu (ověřená 13. 9.). Dokud chybí, zprávy čekají ve frontě a po doplnění odejdou i se zpožděním. Od 13. 9. jsou všechny klíče nastavené; push ještě nikdo nevyzkoušel na skutečném telefonu.
 - Push na iPhonu funguje jen v aplikaci přidané na plochu (iOS 16.4+). Text oznámení záměrně neobsahuje detaily rezervace.
@@ -56,3 +56,15 @@ Více provozoven na účet je podporováno přepínačem v partnerské části. 
 - Mapový JavaScript je velký; Vite hlásí upozornění na chunk nad 500 kB. Nové měření Lighthouse zatím neproběhlo.
 - Doporučení měří atribuci a dokončenou první rezervaci; nevytváří utratitelný kredit.
 - Předplatné, chat, dynamická cenotvorba, účetnictví, integrace na externí rezervační systémy a automatické výplaty nejsou součástí V1.
+
+## Potvrzování rezervací a WhatsApp (15. 9. 2026)
+
+- Potvrzování podnikem je v databázi, ale **vypnuté** (`manual_confirmation_enabled = false`), dokud nejsou nasazené `stripe-webhook`, `stripe-checkout`, `stripe-test-pay` a v Stripe přidané události `payment_intent.amount_capturable_updated`, `payment_intent.canceled` a `payment_intent.payment_failed`. Akceptační skript v režimu potvrzování zatím neběžel.
+- Opuštěný Checkout drží místo až 3 minuty. Platba dokončená po uplynutí holdu se nerezervuje, autorizace se uvolní a zákazník uvidí „Čas na zaplacení vypršel“.
+- Uvolnění blokace na kartě trvá podle banky; u Apple Pay a Google Pay se může blokace ve výpisu tvářit jako platba. Na skutečném telefonu to zatím nikdo nevyzkoušel.
+- Termín, který začíná dřív než za 15 minut, v režimu potvrzování rezervovat nejde. Při `demo` to hlídá jen `start_payment`, takže demo podnik takový FLEK chvíli ukazuje jako volný a rezervace skončí hláškou „Tento termín už bohužel není volný“.
+- Lhůta zrušení se u potvrzených žádostí počítá od potvrzení. Nápověda v Provozovně („10 minut od zaplacení“) a text na stránce pro podniky se upraví při zapnutí pro všechny.
+- Vypršení okna podniku a pozdní capture ověřuje jen `tests/manual-confirmation.sql` (posunutím deadlinu), akceptační běh je kvůli délce okna nečeká.
+- WhatsApp potřebuje ověřený účet Meta, telefonní číslo, schválenou utility šablonu a secrets (`docs/PRED_SPUSTENIM.md`). Bez nich se nic neposílá a v Provozovně je jen informace, že upozornění nejsou aktivní. Skutečné doručení ani klepnutí na tlačítko zatím neproběhlo (**IMPLEMENTOVÁNO, ALE VYŽADUJE RUČNÍ EXTERNÍ OVĚŘENÍ**).
+- Když Meta přijme zprávu, ale odpověď se ztratí, worker ji pošle znovu s novým tokenem; tlačítko první zprávy pak odpoví, že zprávu už nejde použít. Rozhodnout jde z druhé zprávy nebo z aplikace.
+- Rozhodnutí z WhatsAppu se v auditu připíše členovi, který číslo propojil, ne konkrétní osobě u telefonu.
