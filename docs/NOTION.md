@@ -32,7 +32,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
   1. Rezervuj FLEK u demo podniku a zaplať testovací kartou 4242 4242 4242 4242 (libovolné budoucí datum a CVC).
   2. Zkontroluj kód rezervace, zvonek v aplikaci a e-mail „Tvůj FLEK je rezervovaný“.
   3. Rezervaci zruš a ověř vratku a e-mail o zrušení.
-- [ ] **Uložit VAPID klíče do správce hesel.** Jde o řádky `VAPID_PUBLIC_KEY` a `VAPID_PRIVATE_KEY` z uvedeného souboru. Soubor `/private/tmp/flek-notification-secrets.env` pak smaž.
+- [x] **Uložit VAPID klíče do správce hesel.** Hotovo 15. 9.: Jakub je uložil a dočasný soubor s klíči smazal (ověřeno, soubor už neexistuje).
 - [x] **Propojit podnik „Kubova“ se Stripe.** Hotovo 14. 9.: platby, výplaty i údaje u Stripe potvrzené (ověřeno 15. 9. v databázi). Tenis kurt propojený zatím není.
 - [x] **Odhlásit se z Endory.** Přihlášení už vypršelo (13. 9.), DNS záznamy pro Resend jsou uložené a ověřené.
 - [x] **Nasadit funkce pro potvrzování rezervací.** Push do `main` je nasadil sám přes GitHub integraci, `stripe-checkout` a `stripe-test-pay` doplnil Claude (15. 9.).

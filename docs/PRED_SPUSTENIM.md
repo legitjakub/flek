@@ -114,7 +114,7 @@ Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B). Úkoly na 
 - [x] **`NOTIFICATION_FROM` a `VAPID_PUBLIC_KEY`** v Supabase → Edge Functions → Secrets (13. 9.). E-mailová upozornění fungují.
 - [x] **`VAPID_PRIVATE_KEY`** v Supabase → Edge Functions → Secrets (13. 9., otisk ověřený proti souboru).
 - [ ] **Resend klíč:** vytvořit nový API klíč (Sending access, doména `mail.app-flek.eu`), vložit ho jako `RESEND_API_KEY` do Edge Function secrets i jako heslo SMTP v Supabase Auth a smazat oba staré klíče („FLEK production“ a „FLEK production rotated“), které se objevily v záznamu Codexu.
-- [ ] **VAPID klíče** uložit do správce hesel a soubor `/private/tmp/flek-notification-secrets.env` smazat.
+- [x] **VAPID klíče** uložené ve správci hesel, dočasný soubor s klíči smazaný (15. 9.).
 - [x] **Skutečné e-maily:** obnova hesla a upozornění doručené na jakub.hrncir24@gmail.com (Resend: Delivered, 13. 9.). Zbývá zkouška s rezervací kartou 4242 a push.
 - [ ] **Monitoring chyb:** účet Sentry (nebo podobné služby) a předání DSN do Vercelu jako `VITE_SENTRY_DSN`.
 - [ ] **Vercel:** proměnné `VITE_*` pro produkci, včetně skutečného `VITE_SUPPORT_EMAIL`.
