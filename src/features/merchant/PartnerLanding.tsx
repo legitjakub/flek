@@ -6,7 +6,7 @@ const STEPS = [
   { icon: CalendarPlus, text: 'Uvolní se vám termín — zrušená rezervace, prázdné odpoledne.' },
   { icon: HandCoins, text: 'Nastavíte, kolik za něj chcete dostat.' },
   { icon: MapPin, text: 'FLEK ho ukáže lidem v okolí, kteří mají zrovna čas.' },
-  { icon: TicketCheck, text: 'Když si ho někdo rezervuje, dostanete částku, kterou jste nastavili.' },
+  { icon: TicketCheck, text: 'Když si ho někdo rezervuje, rezervaci během pár minut potvrdíte a dostanete částku, kterou jste nastavili.' },
 ];
 
 /**

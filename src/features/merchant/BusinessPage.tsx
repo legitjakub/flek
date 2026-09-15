@@ -419,7 +419,7 @@ function BusinessForm({ business }: { business?: Business }) {
         <legend className="pb-1 text-sm font-bold">Bezplatné zrušení</legend>
         <p className="text-sm text-muted">
           Do kdy před začátkem může zákazník zrušit a dostat peníze zpět. Kdo si termín
-          rezervuje později, má na rozmyšlenou vždy 10 minut od zaplacení.
+          rezervuje později, má na rozmyšlenou vždy 10 minut od potvrzení rezervace.
         </p>
         <Segmented
           label="Bezplatné zrušení"
