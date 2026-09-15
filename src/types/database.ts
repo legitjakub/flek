@@ -152,12 +152,19 @@ export type CustomerBooking = {
   can_cancel: boolean;
   cancellation_deadline: string;
   server_now: string;
+  /** 1 for a booking that waited for the merchant; its code stays hidden until it was confirmed. */
   confirmation_version?: number;
+  /** How long the seat is held while the customer is on Stripe's page. */
   checkout_expires_at?: string | null;
+  /** The merchant's deadline, fixed by the server at authorisation. */
   confirmation_expires_at?: string | null;
+  authorized_at?: string | null;
   confirmed_at?: string | null;
-  authorization_state?: 'none' | 'authorized' | 'release_pending' | 'released' | 'captured';
+  merchant_decided_at?: string | null;
+  authorization_state?: AuthorizationState;
 };
+
+export type AuthorizationState = 'none' | 'authorized' | 'release_pending' | 'released' | 'captured';
 
 /** Raw `bookings` row: what the admin list RPCs return, without the customer view's extras. */
 export type AdminBooking = Omit<CustomerBooking, 'business_phone' | 'can_cancel' | 'cancellation_deadline' | 'server_now'>;
@@ -173,6 +180,14 @@ export type MerchantBooking = Omit<CustomerBooking, 'business_phone' | 'can_canc
   service_fee_cents: number;
   /** "Nedorazil" can be marked until then; after it the booking completes on its own. */
   resolution_deadline: string;
+  decision_channel?: 'app' | 'whatsapp' | null;
+};
+
+/** What respond_to_booking answers: the request's state after the decision, and whether this call decided it. */
+export type ConfirmationDecision = {
+  status: BookingStatus;
+  decided: boolean;
+  confirmation_expires_at: string | null;
 };
 
 export type MerchantBookingDetail = MerchantBooking & {
@@ -204,6 +219,8 @@ export type MerchantOffer = {
   cancellation_reason: string | null;
   booked: number;
   completed: number;
+  /** Requests waiting for the merchant's answer or for the capture that follows it. */
+  pending_requests?: number;
   bookable: boolean;
   published_at: string;
   server_now: string;
@@ -318,13 +335,37 @@ export type PaymentState = {
   booking_status?: BookingStatus | null;
   confirmation_expires_at?: string | null;
   checkout_expires_at?: string | null;
-  authorization_state?: 'none' | 'authorized' | 'release_pending' | 'released' | 'captured';
+  authorized_at?: string | null;
+  merchant_decided_at?: string | null;
+  confirmed_at?: string | null;
+  start_at?: string | null;
+  cancellation_reason?: string | null;
+  authorization_state?: AuthorizationState;
   server_now?: string;
 };
+
+/** A rough, non-binding window for the booking sheet; the binding one is fixed at authorisation. */
+export type ConfirmationQuote = { manual: boolean; window_seconds: number | null; hold_seconds: number; server_now: string };
+
+export type WhatsAppSettings = {
+  /** Whether FLEK has a WhatsApp number to pair with at all. */
+  available: boolean;
+  status: 'off' | 'pending' | 'expired' | 'verified' | 'disabled';
+  phone: string | null;
+  pairing_expires_at: string | null;
+  verified_at: string | null;
+  flek_number: string | null;
+  consent_version: string;
+  server_now: string;
+};
+
+export type WhatsAppPairing = { code: string; expires_at: string; phone: string; flek_number: string; server_now: string };
 
 export type BusinessPaymentsStatus = {
   provider: 'stripe';
   connected: boolean;
+  /** New bookings wait for the venue's confirmation (the rollout switch, decided on the server). */
+  manual_confirmation?: boolean;
   charges_enabled: boolean;
   payouts_enabled: boolean;
   details_submitted: boolean;

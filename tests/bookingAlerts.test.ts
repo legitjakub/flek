@@ -37,3 +37,19 @@ describe('partner booking alerts', () => {
     expect(store.get('u:b').alerts).toEqual([]);
   });
 });
+
+describe('confirmation requests in partner alerts', () => {
+  it('announces a waiting request even if it arrived before the page opened, once', () => {
+    const store = createBookingAlertStore();
+    store.start('u:b', 100);
+    const request = { ...alert('req'), kind: 'request' as const, deadline: '2026-09-13T11:40:00Z' };
+    expect(store.announce('u:b', request, 50)).toBe(true);
+    expect(store.announce('u:b', request, 50)).toBe(false);
+    expect(store.get('u:b').alerts[0]).toMatchObject({ kind: 'request', deadline: '2026-09-13T11:40:00Z' });
+    // Answered elsewhere: the banner and the unread count both go.
+    store.dismiss('u:b', 'req');
+    expect(store.get('u:b')).toEqual({ alerts: [], unreadIds: [] });
+    // Confirmation makes it a booking with the same id; it is not announced a second time.
+    expect(store.announce('u:b', { ...alert('req'), kind: 'booking' }, 150)).toBe(false);
+  });
+});

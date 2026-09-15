@@ -36,6 +36,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
   const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [code, setCode] = useState<string | null>(null);
+  const [confirmedByMerchant, setConfirmedByMerchant] = useState(false);
   const [followed, setFollowed] = useState(false);
   const { userId } = useSession();
   const queryClient = useQueryClient();
@@ -116,8 +117,9 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
       <PaymentReturn
         paymentId={returningPayment}
         cancelled={search.get('zruseno') === '1'}
-        onBooked={(reservationCode) => {
+        onBooked={(reservationCode, merchantConfirmed) => {
           setCode(reservationCode);
+          setConfirmedByMerchant(merchantConfirmed);
           navigate(`/nabidka/${offer.id}`, { replace: true, scroll: false });
         }}
         onRetry={() => {
@@ -129,7 +131,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
   }
 
   if (code) {
-    return <BookingSuccess code={code} offer={offer} now={now} />;
+    return <BookingSuccess code={code} offer={offer} now={now} confirmedByMerchant={confirmedByMerchant} />;
   }
 
   const source = serviceIllustration(offer.service_name, offer.image_url, offer.cover_url);
@@ -418,14 +420,18 @@ function BookingSuccess({
   code,
   offer,
   now,
+  confirmedByMerchant,
 }: {
   code: string;
   offer: NonNullable<Awaited<ReturnType<typeof getOfferDetail>>>;
   now: string;
+  confirmedByMerchant: boolean;
 }) {
   return (
     <main className="mx-auto w-full max-w-md px-4 py-10 text-center">
-      <span className="mx-auto mb-5 grid size-14 place-items-center rounded-full bg-accent-soft text-accent"><Check size={28} aria-hidden="true" /></span><h1 className="text-xl font-extrabold">Máš svůj FLEK.</h1>
+      <span className="mx-auto mb-5 grid size-14 place-items-center rounded-full bg-accent-soft text-accent"><Check size={28} aria-hidden="true" /></span>
+      <h1 className="text-xl font-extrabold">{confirmedByMerchant ? '🔥 FLEK je tvůj!' : 'Máš svůj FLEK.'}</h1>
+      {confirmedByMerchant ? <p className="mt-1 text-base text-muted">Podnik rezervaci potvrdil.</p> : null}
       <div className="mt-4">
         <Voucher code={code} />
       </div>

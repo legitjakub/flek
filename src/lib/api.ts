@@ -2,7 +2,7 @@ import { FunctionsHttpError } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { result } from './errors';
 import { noteServerNow } from './clock';
-import type { AdminBooking, AdminBusiness, AdminMetrics, AdminUser, Business, BookingStatus, Category, CustomerBooking, CustomerMetrics, FavoriteBusiness, FavoriteOffer, MerchantBooking, MerchantBookingDetail, MerchantMetrics, MerchantOffer, OfferDetail, Payment, Profile, PublicBusiness, ReferralClaim, ReferralStats, PaymentsMode, PaymentState, BusinessPaymentsStatus, SearchRow, ServicePhoto, Service, SortKey, BusinessBilling, AdminAuditEntry } from '../types/database';
+import type { AdminBooking, AdminBusiness, AdminMetrics, AdminUser, Business, BookingStatus, Category, ConfirmationDecision, ConfirmationQuote, CustomerBooking, CustomerMetrics, FavoriteBusiness, FavoriteOffer, MerchantBooking, MerchantBookingDetail, MerchantMetrics, MerchantOffer, OfferDetail, Payment, Profile, PublicBusiness, ReferralClaim, ReferralStats, PaymentsMode, PaymentState, BusinessPaymentsStatus, SearchRow, ServicePhoto, Service, SortKey, BusinessBilling, AdminAuditEntry, WhatsAppPairing, WhatsAppSettings } from '../types/database';
 
 /** Records the server clock carried by any payload that exposes it. */
 function withClock<T extends { server_now?: string }>(rows: T[]): T[] {
@@ -119,6 +119,24 @@ export async function businessPaymentsStatus(businessId: string): Promise<Busine
   return await result<BusinessPaymentsStatus>(supabase.rpc('business_payments_status', { p_business_id: businessId }));
 }
 
+export async function whatsappSettings(businessId: string): Promise<WhatsAppSettings> {
+  const settings = await result<WhatsAppSettings>(supabase.rpc('whatsapp_settings', { p_business_id: businessId }));
+  noteServerNow(settings.server_now);
+  return settings;
+}
+
+export async function whatsappStartPairing(businessId: string, phone: string, consentVersion: string): Promise<WhatsAppPairing> {
+  const pairing = await result<WhatsAppPairing>(supabase.rpc('whatsapp_start_pairing', {
+    p_business_id: businessId, p_phone: phone, p_consent_version: consentVersion,
+  }));
+  noteServerNow(pairing.server_now);
+  return pairing;
+}
+
+export async function whatsappDisable(businessId: string): Promise<void> {
+  await result(supabase.rpc('whatsapp_disable', { p_business_id: businessId }));
+}
+
 export async function stripeConnect(
   action: 'onboard' | 'status' | 'dashboard',
   businessId: string,
@@ -148,16 +166,18 @@ export async function rateBooking(bookingId: string, rating: number): Promise<vo
 }
 
 export async function myBookings(): Promise<CustomerBooking[]> {
-  const [bookings, details] = await Promise.all([
-    result<CustomerBooking[]>(supabase.rpc('my_bookings')),
-    result<Array<Partial<CustomerBooking> & { id: string }>>(supabase.rpc('confirmation_details', { p_business_id: null })),
-  ]);
-  const extra = new Map((details ?? []).map((row) => [row.id, row]));
-  return withClock((bookings ?? []).map((row) => ({ ...row, ...extra.get(row.id) })));
+  return withClock((await result<CustomerBooking[]>(supabase.rpc('my_bookings'))) ?? []);
 }
 
+/** Withdraws a request before the merchant decided. Returns the request's state afterwards. */
 export async function cancelPendingBooking(bookingId: string): Promise<BookingStatus> {
   return await result<BookingStatus>(supabase.rpc('cancel_pending_booking', { p_booking_id: bookingId }));
+}
+
+export async function confirmationQuote(offerId: string): Promise<ConfirmationQuote | null> {
+  const quote = await result<ConfirmationQuote | null>(supabase.rpc('confirmation_quote', { p_offer_id: offerId }));
+  noteServerNow(quote?.server_now);
+  return quote;
 }
 
 /* ----------------------------------------------------------------- favourites */
@@ -310,16 +330,16 @@ export async function merchantOffers(businessId: string, from?: string, until?: 
 }
 
 export async function merchantBookings(businessId: string, from?: string, until?: string): Promise<MerchantBooking[]> {
-  const [bookings, details] = await Promise.all([
-    result<MerchantBooking[]>(supabase.rpc('merchant_bookings', { p_business_id: businessId, p_from: from ?? null, p_until: until ?? null })),
-    result<Array<Partial<MerchantBooking> & { id: string }>>(supabase.rpc('confirmation_details', { p_business_id: businessId })),
-  ]);
-  const extra = new Map((details ?? []).map((row) => [row.id, row]));
-  return withClock((bookings ?? []).map((row) => ({ ...row, ...extra.get(row.id) })));
+  return withClock(
+    (await result<MerchantBooking[]>(
+      supabase.rpc('merchant_bookings', { p_business_id: businessId, p_from: from ?? null, p_until: until ?? null }),
+    )) ?? [],
+  );
 }
 
-export async function respondToBooking(bookingId: string, accept: boolean): Promise<BookingStatus> {
-  return await result<BookingStatus>(supabase.rpc('respond_to_booking', { p_booking_id: bookingId, p_accept: accept }));
+/** The merchant's yes or no. The server decides who wins against the deadline and the customer. */
+export async function respondToBooking(bookingId: string, accept: boolean): Promise<ConfirmationDecision> {
+  return await result<ConfirmationDecision>(supabase.rpc('respond_to_booking', { p_booking_id: bookingId, p_accept: accept }));
 }
 
 export async function merchantLookupBooking(code: string): Promise<MerchantBookingDetail | null> {

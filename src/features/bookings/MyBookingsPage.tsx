@@ -12,12 +12,12 @@ import { useSession } from '../auth/session';
 import { Voucher } from './Voucher';
 import { StatusBadge } from '../../components/StatusBadge';
 import type { CustomerBooking } from '../../types/database';
-import { ConfirmationCountdown } from '../../components/ConfirmationCountdown';
+import { confirmationView, waitingLine } from './confirmationView';
 
 export function MyBookingsPage() {
   const { userId } = useSession();
   const [tab, setTab] = useState<'upcoming' | 'history'>('upcoming');
-  const now = useServerNow();
+  const now = useServerNow(1_000);
   const queryClient = useQueryClient();
   const [toCancel, setToCancel] = useState<CustomerBooking | null>(null);
   const [voucherFor, setVoucherFor] = useState<CustomerBooking | null>(null);
@@ -65,7 +65,11 @@ export function MyBookingsPage() {
   }
 
   const all = query.data ?? [];
-  const upcoming = all.filter((b) => ['pending_payment', 'pending_merchant', 'capturing', 'confirmed'].includes(b.status) && Date.parse(b.start_at_snapshot) > Date.parse(now));
+  // Requests still in motion lead the list: they are the ones with a clock running.
+  const inMotion = (b: CustomerBooking) => b.status === 'pending_payment' || b.status === 'pending_merchant' || b.status === 'capturing';
+  const upcoming = all
+    .filter((b) => (inMotion(b) || b.status === 'confirmed') && Date.parse(b.start_at_snapshot) > Date.parse(now))
+    .sort((a, b) => Number(inMotion(b)) - Number(inMotion(a)));
   const history = all.filter((b) => !upcoming.includes(b));
   const rows = tab === 'upcoming' ? upcoming : history;
 
@@ -136,7 +140,9 @@ export function MyBookingsPage() {
                     ) : booking.payment_status ? (
                       <StatusBadge
                         status={booking.payment_status}
-                        label={booking.payment_status === 'pending' && booking.authorization_state === 'authorized' ? 'Částka blokována' : booking.payment_status === 'pending' ? 'Čeká na platbu' : undefined}
+                        label={booking.authorization_state === 'authorized' ? 'Částka blokována'
+                          : booking.authorization_state === 'release_pending' || booking.authorization_state === 'released' ? 'Blokace uvolněna'
+                            : booking.payment_status === 'pending' ? 'Čeká na platbu' : undefined}
                       />
                     ) : null}
                   </span>
@@ -159,19 +165,10 @@ export function MyBookingsPage() {
                   </p>
                 ) : null}
 
-                {booking.cancellation_reason ? (
+                {booking.confirmation_version === 1 && !booking.confirmed_at ? (
+                  <RequestState booking={booking} now={now} onCancel={() => setToCancel(booking)} />
+                ) : booking.cancellation_reason ? (
                   <p className="mt-2 text-sm text-danger">Důvod: {booking.cancellation_reason}</p>
-                ) : null}
-
-                {booking.status === 'pending_merchant' ? (
-                  <div className="mt-4 rounded-xl bg-accent-soft p-3 text-sm text-ink">
-                    <p className="font-bold">Čekáme na potvrzení podniku</p>
-                    <p className="mt-1 text-muted">Peníze ještě nebyly strženy. Když podnik včas nepotvrdí, blokace se uvolní.</p>
-                    <p className="mt-2"><ConfirmationCountdown deadline={booking.confirmation_expires_at} /></p>
-                    <Button variant="secondary" size="sm" className="mt-3" onClick={() => setToCancel(booking)}>Zrušit žádost</Button>
-                  </div>
-                ) : booking.status === 'capturing' ? (
-                  <p className="mt-4 rounded-xl bg-accent-soft p-3 text-sm font-bold text-ink">Podnik potvrdil. Dokončujeme platbu a připravujeme kód.</p>
                 ) : null}
 
                 {booking.status === 'confirmed' ? (
@@ -281,5 +278,31 @@ export function MyBookingsPage() {
         ) : null}
       </Sheet>
     </main>
+  );
+}
+
+/**
+ * A booking that waited (or still waits) for the merchant. Its outcome is told in the same words as the
+ * page the customer returns to from Stripe, so the two never disagree.
+ */
+function RequestState({ booking, now, onCancel }: { booking: CustomerBooking; now: string; onCancel: () => void }) {
+  const view = confirmationView({
+    status: booking.payment_status ?? 'pending', refund_requested: booking.payment_status === 'paid' && booking.status !== 'confirmed',
+    failure_reason: null, reservation_code: null, booking_status: booking.status,
+    merchant_decided_at: booking.merchant_decided_at, authorized_at: booking.authorized_at,
+  });
+  const line = booking.status === 'pending_merchant' ? waitingLine({ ...booking, start_at: booking.start_at_snapshot }, now) : null;
+  const holdLeft = booking.status === 'pending_payment' && booking.checkout_expires_at && Date.parse(booking.checkout_expires_at) > Date.parse(now)
+    ? `Termín ti držíme do ${clockTime(booking.checkout_expires_at)}.` : null;
+  return (
+    <div className={cx('mt-4 rounded-xl p-3 text-sm', view.live ? 'bg-accent-soft text-ink' : 'bg-surface text-ink')}>
+      <p className="font-bold">{booking.status === 'pending_payment' ? 'Dokončuješ platbu' : view.title}</p>
+      <p className="mt-1 text-muted">{booking.status === 'pending_payment' ? 'Na kartě zatím nic není. Po zaplacení pošleme rezervaci podniku k potvrzení.' : view.body}</p>
+      {line ? <p className="tnum mt-2 font-bold" role="timer">{line}</p> : null}
+      {holdLeft ? <p className="tnum mt-2 font-bold">{holdLeft}</p> : null}
+      {booking.status === 'pending_merchant' || booking.status === 'pending_payment' ? (
+        <Button variant="secondary" size="sm" className="mt-3" onClick={onCancel}>Zrušit žádost</Button>
+      ) : null}
+    </div>
   );
 }

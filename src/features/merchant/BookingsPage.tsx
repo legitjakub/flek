@@ -1,11 +1,11 @@
 import { ChevronDown } from 'lucide-react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { merchantBookings, merchantLookupBooking, respondToBooking } from '../../lib/api';
+import { merchantBookings, merchantLookupBooking } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
 import { clockTime, dayBounds, dayLabel } from '../../lib/time';
-import { relativeTime, serverNow, useServerNow } from '../../lib/clock';
+import { serverNow, useServerNow } from '../../lib/clock';
 import { Banner, Button, EmptyState, ErrorState, Field, Input, LoadingList, Tabs } from '../../components/ui';
 import { useRouter } from '../../app/router';
 import { MerchantShell } from './MerchantShell';
@@ -13,7 +13,7 @@ import { ScanButton, ScanVoucherSheet } from './ScanVoucherSheet';
 import { ResolveButtons } from './ResolveButtons';
 import { StatusBadge } from '../../components/StatusBadge';
 import type { MerchantBooking, MerchantBookingDetail } from '../../types/database';
-import { ConfirmationCountdown } from '../../components/ConfirmationCountdown';
+import { ConfirmationRequests, isConfirmationRequest, visibleToMerchant } from './ConfirmationRequests';
 
 type Tab = 'today' | 'upcoming' | 'history';
 
@@ -48,8 +48,10 @@ function Bookings({ businessId }: { businessId: string }) {
   });
 
   const day = dayBounds(now);
-  const all = query.data ?? [];
-  const rows = all.filter((booking) => {
+  const all = (query.data ?? []).filter(visibleToMerchant);
+  // Requests with a clock running sit above everything else, never inside a tab where they could be missed.
+  const requests = all.filter(isConfirmationRequest);
+  const rows = all.filter((booking) => !isConfirmationRequest(booking)).filter((booking) => {
     const start = Date.parse(booking.start_at_snapshot);
     if (tab === 'today') return start >= Date.parse(day.from) && start < Date.parse(day.until);
     if (tab === 'upcoming') return start >= Date.parse(day.until);
@@ -86,6 +88,8 @@ function Bookings({ businessId }: { businessId: string }) {
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-2xl font-extrabold tracking-tight text-ink">Rezervace</h1>
+
+      <ConfirmationRequests rows={requests} />
 
       <form
         className="rounded-2xl bg-card shadow-card p-4"
@@ -212,12 +216,9 @@ function BookingRow({
   showContact?: boolean;
 }) {
   const detail = booking as MerchantBookingDetail;
-  const queryClient = useQueryClient();
-  const decision = useMutation({
-    mutationFn: (accept: boolean) => respondToBooking(booking.id, accept),
-    onSettled: () => void queryClient.invalidateQueries({ queryKey: ['merchant-bookings'] }),
-  });
   const terminal = isCancelled(booking);
+  // A request that never became a booking has no payment of the merchant's to show.
+  const neverAgreed = booking.confirmation_version === 1 && !booking.confirmed_at;
   return (
     <div className="flex flex-wrap items-start justify-between gap-4">
       <div className="min-w-0">
@@ -232,7 +233,7 @@ function BookingRow({
             "Vy dostanete 365 Kč" on it promised money that will never arrive. */}
         <p className="text-sm text-muted">
           {booking.customer_label} ·{' '}
-          {terminal || booking.status === 'pending_payment' ? (
+          {terminal ? (
             'bez výplaty'
           ) : (
             <>
@@ -242,7 +243,7 @@ function BookingRow({
         </p>
         <div className="mt-2 flex flex-wrap gap-1.5">
           <StatusBadge status={booking.status} />
-          {booking.payment_status ? (
+          {booking.payment_status && !neverAgreed ? (
             <StatusBadge
               status={booking.payment_status}
               label={booking.payment_status === 'pending' ? 'Čeká na platbu' : undefined}
@@ -261,16 +262,7 @@ function BookingRow({
           </p>
         ) : null}
       </div>
-      {booking.status === 'pending_merchant' ? (
-        <div className="w-full rounded-xl border border-warning/30 bg-warning-soft p-3 sm:w-auto" aria-label="Potvrzení rezervace">
-          <p className="text-sm"><ConfirmationCountdown deadline={booking.confirmation_expires_at} formal /></p>
-          <p className="mt-1 text-xs text-muted">FLEK začíná {relativeTime(booking.start_at_snapshot, now)}. Částka zákazníka je blokovaná.</p>
-          <div className="mt-3 flex gap-2">
-            <Button className="flex-1" loading={decision.isPending} onClick={() => decision.mutate(true)}>Potvrdit</Button>
-            <Button className="flex-1" variant="secondary" disabled={decision.isPending} onClick={() => decision.mutate(false)}>Odmítnout</Button>
-          </div>
-        </div>
-      ) : booking.status === 'confirmed' ? <ResolveButtons booking={booking} /> : null}
+      {booking.status === 'confirmed' ? <ResolveButtons booking={booking} /> : null}
     </div>
   );
 }

@@ -5,15 +5,15 @@ export type AppStatus = BookingStatus | BusinessStatus | OfferStatus | PaymentSt
 type Tone = 'positive' | 'warning' | 'danger' | 'neutral';
 
 const META: Record<AppStatus, { label: string; tone: Tone }> = {
-  pending_payment: { label: 'Dokončuje platbu', tone: 'warning' },
+  pending_payment: { label: 'Probíhá platba', tone: 'warning' },
   pending_merchant: { label: 'Čeká na potvrzení', tone: 'warning' },
-  capturing: { label: 'Dokončujeme platbu', tone: 'warning' },
+  capturing: { label: 'Dokončuje se platba', tone: 'warning' },
   confirmed: { label: 'Potvrzeno', tone: 'positive' },
   completed: { label: 'Dokončeno', tone: 'positive' },
   no_show: { label: 'Nedorazil/a', tone: 'danger' },
   cancelled_by_customer: { label: 'Zrušeno zákazníkem', tone: 'danger' },
   cancelled_by_merchant: { label: 'Zrušeno podnikem', tone: 'danger' },
-  expired: { label: 'Vypršelo', tone: 'neutral' },
+  expired: { label: 'Nepotvrzeno včas', tone: 'neutral' },
   payment_failed: { label: 'Platba se nezdařila', tone: 'danger' },
   pending: { label: 'Čeká na vyřízení', tone: 'warning' },
   approved: { label: 'Schváleno', tone: 'positive' },

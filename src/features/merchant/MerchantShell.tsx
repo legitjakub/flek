@@ -9,7 +9,8 @@ import { PartnerLanding } from './PartnerLanding';
 import { useBookingAlerts, useUnreadBookings, type BookingAlert } from './useBookingAlerts';
 import { money } from '../../lib/format';
 import { clockTime, dayLabel } from '../../lib/time';
-import { serverNow } from '../../lib/clock';
+import { serverNow, useServerNow } from '../../lib/clock';
+import { timeLeft } from '../bookings/confirmationView';
 import type { Business } from '../../types/database';
 import { NotificationBell } from '../notifications/Notifications';
 
@@ -166,7 +167,8 @@ function ApprovedFrame({ business, path }: { business: Business; path: string })
         </div>
       ) : null}
       <div aria-live="polite" className="empty:hidden mb-4 flex flex-col gap-2">
-        {alerts.map((alert) => (
+        {/* Přehled and Rezervace list the requests at the top themselves; a banner there would say it twice. */}
+        {alerts.filter((alert) => alert.kind !== 'request' || !REQUEST_PAGES.includes(path)).map((alert) => (
           <NewBookingBanner key={alert.id} alert={alert} onDismiss={() => dismiss(alert.id)} />
         ))}
       </div>
@@ -176,25 +178,28 @@ function ApprovedFrame({ business, path }: { business: Business; path: string })
 
 function NewBookingBanner({ alert, onDismiss }: { alert: BookingAlert; onDismiss: () => void }) {
   const { navigate } = useRouter();
+  const request = alert.kind === 'request';
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-ink px-4 py-3 text-card shadow-lift">
       <BellRing size={20} aria-hidden="true" className="shrink-0 text-brand-on-dark" />
       <div className="min-w-0 flex-1">
-        <p className="text-base font-extrabold">Nová rezervace</p>
+        <p className="text-base font-extrabold">{request ? 'Nová rezervace čeká na potvrzení' : 'Nová rezervace'}</p>
         <p className="tnum text-sm text-card/85">
           {alert.service} · {dayLabel(alert.startAt, serverNow()).toLocaleLowerCase('cs-CZ')} {clockTime(alert.startAt)} · Vy dostanete{' '}
           <span className="font-bold text-card">{money(alert.payoutCents)}</span>
         </p>
+        {request ? <RequestDeadline deadline={alert.deadline} /> : null}
       </div>
       <button
         type="button"
         onClick={() => {
+          // A request stays on the list until it is answered; only the banner goes.
           onDismiss();
           navigate('/partner/rezervace');
         }}
         className="min-h-11 shrink-0 rounded-xl bg-card px-3 text-sm font-bold text-ink hover:bg-surface"
       >
-        Zobrazit
+        {request ? 'Vyřídit' : 'Zobrazit'}
       </button>
       <button type="button" onClick={() => onDismiss()} aria-label="Skrýt" className="grid size-10 shrink-0 place-items-center rounded-xl text-card/80 hover:bg-card/10">
         <X size={18} aria-hidden="true" />
@@ -202,6 +207,18 @@ function NewBookingBanner({ alert, onDismiss }: { alert: BookingAlert; onDismiss
     </div>
   );
 }
+
+function RequestDeadline({ deadline }: { deadline?: string | null }) {
+  const left = timeLeft(deadline, useServerNow(1_000));
+  if (!left) return null;
+  return (
+    <p className="tnum text-sm font-bold text-brand-on-dark">
+      {left.seconds > 0 ? `Potvrďte do ${left.clock}` : 'Čas na potvrzení vypršel'}
+    </p>
+  );
+}
+
+const REQUEST_PAGES = ['/partner', '/partner/rezervace'];
 
 const BUSINESS_KEY = 'flek.merchant.business';
 

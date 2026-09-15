@@ -1,4 +1,12 @@
-export type BookingAlert = { id: string; service: string; startAt: string; payoutCents: number };
+export type BookingAlert = {
+  id: string;
+  service: string;
+  startAt: string;
+  payoutCents: number;
+  /** A request waits for the merchant's answer until `deadline`; a booking is already agreed. */
+  kind?: 'booking' | 'request';
+  deadline?: string | null;
+};
 type Snapshot = { alerts: BookingAlert[]; unreadIds: string[] };
 const empty: Snapshot = { alerts: [], unreadIds: [] };
 
@@ -16,7 +24,10 @@ export function createBookingAlertStore() {
     },
     announce(scope: string, alert: BookingAlert, created: number) {
       const state = states.get(scope);
-      if (!state || !Number.isFinite(created) || created < state.since || state.seen.has(alert.id)) return false;
+      if (!state || !Number.isFinite(created) || state.seen.has(alert.id)) return false;
+      // An agreed booking from before this page opened is old news. A request still waiting is not:
+      // it needs the merchant before its clock runs out, whenever they happen to look.
+      if (alert.kind !== 'request' && created < state.since) return false;
       state.seen.add(alert.id);
       state.snapshot = { alerts: [alert, ...state.snapshot.alerts].slice(0, 3), unreadIds: [...state.snapshot.unreadIds, alert.id] };
       emit();

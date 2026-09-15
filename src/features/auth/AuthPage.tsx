@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { supabase } from '../../lib/supabase';
 import { errorMessage } from '../../lib/errors';
 import { loginSchema } from '../../lib/schemas';
+import { serverNow, useServerNow } from '../../lib/clock';
 import { Button, Field, Input, Wordmark } from '../../components/ui';
 import { Link, useRouter } from '../../app/router';
 import { ForgotPasswordForm, NewPasswordForm } from './PasswordReset';
@@ -25,6 +26,9 @@ const signupSchema = loginSchema.extend({
 });
 type SignupValues = z.infer<typeof signupSchema>;
 
+/** Supabase lets a confirmation e-mail be sent again only after a minute. */
+const RESEND_COOLDOWN_MS = 60_000;
+
 /**
  * Booking intent survives authentication: `returnTo` carries the offer the customer
  * tapped, so they land back on the confirmation sheet instead of the home screen.
@@ -40,9 +44,13 @@ export function AuthPage() {
   );
   const [failure, setFailure] = useState<string | null>(null);
   const [confirmSent, setConfirmSent] = useState(false);
+  const [existingAccount, setExistingAccount] = useState(false);
   const [confirmationEmail, setConfirmationEmail] = useState('');
   const [resending, setResending] = useState(false);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
+  const [resendAfter, setResendAfter] = useState(0);
+  const now = Date.parse(useServerNow(1_000));
+  const resendWait = Math.max(0, Math.ceil((resendAfter - now) / 1000));
   const formal = merchant;
   const attempt = useRef(0);
 
@@ -56,6 +64,7 @@ export function AuthPage() {
     attempt.current += 1;
     setMode(next);
     setConfirmSent(false);
+    setExistingAccount(false);
     setFailure(null);
     setResendMessage(null);
     setResending(false);
@@ -75,6 +84,7 @@ export function AuthPage() {
     const currentAttempt = ++attempt.current;
     setFailure(null);
     setConfirmSent(false);
+    setExistingAccount(false);
     try {
       if (mode === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email: values.email, password: values.password });
@@ -102,7 +112,15 @@ export function AuthPage() {
         // "registration is broken" — so say what actually has to happen next.
         if (!data.session) {
           setConfirmationEmail(values.email);
+          // An address that already has a confirmed account gets the same "success" back, with no
+          // identities and no e-mail sent. Saying "we sent you a link" there sent people waiting for
+          // a message that never comes; they need to sign in or reset the password instead.
+          if (data.user && data.user.identities?.length === 0) {
+            setExistingAccount(true);
+            return;
+          }
           setConfirmSent(true);
+          setResendAfter(Date.parse(serverNow()) + RESEND_COOLDOWN_MS);
           return;
         }
       }
@@ -129,14 +147,15 @@ export function AuthPage() {
       if (error) throw error;
       if (currentAttempt !== attempt.current) return;
       setResendMessage('Nový potvrzovací e-mail je odeslaný. Starší odkaz už nemusí fungovat.');
+      setResendAfter(Date.parse(serverNow()) + RESEND_COOLDOWN_MS);
     } catch (error) {
       if (currentAttempt !== attempt.current) return;
-      const message = errorMessage(error);
-      setResendMessage(
-        /rate|limit|security|seconds?/i.test(message)
-          ? 'Další e-mail teď nejde odeslat. Chvíli počkej a zkus to znovu.'
-          : message,
-      );
+      const raw = error instanceof Error ? error.message : '';
+      const limited = /rate|limit|security|seconds?/i.test(raw);
+      if (limited) setResendAfter(Date.parse(serverNow()) + RESEND_COOLDOWN_MS);
+      setResendMessage(limited
+        ? (formal ? 'Další e-mail teď nejde odeslat. Chvíli počkejte a zkuste to znovu.' : 'Další e-mail teď nejde odeslat. Chvíli počkej a zkus to znovu.')
+        : errorMessage(error, formal ? 'merchant' : 'customer'));
     } finally {
       if (currentAttempt === attempt.current) setResending(false);
     }
@@ -171,17 +190,36 @@ export function AuthPage() {
       ) : null}
       {mode === 'reset' ? <NewPasswordForm formal={formal} /> : null}
 
+      {existingAccount ? (
+        <div className="mt-6 rounded-2xl bg-card shadow-card p-5 sm:p-6" role="status">
+          <h2 className="text-lg font-extrabold">{formal ? 'Tento e-mail už účet má' : 'Tenhle e-mail už účet má'}</h2>
+          <p className="mt-2 text-base leading-relaxed text-muted">
+            <strong className="text-ink">{confirmationEmail}</strong>{' '}
+            {formal
+              ? 'je už zaregistrovaný, takže jsme žádný nový e-mail neposílali. Přihlaste se svým heslem, a pokud ho nevíte, pošleme vám odkaz na nové.'
+              : 'je už zaregistrovaný, takže jsme žádný nový e-mail neposílali. Přihlas se svým heslem, a pokud ho nevíš, pošleme ti odkaz na nové.'}
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button onClick={() => changeMode('login')}>Přihlásit se</Button>
+            <Button variant="secondary" onClick={() => changeMode('forgot')}>Obnovit heslo</Button>
+            <Button variant="ghost" onClick={() => changeMode('signup')}>Jiný e-mail</Button>
+          </div>
+        </div>
+      ) : null}
+
       {confirmSent ? (
         <div className="mt-6 rounded-2xl bg-card shadow-card p-5 sm:p-6">
           <h2 className="text-lg font-extrabold">{formal ? 'Potvrďte svůj e-mail' : 'Potvrď svůj e-mail'}</h2>
           <p className="mt-2 text-base leading-relaxed text-muted">
-            Poslali jsme odkaz na <strong className="text-ink">{confirmationEmail || form.getValues('email')}</strong>. Otevři ho a účet se
-            aktivuje. Mrkni i do složky s nevyžádanou poštou.
+            Poslali jsme odkaz na <strong className="text-ink">{confirmationEmail || form.getValues('email')}</strong>.{' '}
+            {formal
+              ? 'Otevřete ho a účet se aktivuje. Podívejte se i do složky s nevyžádanou poštou.'
+              : 'Otevři ho a účet se aktivuje. Mrkni i do složky s nevyžádanou poštou.'}
           </p>
           {resendMessage ? <p role="status" className="mt-3 text-sm text-muted">{resendMessage}</p> : null}
           <div className="mt-4 flex flex-wrap gap-2">
-            <Button variant="secondary" loading={resending} onClick={() => void resendConfirmation()}>
-              Poslat e-mail znovu
+            <Button variant="secondary" loading={resending} disabled={resendWait > 0} onClick={() => void resendConfirmation()}>
+              {resendWait > 0 ? <span className="tnum">Poslat znovu za {resendWait} s</span> : 'Poslat e-mail znovu'}
             </Button>
             <Button
               variant="ghost"
@@ -196,7 +234,7 @@ export function AuthPage() {
         </div>
       ) : null}
 
-      {!confirmSent && (mode === 'login' || mode === 'signup') ? <form className="mt-6 flex flex-col gap-4 rounded-2xl bg-card shadow-card p-5 sm:p-6" onSubmit={form.handleSubmit(submit)} noValidate>
+      {!confirmSent && !existingAccount && (mode === 'login' || mode === 'signup') ? <form className="mt-6 flex flex-col gap-4 rounded-2xl bg-card shadow-card p-5 sm:p-6" onSubmit={form.handleSubmit(submit)} noValidate>
         {isSignup ? (
           <div className="grid grid-cols-2 gap-3">
             <Field id="first_name" label="Jméno" error={form.formState.errors.first_name?.message}>

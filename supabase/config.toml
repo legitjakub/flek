@@ -435,3 +435,7 @@ verify_jwt = false
 
 [functions.booking-confirmation]
 verify_jwt = false
+
+# Meta calls it without a Supabase JWT; every POST is checked against X-Hub-Signature-256 instead.
+[functions.whatsapp-webhook]
+verify_jwt = false

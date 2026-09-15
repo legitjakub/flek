@@ -1,19 +1,21 @@
 import { useEffect, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CircleAlert, RotateCcw } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { CircleAlert, Clock3, RotateCcw } from 'lucide-react';
 import { cancelPendingBooking, paymentState } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
-import { Button, ErrorState, Spinner, buttonClass } from '../../components/ui';
+import { useServerNow } from '../../lib/clock';
+import { Banner, Button, ErrorState, Spinner, buttonClass } from '../../components/ui';
 import { Link } from '../../app/router';
-import { ConfirmationCountdown } from '../../components/ConfirmationCountdown';
+import { confirmationView, waitingLine } from './confirmationView';
 
+/** Past this, a request that neither the merchant nor Stripe has moved is left to the bookings page. */
 const GIVE_UP_AFTER_MS = 12 * 60_000;
 
 /**
- * The customer is back from Stripe Checkout. The booking is made by Stripe's webhook, a few
- * seconds after the payment, so this waits for it instead of guessing: the reservation code, a
- * refund when the seat went meanwhile, or a payment that was never finished.
+ * The customer is back from Stripe Checkout. Everything after that happens on the server — Stripe's
+ * webhook, the merchant's answer, the capture — so this page only watches: the amount held while the
+ * merchant decides, then the reservation code, or why there is none. Closing the tab changes nothing.
  */
 export function PaymentReturn({
   paymentId,
@@ -23,30 +25,26 @@ export function PaymentReturn({
 }: {
   paymentId: string;
   cancelled: boolean;
-  onBooked: (code: string) => void;
+  onBooked: (code: string, confirmedByMerchant: boolean) => void;
   onRetry: () => void;
 }) {
   const queryClient = useQueryClient();
-  const [expired, setExpired] = useState(false);
+  const now = useServerNow(1_000);
+  const [gaveUp, setGaveUp] = useState(false);
   useEffect(() => {
-    const timer = window.setTimeout(() => setExpired(true), GIVE_UP_AFTER_MS);
+    const timer = window.setTimeout(() => setGaveUp(true), GIVE_UP_AFTER_MS);
     return () => window.clearTimeout(timer);
   }, []);
+
   const state = useQuery({
     queryKey: ['payment-state', paymentId],
     queryFn: () => paymentState(paymentId),
-    refetchInterval: (query) => {
-      const data = query.state.data;
-      if (!data || data.reservation_code || data.refund_requested || data.status === 'refunded' || data.status === 'failed' ||
-        ['expired', 'rejected', 'payment_failed', 'cancelled_by_customer', 'cancelled_by_merchant'].includes(data.booking_status ?? '')) {
-        return data ? false : 1500;
-      }
-      if (cancelled && data.status === 'pending') return false;
-      return expired ? false : 1500;
-    },
+    refetchInterval: (query) => (confirmationView(query.state.data, cancelled).live && !gaveUp ? 2_000 : false),
   });
   const data = state.data;
+  const view = confirmationView(data, cancelled);
 
+  // Back from Stripe without paying: give the held seat back straight away instead of after the hold runs out.
   useEffect(() => {
     if (!cancelled || !data?.booking_id || data.booking_status !== 'pending_payment') return;
     void cancelPendingBooking(data.booking_id).finally(() => void state.refetch());
@@ -55,8 +53,16 @@ export function PaymentReturn({
   useEffect(() => {
     if (!data?.reservation_code) return;
     void queryClient.invalidateQueries();
-    onBooked(data.reservation_code);
+    onBooked(data.reservation_code, data.confirmation_version === 1);
   }, [data?.reservation_code]);
+
+  const withdraw = useMutation({
+    mutationFn: () => cancelPendingBooking(data!.booking_id!),
+    onSettled: () => {
+      void state.refetch();
+      void queryClient.invalidateQueries({ queryKey: ['discovery'] });
+    },
+  });
 
   if (state.isError) {
     return (
@@ -66,64 +72,54 @@ export function PaymentReturn({
     );
   }
 
-  const declined = data && ['expired', 'rejected', 'payment_failed', 'cancelled_by_customer', 'cancelled_by_merchant'].includes(data.booking_status ?? '');
-  const notFinished = data && !data.reservation_code && (data.status === 'failed' || declined || (cancelled && data.status === 'pending'));
-  const refunding = data && !data.reservation_code && (data.refund_requested || data.status === 'refunded');
-  const stillWaiting = !data || (!data.reservation_code && !notFinished && !refunding);
-  const gaveUp = stillWaiting && expired;
+  if (view.live && gaveUp) {
+    return (
+      <main className="mx-auto flex w-full max-w-md flex-col items-center px-4 py-12 text-center" aria-live="polite">
+        <span className="grid size-14 place-items-center rounded-full bg-surface text-ink"><CircleAlert size={26} aria-hidden="true" /></span>
+        <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-ink">Pořád na tom pracujeme</h1>
+        <p className="mt-2 text-base leading-relaxed text-muted">
+          Jak to dopadlo, uvidíš v Rezervacích. Dokud rezervace není potvrzená, nic ti nestrhneme.
+        </p>
+        <Link to="/rezervace" className={buttonClass({ shape: 'pill' }) + ' mt-6'}>Moje rezervace</Link>
+      </main>
+    );
+  }
+
+  const line = view.kind === 'waiting' && data ? waitingLine(data, now) : null;
+  const icon = view.kind === 'refunding' ? <RotateCcw size={26} aria-hidden="true" />
+    : view.kind === 'waiting' ? <Clock3 size={26} aria-hidden="true" />
+      : view.live ? <Spinner label={view.title} /> : <CircleAlert size={26} aria-hidden="true" />;
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-col items-center px-4 py-12 text-center" aria-live="polite">
-      {refunding ? (
-        <>
-          <span className="grid size-14 place-items-center rounded-full bg-warning-soft text-warning"><RotateCcw size={26} aria-hidden="true" /></span>
-          <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-ink">Rezervaci se nepodařilo dokončit</h1>
-          <p className="mt-2 text-base leading-relaxed text-muted">
-            {data?.failure_reason && data.failure_reason !== 'NO_BOOKING' ? `${errorMessage(new Error(data.failure_reason))} ` : ''}
-            {data?.refund_status === 'failed' || data?.refund_status === 'canceled'
-              ? `Platbu ${money(data.amount_cents)} se na kartu vrátit nepodařilo. Peníze nepropadly, vrácení vyřešíme s tebou ručně.`
-              : `Platbu ${data ? money(data.amount_cents) : ''} ti proto celou vracíme na kartu. Na výpisu se obvykle objeví do 5–10 pracovních dnů.`}
-          </p>
-          {data?.booking_status === 'pending_merchant' ? <p className="mt-3"><ConfirmationCountdown deadline={data.confirmation_expires_at} /></p> : null}
-          <Link to="/" className={buttonClass({ shape: 'pill' }) + ' mt-6'}>Najít jiný FLEK</Link>
-        </>
-      ) : notFinished ? (
-        <>
-          <span className="grid size-14 place-items-center rounded-full bg-surface text-ink"><CircleAlert size={26} aria-hidden="true" /></span>
-          <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-ink">Rezervace nebyla potvrzena</h1>
-          <p className="mt-2 text-base leading-relaxed text-muted">
-            {data?.booking_status === 'rejected' ? 'Podnik tentokrát nemohl termín přijmout. ' : data?.booking_status === 'expired' ? 'Čas na potvrzení vypršel. ' : ''}
-            Platbu jsme nestrhli; případná blokace na kartě se automaticky uvolní.
-          </p>
-          <div className="mt-6 grid w-full grid-cols-2 gap-2">
-            <Button shape="pill" onClick={onRetry}>Zkusit znovu</Button>
-            <Link to="/" className={buttonClass({ variant: 'soft', shape: 'pill' })}>Jiné FLEKy</Link>
-          </div>
-        </>
-      ) : gaveUp ? (
-        <>
-          <span className="grid size-14 place-items-center rounded-full bg-surface text-ink"><CircleAlert size={26} aria-hidden="true" /></span>
-          <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-ink">Platbu ještě ověřujeme</h1>
-          <p className="mt-2 text-base leading-relaxed text-muted">
-            Jakmile ji Stripe potvrdí, rezervaci s kódem najdeš v Rezervacích. Když se nepotvrdí, nic ti nestrhneme.
-          </p>
-          <Link to="/rezervace" className={buttonClass({ shape: 'pill' }) + ' mt-6'}>Moje rezervace</Link>
-        </>
-      ) : (
-        <>
-          <span className="grid size-14 place-items-center rounded-full bg-accent-soft text-accent"><Spinner label="Ověřujeme platbu" /></span>
-          <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-ink">
-            {data?.booking_status === 'pending_merchant' ? 'Čekáme na potvrzení podniku' : data?.booking_status === 'capturing' ? 'Podnik termín potvrdil' : 'Ověřujeme platbu'}
-          </h1>
-          <p className="mt-2 text-base leading-relaxed text-muted">
-            {data?.booking_status === 'pending_merchant'
-              ? 'Částku máš zatím jen blokovanou. Podnik má několik minut na odpověď; strhneme ji až po jeho potvrzení.'
-              : data?.booking_status === 'capturing'
-                ? 'Dokončujeme platbu. Rezervační kód se ukáže až po potvrzení Stripe.'
-                : 'Obvykle to trvá pár sekund. Potom požádáme podnik o potvrzení termínu.'}
-          </p>
-        </>
-      )}
+      <span className={`grid size-14 place-items-center rounded-full ${view.live ? 'bg-accent-soft text-accent' : 'bg-surface text-ink'}`}>{icon}</span>
+      <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-ink">{view.title}</h1>
+      <p className="mt-2 text-base leading-relaxed text-muted">{view.body}</p>
+      {line ? <p className="tnum mt-3 text-base font-bold text-ink" role="timer">{line}</p> : null}
+      {view.kind === 'waiting' && data ? (
+        <p className="tnum mt-1 text-sm text-muted">Zablokováno {money(data.amount_cents)}</p>
+      ) : null}
+      {view.kind === 'refunding' && (data?.refund_status === 'failed' || data?.refund_status === 'canceled') ? (
+        <div className="mt-3 w-full text-left">
+          <Banner tone="warning">Platbu se na kartu vrátit nepodařilo. Peníze nepropadly, vrácení vyřešíme s tebou ručně.</Banner>
+        </div>
+      ) : null}
+      {withdraw.isError ? (
+        <div className="mt-3 w-full text-left"><Banner tone="warning">{errorMessage(withdraw.error)}</Banner></div>
+      ) : null}
+
+      {view.action === 'cancel_request' ? (
+        <Button variant="secondary" shape="pill" className="mt-6" loading={withdraw.isPending} onClick={() => withdraw.mutate()}>
+          Zrušit žádost
+        </Button>
+      ) : view.action === 'retry' ? (
+        <div className="mt-6 grid w-full grid-cols-2 gap-2">
+          <Button shape="pill" onClick={onRetry}>Zkusit znovu</Button>
+          <Link to="/" className={buttonClass({ variant: 'soft', shape: 'pill' })}>Jiné FLEKy</Link>
+        </div>
+      ) : view.action === 'find_other' ? (
+        <Link to="/" className={buttonClass({ shape: 'pill' }) + ' mt-6'}>Najít jiný FLEK</Link>
+      ) : null}
     </main>
   );
 }

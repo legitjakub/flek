@@ -133,10 +133,47 @@ async function settle(client, paymentId, paymentMethod = 'pm_card_visa') {
   return { data: { ...state, id: paymentId }, error: null };
 }
 
+/**
+ * A payment that waits for the venue: the test card is only authorised, exactly as Checkout would do it,
+ * and the webhook opens the venue's window. Resolves once the request left pending_payment.
+ */
+async function authorise(client, paymentId, paymentMethod = 'pm_card_visa') {
+  const { data, error } = await client.functions.invoke('stripe-test-pay', { body: { payment_id: paymentId, payment_method: paymentMethod } });
+  if (error) {
+    const body = await error.context?.json?.().catch(() => null);
+    return { data: null, error: new Error(body?.error ?? error.message) };
+  }
+  if (data?.status === 'declined') return { data: { declined: true }, error: null };
+  const state = await waitPayment(client, paymentId, (x) => x.booking_status && x.booking_status !== 'pending_payment');
+  if (!state || state.booking_status === 'pending_payment') return { data: null, error: new Error('WEBHOOK_TIMEOUT') };
+  return { data: state, error: null };
+}
+
+/** Until the request ends one way or the other: a reservation code, or a final status without one. */
+async function waitOutcome(client, paymentId, timeoutMs = 60_000) {
+  return waitPayment(client, paymentId, (x) => Boolean(x.reservation_code) || !['pending_payment', 'pending_merchant', 'capturing'].includes(x.booking_status), timeoutMs);
+}
+
+/** The whole confirmation flow for one payment: authorise, the venue confirms, the server captures and books. */
+async function confirmAndBook(client, paymentId, paymentMethod = 'pm_card_visa') {
+  const requested = await authorise(client, paymentId, paymentMethod);
+  if (requested.error) return requested;
+  if (requested.data.declined) return { data: null, error: new Error('CARD_DECLINED') };
+  if (requested.data.booking_status === 'pending_merchant') {
+    const decision = await merchant.client.rpc('respond_to_booking', { p_booking_id: requested.data.booking_id, p_accept: true });
+    if (decision.error) return decision;
+  }
+  const done = await waitOutcome(client, paymentId);
+  if (!done?.reservation_code) return { data: null, error: new Error(`CONFIRMATION_${done?.booking_status ?? 'TIMEOUT'}`) };
+  return { data: [{ booking_id: done.booking_id, reservation_code: done.reservation_code, payment_id: paymentId }], error: null };
+}
+
 /** Booking now requires settled money, so every attempt goes through the payment first. */
 async function book(client, offerId) {
   const started = await client.rpc('start_payment', { p_offer_id: offerId });
   if (started.error) return started;
+  // With the venue's confirmation switched on, start_payment already holds the seat.
+  if (started.data.confirmation_version === 1) return confirmAndBook(client, started.data.id);
   const settled = await settle(client, started.data.id);
   if (settled.error) return settled;
   const result = await client.rpc('create_booking', { p_offer_id: offerId, p_payment_id: settled.data.id });
@@ -154,6 +191,9 @@ const offerA = await publish(1);
 const offerB = await publish(5);
 const offerC = await publish(1);
 check('Partner zveřejní nabídku přes publish_flek', created.length === 3);
+// The rollout switch decides per venue whether new bookings wait for its confirmation; the demo venue follows it.
+const MANUAL = (await merchant.client.rpc('confirmation_quote', { p_offer_id: offerA })).data?.manual === true;
+console.log(MANUAL ? 'Režim: rezervace potvrzuje podnik (autorizace → potvrzení → stržení)' : 'Režim: rezervace bez potvrzení podniku');
 
 // --- concurrency: the failure that would destroy merchant trust permanently
 const raceA = await Promise.all(users.map((u) => book(u.client, offerA)));
@@ -245,44 +285,145 @@ check('Zrušení vrátí kapacitu a nabídku do prodeje',
 // tapper released its only booking in the cancellation check above, so it is not sitting
 // at the three-booking limit — which would mask the payment errors this block is about.
 const payer = tapper;
-const payOffer = await publish(1, 200);
-const attempt = await payer.client.rpc('start_payment', { p_offer_id: payOffer });
-check('Platba se otevře s konečnou cenou z nabídky', !attempt.error && attempt.data.amount_cents === CUSTOMER_PRICE,
-  `${attempt.data?.amount_cents} h, stav ${attempt.data?.status}`);
-check('Nezaplacená rezervace je odmítnuta',
-  err((await payer.client.rpc('create_booking', { p_offer_id: payOffer, p_payment_id: attempt.data.id })).error).includes('PAYMENT_REQUIRED'));
-const settledPay = await settle(payer.client, attempt.data.id);
-const paidBooking = await payer.client.rpc('create_booking', { p_offer_id: payOffer, p_payment_id: settledPay.data.id });
-check('Po zaplacení rezervace projde', !paidBooking.error);
-const replay = await payer.client.rpc('create_booking', { p_offer_id: payOffer, p_payment_id: settledPay.data.id });
-check('Opakování platby vrací původní rezervaci bez dalšího místa',
-  !replay.error && replay.data?.[0]?.booking_id === paidBooking.data?.[0]?.booking_id);
-check('Cizí platbu nelze potvrdit', /NOT_FOUND|FORBIDDEN|PAYMENT_CLOSED/.test(err((await settle(users[2].client, settledPay.data.id)).error)));
-const payerBooking = ((await payer.client.rpc('my_bookings')).data ?? []).find((b) => b.offer_id === payOffer);
-check('Rezervace nese stav zaplaceno', payerBooking?.payment_status === 'paid', payerBooking?.payment_status);
-await payer.client.rpc('cancel_booking', { p_booking_id: payerBooking.id });
-// Stripe returns the money asynchronously; the row turns refunded once Stripe reports the refund succeeded.
-await waitPayment(payer.client, settledPay.data.id, (x) => x.status === 'refunded');
-const afterRefund = ((await payer.client.rpc('my_bookings')).data ?? []).find((b) => b.id === payerBooking.id);
-check('Zrušení vrátí peníze', afterRefund?.payment_status === 'refunded', afterRefund?.payment_status);
+if (!MANUAL) {
+  const payOffer = await publish(1, 200);
+  const attempt = await payer.client.rpc('start_payment', { p_offer_id: payOffer });
+  check('Platba se otevře s konečnou cenou z nabídky', !attempt.error && attempt.data.amount_cents === CUSTOMER_PRICE,
+    `${attempt.data?.amount_cents} h, stav ${attempt.data?.status}`);
+  check('Nezaplacená rezervace je odmítnuta',
+    err((await payer.client.rpc('create_booking', { p_offer_id: payOffer, p_payment_id: attempt.data.id })).error).includes('PAYMENT_REQUIRED'));
+  const settledPay = await settle(payer.client, attempt.data.id);
+  const paidBooking = await payer.client.rpc('create_booking', { p_offer_id: payOffer, p_payment_id: settledPay.data.id });
+  check('Po zaplacení rezervace projde', !paidBooking.error);
+  const replay = await payer.client.rpc('create_booking', { p_offer_id: payOffer, p_payment_id: settledPay.data.id });
+  check('Opakování platby vrací původní rezervaci bez dalšího místa',
+    !replay.error && replay.data?.[0]?.booking_id === paidBooking.data?.[0]?.booking_id);
+  check('Cizí platbu nelze potvrdit', /NOT_FOUND|FORBIDDEN|PAYMENT_CLOSED/.test(err((await settle(users[2].client, settledPay.data.id)).error)));
+  const payerBooking = ((await payer.client.rpc('my_bookings')).data ?? []).find((b) => b.offer_id === payOffer);
+  check('Rezervace nese stav zaplaceno', payerBooking?.payment_status === 'paid', payerBooking?.payment_status);
+  await payer.client.rpc('cancel_booking', { p_booking_id: payerBooking.id });
+  // Stripe returns the money asynchronously; the row turns refunded once Stripe reports the refund succeeded.
+  await waitPayment(payer.client, settledPay.data.id, (x) => x.status === 'refunded');
+  const afterRefund = ((await payer.client.rpc('my_bookings')).data ?? []).find((b) => b.id === payerBooking.id);
+  check('Zrušení vrátí peníze', afterRefund?.payment_status === 'refunded', afterRefund?.payment_status);
 
-// --- a refund that fails after it looked done is money not returned
-// On Stripe's test card pm_card_refundFail every refund starts as succeeded and fails a little later.
-const failOffer = await publish(1, 205);
-const failStart = await payer.client.rpc('start_payment', { p_offer_id: failOffer });
-const failPay = failStart.error ? { data: null } : await settle(payer.client, failStart.data.id, 'pm_card_refundFail');
-const failBooking = failPay.data
-  ? await payer.client.rpc('create_booking', { p_offer_id: failOffer, p_payment_id: failPay.data.id })
-  : { data: null };
-const failBookingId = failBooking.data?.[0]?.booking_id;
-if (failBookingId) await payer.client.rpc('cancel_booking', { p_booking_id: failBookingId });
-const failedRefund = failBookingId
-  ? await waitPayment(payer.client, failPay.data.id, (x) => x.refund_status === 'failed', 180_000)
-  : null;
-const failedBookingRow = ((await payer.client.rpc('my_bookings')).data ?? []).find((b) => b.id === failBookingId);
-check('Vratka, která selže, nezůstane jako vrácená',
-  failedRefund?.refund_status === 'failed' && failedRefund?.status === 'paid' && failedBookingRow?.payment_status === 'paid',
-  `platba ${failedRefund?.status ?? '?'}, vratka ${failedRefund?.refund_status ?? '?'}`);
+  // --- a refund that fails after it looked done is money not returned
+  // On Stripe's test card pm_card_refundFail every refund starts as succeeded and fails a little later.
+  const failOffer = await publish(1, 205);
+  const failStart = await payer.client.rpc('start_payment', { p_offer_id: failOffer });
+  const failPay = failStart.error ? { data: null } : await settle(payer.client, failStart.data.id, 'pm_card_refundFail');
+  const failBooking = failPay.data
+    ? await payer.client.rpc('create_booking', { p_offer_id: failOffer, p_payment_id: failPay.data.id })
+    : { data: null };
+  const failBookingId = failBooking.data?.[0]?.booking_id;
+  if (failBookingId) await payer.client.rpc('cancel_booking', { p_booking_id: failBookingId });
+  const failedRefund = failBookingId
+    ? await waitPayment(payer.client, failPay.data.id, (x) => x.refund_status === 'failed', 180_000)
+    : null;
+  const failedBookingRow = ((await payer.client.rpc('my_bookings')).data ?? []).find((b) => b.id === failBookingId);
+  check('Vratka, která selže, nezůstane jako vrácená',
+    failedRefund?.refund_status === 'failed' && failedRefund?.status === 'paid' && failedBookingRow?.payment_status === 'paid',
+    `platba ${failedRefund?.status ?? '?'}, vratka ${failedRefund?.refund_status ?? '?'}`);
+
+} else {
+  // --- the venue's confirmation: the money is only authorised until the venue says yes
+  const payOffer = await publish(1, 200);
+  const attempt = await payer.client.rpc('start_payment', { p_offer_id: payOffer });
+  check('Platba se otevře s konečnou cenou a drží místo', !attempt.error && attempt.data.amount_cents === CUSTOMER_PRICE
+    && (await anon.rpc('get_offer_detail', { p_offer_id: payOffer, p_lat: null, p_lng: null })).data?.capacity_remaining === 0,
+    `${attempt.data?.amount_cents} h, stav ${attempt.data?.status}`);
+  const heldRows = (await merchant.client.rpc('merchant_bookings', { p_business_id: businessId, p_from: null, p_until: null })).data ?? [];
+  const held = heldRows.find((b) => b.payment_id === attempt.data.id || b.offer_id === payOffer);
+  check('Neautorizovaný hold podnik nevyrušuje a kód nikde není', !held || (held.status === 'pending_payment' && !held.reservation_code && !held.authorized_at));
+  check('Cizí platbu nelze autorizovat', /NOT_FOUND|FORBIDDEN|PAYMENT_CLOSED/.test(err((await authorise(users[2].client, attempt.data.id)).error)));
+  const requested = await authorise(payer.client, attempt.data.id);
+  check('Autorizace otevře podniku okno na potvrzení', requested.data?.booking_status === 'pending_merchant'
+    && Date.parse(requested.data?.confirmation_expires_at) > Date.now() && !requested.data?.reservation_code,
+    `${requested.data?.booking_status ?? err(requested.error)}, do ${requested.data?.confirmation_expires_at}`);
+  const waitingRow = ((await merchant.client.rpc('merchant_bookings', { p_business_id: businessId, p_from: null, p_until: null })).data ?? [])
+    .find((b) => b.id === requested.data?.booking_id);
+  check('Podnik vidí žádost bez kódu a s částkou pro sebe', waitingRow?.status === 'pending_merchant' && !waitingRow?.reservation_code
+    && waitingRow?.merchant_payout_cents === MERCHANT_PRICE);
+  check('Zákazník žádost nerozhodne', /FORBIDDEN/.test(err((await payer.client.rpc('respond_to_booking', { p_booking_id: requested.data?.booking_id, p_accept: true })).error)));
+  check('Cizí podnik žádost nerozhodne', /FORBIDDEN/.test(err((await users[9].client.rpc('respond_to_booking', { p_booking_id: requested.data?.booking_id, p_accept: true })).error)));
+
+  // A, B, D: Potvrdit and Nemohu přijmout from two devices at once — exactly one decides, and it stays decided.
+  const decisions = await Promise.all([
+    merchant.client.rpc('respond_to_booking', { p_booking_id: requested.data?.booking_id, p_accept: true }),
+    merchant.client.rpc('respond_to_booking', { p_booking_id: requested.data?.booking_id, p_accept: false }),
+    merchant.client.rpc('respond_to_booking', { p_booking_id: requested.data?.booking_id, p_accept: true }),
+  ]);
+  const decided = decisions.filter((r) => r.data?.decided);
+  check('Souběžné Potvrdit / Nemohu přijmout: rozhodne právě jedno', decided.length === 1 && decisions.every((r) => !r.error),
+    decisions.map((r) => r.error ? err(r.error) : `${r.data.status}${r.data.decided ? '*' : ''}`).join(' / '));
+  const outcome = await waitOutcome(payer.client, attempt.data.id);
+  if (decided[0]?.data?.status === 'capturing') {
+    check('Po potvrzení se platba strhne a vznikne rezervace s kódem', Boolean(outcome?.reservation_code) && outcome?.status === 'paid',
+      `${outcome?.booking_status}, platba ${outcome?.status}`);
+    const booked = ((await payer.client.rpc('my_bookings')).data ?? []).find((b) => b.id === outcome?.booking_id);
+    check('Rezervace nese stav zaplaceno', booked?.payment_status === 'paid', booked?.payment_status);
+    await payer.client.rpc('cancel_booking', { p_booking_id: booked.id });
+    await waitPayment(payer.client, attempt.data.id, (x) => x.status === 'refunded');
+    const refunded = ((await payer.client.rpc('my_bookings')).data ?? []).find((b) => b.id === booked.id);
+    check('Zrušení potvrzené rezervace vrátí stržené peníze', refunded?.payment_status === 'refunded', refunded?.payment_status);
+  } else {
+    check('Po odmítnutí se autorizace uvolní, nic se nevrací', outcome?.booking_status === 'rejected' && !outcome?.refund_requested,
+      `${outcome?.booking_status}, vratka ${outcome?.refund_requested}`);
+  }
+
+  // Refusal: the seat returns once and the authorisation is released — never a refund.
+  const refuseOffer = await publish(1, 210);
+  const refusePay = await payer.client.rpc('start_payment', { p_offer_id: refuseOffer });
+  const refuseReq = refusePay.error ? refusePay : await authorise(payer.client, refusePay.data.id);
+  const refusal = await merchant.client.rpc('respond_to_booking', { p_booking_id: refuseReq.data?.booking_id, p_accept: false });
+  const released = await waitPayment(payer.client, refusePay.data?.id, (x) => x.status === 'failed', 60_000);
+  check('Nemohu přijmout: místo zpět, blokace uvolněna, žádná vratka',
+    refusal.data?.status === 'rejected' && released?.status === 'failed' && !released?.refund_requested
+    && (await anon.rpc('get_offer_detail', { p_offer_id: refuseOffer, p_lat: null, p_lng: null })).data?.capacity_remaining === 1,
+    `${refusal.data?.status ?? err(refusal.error)}, platba ${released?.status}`);
+
+  // C: the customer withdraws while the venue confirms — one of them wins, and the seat is counted once.
+  const raceOffer = await publish(1, 215);
+  const racePay = await payer.client.rpc('start_payment', { p_offer_id: raceOffer });
+  const raceReq = racePay.error ? racePay : await authorise(payer.client, racePay.data.id);
+  const [confirmRace, cancelRace] = await Promise.all([
+    merchant.client.rpc('respond_to_booking', { p_booking_id: raceReq.data?.booking_id, p_accept: true }),
+    payer.client.rpc('cancel_pending_booking', { p_booking_id: raceReq.data?.booking_id }),
+  ]);
+  const raceEnd = await waitOutcome(payer.client, racePay.data?.id);
+  const raceSeats = (await anon.rpc('get_offer_detail', { p_offer_id: raceOffer, p_lat: null, p_lng: null })).data?.capacity_remaining;
+  check('Souběh Potvrdit × Zrušit žádost skončí jedním stavem a správnou kapacitou',
+    (raceEnd?.reservation_code && raceSeats === 0) || (raceEnd?.booking_status === 'cancelled_by_customer' && raceSeats === 1),
+    `potvrzení ${confirmRace.data?.status ?? err(confirmRace.error)}, zrušení ${cancelRace.data ?? err(cancelRace.error)} → ${raceEnd?.booking_status}, místa ${raceSeats}`);
+  if (raceEnd?.reservation_code) await payer.client.rpc('cancel_booking', { p_booking_id: raceEnd.booking_id });
+
+  // A declined card authorises nothing: the seat stays held only until the customer gives up.
+  const declineOffer = await publish(1, 220);
+  const declinePay = await payer.client.rpc('start_payment', { p_offer_id: declineOffer });
+  const declined = declinePay.error ? declinePay : await authorise(payer.client, declinePay.data.id, 'pm_card_chargeDeclined');
+  const afterDecline = await payer.client.rpc('my_payment_state', { p_payment_id: declinePay.data?.id });
+  check('Zamítnutá karta nic neblokuje a podnik nic nerozhoduje',
+    declined.data?.declined === true && afterDecline.data?.booking_status === 'pending_payment' && !afterDecline.data?.authorized_at,
+    `${declined.data?.declined ? 'zamítnuto' : err(declined.error)}, ${afterDecline.data?.booking_status}`);
+  const withdrawn = await payer.client.rpc('cancel_pending_booking', { p_booking_id: afterDecline.data?.booking_id });
+  check('Zákazník hold po zamítnuté kartě pustí a místo je zpět', withdrawn.data === 'cancelled_by_customer'
+    && (await anon.rpc('get_offer_detail', { p_offer_id: declineOffer, p_lat: null, p_lng: null })).data?.capacity_remaining === 1,
+    withdrawn.data ?? err(withdrawn.error));
+
+  // A refund that fails after it looked done is money not returned, captured money included.
+  const failOffer = await publish(1, 205);
+  const failStart = await payer.client.rpc('start_payment', { p_offer_id: failOffer });
+  const failBooked = failStart.error ? failStart : await confirmAndBook(payer.client, failStart.data.id, 'pm_card_refundFail');
+  const failBookingId = failBooked.data?.[0]?.booking_id;
+  if (failBookingId) await payer.client.rpc('cancel_booking', { p_booking_id: failBookingId });
+  const failedRefund = failBookingId
+    ? await waitPayment(payer.client, failStart.data.id, (x) => x.refund_status === 'failed', 180_000)
+    : null;
+  const failedBookingRow = ((await payer.client.rpc('my_bookings')).data ?? []).find((b) => b.id === failBookingId);
+  check('Vratka, která selže, nezůstane jako vrácená',
+    failedRefund?.refund_status === 'failed' && failedRefund?.status === 'paid' && failedBookingRow?.payment_status === 'paid',
+    `platba ${failedRefund?.status ?? err(failBooked.error) ?? '?'}, vratka ${failedRefund?.refund_status ?? '?'}`);
+}
 
 // --- the venue sets its own free-cancellation window, and the booking keeps the one it was made under
 const bizWindow = (await merchant.client.rpc('my_businesses')).data?.[0]?.cancellation_window_minutes;
@@ -292,9 +433,7 @@ check('Lhůtu mimo rozsah nelze uložit',
 const widened = await merchant.client.rpc('update_business', { p_business_id: businessId, p_data: { cancellation_window_minutes: 180 } });
 check('Partner si lhůtu nastaví', widened.data?.cancellation_window_minutes === 180);
 const windowOffer = await publish(1, 400);
-const wp = await payer.client.rpc('start_payment', { p_offer_id: windowOffer });
-const wps = await settle(payer.client, wp.data.id);
-await payer.client.rpc('create_booking', { p_offer_id: windowOffer, p_payment_id: wps.data.id });
+await book(payer.client, windowOffer);
 const wb = ((await payer.client.rpc('my_bookings')).data ?? []).find((b) => b.offer_id === windowOffer);
 check('Rezervace si lhůtu odnese jako snapshot', wb?.cancellation_window_minutes === 180, `${wb?.cancellation_window_minutes} min`);
 const deadlineGap = Math.round((Date.parse(wb.start_at_snapshot) - Date.parse(wb.cancellation_deadline)) / 60000);
@@ -489,41 +628,72 @@ const otherUser = users[0];
 for (const id of created) await merchant.client.rpc('merchant_cancel_offer', { p_offer_id: id, p_reason: 'Úklid mezi testovacími scénáři.' });
 const priced = await publish(2, 240);
 const buyer = users.find((u) => u !== customer && u !== otherUser) ?? users[3];
-const pay = await buyer.client.rpc('start_payment', { p_offer_id: priced });
-const paid = await settle(buyer.client, pay.data?.id);
-const simultaneous = await Promise.all(Array.from({ length: 8 }, () => buyer.client.rpc('create_booking', { p_offer_id: priced, p_payment_id: paid.data?.id })));
-const first = simultaneous[0];
-check('8 souběžných pokusů se stejnou platbou vrátí stejnou rezervaci', simultaneous.every(r => !r.error) && new Set(simultaneous.map(r => r.data?.[0]?.booking_id)).size === 1);
-check('Souběžné opakování odečte jen jedno místo', (await anon.rpc('get_offer_detail', { p_offer_id: priced })).data?.capacity_remaining === 1);
-const again = await buyer.client.rpc('create_booking', { p_offer_id: priced, p_payment_id: paid.data?.id });
-check('Opakovaná rezervace se stejnou platbou vrátí stejný kód',
-  !first.error && !again.error && first.data?.[0]?.reservation_code === again.data?.[0]?.reservation_code,
-  `${first.data?.[0]?.reservation_code ?? err(first.error)} / ${again.data?.[0]?.reservation_code ?? err(again.error)}`);
-const row = ((await merchant.client.rpc('merchant_bookings', { p_business_id: businessId, p_from: null, p_until: null })).data ?? [])
-  .find((b) => b.id === first.data?.[0]?.booking_id);
-check('Stejná cena od nabídky přes platbu po rezervaci',
-  pay.data?.amount_cents === CUSTOMER_PRICE && row?.price_cents === CUSTOMER_PRICE
-  && row?.merchant_payout_cents === MERCHANT_PRICE && row?.service_fee_cents === 2500,
-  `platba ${pay.data?.amount_cents}, rezervace ${row?.price_cents}, podnik ${row?.merchant_payout_cents}`);
-check('Klient nemůže přepsat finanční snímek rezervace',
-  ((await merchant.client.from('bookings').update({ merchant_payout_cents: 1 }).eq('id', row?.id ?? '').select()).data ?? []).length === 0);
-check('Platba s rezervací se „vrátit“ nedá',
-  (await buyer.client.rpc('release_unbooked_payment', { p_payment_id: paid.data?.id })).data?.status === 'paid');
-
-// Paid, then the last seat went to someone else: the money comes straight back.
-const lastSeat = await publish(1, 260);
 const loser = users.find((u) => u !== buyer && u !== customer && u !== otherUser && u !== users[0]) ?? users[4];
-const loserPay = await loser.client.rpc('start_payment', { p_offer_id: lastSeat });
-// The webhook books at payment time, so the seat has to go before the loser pays.
-await book(otherUser.client, lastSeat);
-const loserPaid = await settle(loser.client, loserPay.data?.id);
-const lost = await loser.client.rpc('create_booking', { p_offer_id: lastSeat, p_payment_id: loserPay.data?.id });
-await loser.client.rpc('release_unbooked_payment', { p_payment_id: loserPay.data?.id });
-const released = { data: await waitPayment(loser.client, loserPay.data?.id, (x) => x.status === 'refunded') };
-check('Zaplaceno bez místa: platba se hned vrátí',
-  /OFFER_UNAVAILABLE|PAYMENT_REQUIRED/.test(err(lost.error)) && released.data?.status === 'refunded' && !loserPaid.data?.reservation_code,
-  `${err(lost.error)} → ${released.data?.status}`);
-check('Cizí platbu vrátit nejde', refused(await buyer.client.rpc('release_unbooked_payment', { p_payment_id: loserPay.data?.id })));
+if (!MANUAL) {
+  const pay = await buyer.client.rpc('start_payment', { p_offer_id: priced });
+  const paid = await settle(buyer.client, pay.data?.id);
+  const simultaneous = await Promise.all(Array.from({ length: 8 }, () => buyer.client.rpc('create_booking', { p_offer_id: priced, p_payment_id: paid.data?.id })));
+  const first = simultaneous[0];
+  check('8 souběžných pokusů se stejnou platbou vrátí stejnou rezervaci', simultaneous.every(r => !r.error) && new Set(simultaneous.map(r => r.data?.[0]?.booking_id)).size === 1);
+  check('Souběžné opakování odečte jen jedno místo', (await anon.rpc('get_offer_detail', { p_offer_id: priced })).data?.capacity_remaining === 1);
+  const again = await buyer.client.rpc('create_booking', { p_offer_id: priced, p_payment_id: paid.data?.id });
+  check('Opakovaná rezervace se stejnou platbou vrátí stejný kód',
+    !first.error && !again.error && first.data?.[0]?.reservation_code === again.data?.[0]?.reservation_code,
+    `${first.data?.[0]?.reservation_code ?? err(first.error)} / ${again.data?.[0]?.reservation_code ?? err(again.error)}`);
+  const row = ((await merchant.client.rpc('merchant_bookings', { p_business_id: businessId, p_from: null, p_until: null })).data ?? [])
+    .find((b) => b.id === first.data?.[0]?.booking_id);
+  check('Stejná cena od nabídky přes platbu po rezervaci',
+    pay.data?.amount_cents === CUSTOMER_PRICE && row?.price_cents === CUSTOMER_PRICE
+    && row?.merchant_payout_cents === MERCHANT_PRICE && row?.service_fee_cents === 2500,
+    `platba ${pay.data?.amount_cents}, rezervace ${row?.price_cents}, podnik ${row?.merchant_payout_cents}`);
+  check('Klient nemůže přepsat finanční snímek rezervace',
+    ((await merchant.client.from('bookings').update({ merchant_payout_cents: 1 }).eq('id', row?.id ?? '').select()).data ?? []).length === 0);
+  check('Platba s rezervací se „vrátit“ nedá',
+    (await buyer.client.rpc('release_unbooked_payment', { p_payment_id: paid.data?.id })).data?.status === 'paid');
+
+  // Paid, then the last seat went to someone else: the money comes straight back.
+  const lastSeat = await publish(1, 260);
+  const loserPay = await loser.client.rpc('start_payment', { p_offer_id: lastSeat });
+  // The webhook books at payment time, so the seat has to go before the loser pays.
+  await book(otherUser.client, lastSeat);
+  const loserPaid = await settle(loser.client, loserPay.data?.id);
+  const lost = await loser.client.rpc('create_booking', { p_offer_id: lastSeat, p_payment_id: loserPay.data?.id });
+  await loser.client.rpc('release_unbooked_payment', { p_payment_id: loserPay.data?.id });
+  const released = { data: await waitPayment(loser.client, loserPay.data?.id, (x) => x.status === 'refunded') };
+  check('Zaplaceno bez místa: platba se hned vrátí',
+    /OFFER_UNAVAILABLE|PAYMENT_REQUIRED/.test(err(lost.error)) && released.data?.status === 'refunded' && !loserPaid.data?.reservation_code,
+    `${err(lost.error)} → ${released.data?.status}`);
+  check('Cizí platbu vrátit nejde', refused(await buyer.client.rpc('release_unbooked_payment', { p_payment_id: loserPay.data?.id })));
+} else {
+  // One request through every surface that shows or charges its price; eight confirmations at once decide it once.
+  const pay = await buyer.client.rpc('start_payment', { p_offer_id: priced });
+  const requested = pay.error ? pay : await authorise(buyer.client, pay.data.id);
+  const confirmations = await Promise.all(Array.from({ length: 8 }, () =>
+    merchant.client.rpc('respond_to_booking', { p_booking_id: requested.data?.booking_id, p_accept: true })));
+  check('8 souběžných potvrzení téže žádosti rozhodne jednou',
+    confirmations.every((r) => !r.error) && confirmations.filter((r) => r.data?.decided).length === 1,
+    confirmations.map((r) => r.error ? err(r.error) : `${r.data.status}${r.data.decided ? '*' : ''}`).join(' '));
+  const done = await waitOutcome(buyer.client, pay.data?.id);
+  check('Souběžná potvrzení odečtou jen jedno místo', Boolean(done?.reservation_code)
+    && (await anon.rpc('get_offer_detail', { p_offer_id: priced })).data?.capacity_remaining === 1, done?.booking_status);
+  const row = ((await merchant.client.rpc('merchant_bookings', { p_business_id: businessId, p_from: null, p_until: null })).data ?? [])
+    .find((b) => b.id === done?.booking_id);
+  check('Stejná cena od nabídky přes autorizaci po rezervaci',
+    pay.data?.amount_cents === CUSTOMER_PRICE && row?.price_cents === CUSTOMER_PRICE
+    && row?.merchant_payout_cents === MERCHANT_PRICE && row?.service_fee_cents === 2500 && row?.reservation_code === done?.reservation_code,
+    `platba ${pay.data?.amount_cents}, rezervace ${row?.price_cents}, podnik ${row?.merchant_payout_cents}`);
+  check('Klient nemůže přepsat finanční snímek rezervace',
+    ((await merchant.client.from('bookings').update({ merchant_payout_cents: 1 }).eq('id', row?.id ?? '').select()).data ?? []).length === 0);
+
+  // G: the last seat is held by whoever started first; nobody pays for a seat that is not theirs.
+  const lastSeat = await publish(1, 260);
+  const first = await otherUser.client.rpc('start_payment', { p_offer_id: lastSeat });
+  const second = await loser.client.rpc('start_payment', { p_offer_id: lastSeat });
+  check('Držené poslední místo druhý zákazník ani nezaplatí', !first.error && /OFFER_UNAVAILABLE/.test(err(second.error)), err(second.error));
+  if (!first.error) await otherUser.client.rpc('cancel_pending_booking', {
+    p_booking_id: (await otherUser.client.rpc('my_payment_state', { p_payment_id: first.data.id })).data?.booking_id,
+  });
+}
 
 // Realtime: the venue hears about its booking; another venue listening for it hears nothing.
 const merchant2 = users[9]; // demo-merchant2, a member of a different venue

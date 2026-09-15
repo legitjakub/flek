@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
-import { openCheckout, paymentsMode, saveProfile, startPayment } from '../../lib/api';
+import { confirmationQuote, openCheckout, paymentsMode, saveProfile, startPayment } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
 import { profileSchema } from '../../lib/schemas';
@@ -36,6 +36,16 @@ export function BookingSheet({
   const queryClient = useQueryClient();
   const [failure, setFailure] = useState<string | null>(null);
   const mode = useQuery({ queryKey: ['payments-mode'], queryFn: paymentsMode, staleTime: 300_000 });
+  // Whether this venue confirms each booking, and roughly how long it would have. The server fixes the
+  // real deadline when the card is authorised; this is only what to say before paying.
+  const quote = useQuery({
+    queryKey: ['confirmation-quote', offer.id],
+    queryFn: () => confirmationQuote(offer.id),
+    enabled: open && Boolean(userId),
+    staleTime: 15_000,
+  });
+  const windowMinutes = quote.data?.window_seconds ? Math.max(1, Math.round(quote.data.window_seconds / 60)) : null;
+  const holdMinutes = Math.max(1, Math.round((quote.data?.hold_seconds ?? 180) / 60));
   const needsPhone = !hasPhone(profile);
   const needsName = !profile?.first_name?.trim();
 
@@ -181,11 +191,20 @@ export function BookingSheet({
         </form>
       ) : null}
 
-      <p className="mt-5 rounded-xl bg-surface px-3 py-2 text-sm text-muted">
-        {mode.data?.manual_confirmation
-          ? 'Na Stripe částku nejdřív jen zablokujeme. Podnik má krátký čas na potvrzení a teprve potom ji strhneme. Když nepotvrdí, blokace se uvolní.'
-          : 'Zaplatíš kartou, Apple Pay nebo Google Pay na zabezpečené stránce Stripe a vrátíme tě sem s rezervačním kódem. Když zrušíš včas, vrátíme ti celou částku.'}
-      </p>
+      {quote.data?.manual ? (
+        <div className="mt-5 rounded-xl bg-surface px-3 py-2 text-sm text-muted">
+          <p>
+            Částku {money(offer.deal_price_cents)} nejdřív jen zablokujeme na kartě, Apple Pay nebo Google Pay.
+            {windowMinutes ? ` Podnik má na potvrzení až ${windowMinutes} ${minutesWord(windowMinutes)}.` : ' Podnik má na potvrzení pár minut.'}
+            {' '}Když rezervaci nepotvrdí, platbu nezachytíme a blokaci uvolníme.
+          </p>
+          <p className="mt-1">Na zaplacení máš {holdMinutes} {minutesWord(holdMinutes)}, termín ti mezitím držíme.</p>
+        </div>
+      ) : (
+        <p className="mt-5 rounded-xl bg-surface px-3 py-2 text-sm text-muted">
+          Zaplatíš kartou, Apple Pay nebo Google Pay na zabezpečené stránce Stripe a vrátíme tě sem s rezervačním kódem. Když zrušíš včas, vrátíme ti celou částku.
+        </p>
+      )}
       {mode.data?.test ? (
         <p className="tnum mt-2 rounded-xl border border-warning/30 bg-warning/8 px-3 py-2 text-sm text-ink">
           <strong>Testovací platby.</strong> Použij kartu 4242 4242 4242 4242, libovolné budoucí datum a CVC. Žádné
@@ -200,6 +219,10 @@ export function BookingSheet({
       ) : null}
     </Sheet>
   );
+}
+
+function minutesWord(n: number): string {
+  return n === 1 ? 'minutu' : n >= 2 && n <= 4 ? 'minuty' : 'minut';
 }
 
 function Row({ label, value }: { label: string; value: string }) {

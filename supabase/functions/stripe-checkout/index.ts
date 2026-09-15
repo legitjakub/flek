@@ -77,9 +77,17 @@ Deno.serve(async (request) => {
             product_data: { name: `${service.name} · ${when}`, description: `${business.display_name} · rezervace přes FLEK` },
           },
         }],
+        // With merchant confirmation the card is only authorised here and captured once the merchant says
+        // yes. Cards (with Apple Pay and Google Pay on top) hold the amount without charging it; methods
+        // that take money at authorisation, such as some pay-later options, stay off this page.
+        ...(manual ? {
+          payment_method_types: ['card' as const],
+          submit_type: 'book' as const,
+          custom_text: { submit: { message: 'Částku teď jen zablokujeme. Strhneme ji, až podnik rezervaci potvrdí; když ji nepotvrdí, blokace se uvolní.' } },
+        } : {}),
         payment_intent_data: {
           capture_method: manual ? 'manual' : undefined,
-          application_fee_amount: offer.service_fee_cents,
+          application_fee_amount: manual ? (payment.application_fee_cents ?? offer.service_fee_cents) : offer.service_fee_cents,
           transfer_data: { destination: business.stripe_account_id },
           description: `FLEK · ${service.name} · ${business.display_name}`,
           receipt_email: who.user.email ?? undefined,

@@ -6,7 +6,8 @@ import {
 /**
  * Stripe's word on money. Every event is verified by signature, handled once (Stripe retries and may
  * deliver twice), and turned into the same database calls the app uses: a paid payment books its
- * seat, a payment that cannot book is refunded, an expired Checkout closes the payment.
+ * seat, a payment that cannot book is refunded, an expired Checkout closes the payment. A payment that
+ * waits for the merchant (confirmation_version 1) is reconciled from the PaymentIntent's current state.
  */
 Deno.serve(async (request) => {
   if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
@@ -51,54 +52,28 @@ async function handle(event: Stripe.Event, stripe: Stripe, db: SupabaseClient) {
       const paymentId = session.metadata?.payment_id ?? session.client_reference_id;
       const intent = typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id;
       if (!paymentId || !intent) return;
-      const { data: payment } = await db.from('payments').select('confirmation_version').eq('id', paymentId).maybeSingle();
-      if (payment?.confirmation_version === 1) {
-        const current = await stripe.paymentIntents.retrieve(intent);
-        if (current.status === 'requires_capture') {
-          await rpc(db, 'confirmation_authorized', {
-            p_payment_id: paymentId, p_intent: intent, p_session: session.id,
-            p_amount: current.amount, p_currency: current.currency, p_livemode: event.livemode,
-          });
-        } else if (current.status === 'succeeded') {
-          await rpc(db, 'confirmation_payment_observed', { p_payment_id: paymentId, p_outcome: 'captured', p_intent: intent, p_amount: current.amount_received });
-        }
+      if (await confirmationFlow(db, paymentId)) {
+        // With manual capture the session completes `unpaid`; the PaymentIntent says what really happened.
+        await reconcileConfirmation(stripe, db, paymentId, intent, session.id);
         return;
       }
       if (session.payment_status !== 'paid') return;
       await paid(stripe, db, paymentId, intent, session.amount_total ?? 0, session.currency ?? '', event.livemode, session.id);
       return;
     }
-    case 'payment_intent.amount_capturable_updated': {
+    case 'payment_intent.amount_capturable_updated':
+    case 'payment_intent.succeeded':
+    case 'payment_intent.canceled':
+    case 'payment_intent.payment_failed': {
       const intent = event.data.object as Stripe.PaymentIntent;
       const paymentId = intent.metadata?.payment_id;
       if (!paymentId) return;
-      const { data: payment } = await db.from('payments').select('confirmation_version, checkout_session_id').eq('id', paymentId).maybeSingle();
-      if (payment?.confirmation_version !== 1 || !payment.checkout_session_id) return;
-      await rpc(db, 'confirmation_authorized', {
-        p_payment_id: paymentId, p_intent: intent.id, p_session: payment.checkout_session_id,
-        p_amount: intent.amount, p_currency: intent.currency, p_livemode: event.livemode,
-      });
-      return;
-    }
-    case 'payment_intent.succeeded': {
-      const intent = event.data.object as Stripe.PaymentIntent;
-      const paymentId = intent.metadata?.payment_id;
-      if (!paymentId) return;
-      const { data: payment } = await db.from('payments').select('confirmation_version').eq('id', paymentId).maybeSingle();
-      if (payment?.confirmation_version === 1) {
-        await rpc(db, 'confirmation_payment_observed', { p_payment_id: paymentId, p_outcome: 'captured', p_intent: intent.id, p_amount: intent.amount_received });
+      if (await confirmationFlow(db, paymentId)) {
+        await reconcileConfirmation(stripe, db, paymentId, intent.id, null);
         return;
       }
-      await paid(stripe, db, paymentId, intent.id, intent.amount_received, intent.currency, event.livemode, null);
-      return;
-    }
-    case 'payment_intent.canceled': {
-      const intent = event.data.object as Stripe.PaymentIntent;
-      const paymentId = intent.metadata?.payment_id;
-      if (!paymentId) return;
-      const { data: payment } = await db.from('payments').select('confirmation_version').eq('id', paymentId).maybeSingle();
-      if (payment?.confirmation_version === 1) {
-        await rpc(db, 'confirmation_payment_observed', { p_payment_id: paymentId, p_outcome: 'released', p_intent: intent.id, p_amount: 0 });
+      if (event.type === 'payment_intent.succeeded') {
+        await paid(stripe, db, paymentId, intent.id, intent.amount_received, intent.currency, event.livemode, null);
       }
       return;
     }
@@ -142,6 +117,47 @@ async function handle(event: Stripe.Event, stripe: Stripe, db: SupabaseClient) {
     }
     default:
       return;
+  }
+}
+
+async function confirmationFlow(db: SupabaseClient, paymentId: string): Promise<boolean> {
+  const { data } = await db.from('payments').select('confirmation_version').eq('id', paymentId).maybeSingle();
+  return data?.confirmation_version === 1;
+}
+
+/**
+ * A payment that waits for the merchant. Events arrive in any order and can be stale, so the
+ * PaymentIntent is read again and its current status alone decides:
+ *   requires_capture  authorised: open the merchant's window (or release it if the request is gone)
+ *   succeeded         captured: confirm the booking (or refund money that has nothing agreed behind it)
+ *   canceled          released: return the seat if it is still held
+ * Anything else means the customer is still on Stripe's page.
+ */
+async function reconcileConfirmation(stripe: Stripe, db: SupabaseClient, paymentId: string, intentId: string, sessionId: string | null) {
+  const intent = await stripe.paymentIntents.retrieve(intentId);
+  if (intent.metadata?.payment_id && intent.metadata.payment_id !== paymentId) return;
+  if (intent.status === 'requires_capture') {
+    const outcome = await rpc(db, 'confirmation_authorized', {
+      p_payment_id: paymentId, p_intent: intent.id, p_session: sessionId,
+      p_amount: intent.amount_capturable, p_currency: intent.currency, p_livemode: intent.livemode,
+    });
+    if (outcome === 'release_intent') {
+      // A second authorisation for a payment that already has one: nothing can be bought with it.
+      await stripe.paymentIntents.cancel(intent.id, { cancellation_reason: 'duplicate' }, { idempotencyKey: `flek-release-duplicate-${intent.id}` })
+        .catch(async (error) => {
+          if ((await stripe.paymentIntents.retrieve(intent.id)).status === 'requires_capture') throw error;
+        });
+    }
+    return;
+  }
+  if (intent.status === 'succeeded') {
+    await rpc(db, 'confirmation_payment_observed', {
+      p_payment_id: paymentId, p_outcome: 'captured', p_intent: intent.id, p_amount: intent.amount_received,
+    });
+    return;
+  }
+  if (intent.status === 'canceled') {
+    await rpc(db, 'confirmation_payment_observed', { p_payment_id: paymentId, p_outcome: 'released', p_intent: intent.id, p_amount: 0 });
   }
 }
 

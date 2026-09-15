@@ -12,6 +12,7 @@ import { useRouter } from '../../app/router';
 import { DEFAULT_POINT } from '../../lib/geo';
 import type { Business } from '../../types/database';
 import { NotificationSettings } from '../notifications/Notifications';
+import { BookingConfirmationInfo, WhatsAppNotifications } from './WhatsAppNotifications';
 
 type Values = {
   display_name: string;
@@ -93,7 +94,9 @@ export function MerchantBusinessPage() {
       {(business) => (
         <div className="flex flex-col gap-6">
           <StripePayouts business={business} />
+          <BookingConfirmationInfo business={business} />
           <NotificationSettings businessId={business.id} />
+          <WhatsAppNotifications business={business} />
           <BusinessForm business={business} />
         </div>
       )}

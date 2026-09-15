@@ -7,6 +7,7 @@ import { clockTime, dayLabel } from '../../lib/time';
 import { serverNow, useServerNow } from '../../lib/clock';
 import { Banner, Button, EmptyState, ErrorState, Field, Input, LoadingList, Sheet, Tabs } from '../../components/ui';
 import { MerchantShell } from './MerchantShell';
+import { Link } from '../../app/router';
 import { Plus } from 'lucide-react';
 import { CreateOfferSheet, cutoffFor, type OfferDraft } from './CreateOfferSheet';
 import { localInput, localToInstant } from '../../lib/time';
@@ -123,10 +124,15 @@ function Offers({ businessId, approved }: { businessId: string; approved: boolea
                 the price and its right-aligned "Aktivní" drifted to a stray indent; and
                 "Neaktivní" did not say why — sold out and closed for booking look the same.
               */}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <p className="tnum text-sm font-bold text-ink">
                   {offer.booked}/{offer.capacity_total} obsazeno
                 </p>
+                {offer.pending_requests ? (
+                  <Link to="/partner/rezervace" className="tnum inline-flex min-h-11 items-center rounded-full px-1 text-sm font-bold text-brand underline underline-offset-4">
+                    {requestsWaiting(offer.pending_requests)}
+                  </Link>
+                ) : null}
                 {offer.status === 'cancelled' ? (
                   <StatusBadge status="cancelled" />
                 ) : offer.bookable ? (
@@ -226,6 +232,13 @@ function CancelOfferSheet({ offer, onClose }: { offer: MerchantOffer | null; onC
           Nabídka má {offer.booked} potvrzených rezervací. Zrušením je zrušíte i zákazníkům a uvidí váš důvod.
         </Banner>
       ) : null}
+      {offer?.pending_requests ? (
+        <div className={offer.booked > 0 ? 'mt-2' : undefined}>
+          <Banner tone="warning">
+            {requestsWaiting(offer.pending_requests)}. Zrušením nabídky je odmítnete a zákazníkům uvolníme blokaci částky na kartě.
+          </Banner>
+        </div>
+      ) : null}
       <div className="mt-3">
         <Field id="cancel-reason" label="Důvod (uvidí ho zákazník)" error={failure ?? undefined}>
           <Input
@@ -239,6 +252,12 @@ function CancelOfferSheet({ offer, onClose }: { offer: MerchantOffer | null; onC
       </div>
     </Sheet>
   );
+}
+
+function requestsWaiting(count: number): string {
+  if (count === 1) return '1 žádost čeká na potvrzení';
+  if (count >= 2 && count <= 4) return `${count} žádosti čekají na potvrzení`;
+  return `${count} žádostí čeká na potvrzení`;
 }
 
 /** Live "zákazník uvidí" under the edited merchant price, the same preview as publishing. */
@@ -257,7 +276,9 @@ function EditOfferSheet({ offer, onClose }: { offer: MerchantOffer; onClose: () 
   const [price, setPrice] = useState(String(offer.merchant_price_cents / 100));
   const [start, setStart] = useState(localInput(offer.start_at));
   const [failure, setFailure] = useState<string | null>(null);
-  const locked = offer.has_bookings || offer.booked > 0 || offer.capacity_remaining < offer.capacity_total;
+  // Frozen by a booking the customer really has; a request that may still fail freezes nothing, but blocks edits while it runs.
+  const locked = offer.has_bookings || offer.booked > 0;
+  const waiting = (offer.pending_requests ?? 0) > 0;
 
   const save = useMutation({
     mutationFn: () => {
@@ -305,11 +326,18 @@ function EditOfferSheet({ offer, onClose }: { offer: MerchantOffer; onClose: () 
       onClose={onClose}
       title="Upravit nabídku"
       footer={
-        <Button className="w-full" loading={save.isPending} onClick={() => save.mutate()}>
+        <Button className="w-full" loading={save.isPending} disabled={waiting} onClick={() => save.mutate()}>
           Uložit změny
         </Button>
       }
     >
+      {waiting ? (
+        <div className="mb-3">
+          <Banner tone="warning">
+            {requestsWaiting(offer.pending_requests ?? 0)}. Upravit nabídku půjde, až žádost potvrdíte, odmítnete, nebo vyprší.
+          </Banner>
+        </div>
+      ) : null}
       {locked ? (
         <Banner tone="warning">
           Nabídka už má rezervace. Můžete pouze zvýšit počet míst — cenu a čas už měnit nelze.

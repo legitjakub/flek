@@ -87,7 +87,9 @@ export function useBookingAlerts(businessId: string) {
     // Include long slots that began before midnight, without fetching years of history.
     queryFn: () => merchantBookings(businessId, dayBounds(serverNow(), -2).from),
     enabled: Boolean(scope),
-    refetchInterval: 30_000,
+    // Realtime usually brings a request within a second; this is the floor when the socket is down,
+    // and a request can have as little as three minutes.
+    refetchInterval: 15_000,
     refetchIntervalInBackground: true,
   });
   useEffect(() => {
@@ -95,11 +97,16 @@ export function useBookingAlerts(businessId: string) {
     let fresh = false;
     for (const row of poll.data) {
       if (row.business_id !== businessId) continue;
+      const alert = { id: row.id, service: row.service_name_snapshot, startAt: row.start_at_snapshot, payoutCents: row.merchant_payout_cents };
+      if (row.confirmation_version === 1) {
+        // A request is news when the customer's payment is authorised. Once answered, here, on another
+        // device or on WhatsApp, the merchant decided it themselves and there is nothing to announce.
+        if (row.status !== 'pending_merchant' || !row.authorized_at) { bookingAlerts.dismiss(scope, row.id); continue; }
+        fresh = bookingAlerts.announce(scope, { ...alert, kind: 'request', deadline: row.confirmation_expires_at }, Date.parse(row.authorized_at)) || fresh;
+        continue;
+      }
       if (row.status !== 'confirmed') { bookingAlerts.dismiss(scope, row.id); continue; }
-      fresh = bookingAlerts.announce(scope, {
-        id: row.id, service: row.service_name_snapshot, startAt: row.start_at_snapshot,
-        payoutCents: row.merchant_payout_cents,
-      }, Date.parse(row.created_at)) || fresh;
+      fresh = bookingAlerts.announce(scope, { ...alert, kind: 'booking' }, Date.parse(row.created_at)) || fresh;
     }
     // Poll refreshes time-derived states even when no new booking arrived.
     for (const key of ['merchant-bookings', 'merchant-metrics', 'merchant-offers', 'merchant-booking-lookup']) {

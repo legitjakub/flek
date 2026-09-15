@@ -20,6 +20,13 @@ const messages:Record<string,string>={
  CHECKOUT_FAILED:'Platební stránku se nepodařilo otevřít. Zkus to prosím znovu.',PAYMENT_CLOSED:'Tahle platba už je uzavřená. Začni rezervaci znovu.',WRONG_PROVIDER:'Platbu se nepodařilo otevřít. Začni rezervaci znovu.',
  STRIPE_NOT_CONNECTED:'Nejdřív propojte výplaty přes Stripe v sekci Provozovna.',STRIPE_REQUEST_FAILED:'Stripe teď neodpovídá. Zkuste to prosím za chvíli.',NOT_CONNECTED:'Provozovna zatím nemá propojený Stripe účet.',
  FINANCIAL_SNAPSHOT_IMMUTABLE:'Cenu už uskutečněné rezervace nejde měnit.',CODE_GENERATION_FAILED:'Rezervaci se nepodařilo dokončit. Zkus to prosím znovu.',
+ OFFER_HAS_PENDING_BOOKINGS:'Na tuto nabídku právě čeká zákazník. Upravit ji půjde, až žádost skončí, nejdéle za pár minut.',
+ HOLD_RATE_LIMITED:'Za poslední hodinu sis termíny několikrát podržel/a bez zaplacení. Zkus to prosím znovu za chvíli.',
+ PAYMENT_PENDING_CONFIRMATION:'Rezervace čeká na potvrzení podniku. Jak dopadla, uvidíš v Rezervacích.',
+ INVALID_PHONE:'Zkontrolujte telefonní číslo. České číslo stačí napsat bez předvolby, zahraniční s + na začátku.',
+ CONSENT_REQUIRED:'Pro zapnutí WhatsApp upozornění potřebujeme váš souhlas.',
+ WHATSAPP_UNAVAILABLE:'WhatsApp upozornění zatím nejsou dostupná.',
+ WHATSAPP_PAIRING_RATE_LIMITED:'Kód jste si nechali vygenerovat už několikrát. Zkuste to prosím za hodinu.',
  'Invalid login credentials':'E-mail nebo heslo nesouhlasí.','User already registered':'Tento e-mail už má účet. Přihlas se.',
  'Email not confirmed':'Nejdřív potvrď svůj e-mail.','Email rate limit exceeded':'Zkus to prosím znovu za chvíli.',
 };

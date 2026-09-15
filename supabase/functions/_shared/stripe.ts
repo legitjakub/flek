@@ -204,3 +204,13 @@ export async function syncAccount(db: SupabaseClient, businessId: string, accoun
 }
 
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Whether asking Stripe again can change the answer. Card and request errors (a declined capture, a
+ * PaymentIntent in the wrong state, a destination account that may not receive transfers) stay the
+ * same however often they are retried; network errors, rate limits and Stripe's own 5xx do not.
+ */
+export function isPermanentStripeError(error: unknown): boolean {
+  const type = (error as { type?: string })?.type ?? '';
+  return type === 'StripeCardError' || type === 'StripeInvalidRequestError' || type === 'StripePermissionError';
+}

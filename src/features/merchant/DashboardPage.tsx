@@ -13,6 +13,7 @@ import { useMerchantMetrics, useServices } from './useBusiness';
 import { SetupChecklist } from './SetupChecklist';
 import type { Business } from '../../types/database';
 import { ResolveButtons } from './ResolveButtons';
+import { ConfirmationRequests, isConfirmationRequest, visibleToMerchant } from './ConfirmationRequests';
 
 export function MerchantDashboardPage() {
   return (
@@ -41,7 +42,9 @@ function Dashboard({ business }: { business: Business }) {
     queryKey: ['merchant-bookings', businessId, 'dashboard', windowStart],
     queryFn: () => merchantBookings(businessId, windowStart),
     refetchOnWindowFocus: true,
+    refetchInterval: (current) => current.state.data?.some(isConfirmationRequest) ? 3_000 : false,
   });
+  const requests = (today.data ?? []).filter(visibleToMerchant).filter(isConfirmationRequest);
 
   const upcoming = (today.data ?? []).filter((b) => b.status === 'confirmed' && b.start_at_snapshot >= day.from);
   const next = upcoming.find((b) => Date.parse(b.start_at_snapshot) >= Date.parse(now));
@@ -63,6 +66,9 @@ function Dashboard({ business }: { business: Business }) {
           <Plus size={20} aria-hidden="true" />Přidat volný termín
         </Button>
       </div>
+
+      {/* A request answers itself by running out, so it comes before anything the merchant could do later. */}
+      <ConfirmationRequests rows={requests} />
 
       <SetupChecklist business={business} />
 
