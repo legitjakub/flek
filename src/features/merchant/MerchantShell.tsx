@@ -13,6 +13,7 @@ import { serverNow, useServerNow } from '../../lib/clock';
 import { timeLeft } from '../bookings/confirmationView';
 import type { Business } from '../../types/database';
 import { NotificationBell } from '../notifications/Notifications';
+import { MerchantTermsNotice } from './MerchantTermsNotice';
 
 const NAV = [
   { to: '/partner', label: 'Přehled', icon: LayoutDashboard },
@@ -95,6 +96,7 @@ export function MerchantShell({ children }: { children: (business: Business) => 
     >
       {business.status === 'approved' ? <ApprovedFrame key={`alerts:${userId}:${business.id}`} business={business} path={path} /> : null}
       {business.status !== 'approved' ? <PendingNotice business={business} /> : null}
+      <MerchantTermsNotice key={`terms:${userId}:${business.id}`} business={business} />
       <Fragment key={`content:${userId}:${business.id}`}>{children(business)}</Fragment>
     </MerchantFrame>
   );

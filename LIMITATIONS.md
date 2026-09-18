@@ -81,3 +81,13 @@ Více provozoven na účet je podporováno přepínačem v partnerské části. 
 - Seskupuje se podle služby, takže dvě služby se stejným názvem a jinou délkou (třeba masáž 30 a 60 minut) jsou dvě karty a na detailu si mezi nimi vybrat nejde.
 - „Mohlo by se ti líbit“ není personalizované: jiné služby podniku, stejná kategorie do 5 km od uložené polohy (jinak od podniku), pak cokoli v okolí.
 - Fotka kategorie je ilustrační a u neobvyklé služby nemusí sedět (půjčení kola dostane fotku sportovní lekce).
+
+## Právní minimum (18. 9. 2026)
+
+- Právní texty verze 1.0 nejsou zveřejněné: chybí údaje provozovatele v `private.settings` a účinnost verzí. Do té doby aplikace nemá patičku „O FLEKu“, souhlas v rezervaci ani odkaz na zásady v registraci a podnik souhlasí s „obchodními podmínkami FLEKu“ bez odkazu jako dřív.
+- Texty napsal agent, ne právník (**IMPLEMENTOVÁNO, ALE VYŽADUJE RUČNÍ EXTERNÍ OVĚŘENÍ** právníkem před ostrým provozem). Zásady popisují i povinné potvrzení e-mailem, smazání účtu a doby uchování z migrace, která čeká na souhlas; proto se texty zveřejní až po ní.
+- Smazání účtu zatím nejde v aplikaci: Profil nabídne e-mail podpory. E-mail zákazníkovi o rezervaci jde dál vypnout v nastavení upozornění a podrobnosti smlouvy (poskytovatel, cena, kód, storno) v něm budou až po migraci.
+- Podnik, který se registroval před 18. 9., nemá typ podnikatele, datum narození ani ověření v ARES; doplní je ve fakturačních údajích. DAC7 podklad je jen podklad pro ruční oznámení, registraci provozovatele neřeší.
+- `ares-lookup` je ověřený jen unit testy nad vzorovou odpovědí ARES; proti skutečnému registru poběží až po nasazení.
+- Staré analytické události mají `session_id` vyplněný dál, nové už ne. Trychtýř pro nepřihlášené proto nejde spojit na návštěvu.
+

@@ -1,6 +1,6 @@
 # FLEK — přehled projektu
 
-> Aktualizováno 15. 9. 2026. Zdroj pravdy je repozitář (`docs/NOTION.md`). Stránku aktualizuje Claude na požádání; ruční úpravy tady se při další aktualizaci přepíšou.
+> Aktualizováno 18. 9. 2026. Zdroj pravdy je repozitář (`docs/NOTION.md`). Stránku aktualizuje Claude na požádání; ruční úpravy tady se při další aktualizaci přepíšou.
 
 ## Ve zkratce
 
@@ -11,10 +11,11 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 | Fáze | Fáze 1 — demo pilot (běží veřejně, platby přes Stripe v testovacím režimu) |
 | Web | https://www.app-flek.eu (původní https://flek-nine.vercel.app funguje dál) |
 | Kód | https://github.com/legitjakub/flek (větev `main`) |
-| Poslední nasazení | 15. 9. 2026 (vždy poslední commit ve větvi `main`) |
+| Poslední nasazení | 18. 9. 2026 (vždy poslední commit ve větvi `main`) |
 | Testy | unit testy a build v CI při každém pushi, akceptační kontroly proti hostované databázi (15. 9.: 101/101 bez potvrzování, 106/106 s potvrzováním), SQL testy potvrzování rezervací a WhatsAppu |
 | Potvrzování rezervací podnikem | **zapnuté pro všechny podniky** od 15. 9. 15:54 (předtím demo: akceptace 106/106 a průchod se skutečnými testovacími platbami) |
 | WhatsApp | pro podniky i zákazníky, výchozí zapnutý a vypínatelný v nastavení upozornění, ověření čísla jedním klepnutím; čeká na účet Meta a pět šablon |
+| Právní texty | obchodní podmínky pro zákazníky a pro podniky, zásady ochrany osobních údajů a pravidla obsahu ve verzi 1.0 jsou v aplikaci; zveřejní se, až Jakub pošle údaje provozovatele, a před ostrým provozem je zkontroluje právník |
 | Data v produkci (13. 9.) | 18 schválených podniků, 330 nabídek, 321 rezervací, 16 účtů (12 demo, 4 ostatní), od 13. 9. platby jen přes Stripe (test), 16 demo podniků s testovacím Stripe účtem |
 | Pro AI agenty | `AGENTS.md` v kořeni repozitáře (Claude Code ho načítá přes `CLAUDE.md`) |
 
@@ -41,6 +42,9 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 - [ ] **Založit WhatsApp u Meta** podle `docs/PRED_SPUSTENIM.md`: pro pilot stačí testovací číslo v aplikaci Meta (bez ověření firmy, zprávy až na 5 přidaných čísel), webhook, pět šablon s texty z dokumentu a klíče do Supabase secrets. Pak pošli agentovi zobrazované číslo a na telefonu vyzkoušej „Ověřit ve WhatsAppu“ v Profilu i v Provozovně. Agent to 15. 9. zkusil: v Chromu nejsi u Meta for Developers přihlášený a klíče do Supabase vložit nesmí.
 - [x] **Zkontrolovat SMTP odesílatele v Supabase Auth.** Uložené správně (15. 9.): zapnuté, odesílatel `ucet@mail.app-flek.eu`, jméno FLEK, uživatel `resend`, port 465.
 - [ ] **Vyzkoušet registraci nové adresy** s odkazem otevřeným v jiném prohlížeči (agent účty zakládat nesmí).
+- [ ] **Poslat agentovi údaje provozovatele:** jméno, IČO, adresu místa podnikání (případně jinou doručovací adresu) a e-mail podpory. Agent je uloží do databáze a zveřejní právní texty verze 1.0; do té doby je aplikace neukazuje.
+- [ ] **Právní kontrola textů a výchozích řešení před ostrým provozem.** Texty jsou veřejné v repozitáři (`src/content/pravni`), po zveřejnění na `/podminky`, `/podminky-podniky`, `/soukromi` a `/pravidla`. Kontrolní seznam pro právníka je v `docs/PRED_SPUSTENIM.md` (Právo, účetnictví a firma).
+- [ ] **Firma a úřady:** ověřit obory živnosti (zprostředkování obchodu a služeb), s daňovým poradcem registraci a oznámení DAC7 a DPH, zvážit s.r.o. a pojištění odpovědnosti, ochrannou známku FLEK a licenci map pro komerční provoz.
 
 ## Todolist
 
@@ -89,16 +93,21 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 - [ ] Skrýt ve feedu FLEKy podniků, kterým Stripe omezil platby; formulář „Výplatní údaje“ sladit se Stripe (číslo účtu už zadává podnik u Stripe)
 - [ ] Fakturace servisního poplatku podnikům a účetní export plateb
 - [ ] Povinné MFA (TOTP) pro administrátory, CAPTCHA (Turnstile) u registrace, `secure_password_change`, přísnější limity
-- [ ] Obchodní podmínky pro zákazníky (vč. výjimky z odstoupení u služeb s termínem a pravidel nedostavení) a pro podniky (P2B: řazení, pozastavení, stížnosti)
-- [ ] Zásady ochrany osobních údajů, seznam zpracovatelů, rozhodnutí o souhlasu s analytikou
-- [ ] Verze a hash dokumentu u souhlasu podniku s podmínkami
-- [ ] Smazání účtu (anonymizace, finanční záznamy zůstanou) a export dat
+- [x] Obchodní podmínky pro zákazníky (výjimka z odstoupení u služeb s termínem, storno a nedostavení, reklamace, ADR) a pro podniky (P2B: řazení, poplatky, pozastavení, ukončení, stížnosti), pravidla obsahu (DSA); verze 1.0 v aplikaci, zveřejní se s údaji provozovatele (18. 9.)
+- [x] Zásady ochrany osobních údajů se zpracovateli a dobami uchování; analytika bez identifikátoru v prohlížeči, takže bez cookie lišty (18. 9.)
+- [x] Verze textu u souhlasu podniku i zákazníka zapisuje server; bez souhlasu s platnou verzí platba nezačne a podnik nezveřejní FLEK (18. 9.)
+- [x] Export dat v Profilu (18. 9.)
+- [ ] Smazání účtu (anonymizace i v přihlašování, finanční záznamy zůstanou) a denní mazání starých dat: připravené, čeká na Jakubův souhlas s migrací; do té doby Profil nabídne smazání přes podporu
+- [ ] Povinné potvrzení rezervace e-mailem s poskytovatelem, cenou, kódem a stornem (šablona hotová, databázová část čeká na souhlas s migrací), zprávy podnikům o schválení a pozastavení, důvod blokace zákazníka
+- [x] Kdo službu poskytuje (název, IČO, adresa) u rezervace a na stránce podniku, IČO ověřené v ARES, schválení podniku jen s IČO (18. 9.)
+- [x] Nahlášení nabídky nebo podniku s frontou v administraci, podklad pro oznámení DAC7 (CSV) (18. 9.)
+- [ ] **Právní kontrola textů a výchozích řešení před ostrým provozem** (právník, kontrolní seznam v `docs/PRED_SPUSTENIM.md`)
 - [ ] Admin nástroj na ruční vratku a storno (se zápisem do audit logu)
 - [x] Vratky podle skutečného stavu ve Stripe: vráceno až po potvrzení, selhaná vratka jde člověku (14. 9., P0 z auditu)
 - [ ] Přehled a upozornění pro admina na vratky, které Stripe zamítl nebo které 8× selhaly
 - [ ] Sentry pro chyby v aplikaci, upozornění při selhání cronu nebo webhooku, jednou vyzkoušené obnovení ze zálohy
 - [ ] Mapy a hledání adres: licencovaný poskytovatel nebo vlastní limity (ArcGIS záloha a veřejné Photon API nejsou na komerční provoz)
-- [ ] Nastavit skutečný e-mail podpory (`VITE_SUPPORT_EMAIL`); doména www.app-flek.eu už běží
+- [ ] Skutečný e-mail podpory a údaje provozovatele v `private.settings` (Jakub pošle); `VITE_SUPPORT_EMAIL` zůstává jen jako záloha
 - [ ] Otestovat na fyzickém iPhonu v Safari včetně skenování QR kamerou
 - [ ] Zvážit soukromý repozitář a ochranu větve `main` (povinné zelené CI)
 
@@ -145,7 +154,7 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 
 ### Admin (`/admin`)
 
-Schvaluje provozovny, kontroluje nabídky a rezervace, spravuje uživatele, vidí metriky pilotu a výnos FLEKu.
+Schvaluje provozovny (skutečný podnik jen s IČO), kontroluje nabídky a rezervace, spravuje uživatele, vyřizuje nahlášený obsah, vidí metriky pilotu a výnos FLEKu a stahuje podklad pro oznámení DAC7.
 
 ### Peníze
 
@@ -190,7 +199,9 @@ Schvaluje provozovny, kontroluje nabídky a rezervace, spravuje uživatele, vid�
 | Mapové podklady | OpenFreeMap (styl `bright`) nad OpenStreetMap; záložní dlaždice ArcGIS World Street Map | zdarma, bez klíče |
 | Hledání adresy | Photon (komoot) nad OpenStreetMap | výběr místa a adresa provozovny |
 | Navigace | odkaz do Google Map | tlačítko Navigovat, bez API klíče |
-| Analytika | vlastní tabulka přes RPC `record_event` | vyhledávání, zobrazení, rezervace, oblíbené, sdílení, pozvánky |
+| Analytika | vlastní tabulka přes RPC `record_event` | vyhledávání, zobrazení, rezervace, oblíbené, sdílení, pozvánky; v prohlížeči nic neukládá (bez cookie lišty) |
+| Právní texty | `src/content/pravni/*.md`, verze v `public.legal_documents`, údaje provozovatele v `private.settings` | zveřejní se až s údaji provozovatele a platnou verzí; souhlasy v `private.legal_acceptances` |
+| Ověření IČO | Edge Function `ares-lookup` nad veřejným API ARES | název a sídlo podniku z registru, bez klíče |
 | Ilustrační fotky | složka `public/images/services` + Unsplash | náhledy pro špendlíky v `thumbs/` |
 | Kód | GitHub `legitjakub/flek` | — |
 | Instalace na telefon | PWA (`public/sw.js`, manifest) | cachuje jen skořápku aplikace, nabídky nikdy |
@@ -221,9 +232,9 @@ Service-role klíč nikdy nepatří do aplikace ani do repozitáře. Hesla demo 
 
 | Role | Adresy |
 | --- | --- |
-| Zákazník | `/` Objevit, `/mapa`, `/nabidka/:id`, `/podnik/:id`, `/oblibene`, `/rezervace`, `/profil`, `/prihlaseni`, `/potvrzeni`, `/r/:kód` |
+| Zákazník | `/` Objevit, `/mapa`, `/nabidka/:id`, `/podnik/:id`, `/oblibene`, `/rezervace`, `/profil`, `/prihlaseni`, `/potvrzeni`, `/r/:kód`; právní texty `/podminky`, `/podminky-podniky`, `/soukromi`, `/pravidla` |
 | Podnik | `/partner`, `/partner/nabidky`, `/partner/rezervace`, `/partner/sluzby`, `/partner/provozovna`, `/partner/metriky`, `/partner/registrace` |
-| Admin | `/admin`, `/admin/nabidky`, `/admin/rezervace`, `/admin/uzivatele`, `/admin/metriky`, `/admin/audit` |
+| Admin | `/admin`, `/admin/nabidky`, `/admin/rezervace`, `/admin/uzivatele`, `/admin/metriky`, `/admin/audit`, `/admin/nahlaseni` |
 
 ## Pro AI agenty a předávání práce
 
@@ -262,6 +273,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 18. 9. 2026 | Právní minimum: obchodní podmínky pro zákazníky a pro podniky, zásady ochrany osobních údajů a pravidla obsahu (verze 1.0, zveřejní se s údaji provozovatele, pak je zkontroluje právník), souhlas s verzí při platbě i u podniku, kdo službu poskytuje, ověření IČO v ARES, nahlášení obsahu, export dat, podklad DAC7, analytika bez ukládání do prohlížeče, texty v režimu potvrzování |
 | 15. 9. 2026 | Potvrzování rezervací zapnuté pro všechny podniky (15:54) a texty pro podniky upravené; Kubova je se Stripe propojená od 14. 9. |
 | 15. 9. 2026 | Potvrzování rezervací zapnuté pro demo podniky: události ve Stripe doplněné admin funkcí, akceptace 106/106 v režimu potvrzování, průchod se skutečnými testovacími platbami (potvrzení i odmítnutí); pro všechny čeká na souhlas; neuložené kopie Codexu uklizené do zálohy |
 | 15. 9. 2026 | Víc časů jedné služby na jedné kartě a výběr času na detailu, stejně vysoké karty v náhledu na mapě, karusel „Mohlo by se ti líbit“, fotka kategorie a nový obrázek pro službu bez fotky; WhatsApp i pro zákazníky, výchozí zapnutý a vypínatelný v nastavení, ověření čísla jedním klepnutím; nasazené platební funkce, potvrzování čeká na události ve Stripe |

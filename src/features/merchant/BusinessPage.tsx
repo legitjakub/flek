@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { StripePayouts } from './StripePayouts';
 import { useState } from 'react';
-import { businessBilling, createBusiness, listCategories, saveBusinessBilling, updateBusiness } from '../../lib/api';
+import { aresLookup, businessBilling, createBusiness, listCategories, saveBusinessBilling, updateBusiness } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { Banner, Button, Field, Input, Segmented, Select, Textarea } from '../../components/ui';
 import { MerchantShell } from './MerchantShell';
@@ -14,6 +14,7 @@ import type { Business } from '../../types/database';
 import { NotificationSettings } from '../notifications/Notifications';
 import { BookingConfirmationInfo } from './BookingConfirmationInfo';
 import { WhatsAppSettingsSection } from '../notifications/WhatsApp';
+import { useLegalInfo } from '../legal/useLegal';
 
 type Values = {
   display_name: string;
@@ -47,6 +48,10 @@ type Billing = {
   billing_city: string;
   billing_postal_code: string;
   terms_accepted: boolean;
+  /** DAC7: how the venue does business, and a birth date only for a natural person. */
+  seller_type: 'individual' | 'entity' | '';
+  birth_date: string;
+  country: string;
 };
 
 const EMPTY_BILLING: Billing = {
@@ -60,7 +65,12 @@ const EMPTY_BILLING: Billing = {
   billing_city: '',
   billing_postal_code: '',
   terms_accepted: false,
+  seller_type: '',
+  birth_date: '',
+  country: 'CZ',
 };
+
+const COUNTRIES: [string, string][] = [['CZ', 'Česko'], ['SK', 'Slovensko'], ['PL', 'Polsko'], ['DE', 'Německo'], ['AT', 'Rakousko']];
 
 /** Round numbers a merchant actually thinks in, plus the option to type any other. */
 const CANCELLATION_PRESETS: [number, string][] = [
@@ -121,6 +131,9 @@ function BusinessForm({ business }: { business?: Business }) {
   const [failure, setFailure] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [manualPoint, setManualPoint] = useState(false);
+  const [ares, setAres] = useState<{ tone: 'success' | 'warning'; text: string } | null>(null);
+  const legal = useLegalInfo();
+  const termsVersion = legal.data?.documents.merchant_terms?.version ?? null;
 
   const stored = useQuery({
     queryKey: ['business-billing', business?.id],
@@ -142,7 +155,11 @@ function BusinessForm({ business }: { business?: Business }) {
       billing_address_line: stored.data.billing_address_line ?? '',
       billing_city: stored.data.billing_city ?? '',
       billing_postal_code: stored.data.billing_postal_code ?? '',
-      terms_accepted: Boolean(stored.data.terms_accepted_at),
+      // With terms in force only an acceptance of that version counts; before that the old timestamp does.
+      terms_accepted: stored.data.terms_current ? Boolean(stored.data.terms_accepted_current) : Boolean(stored.data.terms_accepted_at),
+      seller_type: stored.data.seller_type ?? '',
+      birth_date: stored.data.birth_date ?? '',
+      country: stored.data.country ?? 'CZ',
     });
   }
 
@@ -164,6 +181,8 @@ function BusinessForm({ business }: { business?: Business }) {
     'b-postal': values.postal_code.trim() ? undefined : 'Zadejte PSČ.',
     'b-ico': !billing.ico || /^\d{8}$/.test(billing.ico.trim()) ? undefined : 'IČO má osm číslic.',
     'b-dic': !billing.dic || /^CZ\d{8,10}$/.test(billing.dic.trim().toUpperCase()) ? undefined : 'DIČ má tvar CZ a 8–10 číslic.',
+    'b-seller-individual': billing.seller_type ? undefined : 'Vyberte, jestli podnikáte jako fyzická, nebo právnická osoba.',
+    'b-birth': billing.seller_type !== 'individual' || billing.birth_date ? undefined : 'Zadejte datum narození.',
     'b-terms': billing.terms_accepted ? undefined : 'Bez souhlasu s podmínkami vás nemůžeme zaplatit.',
   };
   const firstError = Object.keys(errors).find((key) => errors[key]);
@@ -179,7 +198,13 @@ function BusinessForm({ business }: { business?: Business }) {
       const saved = business ? await updateBusiness(business.id, payload) : await createBusiness(payload);
       // Two calls on purpose: the billing row is a separate table with its own RLS, and a
       // venue registered before this existed simply has no row until the first save.
-      await saveBusinessBilling(saved.id, { ...billing, terms_accepted: billing.terms_accepted });
+      await saveBusinessBilling(saved.id, {
+        ...billing,
+        terms_accepted: billing.terms_accepted,
+        terms_version: billing.terms_accepted ? termsVersion : null,
+        seller_type: billing.seller_type || null,
+        birth_date: billing.seller_type === 'individual' ? billing.birth_date : null,
+      });
       return saved;
     },
     onSuccess: async () => {
@@ -202,10 +227,34 @@ function BusinessForm({ business }: { business?: Business }) {
     setSaved(false);
   }
 
-  function setBill<K extends keyof Billing>(key: K, value: string) {
+  function setBill<K extends keyof Billing>(key: K, value: Billing[K]) {
     setBilling((prev) => ({ ...prev, [key]: value }));
     setSaved(false);
   }
+
+  const lookup = useMutation({
+    mutationFn: () => aresLookup(billing.ico.trim(), business?.id ?? null),
+    onSuccess: (found) => {
+      if (!found.found) {
+        setAres({ tone: 'warning', text: 'IČO jsme v registru ARES nenašli. Zkontrolujte ho.' });
+        return;
+      }
+      setBilling((prev) => ({
+        ...prev,
+        legal_name: found.name,
+        seller_type: found.seller_type,
+        billing_address_line: found.line ?? prev.billing_address_line,
+        billing_city: found.city ?? prev.billing_city,
+        billing_postal_code: found.postal_code ?? prev.billing_postal_code,
+        dic: prev.dic || (found.dic ?? ''),
+      }));
+      setSaved(false);
+      setAres(found.ended
+        ? { tone: 'warning', text: `Podle ARES subjekt ${found.name} zanikl. Zkontrolujte IČO.` }
+        : { tone: 'success', text: `Podle ARES: ${found.name}, ${found.address}. Údaje jsme předvyplnili, uložte je.` });
+    },
+    onError: (error) => setAres({ tone: 'warning', text: errorMessage(error, 'merchant') }),
+  });
 
   const body = (
     <form
@@ -341,7 +390,8 @@ function BusinessForm({ business }: { business?: Business }) {
         <div>
           <h2 className="text-lg font-extrabold tracking-tight text-ink">Fakturační údaje</h2>
           <p className="mt-1 text-sm text-muted">
-            Potřebujeme je, abychom vám mohli posílat peníze za rezervace. Zákazník je nikdy neuvidí.
+            Potřebujeme je k výplatám a k oznámení podle DAC7. Název, IČO a sídlo uvidí zákazník u rezervace jako údaje o
+            poskytovateli služby. Datum narození, kontakty a účet neuvidí nikdo mimo FLEK.
           </p>
         </div>
 
@@ -350,11 +400,58 @@ function BusinessForm({ business }: { business?: Business }) {
         </Field>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field id="b-ico" label="IČO" error={attempted ? errors['b-ico'] : undefined}>
-            <Input id="b-ico" inputMode="numeric" placeholder="12345678" value={billing.ico} onChange={(event) => setBill('ico', event.target.value.replace(/\D/g, '').slice(0, 8))} />
+          <Field id="b-ico" label="IČO" hint="Bez IČO provozovnu neschválíme." error={attempted ? errors['b-ico'] : undefined}>
+            <Input id="b-ico" inputMode="numeric" placeholder="12345678" value={billing.ico} onChange={(event) => { setAres(null); setBill('ico', event.target.value.replace(/\D/g, '').slice(0, 8)); }} />
           </Field>
           <Field id="b-dic" label="DIČ" hint="Nepovinné, pokud nejste plátce DPH." error={attempted ? errors['b-dic'] : undefined}>
             <Input id="b-dic" placeholder="CZ12345678" value={billing.dic} onChange={(event) => setBill('dic', event.target.value.toUpperCase())} />
+          </Field>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            className="self-start"
+            disabled={!/^\d{8}$/.test(billing.ico.trim())}
+            loading={lookup.isPending}
+            onClick={() => lookup.mutate()}
+          >
+            Načíst údaje z ARES
+          </Button>
+          {ares ? <Banner tone={ares.tone}>{ares.text}</Banner> : null}
+        </div>
+
+        <fieldset className="flex flex-col gap-2">
+          <legend className="pb-1 text-sm font-bold text-ink">Podnikáte jako</legend>
+          <div className="flex flex-wrap gap-x-6">
+            {([['individual', 'Fyzická osoba (OSVČ)'], ['entity', 'Právnická osoba (například s.r.o.)']] as const).map(([value, label]) => (
+              <label key={value} htmlFor={`b-seller-${value}`} className="flex min-h-11 cursor-pointer items-center gap-2 text-base text-ink">
+                <input
+                  id={`b-seller-${value}`}
+                  type="radio"
+                  name="b-seller"
+                  checked={billing.seller_type === value}
+                  onChange={() => setBill('seller_type', value)}
+                  className="size-5 accent-[var(--color-accent)]"
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+          {attempted && errors['b-seller-individual'] ? <p className="text-sm font-medium text-danger">{errors['b-seller-individual']}</p> : null}
+        </fieldset>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          {billing.seller_type === 'individual' ? (
+            <Field id="b-birth" label="Datum narození" hint="Jen pro oznámení podle DAC7." error={attempted ? errors['b-birth'] : undefined}>
+              <Input id="b-birth" type="date" value={billing.birth_date} onChange={(event) => setBill('birth_date', event.target.value)} />
+            </Field>
+          ) : null}
+          <Field id="b-country" label="Stát sídla">
+            <Select id="b-country" value={billing.country} onChange={(event) => setBill('country', event.target.value)}>
+              {COUNTRIES.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+            </Select>
           </Field>
         </div>
 
@@ -405,8 +502,16 @@ function BusinessForm({ business }: { business?: Business }) {
               className="mt-0.5 size-5 shrink-0 accent-[var(--color-accent)]"
             />
             <span>
-              Souhlasím s obchodními podmínkami FLEKu. Za každou uskutečněnou rezervaci dostanu celou částku,
-              kterou si u nabídky nastavím. Servisní poplatek FLEK platí zákazník navíc.
+              {termsVersion ? (
+                <>
+                  Souhlasím s{' '}
+                  <a href="/podminky-podniky" target="_blank" rel="noopener" className="font-bold underline underline-offset-4">obchodními podmínkami pro podniky</a>{' '}
+                  (verze {termsVersion}). Za každou uskutečněnou rezervaci dostanu celou částku, kterou si u nabídky nastavím.
+                  Servisní poplatek FLEK platí zákazník navíc.
+                </>
+              ) : (
+                'Souhlasím s obchodními podmínkami FLEKu. Za každou uskutečněnou rezervaci dostanu celou částku, kterou si u nabídky nastavím. Servisní poplatek FLEK platí zákazník navíc.'
+              )}
             </span>
           </label>
           {attempted && errors['b-terms'] ? (

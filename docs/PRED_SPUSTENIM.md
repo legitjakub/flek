@@ -1,6 +1,6 @@
 # FLEK — co zbývá před spuštěním
 
-Stav k 15. 9. 2026. Seznam všeho, co je potřeba dodělat, než FLEK začne brát skutečné peníze od skutečných zákazníků. Úkoly jsou rozdělené podle toho, **kdo je musí udělat**:
+Stav k 18. 9. 2026. Seznam všeho, co je potřeba dodělat, než FLEK začne brát skutečné peníze od skutečných zákazníků. Úkoly jsou rozdělené podle toho, **kdo je musí udělat**:
 
 - **Část 1: Musí udělat člověk.** Úkoly vyžadují účty, podpisy, peníze, osobní údaje, přihlašovací klíče nebo právníka. AI agent je udělat nesmí, nebo nemůže.
 - **Část 2: Zvládne AI agent v kódu.** Stačí mu zadat úkol, nic dalšího nepotřebuje.
@@ -20,6 +20,7 @@ Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B). Úkoly na 
 - 16 demo podniků má testovací účet Stripe. Demo FLEKy se každé ráno doplní na 3 dny dopředu.
 - **Potvrzování rezervací podnikem** (hold před Checkoutem, autorizace, potvrzení do 10/5/3 minut, stržení až potom) je od 15. 9. 15:54 zapnuté pro všechny podniky (`manual_confirmation_enabled = 'true'`), po zelených testech v režimu `demo` (akceptace 106/106, průchod se skutečnými testovacími platbami).
 - **WhatsApp** pro podniky i zákazníky (výchozí zapnutý, ověření čísla jedním klepnutím, vypínatelný v nastavení upozornění) je v kódu a databázi, čeká na účet Meta, pět šablon a secrets.
+- **Právní texty** verze 1.0 (podmínky pro zákazníky a pro podniky, zásady ochrany osobních údajů, pravidla obsahu) jsou v aplikaci, ale zobrazí se až s údaji provozovatele. Souhlas s verzí zapisuje server, analytika nic neukládá do prohlížeče.
 - Ověřeno: 101/101 akceptačních kontrol se skutečnými testovacími platbami Stripe (původní režim), SQL testy potvrzování a WhatsAppu, build a unit testy v CI.
 
 ---
@@ -121,16 +122,25 @@ Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B). Úkoly na 
 
 ### Právo, účetnictví a firma
 
-- [ ] **Obchodní podmínky pro zákazníky** (s právníkem):
-  - výjimka z 14denního odstoupení u služeb s pevným termínem,
-  - storno pravidla a nedostavení,
-  - vratky,
-  - role FLEKu jako zprostředkovatele.
-- [ ] **Podmínky pro podniky** podle nařízení P2B: parametry řazení „Doporučené“ (vzdálenost 45 %, čas 35 %, sleva 20 %), pozastavení účtu, vyřizování stížností a výše poplatku.
-- [ ] **Zásady ochrany osobních údajů a seznam zpracovatelů** (Supabase, Vercel, Stripe, e-mailová služba, mapy). Rozhodnout, zda analytika potřebuje souhlas.
-- [ ] **Daně:** s daňovým poradcem ujasnit DPH ze servisního poplatku a to, kdo komu vystavuje doklad (FLEK → podnik za poplatek, podnik → zákazník za službu).
+Texty napsal agent podle skutečného chování FLEKu (18. 9. 2026): `src/content/pravni/podminky.md` (zákazníci), `podminky-podniky.md` (podniky, P2B), `soukromi.md` (GDPR) a `pravidla.md` (DSA). Jsou veřejné v repozitáři; v aplikaci se ukážou na `/podminky`, `/podminky-podniky`, `/soukromi` a `/pravidla`, jakmile budou v databázi údaje provozovatele.
+
+- [ ] **Údaje provozovatele.** Jakub pošle agentovi jméno (obchodní firmu), IČO, adresu místa podnikání (případně jinou doručovací adresu) a e-mail podpory. Agent je uloží do `private.settings` (`operator_name`, `operator_ico`, `operator_address`, `support_email`) a nastaví účinnost verze 1.0 (`legal_documents.effective_at`). Tím se objeví patička „O FLEKu“, texty, souhlas v rezervaci a patička e-mailů. Předtím musí běžet migrace s povinným potvrzením e-mailem, smazáním účtu a mazáním starých dat (část 2, E-maily a GDPR), protože texty tohle chování popisují.
+- [ ] **Právní kontrola textů a výchozích řešení před ostrým provozem** (právník). Agent zvolil tato výchozí řešení podle dnešní aplikace; právník potvrdí, nebo řekne, co změnit:
+  - **Odstoupení:** výjimka z 14denní lhůty pro služby v určeném termínu (§ 1837 písm. j) občanského zákoníku) u všech kategorií. Nejistá je hlavně u kadeřnictví a kosmetiky.
+  - **Storno a nedostavení:** zrušení zdarma do lhůty podniku (výchozí 60 minut před začátkem) nebo 10 minut od potvrzení; při nedostavení se nic nevrací; po 2 nedostaveních za 60 dní se rezervace zablokují.
+  - **Vznik smlouvy:** potvrzením podniku; do té doby je částka na kartě jen blokovaná a kód se neukáže.
+  - **Model plateb a DPH:** FLEK přijímá platbu přes Stripe jménem podniku, servisní poplatek je úplata za zprostředkování. Stripe destination charge bez `on_behalf_of` ale dělá z FLEKu obchodníka na výpisu z karty a spory nese FLEK; s daňovým poradcem rozhodnout, zda přejít na `on_behalf_of`.
+  - **Tlačítko:** v aplikaci „Pokračovat k platbě“ s větou o souhlasu a o blokaci, na stránce Stripe Checkout „Zarezervovat“. Ověřit, že splňuje požadavek na tlačítko s povinností platby (§ 1826a).
+  - **P2B a DSA:** podmínky pro podniky (řazení, poplatky, pozastavení s odůvodněním, ukončení 30 dní předem, změny 15 dní předem), nahlášení obsahu, odůvodnění a odvolání.
+  - **DAC7:** registrace provozovatele a roční oznámení; podklad stáhne admin v Administraci → Metriky.
+  - **Zásady ochrany osobních údajů:** právní základy, doby uchování, zpracovatelé a předávání mimo EU.
+  - Po kontrole: každá změna textu zvedne verzi (viz `AGENTS.md`).
+- [ ] **Obory živnosti.** Ověřit v živnostenském rejstříku, že živnost pokrývá zprostředkování obchodu a služeb, případně obor doplnit.
+- [ ] **DAC7** (s daňovým poradcem): registrace u Specializovaného finančního úřadu a oznámení do konce ledna za předchozí rok. Podniky zadávají datum narození (OSVČ), stát a adresu sídla ve fakturačních údajích.
+- [ ] **Daně:** s daňovým poradcem ujasnit DPH ze servisního poplatku (plátcovství nad 2 000 000 Kč za kalendářní rok) a to, kdo komu vystavuje doklad (FLEK → podnik za poplatek, podnik → zákazník za službu).
 - [ ] **Fakturační nástroj** pro poplatky podnikům, například Fakturoid (rozhodnutí a účet).
-- [ ] **Na webu uvést údaje o provozovateli** (firma, IČO, sídlo) a funkční e-mail podpory.
+- [ ] **Firma a pojištění:** zvážit s.r.o. (ručení) a pojištění odpovědnosti. Při změně provozovatele agent vydá novou verzi textů.
+- [ ] **Ochranná známka FLEK:** rešerše a případná přihláška.
 
 ### Rozhodnutí a ruční testy
 
@@ -172,7 +182,8 @@ Každý bod je samostatný úkol. Po dokončení agent aktualizuje dokumentaci p
 
 ### E-maily a upozornění
 
-- [x] Potvrzení a zrušení rezervace zákazníkovi e-mailem, v aplikaci a push (13. 9.). Doplnit do e-mailu kód rezervace a storno lhůtu, ať splní potvrzení „na trvalém nosiči“.
+- [x] Potvrzení a zrušení rezervace zákazníkovi e-mailem, v aplikaci a push (13. 9.).
+- [ ] Povinné potvrzení rezervace e-mailem (potvrzení smlouvy „na trvalém nosiči“): šablona s poskytovatelem, cenou, kódem, stornem, nedostavením, verzí podmínek a ADR je hotová v `supabase/functions/_shared/email.ts` a v patičce každého e-mailu je provozovatel. Databázová část (e-mail zákazníkovi nejde vypnout, podrobnosti rezervace do fronty) čeká na Jakubův souhlas s migrací.
 - [ ] Připomínka před termínem.
 - [x] E-mail, push a upozornění v aplikaci podniku o nové rezervaci a o stornu, nastavitelné v Provozovně (13. 9.).
 - [ ] E-mail o vratce.
@@ -185,10 +196,11 @@ Každý bod je samostatný úkol. Po dokončení agent aktualizuje dokumentaci p
 
 ### GDPR a souhlasy
 
-- [ ] Smazání účtu: anonymizace osobních údajů a zablokování přihlášení, finanční záznamy zůstanou.
-- [ ] Export dat uživatele.
-- [ ] Verze a hash dokumentu u souhlasu podniku s podmínkami (`business_billing`) a u zákazníka při první rezervaci.
-- [ ] Souhlas s analytikou, pokud tak rozhodne právník.
+- [x] Export dat uživatele v Profilu (RPC `export_my_data`, 18. 9.).
+- [x] Verze textu u souhlasu podniku (fakturační údaje, banner nové verze) i zákazníka (každá platba) zapisuje server do `private.legal_acceptances` (18. 9.).
+- [x] Analytika bez souhlasu: v prohlížeči se nic neukládá, události nejsou propojené identifikátorem relace (18. 9.).
+- [ ] Smazání účtu (`delete_my_account`: anonymizace profilu i přihlašovacího e-mailu, zrušení přihlášení, finanční záznamy zůstanou) a denní mazání starých dat (cron `flek-retention`: doručování a zprávy WhatsApp po 90 dnech, upozornění po 12 měsících, vyřízená nahlášení po 3 letech, záznamy cronu po 14 dnech). Připravené, čeká na Jakubův souhlas s migrací; do té doby Profil nabídne smazání přes e-mail podpory. Zásady ochrany osobních údajů tyto lhůty slibují, proto se texty zveřejní až po této migraci.
+- [ ] Zprávy dotčenému při schválení nebo pozastavení podniku a při blokaci zákazníka (s důvodem a možností se ohradit). Připravené ve stejné migraci.
 
 ### Provoz a spolehlivost
 

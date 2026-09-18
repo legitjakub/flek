@@ -1,6 +1,6 @@
 # FLEK — živý přehled projektu
 
-> Poslední kontrola: 15. 9. 2026
+> Poslední kontrola: 18. 9. 2026
 > Zdroj pravdy: repozitář FLEK v této složce. Tento soubor shrnuje stav produktu; technické detaily a akceptační důkazy zůstávají v odkazovaných dokumentech.
 
 ## Co FLEK řeší
@@ -90,6 +90,19 @@ Implementované v databázi a kódu (14.–15. 9. 2026), **bez účtu Meta neakt
 - `whatsapp-webhook` přijme jen POST s platným `X-Hub-Signature-256` (HMAC SHA-256 surového těla s App Secret, porovnání v konstantním čase); GET jen odpoví na ověření `hub.verify_token`. Klepnutí rozhodne přes `private.decide_booking`, jen když jde o žádost pro podnik a sedí zpráva (`context.id` nebo jednorázový token), číslo, ověřený kontakt a členství toho, kdo ho ověřil. Každá zpráva rozhodne jednou, opakované doručení od Meta se ignoruje, odpověď přijde textem v 24h okně (podniku vykání, zákazníkovi tykání).
 - Stavy doručení (`sent`, `delivered`, `read`, `failed`) se zapisují i tehdy, když přijdou dřív než záznam o odeslání. Analytika `whatsapp_*` nenese telefonní čísla.
 
+### Právní minimum (18. 9. 2026)
+
+Texty verze 1.0 napsal agent podle skutečného chování aplikace; **zveřejní se, až budou v `private.settings` údaje provozovatele** (`operator_name`, `operator_ico`, `operator_address`, `support_email`) a verze dostanou účinnost (`legal_documents.effective_at`). Do té doby aplikace ukazuje totéž co dřív a právní stránky jen „Tento dokument právě připravujeme“. Před ostrým provozem je zkontroluje právník (kontrolní seznam v `docs/PRED_SPUSTENIM.md`).
+
+- **Texty** v `src/content/pravni`: podmínky pro zákazníky (zprostředkování, poplatek, řazení s vahami, vznik smlouvy potvrzením, storno, nedostavení, výjimka z odstoupení, reklamace, ADR u ČOI), pro podniky (P2B: ověření, pravidla nabídky, peníze, řazení, pozastavení a ukončení, změny 15 dní předem, DAC7), zásady ochrany osobních údajů (tabulka údajů, právních základů a dob uchování, zpracovatelé, úložiště prohlížeče) a pravidla obsahu (DSA: nahlášení, lhůty, odůvodnění, odvolání). Vykresluje je `src/features/legal/markdown.tsx` do React prvků bez HTML.
+- **Provozovatel a poskytovatel:** patička „O FLEKu“ v Profilu, na stránce pro podniky a na právních stránkách (`legal_info`); věta „Službu poskytuje … FLEK rezervaci zprostředkovává“ v rezervaci a na stránce podniku (`business_provider`), u demo podniků věta o ukázce. E-maily končí řádkem o provozovateli.
+- **Souhlasy s verzí** (`private.legal_acceptances`, zapisuje jen server): zákazník každou platbou (`start_payment(p_offer_id, p_terms_version)` odmítne chybějící nebo starou verzi `TERMS_OUTDATED`), podnik ve fakturačních údajích nebo v banneru nové verze (`accept_merchant_terms`); bez souhlasu s platnou verzí podnik nezveřejní FLEK (trigger nad `offers`, cron výjimka). Registrace: prohlášení 18+ a odkaz na zásady.
+- **Podnik:** fakturační údaje s typem podnikatele, datem narození (OSVČ, DAC7) a státem, tlačítko „Načíst údaje z ARES“ (Edge Function `ares-lookup`, uloží oficiální název a sídlo), schválení skutečného podniku jen s IČO (`PROVIDER_DETAILS_REQUIRED`).
+- **DSA a DAC7:** „Nahlásit“ na detailu nabídky a stránce podniku (`report_content`, 10 za den), fronta v Administraci → Nahlášení; podklad DAC7 v Administraci → Metriky (CSV, ostré platby po čtvrtletích).
+- **Data:** „Tvoje data“ v Profilu: stažení (`export_my_data`) a smazání účtu (dokud chybí `delete_my_account`, nabídne e-mail podpory). Analytika bez identifikátoru v prohlížeči (`record_event` bez `session_id`), hledání se zaznamená jednou za skutečné hledání.
+- **Režim potvrzování:** „Platíš, až podnik potvrdí“ a „Zrušení zdarma 10 minut od potvrzení“ tam, kde podnik rezervace potvrzuje.
+- **Čeká na souhlas s migrací** (automatický režim ji odmítl jako změnu sdílených dat): povinné potvrzení rezervace e-mailem s podrobnostmi smlouvy, zprávy podniku o schválení a pozastavení, důvod blokace zákazníka, `delete_my_account` s anonymizací v přihlašování, zpráva nahlašovateli o vyřízení a denní mazání (`flek-retention`). Návrh je hotový, texty toto chování už popisují.
+
 ## Doménová pravidla, která se nesmí obcházet
 
 - `sold_out` a `expired` se neukládají jako konkurenční stavy; dostupnost se odvozuje přes `offer_is_bookable(...)`.
@@ -133,6 +146,8 @@ Nejdůležitější migrace:
 | `20260914213426_replace_wellness_catalog_photo.sql` | wellness katalog bez resortové fotografie |
 | `20260915090733_whatsapp_contacts.sql` | WhatsApp pro podniky i zákazníky: `private.whatsapp_contacts`, preference `whatsapp` (výchozí `true`) a `save_notification_preference(..., p_whatsapp)`, pět šablon v `claim_whatsapp_deliveries`, žádné zprávy o vlastní akci, rozhodnutí jen ze žádosti pro podnik |
 | `20260915091629_whatsapp_one_tap_code.sql` | `whatsapp_start_pairing(..., p_code)`: kód vytvoří aplikace, aby tlačítko mohlo být přímo odkaz do WhatsAppu |
+| `20260915191534_legal_documents.sql` | `legal_documents` (verze a účinnost), `legal_info`, `private.legal_acceptances`, souhlas podniku (`accept_merchant_terms`, trigger nad `offers`), `start_payment(p_offer_id, p_terms_version)`, DAC7 údaje v `business_billing`, `business_provider`, schválení jen s IČO |
+| `20260915192546_legal_reports.sql` | `content_reports` a `report_content`, admin fronta nahlášení, `export_my_data`, `admin_dac7_report`, `record_event` bez identifikátoru relace |
 
 ## Ověření a otevřené body
 
@@ -148,12 +163,15 @@ Nejdůležitější migrace:
 - Potvrzování rezervací (15. 9. 2026): `tests/manual-confirmation.sql` a `tests/whatsapp-notifications.sql` prošly proti hostované databázi (rollback), akceptace v původním režimu 101/101 a v režimu potvrzování 106/106, průchod zákazník + podnik se skutečnými testovacími platbami, build a typová kontrola Edge Functions. Push do `main` nasazuje funkce z `supabase/config.toml` (GitHub integrace), `stripe-checkout` (v9), `stripe-test-pay` (v8) a `stripe-webhook-setup` (v1) jdou přes MCP. Přepínač je od 15:54 `true` a texty pro podniky jsou upravené. **Otevřené:** ruční test Checkoutu s kartou, Apple Pay a Google Pay na telefonu.
 - WhatsApp: **IMPLEMENTOVÁNO, ALE VYŽADUJE RUČNÍ EXTERNÍ OVĚŘENÍ** — účet Meta (pro pilot stačí testovací číslo), pět schválených šablon, secrets, ověření jedním klepnutím na skutečném iPhonu a Androidu a skutečné klepnutí na tlačítko. Oficiální dokumentace Meta ukazuje v `button.payload` text tlačítka; vlastní payload ze šablony podle integrací třetích stran chodí zpět, proto webhook bere i text tlačítka spolu s `context.id` odeslané zprávy.
 
+- Právní minimum (18. 9. 2026): `tests/legal.sql` a `tests/manual-confirmation.sql` prošly proti hostované databázi (rollback), 134 unit testů (nové `legal.test.ts` a `email.test.ts`), build, průchod na 375/390/1280 px v nezveřejněném stavu i s lokálně podvrženými údaji provozovatele. **Otevřené:** údaje provozovatele, souhlas s migrací povinných e-mailů a mazání, kontrola právníkem, `ares-lookup` proti skutečnému ARES po nasazení.
+
 Podrobné důkazy jsou v [VERIFICATION.md](../VERIFICATION.md), omezení v [LIMITATIONS.md](../LIMITATIONS.md), technická rozhodnutí v [DECISIONS.md](../DECISIONS.md) a historické předání v [HANDOFF.md](../HANDOFF.md).
 
 ## Historie posledních změn
 
 | Datum | Změna | Stav |
 | --- | --- | --- |
+| 18. 9. 2026 | Právní minimum podle analýzy z 15. 9.: texty verze 1.0 (podmínky pro zákazníky a pro podniky, zásady ochrany osobních údajů, pravidla obsahu) na `/podminky`, `/podminky-podniky`, `/soukromi`, `/pravidla`, patička „O FLEKu“, souhlas s verzí při platbě a u podniku, kdo službu poskytuje, IČO z ARES a schválení jen s IČO, nahlášení obsahu s frontou v administraci, export dat, podklad DAC7, analytika bez ukládání do prohlížeče, texty v režimu potvrzování, e-maily s podrobnostmi smlouvy a provozovatelem. Texty se zveřejní s údaji provozovatele; migrace povinných e-mailů, smazání účtu a mazání starých dat čeká na souhlas. | migrace `20260915191534`, `20260915192546` v produkci; `tests/legal.sql` a `tests/manual-confirmation.sql` PASS, 134 unit testů, build, prohlížeč 375/390/1280 px |
 | 15. 9. 2026 | VAPID klíče uložené ve správci hesel (Jakub) a dočasný soubor s klíči smazaný. Postup pro WhatsApp v `PRED_SPUSTENIM.md`: `WHATSAPP_VERIFY_TOKEN` a `WHATSAPP_APP_SECRET` do Supabase secrets před ověřením webhooku u Meta. | soubor ověřeně neexistuje; `NOTIFICATION_WORKER_SECRET` z něj je uložený v `private.notification_config` |
 | 15. 9. 2026 | Potvrzování zapnuté pro všechny podniky (`manual_confirmation_enabled = 'true'` v 15:54, po Jakubově souhlasu); text na stránce pro podniky („…rezervaci během pár minut potvrdíte…“) a nápověda lhůty zrušení v Provozovně („10 minut od potvrzení rezervace“). Všech 18 schválených podniků potvrzuje; Kubova má Stripe propojený od 14. 9., Tenis kurt ne. | přepínač `true`; build, 109 unit testů |
 | 15. 9. 2026 | Potvrzování zapnuté pro demo podniky: admin funkce `stripe-webhook-setup` doplnila do testovacího webhooku tři události `payment_intent.*`, sonda s přepínačem `demo` prošla (autorizace → žádost za 2 s, stažení → uvolnění za 2 s), akceptace v režimu potvrzování 106/106, průchod se skutečnými testovacími platbami (podnik na 390 px potvrdil → zákazník 🔥 FLEK je tvůj! s kódem a stržením, odmítl → Tentokrát to nevyšlo a uvolněná blokace). Přepnutí na `true` zamítl automatický režim. Kontrola SMTP v Supabase Auth. Neuložené kopie Codexu v hlavní složce přesunuté do lokální větve `zaloha/codex-neulozene-2026-09-15`. | přepínač `demo`; `stripe-webhook-setup` v1 (MCP); Meta, klíč Resendu, VAPID a Stripe u podniku Kubova zůstávají na Jakubovi |

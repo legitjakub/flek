@@ -27,6 +27,11 @@ const messages:Record<string,string>={
  CONSENT_REQUIRED:'Pro zapnutí WhatsApp upozornění potřebujeme váš souhlas.',
  WHATSAPP_UNAVAILABLE:'WhatsApp upozornění zatím nejsou dostupná.',
  WHATSAPP_PAIRING_RATE_LIMITED:'Kód jste si nechali vygenerovat už několikrát. Zkuste to prosím za hodinu.',
+ TERMS_OUTDATED:'Podmínky pro podniky se změnily. Přečtěte si novou verzi a potvrďte souhlas v Provozovně.',
+ PROVIDER_DETAILS_REQUIRED:'Podnik nemá vyplněné IČO. Bez údajů o poskytovateli ho nejde schválit.',
+ REPORT_RATE_LIMITED:'Dnes jste poslali už hodně nahlášení. Další pošlete zítra, nebo nám napište e-mailem.',
+ INVALID_ICO:'IČO nesedí. Zkontrolujte, že má 8 číslic.',ARES_UNAVAILABLE:'Registr ARES teď neodpovídá. Údaje vyplňte ručně, nebo to zkuste za chvíli.',
+ ACTIVE_BOOKINGS:'Účet teď smazat nejde, máte nadcházející rezervaci.',BUSINESS_MEMBER:'Účet patří k podniku. Jeho smazání vyřídíme e-mailem.',
  'Invalid login credentials':'E-mail nebo heslo nesouhlasí.','User already registered':'Tento e-mail už má účet. Přihlas se.',
  'Email not confirmed':'Nejdřív potvrď svůj e-mail.','Email rate limit exceeded':'Zkus to prosím znovu za chvíli.',
 };
@@ -36,6 +41,10 @@ const customerMessages:Record<string,string>={
  CONSENT_REQUIRED:'Pro zprávy na WhatsApp potřebujeme tvůj souhlas.',
  WHATSAPP_UNAVAILABLE:'Zprávy na WhatsApp zatím nejsou dostupné.',
  WHATSAPP_PAIRING_RATE_LIMITED:'Kód sis nechal/a vytvořit už několikrát. Zkus to prosím za hodinu.',
+ TERMS_OUTDATED:'Obchodní podmínky se mezitím změnily. Přečti si novou verzi a zkus to znovu.',
+ REPORT_RATE_LIMITED:'Dnes jsi poslal/a už hodně nahlášení. Další můžeš poslat zítra, nebo nám napiš e-mailem.',
+ ACTIVE_BOOKINGS:'Účet teď smazat nejde, máš nadcházející rezervaci. Nejdřív ji zruš, nebo počkej, až proběhne.',
+ BUSINESS_MEMBER:'Účet patří k podniku ve FLEK Partner. Jeho smazání vyřídíme e-mailem, napiš nám.',
 };
 /*
  * The customer app tyká and the merchant console vyká. Specific codes are already written for

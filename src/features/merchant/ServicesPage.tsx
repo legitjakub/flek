@@ -274,7 +274,7 @@ function ServiceSheet({
         <Field
           id="s-price"
           label="Běžná cena"
-          hint="Cena bez slevy. Slevu nastavíte až při zveřejnění konkrétního volného termínu."
+          hint="Cena, za kterou službu v provozovně skutečně běžně prodáváte. Počítá se z ní sleva, proto musí být pravdivá. Slevu nastavíte až u konkrétního volného termínu."
           error={attempted ? priceError : undefined}
         >
           <div className="relative">

@@ -1,16 +1,7 @@
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import webpush from 'npm:web-push@3.6.7';
 import { TEMPLATE_SECRETS, templateMessage, type TemplateJob } from '../_shared/whatsapp.ts';
-
-function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, character => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
-  })[character]!);
-}
-
-function emailHtml(title: string, body: string, href: string): string {
-  return `<!doctype html><html lang="cs"><body style="margin:0;background:#f3f4f8;color:#10121f;font-family:Arial,sans-serif"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:32px 16px"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:520px;background:#fff;border-radius:24px;padding:32px"><tr><td style="font-size:34px;font-weight:800;letter-spacing:-1.5px">flek<span style="color:#4d67fb">′</span></td></tr><tr><td style="padding-top:28px;font-size:24px;font-weight:800">${escapeHtml(title)}</td></tr><tr><td style="padding-top:12px;font-size:16px;line-height:1.55;color:#545970">${escapeHtml(body)}</td></tr><tr><td style="padding-top:24px"><a href="https://www.app-flek.eu${href}" style="display:block;border-radius:14px;background:#2c26d2;padding:15px 20px;color:#fff;text-align:center;font-size:16px;font-weight:700;text-decoration:none">Otevřít rezervace</a></td></tr></table></td></tr></table></body></html>`;
-}
+import { composeEmail, type Contract, type Operator } from '../_shared/email.ts';
 
 // Called only by the database (booking trigger and cron via pg_net) with the worker secret it keeps
 // in private.notification_config. The check runs against that one copy, so it cannot drift.
@@ -38,21 +29,31 @@ Deno.serve(async request => {
   if (!channels.length) return Response.json({ error: 'DELIVERY_NOT_CONFIGURED', whatsapp }, { status: 503 });
   const { data: jobs, error } = await db.rpc('claim_notification_deliveries', { p_channels: channels });
   if (error) return Response.json({ error: 'CLAIM_FAILED', whatsapp }, { status: 500 });
+  // Who runs FLEK, for the footer of every e-mail; the claim carries it too once the database sends it.
+  let operator: Operator | null = null;
+  if ((jobs ?? []).some((job: { channel: string }) => job.channel === 'email')) {
+    const { data: legal } = await db.rpc('legal_info');
+    operator = (legal as { operator?: Operator } | null)?.operator ?? null;
+  }
   let sent = 0;
   for (const job of jobs ?? []) {
     let status = 'sent'; let failure: string | null = null;
     try {
       if (!job.allowed) status = 'skipped';
       else if (job.channel === 'email') {
+        const email = composeEmail(
+          { title: job.title, body: job.body, href: job.href, contract: (job.contract ?? null) as Contract | null },
+          (job.operator as Operator | undefined) ?? operator,
+        );
         const response = await fetch('https://api.resend.com/emails', {
           method: 'POST', signal: AbortSignal.timeout(15000),
           headers: { Authorization: `Bearer ${resend}`, 'Content-Type': 'application/json', 'Idempotency-Key': `flek-${job.id}` },
           body: JSON.stringify({
             from,
             to: [job.target],
-            subject: `${job.title} — FLEK`,
-            text: `${job.title}\n\n${job.body}\n\nOtevřít rezervace: https://www.app-flek.eu${job.href}\n\nFLEK`,
-            html: emailHtml(job.title, job.body, job.href),
+            subject: email.subject,
+            text: email.text,
+            html: email.html,
           }),
         });
         if (!response.ok) { status = response.status === 429 || response.status >= 500 ? 'pending' : 'failed'; failure = `EMAIL_HTTP_${response.status}`; }

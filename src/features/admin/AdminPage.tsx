@@ -23,6 +23,7 @@ import { useSession } from '../auth/session';
 import { LazyMap } from '../offers/LazyMap';
 import { StatusBadge } from '../../components/StatusBadge';
 import type { AdminAuditEntry, AdminBusiness } from '../../types/database';
+import { Dac7Export } from './Dac7Export';
 
 const NAV = [
   { to: '/admin', label: 'Provozovny' },
@@ -31,6 +32,7 @@ const NAV = [
   { to: '/admin/uzivatele', label: 'Uživatelé' },
   { to: '/admin/metriky', label: 'Metriky' },
   { to: '/admin/audit', label: 'Audit' },
+  { to: '/admin/nahlaseni', label: 'Nahlášení' },
 ];
 
 /** Routing-only guard. Every admin RPC re-checks `is_admin()` in SQL. */
@@ -490,6 +492,7 @@ export function AdminMetricsPage() {
       {metrics.isPending ? <LoadingList rows={2} /> : null}
       {metrics.isError ? <ErrorState error={metrics.error} onRetry={() => metrics.refetch()} /> : null}
       {metrics.data ? <MetricsBody data={metrics.data} /> : null}
+      <Dac7Export />
     </AdminFrame>
   );
 }

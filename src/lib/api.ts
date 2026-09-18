@@ -2,7 +2,7 @@ import { FunctionsHttpError } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { result } from './errors';
 import { noteServerNow } from './clock';
-import type { AdminBooking, AdminBusiness, AdminMetrics, AdminUser, Business, BookingStatus, Category, ConfirmationDecision, ConfirmationQuote, CustomerBooking, CustomerMetrics, FavoriteBusiness, FavoriteOffer, MerchantBooking, MerchantBookingDetail, MerchantMetrics, MerchantOffer, OfferDetail, Payment, Profile, PublicBusiness, ReferralClaim, ReferralStats, PaymentsMode, PaymentState, BusinessPaymentsStatus, SearchRow, ServicePhoto, Service, SortKey, BusinessBilling, AdminAuditEntry, WhatsAppPairing, WhatsAppSettings } from '../types/database';
+import type { AdminBooking, AdminBusiness, AdminMetrics, AdminUser, Business, BookingStatus, Category, ConfirmationDecision, ConfirmationQuote, CustomerBooking, CustomerMetrics, FavoriteBusiness, FavoriteOffer, MerchantBooking, MerchantBookingDetail, MerchantMetrics, MerchantOffer, OfferDetail, Payment, Profile, PublicBusiness, ReferralClaim, ReferralStats, PaymentsMode, PaymentState, BusinessPaymentsStatus, SearchRow, ServicePhoto, Service, SortKey, BusinessBilling, AdminAuditEntry, WhatsAppPairing, WhatsAppSettings, LegalInfo, BusinessProvider, ContentReportReason, AdminContentReport, Dac7Row, AresLookup } from '../types/database';
 
 /** Records the server clock carried by any payload that exposes it. */
 function withClock<T extends { server_now?: string }>(rows: T[]): T[] {
@@ -151,9 +151,46 @@ export async function stripeConnect(
   return await invokeFunction('stripe-connect', { action, business_id: businessId });
 }
 
-/** Opens (or reuses) a payment attempt. The amount always comes from the offer row. */
-export async function startPayment(offerId: string): Promise<Payment> {
-  return await result<Payment>(supabase.rpc('start_payment', { p_offer_id: offerId }));
+/**
+ * Opens (or reuses) a payment attempt. The amount always comes from the offer row. `termsVersion` is
+ * the version of the terms the customer was shown; the server refuses a stale one once terms are in force.
+ */
+export async function startPayment(offerId: string, termsVersion: string | null = null): Promise<Payment> {
+  return await result<Payment>(supabase.rpc('start_payment', { p_offer_id: offerId, p_terms_version: termsVersion }));
+}
+
+/** Operator details and which legal documents are in force, for anyone. */
+export async function legalInfo(): Promise<LegalInfo> {
+  const info = await result<LegalInfo>(supabase.rpc('legal_info'));
+  noteServerNow(info.server_now);
+  return info;
+}
+
+export async function businessProvider(businessId: string): Promise<BusinessProvider | null> {
+  return await result<BusinessProvider | null>(supabase.rpc('business_provider', { p_business_id: businessId }));
+}
+
+export async function acceptMerchantTerms(businessId: string, version: string): Promise<BusinessBilling> {
+  return await result<BusinessBilling>(supabase.rpc('accept_merchant_terms', { p_business_id: businessId, p_version: version }));
+}
+
+/** Official name and seat for an IČO; stored with the venue's billing details when `businessId` is given. */
+export async function aresLookup(ico: string, businessId: string | null): Promise<AresLookup> {
+  return await invokeFunction('ares-lookup', { ico, business_id: businessId });
+}
+
+export async function reportContent(report: { businessId: string; offerId: string | null; reason: ContentReportReason; message: string }): Promise<string> {
+  return await result<string>(supabase.rpc('report_content', {
+    p_business_id: report.businessId, p_offer_id: report.offerId, p_reason: report.reason, p_message: report.message,
+  }));
+}
+
+export async function exportMyData(): Promise<Record<string, unknown>> {
+  return await result<Record<string, unknown>>(supabase.rpc('export_my_data'));
+}
+
+export async function deleteMyAccount(): Promise<void> {
+  await result(supabase.rpc('delete_my_account'));
 }
 
 /**
@@ -419,6 +456,18 @@ export async function adminSetBookingBlock(userId: string, blocked: boolean, ove
       p_override_no_shows: overrideNoShows,
     }),
   );
+}
+
+export async function adminContentReports(status: 'open' | 'actioned' | 'dismissed' | null): Promise<AdminContentReport[]> {
+  return await result<AdminContentReport[]>(supabase.rpc('admin_content_reports', { p_status: status }));
+}
+
+export async function adminResolveContentReport(reportId: string, status: 'actioned' | 'dismissed', resolution: string): Promise<void> {
+  await result(supabase.rpc('admin_resolve_content_report', { p_report_id: reportId, p_status: status, p_resolution: resolution }));
+}
+
+export async function adminDac7Report(year: number): Promise<Dac7Row[]> {
+  return await result<Dac7Row[]>(supabase.rpc('admin_dac7_report', { p_year: year }));
 }
 
 export async function adminAuditLog(limit = 100): Promise<AdminAuditEntry[]> {

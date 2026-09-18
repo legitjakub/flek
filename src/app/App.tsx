@@ -15,6 +15,7 @@ import { VenuePage } from '../features/business/VenuePage';
 import { ReferralLandingPage } from '../features/referral/ReferralLandingPage';
 import { ReferralClaimer } from '../features/referral/ReferralClaimer';
 import { FirstVisitIntro } from '../features/onboarding/FirstVisitIntro';
+import { LegalPage } from '../features/legal/LegalPage';
 // A customer never opens the merchant or admin trees, so they are not part of the bundle
 // that has to arrive before the first offer can be read.
 const MerchantDashboardPage = lazy(() =>
@@ -55,6 +56,9 @@ const AdminAuditPage = lazy(() =>
 );
 const AdminMetricsPage = lazy(() =>
   import('../features/admin/AdminPage').then((m) => ({ default: m.AdminMetricsPage })),
+);
+const AdminReportsPage = lazy(() =>
+  import('../features/admin/AdminReports').then((m) => ({ default: m.AdminReportsPage })),
 );
 import { errorMessage } from '../lib/errors';
 import { Button, LoadingList } from '../components/ui';
@@ -99,6 +103,11 @@ const ROUTES: { path: string; render: (params: Record<string, string>) => ReactN
   { path: '/podnik/:id', render: (p) => <VenuePage businessId={p.id} />, shell: true },
   { path: '/rezervace', render: () => <MyBookingsPage />, shell: true },
   { path: '/profil', render: () => <ProfilePage />, shell: true },
+  // Terms, privacy and content rules: public, linked from the footer, the booking sheet and the partner area.
+  { path: '/podminky', render: () => <LegalPage kind="customer_terms" />, shell: true },
+  { path: '/podminky-podniky', render: () => <LegalPage kind="merchant_terms" />, shell: true },
+  { path: '/soukromi', render: () => <LegalPage kind="privacy" />, shell: true },
+  { path: '/pravidla', render: () => <LegalPage kind="content_rules" />, shell: true },
   { path: '/prihlaseni', render: () => <AuthPage />, shell: false },
   { path: '/potvrzeni', render: () => <ConfirmationPage />, shell: false },
   // Invitation links are public and must render before anyone signs in.
@@ -116,6 +125,7 @@ const ROUTES: { path: string; render: (params: Record<string, string>) => ReactN
   { path: '/admin/uzivatele', render: () => <AdminUsersPage />, shell: false },
   { path: '/admin/metriky', render: () => <AdminMetricsPage />, shell: false },
   { path: '/admin/audit', render: () => <AdminAuditPage />, shell: false },
+  { path: '/admin/nahlaseni', render: () => <AdminReportsPage />, shell: false },
 ];
 
 function RouteLoading() {

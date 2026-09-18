@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
-import { BadgeCheck, Check, Download, LifeBuoy, LogOut, Share, ShieldCheck, Sparkles, Store, UserRound } from 'lucide-react';
-import { saveProfile } from '../../lib/api';
+import { BadgeCheck, Check, Download, FileDown, LifeBuoy, LogOut, Share, ShieldCheck, Sparkles, Store, Trash2, UserRound } from 'lucide-react';
+import { deleteMyAccount, exportMyData, saveProfile } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { profileSchema } from '../../lib/schemas';
 import { Banner, Button, Field, Input, PromoCard, SettingsList, SettingsRow, Sheet, buttonClass } from '../../components/ui';
@@ -19,11 +19,13 @@ import { openIntro } from '../onboarding/FirstVisitIntro';
 import { useMyBusinesses } from '../merchant/useBusiness';
 import { NotificationSettings } from '../notifications/Notifications';
 import { WhatsAppSettingsSection } from '../notifications/WhatsApp';
+import { LegalFooter } from '../legal/LegalFooter';
+import { useLegalInfo } from '../legal/useLegal';
 
 type ProfileValues = z.infer<typeof profileSchema>;
 
 /** Only shown when a real inbox exists behind it; an invented address is worse than none. */
-const SUPPORT_EMAIL: string | undefined = import.meta.env.VITE_SUPPORT_EMAIL || undefined;
+const BUILD_SUPPORT_EMAIL: string | undefined = import.meta.env.VITE_SUPPORT_EMAIL || undefined;
 
 const BENEFITS = [
   'Konečnou cenu i slevu vidíš dřív, než rezervuješ.',
@@ -77,6 +79,11 @@ export function ProfilePage() {
 
       <AppList partner={(businesses.data?.length ?? 0) > 0} admin={admin} signedIn />
 
+      <SettingsList title="Tvoje data">
+        <ExportRow />
+        <DeleteAccountRow />
+      </SettingsList>
+
       <SettingsList>
         <SignOutRow />
       </SettingsList>
@@ -84,6 +91,8 @@ export function ProfilePage() {
       <p className="tnum -mt-3 px-1 text-xs text-muted">
         Verze aplikace <span className="font-bold text-ink">{import.meta.env.VITE_BUILD_ID ?? 'dev'}</span>
       </p>
+
+      <LegalFooter />
     </main>
   );
 }
@@ -133,6 +142,8 @@ function SignedOutProfile() {
           FLEK Partner
         </Link>
       </PromoCard>
+
+      <LegalFooter />
     </main>
   );
 }
@@ -140,6 +151,8 @@ function SignedOutProfile() {
 function AppList({ partner, admin, signedIn }: { partner: boolean; admin: boolean; signedIn: boolean }) {
   const install = useInstallMode();
   const [iosHelp, setIosHelp] = useState(false);
+  const legal = useLegalInfo();
+  const supportEmail = legal.data?.operator.email ?? BUILD_SUPPORT_EMAIL;
 
   return (
     <>
@@ -162,8 +175,8 @@ function AppList({ partner, admin, signedIn }: { partner: boolean; admin: boolea
           />
         ) : null}
         {admin ? <SettingsRow icon={<ShieldCheck size={20} />} label="Administrace" to="/admin" /> : null}
-        {SUPPORT_EMAIL ? (
-          <SettingsRow icon={<LifeBuoy size={20} />} label="Podpora" hint={SUPPORT_EMAIL} href={`mailto:${SUPPORT_EMAIL}`} />
+        {supportEmail ? (
+          <SettingsRow icon={<LifeBuoy size={20} />} label="Podpora" hint={supportEmail} href={`mailto:${supportEmail}`} />
         ) : null}
       </SettingsList>
 
@@ -280,5 +293,108 @@ function SignOutRow() {
       disabled={busy}
       onClick={() => void signOut()}
     />
+  );
+}
+
+/** A copy of everything FLEK keeps about the account, as a file the customer saves (right of access and portability). */
+function ExportRow() {
+  const [failure, setFailure] = useState<string | null>(null);
+  const download = useMutation({
+    mutationFn: exportMyData,
+    onSuccess: (data) => {
+      setFailure(null);
+      const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `flek-moje-data-${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+    },
+    onError: (error) => setFailure(errorMessage(error)),
+  });
+  return (
+    <>
+      <SettingsRow
+        icon={<FileDown size={20} />}
+        label={download.isPending ? 'Připravuji soubor…' : 'Stáhnout moje data'}
+        hint="Vše o tvém účtu v jednom souboru"
+        chevron={false}
+        disabled={download.isPending}
+        onClick={() => download.mutate()}
+      />
+      {failure ? (
+        <li className="px-4 pb-4">
+          <Banner tone="warning">{failure}</Banner>
+        </li>
+      ) : null}
+    </>
+  );
+}
+
+function DeleteAccountRow() {
+  const [open, setOpen] = useState(false);
+  const [understood, setUnderstood] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
+  const { signOut } = useSignOut();
+  const legal = useLegalInfo();
+  const email = legal.data?.operator.email ?? BUILD_SUPPORT_EMAIL;
+  const remove = useMutation({
+    mutationFn: deleteMyAccount,
+    onSuccess: () => void signOut(),
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : '';
+      // Until the server can delete accounts on its own, a person does it from the account's e-mail.
+      setFailure(/could not find the function|delete_my_account/i.test(message)
+        ? `Smazání účtu teď vyřizujeme ručně. Napiš nám z e-mailu účtu${email ? ` na ${email}` : ''} a do měsíce ho smažeme.`
+        : errorMessage(error));
+    },
+  });
+  return (
+    <>
+      <SettingsRow
+        icon={<Trash2 size={20} />}
+        label="Smazat účet"
+        tone="danger"
+        onClick={() => {
+          setUnderstood(false);
+          setFailure(null);
+          setOpen(true);
+        }}
+      />
+      <Sheet
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Smazat účet"
+        footer={
+          <Button
+            size="lg"
+            variant="danger"
+            className="w-full"
+            disabled={!understood}
+            loading={remove.isPending}
+            onClick={() => remove.mutate()}
+          >
+            Smazat účet
+          </Button>
+        }
+      >
+        <div className="flex flex-col gap-3 text-base text-ink">
+          <p>Smažeme tvoje jméno, e-mail, telefon, oblíbené podniky, upozornění, nastavení a propojení s WhatsAppem.</p>
+          <p>Záznamy o rezervacích a platbách musíme podle daňových předpisů uchovat, ale už bez tvých údajů.</p>
+          <p>Nadcházející rezervaci je potřeba nejdřív zrušit, nebo počkat, až proběhne.</p>
+          <label htmlFor="delete-understood" className="flex min-h-11 items-start gap-3 text-sm font-medium">
+            <input
+              id="delete-understood"
+              type="checkbox"
+              checked={understood}
+              onChange={(event) => setUnderstood(event.target.checked)}
+              className="mt-0.5 size-5 shrink-0 accent-[var(--color-accent)]"
+            />
+            Rozumím, že smazání nejde vrátit.
+          </label>
+          {failure ? <Banner tone="warning">{failure}</Banner> : null}
+        </div>
+      </Sheet>
+    </>
   );
 }

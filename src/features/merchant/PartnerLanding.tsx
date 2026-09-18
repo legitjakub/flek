@@ -1,6 +1,7 @@
 import { CalendarPlus, HandCoins, MapPin, TicketCheck } from 'lucide-react';
 import { Link } from '../../app/router';
 import { MoneyExplainer } from './MoneyExplainer';
+import { LegalFooter } from '../legal/LegalFooter';
 
 const STEPS = [
   { icon: CalendarPlus, text: 'Uvolní se vám termín — zrušená rezervace, prázdné odpoledne.' },
@@ -62,6 +63,8 @@ export function PartnerLanding() {
       </section>
 
       <MoneyExplainer />
+
+      <LegalFooter />
     </div>
   );
 }

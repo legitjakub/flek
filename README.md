@@ -92,6 +92,8 @@ npm run test:acceptance   # akceptační průchod proti libovolné instanci, jen
 SUPABASE_URL=... SUPABASE_ANON_KEY=... npm run test:acceptance
 ```
 
+SQL testy v `tests/*.sql` (`pilot-maintenance`, `stripe-refunds`, `manual-confirmation`, `whatsapp-notifications`, `legal`) běží v jedné transakci s rollbackem proti migrované demo databázi (např. přes Supabase MCP `execute_sql`); na konci vypíšou `PASS: …`. Akceptační skript po zveřejnění právních textů sám pošle platnou verzi podmínek a za demo podnik s podmínkami pro podniky souhlasí.
+
 Integrační testy se přihlašují **skutečnými JWT**, ne service-role klíčem, takže ověřují i RLS. Pokrývají souběžné rezervace (10 zákazníků na jedno místo), oversell, dvojité klepnutí, autorizaci mezi podniky, kapacitu, storna, nedostavení, kolize kódů a determinismus vyhledávání.
 
 ## Hodnocení z Google Maps

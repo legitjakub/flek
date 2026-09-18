@@ -49,7 +49,8 @@ export function SetupChecklist({ business }: { business: Business }) {
     {
       key: 'billing',
       label: 'Výplatní a fakturační údaje',
-      done: Boolean(billing.data?.bank_account && billing.data?.terms_accepted_at),
+      // Once merchant terms are in force, only an acceptance of that version counts.
+      done: Boolean(billing.data?.bank_account && billing.data?.terms_accepted_at && (billing.data.terms_accepted_current ?? true)),
       to: '/partner/provozovna',
     },
     { key: 'payments', label: 'Platby přes Stripe', done: Boolean(payments.data?.charges_enabled), to: '/partner/provozovna' },

@@ -454,4 +454,87 @@ export type BusinessBilling = {
   contact_person?: string | null;
   contact_phone?: string | null;
   terms_accepted_at?: string | null;
+  /** DAC7: a natural person in business or a legal entity; the birth date is kept only for the first. */
+  seller_type?: 'individual' | 'entity' | null;
+  birth_date?: string | null;
+  country?: string | null;
+  ares_name?: string | null;
+  ares_address?: string | null;
+  ares_checked_at?: string | null;
+  /** Latest merchant terms version any member of the venue accepted. */
+  terms_version?: string | null;
+  /** Version in force, or null while none is published. */
+  terms_current?: string | null;
+  terms_accepted_current?: boolean;
+  terms_upcoming?: string | null;
+  terms_upcoming_at?: string | null;
+  terms_upcoming_accepted?: boolean;
 };
+
+export type LegalKindKey = 'customer_terms' | 'merchant_terms' | 'privacy' | 'content_rules';
+
+export type LegalDocumentState = {
+  version: string | null;
+  effective_at: string | null;
+  upcoming_version: string | null;
+  upcoming_effective_at: string | null;
+};
+
+export type LegalInfo = {
+  operator: { name: string | null; ico: string | null; address: string | null; email: string | null };
+  documents: Partial<Record<LegalKindKey, LegalDocumentState>>;
+  server_now: string;
+};
+
+/** Who provides a service, as the customer sees it before booking. */
+export type BusinessProvider = { name: string; ico: string | null; address: string | null; demo: boolean };
+
+export type ContentReportReason = 'illegal' | 'misleading' | 'prohibited_service' | 'rights' | 'other';
+
+export type AdminContentReport = {
+  id: string;
+  status: 'open' | 'actioned' | 'dismissed';
+  reason: ContentReportReason;
+  message: string;
+  resolution: string | null;
+  created_at: string;
+  resolved_at: string | null;
+  business_id: string;
+  business_name: string;
+  business_status: string;
+  offer_id: string | null;
+  service_name: string | null;
+  offer_start_at: string | null;
+  offer_status: string | null;
+  reporter_email: string | null;
+};
+
+export type Dac7Row = {
+  business_id: string;
+  display_name: string;
+  legal_name: string | null;
+  seller_type: 'individual' | 'entity' | null;
+  ico: string | null;
+  dic: string | null;
+  birth_date: string | null;
+  country: string;
+  address: string | null;
+  stripe_account_id: string | null;
+  ares_checked_at: string | null;
+  demo: boolean;
+} & Record<`q${1 | 2 | 3 | 4}_${'count' | 'payout_cents' | 'fee_cents'}`, number>;
+
+export type AresLookup =
+  | { found: false }
+  | {
+      found: true;
+      ico: string;
+      name: string;
+      address: string;
+      line: string | null;
+      city: string | null;
+      postal_code: string | null;
+      seller_type: 'individual' | 'entity';
+      dic: string | null;
+      ended: boolean;
+    };

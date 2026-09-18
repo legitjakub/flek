@@ -439,3 +439,7 @@ verify_jwt = false
 # Meta calls it without a Supabase JWT; every POST is checked against X-Hub-Signature-256 instead.
 [functions.whatsapp-webhook]
 verify_jwt = false
+
+# Looks an IČO up in the business register for a signed-in venue member.
+[functions.ares-lookup]
+verify_jwt = true

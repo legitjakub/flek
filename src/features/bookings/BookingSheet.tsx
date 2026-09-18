@@ -13,6 +13,8 @@ import { Banner, Button, Field, Input, Sheet } from '../../components/ui';
 import { hasPhone, useSession } from '../auth/session';
 import { useRouter } from '../../app/router';
 import type { OfferDetail } from '../../types/database';
+import { useLegalInfo } from '../legal/useLegal';
+import { ProviderLine } from '../legal/ProviderLine';
 
 type ProfileValues = z.infer<typeof profileSchema>;
 
@@ -46,6 +48,9 @@ export function BookingSheet({
   });
   const windowMinutes = quote.data?.window_seconds ? Math.max(1, Math.round(quote.data.window_seconds / 60)) : null;
   const holdMinutes = Math.max(1, Math.round((quote.data?.hold_seconds ?? 180) / 60));
+  // The terms version the customer is shown is the one the server records consent to; none while no terms are in force.
+  const legal = useLegalInfo();
+  const termsVersion = legal.data?.documents.customer_terms?.version ?? null;
   const needsPhone = !hasPhone(profile);
   const needsName = !profile?.first_name?.trim();
 
@@ -68,7 +73,7 @@ export function BookingSheet({
     mutationFn: async (values: ProfileValues | null) => {
       if (values) await saveProfile(values);
       // The amount comes from the offer row on the server, never from this screen.
-      const payment = await startPayment(offer.id);
+      const payment = await startPayment(offer.id, termsVersion);
       // A merchant may have edited the price after this sheet opened: show the new one first.
       if (payment.amount_cents !== offer.deal_price_cents) throw new Error('PRICE_CHANGED');
       /*
@@ -85,6 +90,7 @@ export function BookingSheet({
       const code = error instanceof Error ? error.message : 'UNKNOWN';
       track('booking_failed', { offer_id: offer.id, code: code.slice(0, 80) });
       setFailure(errorMessage(error));
+      if (code.includes('TERMS_OUTDATED')) void queryClient.invalidateQueries({ queryKey: ['legal-info'] });
       // Availability may have changed under us; refresh what the customer is looking at.
       void queryClient.invalidateQueries({ queryKey: ['offer', offer.id] });
       void queryClient.invalidateQueries({ queryKey: ['discovery'] });
@@ -136,7 +142,7 @@ export function BookingSheet({
           label="Kdy"
           value={`${dayLabel(offer.start_at, now)} ${clockTime(offer.start_at)}–${clockTime(offer.end_at)}`}
         />
-        <Row label="Zrušení zdarma" value={Date.parse(cancellationDeadline(offer.start_at, offer.cancellation_window_minutes)) <= Date.parse(now) ? '10 minut od rezervace' : `do ${clockTime(cancellationDeadline(offer.start_at, offer.cancellation_window_minutes))}`} />
+        <Row label="Zrušení zdarma" value={Date.parse(cancellationDeadline(offer.start_at, offer.cancellation_window_minutes)) <= Date.parse(now) ? (quote.data?.manual ? '10 minut od potvrzení' : '10 minut od rezervace') : `do ${clockTime(cancellationDeadline(offer.start_at, offer.cancellation_window_minutes))}`} />
       </dl>
 
       {/*
@@ -205,6 +211,16 @@ export function BookingSheet({
           Zaplatíš kartou, Apple Pay nebo Google Pay na zabezpečené stránce Stripe a vrátíme tě sem s rezervačním kódem. Když zrušíš včas, vrátíme ti celou částku.
         </p>
       )}
+      <ProviderLine businessId={offer.business_id} className="mt-3 px-1" />
+      {termsVersion ? (
+        <p className="mt-2 px-1 text-sm leading-relaxed text-muted">
+          Pokračováním k platbě souhlasíš s{' '}
+          <a href="/podminky" target="_blank" rel="noopener" className="font-bold text-ink underline underline-offset-4">obchodními podmínkami</a>{' '}
+          a bereš na vědomí{' '}
+          <a href="/soukromi" target="_blank" rel="noopener" className="font-bold text-ink underline underline-offset-4">zásady ochrany osobních údajů</a>.
+          Od rezervace termínu nejde odstoupit ve 14denní lhůtě, platí bezplatné zrušení podle podmínek.
+        </p>
+      ) : null}
       {mode.data?.test ? (
         <p className="tnum mt-2 rounded-xl border border-warning/30 bg-warning/8 px-3 py-2 text-sm text-ink">
           <strong>Testovací platby.</strong> Použij kartu 4242 4242 4242 4242, libovolné budoucí datum a CVC. Žádné

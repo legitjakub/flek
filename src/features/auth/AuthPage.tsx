@@ -9,6 +9,7 @@ import { serverNow, useServerNow } from '../../lib/clock';
 import { Button, Field, Input, Wordmark } from '../../components/ui';
 import { Link, useRouter } from '../../app/router';
 import { ForgotPasswordForm, NewPasswordForm } from './PasswordReset';
+import { legalPublished, useLegalInfo } from '../legal/useLegal';
 
 const PENDING_SIGNUP_KEY = 'flek.pending-signup';
 
@@ -52,6 +53,7 @@ export function AuthPage() {
   const now = Date.parse(useServerNow(1_000));
   const resendWait = Math.max(0, Math.ceil((resendAfter - now) / 1000));
   const formal = merchant;
+  const legal = useLegalInfo();
   const attempt = useRef(0);
 
   const form = useForm<SignupValues>({
@@ -286,6 +288,18 @@ export function AuthPage() {
             Zapomenuté heslo?
           </button>
         )}
+
+        {isSignup ? (
+          <p className="text-sm leading-relaxed text-muted">
+            {formal ? 'Vytvořením účtu potvrzujete, že je vám aspoň 18 let.' : 'Vytvořením účtu potvrzuješ, že je ti aspoň 18 let.'}
+            {legalPublished(legal.data) ? (
+              <>
+                {' '}{formal ? 'Jak nakládáme s údaji, popisují' : 'Jak nakládáme s tvými údaji, popisují'}{' '}
+                <a href="/soukromi" target="_blank" rel="noopener" className="font-bold text-ink underline underline-offset-4">Zásady ochrany osobních údajů</a>.
+              </>
+            ) : null}
+          </p>
+        ) : null}
 
         {failure ? (
           <p role="alert" className="rounded-xl bg-accent-soft px-3 py-2 text-sm font-medium text-ink">

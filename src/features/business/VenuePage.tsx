@@ -10,6 +10,8 @@ import { OfferCard } from '../discovery/OfferCard';
 import { groupSlots } from '../discovery/slots';
 import { FavoriteButton } from '../favorites/FavoriteButton';
 import { GooglePlaceRating } from '../ratings/GooglePlaceRating';
+import { ProviderLine } from '../legal/ProviderLine';
+import { ReportContent } from '../legal/ReportContent';
 
 /**
  * A venue and everything free at it.
@@ -111,6 +113,8 @@ export function VenuePage({ businessId }: { businessId: string }) {
         <p className="mt-2 max-w-2xl text-base leading-relaxed text-ink">{business.description}</p>
       ) : null}
 
+      <ProviderLine businessId={business.id} className="mt-2 max-w-2xl" />
+
       <div className="mt-4">
         <FavoriteButton businessId={business.id} businessName={business.display_name} />
       </div>
@@ -147,6 +151,10 @@ export function VenuePage({ businessId }: { businessId: string }) {
           </div>
         ) : null}
       </section>
+
+      <div className="mt-8 border-t border-line pt-2">
+        <ReportContent businessId={business.id} />
+      </div>
     </main>
   );
 }

@@ -1,7 +1,7 @@
 import { ArrowLeft, CalendarDays, CalendarPlus, ChevronDown, Clock3, MapPin, Banknote, Check } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { businessOffers, getOfferDetail, setFavorite } from '../../lib/api';
+import { businessOffers, confirmationQuote, getOfferDetail, setFavorite } from '../../lib/api';
 import { track } from '../../lib/analytics';
 import { relativeTime, useServerNow } from '../../lib/clock';
 import { money, distance as formatDistance } from '../../lib/format';
@@ -29,6 +29,7 @@ import { CapacityLabel } from '../../components/CapacityLabel';
 import { TimePicker } from './TimePicker';
 import { Recommendations } from './Recommendations';
 import { WhatsAppPrompt } from '../notifications/WhatsApp';
+import { ReportContent } from '../legal/ReportContent';
 
 export function OfferDetailPage({ offerId }: { offerId: string }) {
   const { search, navigate } = useRouter();
@@ -51,6 +52,14 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
     refetchInterval: 60_000,
   });
   const offer = query.data ?? null;
+  // Whether this venue confirms bookings: the money is then only held until it does, and the grace period counts from its yes.
+  const quote = useQuery({
+    queryKey: ['confirmation-quote', offerId],
+    queryFn: () => confirmationQuote(offerId),
+    enabled: Boolean(offer?.bookable),
+    staleTime: 60_000,
+  });
+  const manual = Boolean(quote.data?.manual);
 
   // Every free offer at this venue: the other times of this service for the picker, the venue's other
   // services for the recommendations. Same key as the venue page, so the cache is shared and the
@@ -168,8 +177,9 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
   const showCapacity = offer.capacity_total > 1;
   const cutoffMinutes = Math.round((Date.parse(offer.booking_cutoff_at) - Date.parse(now)) / 60000);
   const cancellationAt = cancellationDeadline(offer.start_at, offer.cancellation_window_minutes);
+  const graceCopy = manual ? '10 minut od potvrzení' : '10 minut od rezervace';
   const cancellationCopy = Date.parse(cancellationAt) <= Date.parse(now)
-    ? '10 minut od rezervace'
+    ? graceCopy
     : `do ${clockTime(cancellationAt)}`;
 
   const hasPhoto = Boolean(image);
@@ -380,7 +390,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             <p className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm text-muted">
               <span className="inline-flex items-center gap-2">
                 <Banknote size={16} aria-hidden="true" />
-                Zaplatíš rovnou
+                {manual ? 'Platíš, až podnik potvrdí' : 'Zaplatíš rovnou'}
               </span>
               {offer.bookable ? (
                 <span className="inline-flex items-center gap-1.5 font-bold text-positive">
@@ -429,7 +439,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           {offer.bookable ? (
             <>
               <h2 className="mt-6 text-lg font-extrabold">Zrušení</h2>
-              <p className="mt-2 text-base leading-relaxed text-muted">Zrušit můžeš zdarma {cancellationCopy} a vrátíme ti celou částku.{Date.parse(cancellationAt) > Date.parse(now) ? ' Když rezervuješ později, máš na zrušení 10 minut od rezervace.' : ''}</p>
+              <p className="mt-2 text-base leading-relaxed text-muted">Zrušit můžeš zdarma {cancellationCopy} a vrátíme ti celou částku.{Date.parse(cancellationAt) > Date.parse(now) ? ` Když rezervuješ později, máš na zrušení ${graceCopy}.` : ''}</p>
             </>
           ) : null}
           {/* A slot that can no longer be booked already offers alternatives in the recovery block above. */}
@@ -441,6 +451,9 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
               now={now}
             />
           ) : null}
+          <div className="mt-6 border-t border-line pt-2">
+            <ReportContent businessId={offer.business_id} offerId={offer.id} />
+          </div>
         </div>
       </div>
 

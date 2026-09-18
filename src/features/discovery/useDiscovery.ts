@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { searchOffers } from '../../lib/api';
 import { track } from '../../lib/analytics';
@@ -49,20 +50,6 @@ export async function discover(point: Point, filters: Filters): Promise<Discover
     if (cards > groupSlots(best.rows).length) best = { rows, note: step.note, applied: { when: step.when, radius_m: step.radius_m } };
     if (cards >= MIN_RESULTS) break;
   }
-  track('search_performed', {
-    // A district is enough for "where is the marketplace thin"; the server rounds the same way.
-    lat: Number(point.lat.toFixed(2)),
-    lng: Number(point.lng.toFixed(2)),
-    when: filters.when,
-    daypart: filters.daypart,
-    category: filters.category,
-    sort: filters.sort,
-    results: best.rows.length,
-    // Both, always: the gap between what was asked for and what the ladder had to fall back
-    // to is the measure of how thin the marketplace is in a district.
-    applied_when: best.applied.when,
-    applied_radius_m: best.applied.radius_m,
-  });
   return best;
 }
 
@@ -70,7 +57,7 @@ export function useDiscovery(point: Point, filters: Filters) {
   // The epoch is part of the key so a late clock correction re-runs the search with the
   // right Prague day window instead of leaving a wrong „Dnes" on screen.
   const epoch = useClockEpoch();
-  return useQuery({
+  const query = useQuery({
     queryKey: ['discovery', point.lat.toFixed(4), point.lng.toFixed(4), filters, epoch],
     queryFn: () => discover(point, filters),
     // Inventory decays by the minute: never show a card that stopped being bookable.
@@ -78,4 +65,29 @@ export function useDiscovery(point: Point, filters: Filters) {
     refetchInterval: 60_000,
     refetchOnWindowFocus: true,
   });
+
+  // A search is what a person asked for: counted once per place and filters, not on every refresh.
+  const searchKey = JSON.stringify([point.lat.toFixed(2), point.lng.toFixed(2), filters]);
+  const tracked = useRef<string | null>(null);
+  const result = query.data;
+  useEffect(() => {
+    if (!result || tracked.current === searchKey) return;
+    tracked.current = searchKey;
+    track('search_performed', {
+      // A district is enough for "where is the marketplace thin"; the server rounds the same way.
+      lat: Number(point.lat.toFixed(2)),
+      lng: Number(point.lng.toFixed(2)),
+      when: filters.when,
+      daypart: filters.daypart,
+      category: filters.category,
+      sort: filters.sort,
+      results: result.rows.length,
+      // Both, always: the gap between what was asked for and what the ladder had to fall back
+      // to is the measure of how thin the marketplace is in a district.
+      applied_when: result.applied.when,
+      applied_radius_m: result.applied.radius_m,
+    });
+  }, [searchKey, result, point.lat, point.lng, filters]);
+
+  return query;
 }
