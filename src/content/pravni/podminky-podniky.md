@@ -9,6 +9,7 @@ Tyto podmínky upravují spolupráci mezi FLEKem a podniky, které přes FLEK Pa
 - **FLEK** provozuje {{provozovatel}}, IČO {{ico}}, místo podnikání {{sidlo}}, podnikatel zapsaný v živnostenském rejstříku. Kontakt: {{email}}.
 - **Podnik** je podnikatel (fyzická nebo právnická osoba), který se ve FLEK Partner zaregistruje a s těmito podmínkami souhlasí. Souhlas uděluje člen podniku v Provozovně a zaznamenáme ho i s verzí podmínek.
 - FLEK je určený podnikatelům. Kdo nepodniká, podnik registrovat nesmí.
+- Spolupráce je na dobu neurčitou. FLEK vám nijak neomezuje, kde a za kolik nabízíte své služby jinde.
 
 ## 2. Registrace a schválení
 
@@ -65,6 +66,8 @@ Zákazníci si řazení volí sami. Výchozí řazení „Doporučené“ bere v
 
 - **Údaje zákazníků:** u rezervací vidíte jméno, příjmení a telefon zákazníka. Smíte je použít jen k poskytnutí služby a komunikaci o rezervaci, ne k marketingu bez souhlasu zákazníka. Pro tyto údaje jste samostatným správcem osobních údajů.
 - **Vaše data ve FLEKu:** vidíte své nabídky, rezervace, výplaty a metriky (například naplněnost). Data jiných podniků nevidíte. Souhrnná a anonymizovaná data o používání FLEK využívá ke zlepšování služby.
+- **Komu data předáváme:** údaje potřebné k platbám a výplatám společnosti Stripe a údaje podle DAC7 Finanční správě. Jiným podnikům ani obchodním partnerům vaše data neposkytujeme.
+- **Po skončení spolupráce** vám na požádání pošleme přehled vašich rezervací a výplat. Údaje potřebné pro účetnictví, daně a oznámení DAC7 uchováváme po dobu, kterou ukládá zákon, nejvýš 10 let.
 
 ## 11. Obsah a licence
 

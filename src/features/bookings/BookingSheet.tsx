@@ -218,7 +218,8 @@ export function BookingSheet({
           <a href="/podminky" target="_blank" rel="noopener" className="font-bold text-ink underline underline-offset-4">obchodními podmínkami</a>{' '}
           a bereš na vědomí{' '}
           <a href="/soukromi" target="_blank" rel="noopener" className="font-bold text-ink underline underline-offset-4">zásady ochrany osobních údajů</a>.
-          Od rezervace termínu nejde odstoupit ve 14denní lhůtě, platí bezplatné zrušení podle podmínek.
+          Žádáš, aby služba proběhla v rezervovaném termínu, i když je to do 14 dnů, a bereš na vědomí, že po jejím poskytnutí
+          právo odstoupit zaniká. Zrušit zdarma můžeš podle podmínek.
         </p>
       ) : null}
       {mode.data?.test ? (

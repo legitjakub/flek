@@ -12,38 +12,38 @@ FLEK je online tržiště. Podniky (kadeřnictví a holičství, masáže, kosme
 
 - **Smlouvu o službě uzavíráš přímo s podnikem**, který službu poskytuje. U každé rezervace vidíš, kdo to je: název nebo jméno, IČO a adresu.
 - **FLEK je zprostředkovatel.** Nabídku ti ukáže, rezervaci zprostředkuje a platbu přijme jménem a na účet podniku.
-- Všechny podniky na FLEKu jsou podnikatelé, takže vůči nim máš práva spotřebitele podle českého práva.
+- Všechny podniky na FLEKu jsou podnikatelé, takže vůči nim máš práva spotřebitele podle českého práva. Výjimkou jsou během pilotního provozu ukázkové podniky: jsou v aplikaci označené a rezervace u nich slouží jen k vyzkoušení.
 - **Podnik odpovídá** za službu samotnou: že proběhne v termínu a rozsahu z nabídky, za její kvalitu a bezpečnost, za reklamace a za doklad o službě.
 - **FLEK odpovídá** za to, že aplikace ukáže správnou konečnou cenu a podmínky rezervace, za zpracování platby, vratky a vyřízení stížností na FLEK.
 
 ## 2. Účet
 
-- Rezervovat může jen registrovaný uživatel **starší 18 let**. Prohlížet nabídky můžeš i bez účtu.
+- Rezervovat může jen registrovaný uživatel **starší 18 let**. Prohlížet nabídky můžeš i bez účtu. Přihlásit se můžeš e-mailem a heslem, nebo účtem Google či Apple, pokud je aplikace nabízí.
 - Uváděj pravdivé údaje. Telefon potřebujeme, aby tě podnik mohl kontaktovat kvůli rezervaci.
-- Heslo nikomu nesděluj. Za to, co se v účtu stane, odpovídáš ty.
+- Heslo nikomu nesděluj. Když máš podezření, že tvůj účet používá někdo jiný, změň heslo a napiš nám.
 - Účet můžeš kdykoli smazat v Profilu, pokud nemáš nadcházející rezervaci.
 
 ## 3. Nabídky a cena
 
-- **Cena FLEKu je konečná.** Obsahuje servisní poplatek FLEK ve výši 5 % z ceny podniku, nejméně 25 Kč a nejvýše 149 Kč. Nic dalšího se nepřičítá. Před platbou uvidíš rozpis: cena služby, servisní poplatek a celkem.
+- **Cena FLEKu je konečná** včetně všech daní a poplatků. Obsahuje servisní poplatek FLEK ve výši 5 % z ceny podniku, nejméně 25 Kč a nejvýše 149 Kč. Nic dalšího se nepřičítá. Před platbou uvidíš rozpis: cena služby, servisní poplatek a celkem.
 - **Běžná cena** je cena, za kterou podnik službu běžně nabízí. Uvádí ji podnik a sleva se počítá z ní. Podnik nám potvrzuje, že je skutečná.
-- **Řazení.** Při řazení „Doporučené“ rozhoduje vzdálenost od tebe (45 %), jak brzy termín začíná (35 %) a výše slevy (20 %). Jinak si řazení zvolíš sám: podle vzdálenosti, slevy, ceny nebo začátku. Lepší umístění si nikdo nekupuje. Když v okolí nic není, hledání se samo rozšíří až na 25 km a na celý týden a řekneme ti to.
+- **Řazení.** Při řazení „Doporučené“ rozhoduje vzdálenost od tebe (45 %), jak brzy termín začíná (35 %) a výše slevy (20 %). Jiné řazení si můžeš zvolit: podle vzdálenosti, slevy, ceny nebo začátku. Lepší umístění si nikdo nekupuje. Když v okolí nic není, hledání se samo rozšíří až na 25 km a na celý týden a řekneme ti to.
 - Fotky se štítkem „ilustrační foto“ nepocházejí z provozovny.
 - Hodnocení podniků zatím nezveřejňujeme. Až je budeme ukazovat, budou jen od zákazníků s dokončenou rezervací.
 
 ## 4. Rezervace a vznik smlouvy
 
 1. Vybereš FLEK a klepneš na **Chytit FLEK**.
-2. Zkontroluješ službu, podnik, termín, cenu a lhůtu pro zrušení a potvrdíš souhlas s těmito podmínkami.
+2. Zkontroluješ službu, podnik, termín, cenu a lhůtu pro zrušení a potvrdíš souhlas s těmito podmínkami. Do té doby můžeš výběr změnit nebo rezervaci opustit a z platební stránky se můžeš vrátit zpět.
 3. Po klepnutí na **Pokračovat k platbě** ti termín **3 minuty podržíme** a přejdeš na zabezpečenou platební stránku Stripe.
-4. Zaplatíš kartou, Apple Pay nebo Google Pay tlačítkem **Zarezervovat**. Tím odešleš podniku závaznou žádost o rezervaci a zavazuješ se zaplatit. Částka se na kartě zatím jen **zablokuje**.
+4. Zaplatíš kartou, Apple Pay nebo Google Pay tlačítkem **Zaplatit**. Tím odešleš podniku závaznou žádost o rezervaci a zavazuješ se zaplatit. Částka se na kartě zatím jen **zablokuje**.
 5. Podnik žádost potvrdí, nebo odmítne. Na rozhodnutí má **10 minut**, u termínu, který začíná do 2 hodin, **5 minut** a u termínu do 30 minut **3 minuty**, vždy nejpozději 10 minut před začátkem. Termín, který začíná dřív než za 15 minut, rezervovat nejde.
 6. **Smlouva s podnikem vzniká potvrzením.** Pak zablokovanou částku strhneme, ukážeme ti rezervační kód s QR a pošleme potvrzení e-mailem.
 7. Když podnik žádost odmítne nebo nestihne potvrdit, smlouva nevznikne a blokaci uvolníme. Jak rychle zmizí z výpisu, záleží na tvé bance.
 
 Žádost můžeš do rozhodnutí podniku kdykoli zrušit a blokace se uvolní. Pokud podnik rezervace nepotvrzuje, vzniká smlouva zaplacením.
 
-Najednou můžeš mít nejvýš 3 nadcházející rezervace. Kdo za hodinu nechá 5 podržených termínů propadnout bez zaplacení, nemůže další chvíli rezervovat, aby termíny neblokoval ostatním.
+Najednou můžeš mít nejvýš 3 nadcházející rezervace. Kdo za hodinu nechá 5 podržených termínů propadnout bez zaplacení, nemůže hodinu rezervovat, aby termíny neblokoval ostatním.
 
 ## 5. Platba
 
@@ -57,12 +57,14 @@ Najednou můžeš mít nejvýš 3 nadcházející rezervace. Kdo za hodinu nech�
 - Potvrzenou rezervaci zrušíš **zdarma** v sekci Rezervace do lhůty, kterou nastavil podnik, nebo do 10 minut od potvrzení, podle toho, co nastane později. Výchozí lhůta je 60 minut před začátkem, přesnou lhůtu vidíš u nabídky i v rezervaci.
 - Při bezplatném zrušení vrátíme celou částku včetně servisního poplatku na kartu, ze které šla platba. Připsání závisí na bance a obvykle trvá několik pracovních dní.
 - Po uplynutí lhůty už rezervaci zrušit nejde a zaplacená částka se nevrací.
-- Když na termín nepřijdeš, podnik rezervaci označí jako nedostavení a částka se nevrací. Po **2 nedostaveních za 60 dní** ti rezervace dočasně zablokujeme. O přezkoumání nebo výjimku můžeš požádat na {{email}}.
+- Když na termín nepřijdeš, podnik rezervaci označí jako nedostavení a částka se nevrací. Po **2 nedostaveních za 60 dní** nemůžeš rezervovat, dokud starší z nich není víc než 60 dní staré. O přezkoumání nebo výjimku můžeš požádat na {{email}}.
 - Když podnik termín zruší nebo službu nemůže poskytnout, vrátíme ti celou částku.
 
 ## 7. Odstoupení od smlouvy
 
-Všechny FLEKy jsou služby v oblasti využití volného času s pevně určeným termínem. U takových smluv spotřebitel podle § 1837 písm. j) občanského zákoníku nemůže odstoupit ve 14denní lhůtě. Místo toho platí bezplatné zrušení podle článku 6. Tvoje zákonná práva z vadného plnění tím nejsou dotčena.
+- FLEKy jsou služby s pevně určeným termínem. U služeb v oblasti využití volného času (například sport, jóga, wellness a masáže) spotřebitel podle § 1837 písm. j) občanského zákoníku nemůže odstoupit ve 14denní lhůtě. Místo toho platí bezplatné zrušení podle článku 6.
+- Pokud by se tato výjimka na některou službu nevztahovala (třeba kadeřnictví nebo kosmetika), rezervací výslovně žádáš, aby podnik službu poskytl v rezervovaném termínu, tedy ještě před uplynutím lhůty pro odstoupení. Po úplném poskytnutí služby právo odstoupit zaniká (§ 1837 písm. a) občanského zákoníku). Když odstoupíš během poskytování, zaplatíš poměrnou část ceny (§ 1834).
+- Tvoje zákonná práva, včetně práv z vadného plnění, tím nejsou dotčena.
 
 ## 8. Reklamace a stížnosti
 
@@ -101,7 +103,7 @@ Jak s tvými údaji zacházíme, popisují [Zásady ochrany osobních údajů](/
 
 ## 15. Změny podmínek
 
-Novou verzi podmínek zveřejníme v aplikaci s datem účinnosti. Pro už uzavřenou rezervaci platí verze platná při jejím uzavření, další rezervací souhlasíš s novou verzí.
+Novou verzi podmínek zveřejníme v aplikaci s datem účinnosti a o podstatné změně ti dáme vědět předem v aplikaci nebo e-mailem. Pro už uzavřenou rezervaci platí verze platná při jejím uzavření, další rezervací souhlasíš s novou verzí.
 
 ## 16. Závěrečná ustanovení
 

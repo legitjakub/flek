@@ -82,7 +82,7 @@ Deno.serve(async (request) => {
         // that take money at authorisation, such as some pay-later options, stay off this page.
         ...(manual ? {
           payment_method_types: ['card' as const],
-          submit_type: 'book' as const,
+          submit_type: 'pay' as const,
           custom_text: { submit: { message: 'Částku teď jen zablokujeme. Strhneme ji, až podnik rezervaci potvrdí; když ji nepotvrdí, blokace se uvolní.' } },
         } : {}),
         payment_intent_data: {

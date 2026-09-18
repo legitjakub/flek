@@ -13,6 +13,7 @@ Správcem je **{{provozovatel}}**, IČO {{ico}}, místo podnikání {{sidlo}}. S
 | Údaje | K čemu | Právní základ | Jak dlouho |
 | --- | --- | --- | --- |
 | Účet: e-mail, heslo (uložené jen jako nevratný otisk), jméno, příjmení, telefon | vedení účtu, rezervace, kontakt podniku s tebou | plnění smlouvy | do smazání účtu |
+| Přihlášení přes Google nebo Apple: jméno, e-mail (u Applu případně skrytá adresa) a identifikátor účtu | přihlášení a vedení účtu | plnění smlouvy | do smazání účtu |
 | Rezervace a platby: služba, podnik, termín, ceny, rezervační kód, stav platby a vratky, souhlas s podmínkami a jeho verze | rezervace, platby, vratky, řešení sporů, účetnictví a daně | plnění smlouvy, právní povinnost, oprávněný zájem | 10 let kvůli daňovým a účetním předpisům; po smazání účtu bez jména, e-mailu a telefonu |
 | Údaje o platební kartě | platba | zpracovává je jen Stripe, FLEK je nevidí | podle pravidel Stripe |
 | Poloha | nabídky v okolí | tvoje volba (povolení v prohlížeči), oprávněný zájem | přesnou polohu na serveru neukládáme; v analytice zaokrouhlenou na zhruba 1 km 180 dní |
@@ -28,10 +29,13 @@ Správcem je **{{provozovatel}}**, IČO {{ico}}, místo podnikání {{sidlo}}. S
 
 Oprávněným zájmem je spolehlivý a bezpečný provoz FLEKu, jeho zlepšování a obrana právních nároků. Proti zpracování na tomto základě můžeš vznést námitku.
 
+E-mail, jméno a telefon potřebujeme k uzavření a plnění smlouvy, bez nich rezervovat nejde. Ostatní údaje, jako poloha, oznámení na telefonu nebo WhatsApp, jsou dobrovolné.
+
 ## 3. Komu údaje předáváme
 
 - **Podniku, u kterého rezervuješ:** jméno, příjmení, telefon a detail rezervace, aby ti mohl poskytnout službu. Podnik je pro ně samostatným správcem.
 - **Google** jen tehdy, když klepneš na Navigovat: otevřou se Mapy Google a zpracování se řídí pravidly Googlu.
+- **Google nebo Apple**, když se přes ně přihlásíš: dozví se, že se přihlašuješ do FLEKu, a pošlou nám tvé jméno a e-mail. Zpracování na jejich straně se řídí jejich pravidly.
 - **Úřadům a soudům**, pokud nám to ukládá zákon. U podniků jde například o oznámení Finanční správě podle DAC7.
 
 Provoz nám zajišťují tito zpracovatelé:
@@ -65,14 +69,14 @@ Na to souhlas potřeba není. Platební stránka Stripe používá vlastní nezb
 
 ## 5. Automatické rozhodování
 
-Po 2 nedostaveních za 60 dní systém automaticky dočasně zablokuje další rezervace. O přezkoumání člověkem můžeš požádat na {{email}}.
+Po 2 nedostaveních za 60 dní systém automaticky zablokuje další rezervace, dokud starší z nich není víc než 60 dní staré. Kdo za hodinu nechá 5 podržených termínů propadnout bez zaplacení, nemůže hodinu rezervovat. O přezkoumání člověkem můžeš požádat na {{email}}.
 
 ## 6. Tvoje práva
 
 - **Přístup a přenositelnost:** kopii svých údajů si stáhneš v Profilu, nebo nám napiš.
 - **Oprava:** údaje změníš v Profilu.
 - **Výmaz:** účet smažeš v Profilu. Údaje, které musíme ze zákona uchovat (například o platbách), zůstanou bez tvého jména, e-mailu a telefonu.
-- **Omezení zpracování a námitka** proti zpracování na základě oprávněného zájmu.
+- **Omezení zpracování a námitka** proti zpracování na základě oprávněného zájmu: napiš nám na {{email}}.
 - **Odvolání souhlasu:** WhatsApp a oznámení na telefonu vypneš v Profilu.
 - **Stížnost** můžeš podat u Úřadu pro ochranu osobních údajů ([uoou.gov.cz](https://uoou.gov.cz)).
 
