@@ -124,7 +124,7 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 - [ ] Povinné MFA (TOTP) pro administrátory, CAPTCHA (Turnstile) u registrace, `secure_password_change`, přísnější limity
 - [x] Obchodní podmínky pro zákazníky (výjimka z odstoupení u služeb s termínem, storno a nedostavení, reklamace, ADR, nahlášení obsahu podle DSA) a pro podniky (P2B: řazení, poplatky, pozastavení, ukončení, stížnosti, zakázaný obsah); verze 1.0 v aplikaci, zveřejní se s údaji provozovatele (18. 9.)
 - [x] Zásady ochrany osobních údajů se zpracovateli a dobami uchování; analytika bez identifikátoru v prohlížeči, takže bez cookie lišty (18. 9.)
-- [x] Verze textu u souhlasu podniku i zákazníka zapisuje server; bez souhlasu s platnou verzí platba nezačne a podnik nezveřejní FLEK (18. 9.)
+- [x] Verze textu u souhlasu podniku i zákazníka zapisuje server; bez souhlasu s platnou verzí platba nezačne a podnik, který s podmínkami ještě nesouhlasil, nezveřejní FLEK (18. 9.)
 - [x] Export dat v Profilu (18. 9.)
 - [x] Smazání účtu v Profilu (anonymizace i v přihlašování, rezervace a platby zůstanou bez osobních údajů) a denní mazání starých dat `flek-retention` (18. 9.)
 - [x] Povinné potvrzení rezervace e-mailem s poskytovatelem, cenou, kódem a stornem, zprávy podnikům o schválení a pozastavení s důvodem, důvod blokace zákazníka, zpráva o vyřízení nahlášení (18. 9.)
