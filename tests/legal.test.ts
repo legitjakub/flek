@@ -15,7 +15,6 @@ const info: LegalInfo = {
     customer_terms: { version: '1.0', effective_at: '2026-09-16T08:00:00Z', upcoming_version: null, upcoming_effective_at: null },
     merchant_terms: { version: '1.0', effective_at: '2026-09-16T08:00:00Z', upcoming_version: null, upcoming_effective_at: null },
     privacy: { version: '1.0', effective_at: '2026-09-16T08:00:00Z', upcoming_version: null, upcoming_effective_at: null },
-    content_rules: { version: '1.0', effective_at: '2026-09-16T08:00:00Z', upcoming_version: null, upcoming_effective_at: null },
   },
   server_now: '2026-09-16T09:00:00Z',
 };

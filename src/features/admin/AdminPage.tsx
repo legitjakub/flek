@@ -216,7 +216,7 @@ export function AdminBusinessesPage() {
           </Banner>
         ) : null}
         <div className="mt-3">
-          <Field id="admin-reason" label="Důvod">
+          <Field id="admin-reason" label="Důvod" hint="Podnik ho dostane v aplikaci a e-mailem i s kontaktem, kde se může ohradit.">
             <Input id="admin-reason" data-autofocus value={reason} onChange={(event) => setReason(event.target.value)} />
           </Field>
         </div>
@@ -359,10 +359,16 @@ export function AdminUsersPage() {
     queryFn: () => adminUserLookup(submitted),
     enabled: submitted.includes('@'),
   });
+  const [blocking, setBlocking] = useState<{ id: string; name: string } | null>(null);
+  const [reason, setReason] = useState('');
   const block = useMutation({
-    mutationFn: (input: { id: string; blocked: boolean; override: boolean }) =>
-      adminSetBookingBlock(input.id, input.blocked, input.override),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-users'] }),
+    mutationFn: (input: { id: string; blocked: boolean; override: boolean; reason?: string }) =>
+      adminSetBookingBlock(input.id, input.blocked, input.override, input.reason?.trim() || null),
+    onSuccess: async () => {
+      setBlocking(null);
+      setReason('');
+      await queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    },
   });
 
   return (
@@ -399,7 +405,9 @@ export function AdminUsersPage() {
               <Button
                 variant={user.booking_blocked ? 'primary' : 'danger'}
                 loading={block.isPending}
-                onClick={() => block.mutate({ id: user.id, blocked: !user.booking_blocked, override: false })}
+                onClick={() => (user.booking_blocked
+                  ? block.mutate({ id: user.id, blocked: false, override: false })
+                  : setBlocking({ id: user.id, name: `${user.first_name} ${user.last_name}`.trim() || user.email }))}
               >
                 {user.booking_blocked ? 'Zrušit blokaci rezervací' : 'Zablokovat rezervace'}
               </Button>
@@ -415,6 +423,39 @@ export function AdminUsersPage() {
           </li>
         ))}
       </ul>
+      {block.isError && !blocking ? <Banner tone="warning">{errorMessage(block.error)}</Banner> : null}
+
+      <Sheet
+        open={Boolean(blocking)}
+        onClose={() => setBlocking(null)}
+        title="Zablokovat rezervace"
+        footer={
+          <Button
+            variant="danger"
+            className="w-full"
+            disabled={reason.trim().length < 3}
+            loading={block.isPending}
+            onClick={() => blocking && block.mutate({ id: blocking.id, blocked: true, override: false, reason })}
+          >
+            Zablokovat
+          </Button>
+        }
+      >
+        <p className="text-sm text-muted">
+          {blocking?.name} nebude moct rezervovat, dokud blokaci nezrušíte. Důvod dostane v aplikaci a e-mailem
+          i s kontaktem, kde se může ohradit.
+        </p>
+        <div className="mt-3">
+          <Field id="block-reason" label="Důvod">
+            <Input id="block-reason" data-autofocus value={reason} onChange={(event) => setReason(event.target.value)} />
+          </Field>
+        </div>
+        {block.isError ? (
+          <div className="mt-3">
+            <Banner tone="warning">{errorMessage(block.error)}</Banner>
+          </div>
+        ) : null}
+      </Sheet>
     </AdminFrame>
   );
 }

@@ -471,7 +471,7 @@ export type BusinessBilling = {
   terms_upcoming_accepted?: boolean;
 };
 
-export type LegalKindKey = 'customer_terms' | 'merchant_terms' | 'privacy' | 'content_rules';
+export type LegalKindKey = 'customer_terms' | 'merchant_terms' | 'privacy';
 
 export type LegalDocumentState = {
   version: string | null;

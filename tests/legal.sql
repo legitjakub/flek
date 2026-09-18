@@ -179,7 +179,97 @@ begin
     and exists (select 1 from public.analytics_events where name = 'offer_viewed' and props->>'offer_id' = o::text and user_id = customer),
     'Analytics stored a browser identifier';
 
-  -- 12. Grants.
+  assert not exists (select 1 from public.analytics_events where session_id is not null and session_id <> 'server'),
+    'Old browser identifiers left in analytics';
+
+  -- 12. The customer's e-mail about a booking always goes and carries the contract; a venue's e-mail follows its settings.
+  insert into public.offers (business_id, service_id, start_at, end_at, booking_cutoff_at, original_price_cents, deal_price_cents,
+    merchant_price_cents, service_fee_cents, fee_policy_version, capacity_total, capacity_remaining)
+  values (venue.id, svc.id, now() + interval '6 hours', now() + interval '7 hours', now() + interval '345 minutes', 100000, 78800, 75000, 3800, 1, 2, 2)
+  returning id into o;
+  update auth.users set email = 'qa-legal-customer@example.invalid', email_confirmed_at = coalesce(email_confirmed_at, now()) where id = other_customer;
+  delete from public.notification_preferences where user_id in (other_customer, merchant);
+  insert into public.notification_preferences (user_id, scope, event, email, push, whatsapp) values
+    (other_customer, 'customer', 'cancelled', false, false, false),
+    (merchant, venue.id::text, 'requested', false, false, false);
+  perform pg_temp.act_as(other_customer);
+  pay := public.start_payment(o, '1.0');
+  assert public.confirmation_authorized(pay.id, 'pi_qa_legal', 'cs_qa_legal', 78800, 'czk', false) = 'pending_merchant', 'Authorisation not accepted';
+  perform pg_temp.act_as(merchant);
+  perform public.respond_to_booking((select id from public.bookings where payment_id = pay.id), false);
+  select n.id into report from public.notifications n join public.bookings k on k.id = n.booking_id
+  where k.payment_id = pay.id and n.user_id = other_customer and n.event = 'cancelled' and n.title = 'Podnik rezervaci nepotvrdil';
+  assert report is not null, 'Customer not told about the rejection';
+  assert exists (select 1 from private.notification_delivery where notification_id = report and channel = 'email' and target = 'qa-legal-customer@example.invalid'),
+    'Customer e-mail skipped by a preference';
+  insert into private.notification_delivery (notification_id, channel, target)
+  select n.id, 'email', 'qa-legal-venue@example.invalid' from public.notifications n join public.bookings k on k.id = n.booking_id
+  where k.payment_id = pay.id and n.user_id = merchant and n.event = 'requested';
+  r := public.claim_notification_deliveries(array['email']);
+  assert exists (select 1 from jsonb_array_elements(r) x where (x->>'notification_id')::uuid = report and (x->>'allowed')::boolean
+      and x->'contract'->>'status' = 'rejected' and x->'contract'->>'code' is null and x->'contract'->'provider'->>'name' = 'QA Právo s.r.o.'
+      and x->'contract'->>'terms_version' = '1.0' and x->'operator'->>'ico' = '12345678'), 'Customer e-mail job: ' || left(r::text, 400);
+  assert exists (select 1 from jsonb_array_elements(r) x where x->>'target' = 'qa-legal-venue@example.invalid' and not (x->>'allowed')::boolean
+      and x->'contract' = 'null'::jsonb), 'Venue e-mail preference ignored: ' || left(r::text, 400);
+
+  -- 13. Account notices: a venue hears why it was suspended and that it is live again, a reporter hears the outcome,
+  -- a blocked customer hears why; blocking needs a reason. Demo addresses get the notice in the app only.
+  assert exists (select 1 from public.notifications where user_id = merchant and business_id = venue.id and event = 'account' and booking_id is null
+      and title = 'Provozovna je pozastavená' and body like '%Důvod: QA pozastavení%' and href = '/partner/provozovna'), 'Suspension notice missing';
+  assert exists (select 1 from public.notifications where user_id = merchant and business_id = venue.id and event = 'account'
+      and title = 'Provozovna je schválená'), 'Approval notice missing';
+  assert exists (select 1 from public.notifications where user_id = customer and event = 'account' and business_id is null
+      and title = 'Tvoje nahlášení jsme vyřídili' and body like 'Obsah jsme omezili.%' and href = '/profil'), 'Reporter not told';
+  perform pg_temp.act_as(admin_user);
+  assert pg_temp.raises(format('select public.admin_set_booking_block(%L, true)', other_customer)) = 'VALIDATION_ERROR', 'Blocked without a reason';
+  perform public.admin_set_booking_block(other_customer, true, false, 'QA opakované nedostavení');
+  assert (select booking_blocked from public.profiles where id = other_customer), 'Customer not blocked';
+  assert exists (select 1 from public.admin_audit_log where action = 'booking_block_changed' and target_id = other_customer
+      and reason = 'QA opakované nedostavení'), 'Block reason not audited';
+  assert exists (select 1 from public.notifications n join private.notification_delivery d on d.notification_id = n.id
+      where n.user_id = other_customer and n.event = 'account' and n.title = 'Rezervace na tvém účtu jsou pozastavené'
+        and n.body like 'Důvod: QA opakované nedostavení%' and d.channel = 'email'), 'Block notice missing';
+  perform public.admin_set_booking_block(other_customer, false);
+  assert exists (select 1 from public.notifications where user_id = other_customer and event = 'account' and title = 'Rezervace máš znovu povolené'),
+    'Unblock notice missing';
+  assert pg_temp.raises(format('insert into public.notifications (user_id, booking_id, event, title, body, href) values (%L, null, %L, %L, %L, %L)',
+    other_customer, 'confirmed', 'x', 'x', '/rezervace')) like '%notifications_booking_link%', 'Booking notice without a booking';
+
+  -- 14. Deleting an account: not for venue members or with an active booking; afterwards nobody can sign in and
+  -- no personal data is left, while the booking and its payment stay.
+  perform pg_temp.act_as(merchant);
+  assert pg_temp.raises('select public.delete_my_account()') = 'BUSINESS_MEMBER', 'Venue member deleted the account';
+  insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+  values ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated', 'qa-legal-delete@example.invalid', 'x', now(),
+    '{"provider": "email", "providers": ["email"]}', '{"first_name": "QA", "last_name": "Smazání"}', now(), now())
+  returning id into real_venue;
+  insert into auth.identities (provider_id, user_id, identity_data, provider, created_at, updated_at)
+  values (real_venue::text, real_venue, jsonb_build_object('sub', real_venue::text, 'email', 'qa-legal-delete@example.invalid'), 'email', now(), now());
+  update public.profiles set phone = '+420777000111' where id = real_venue;
+  perform pg_temp.act_as(real_venue);
+  perform public.set_favorite(venue.id, true);
+  pay := public.start_payment(o, '1.0');
+  assert pg_temp.raises('select public.delete_my_account()') = 'ACTIVE_BOOKINGS', 'Deleted with an active booking';
+  perform public.cancel_pending_booking((select id from public.bookings where payment_id = pay.id));
+  assert public.delete_my_account() = 'deleted', 'Account not deleted';
+  assert (select email = 'smazany-' || real_venue || '@smazany.invalid' and encrypted_password is null and banned_until > now() + interval '100 years'
+      and raw_user_meta_data = '{}'::jsonb from auth.users where id = real_venue), 'Sign-in data kept';
+  assert not exists (select 1 from auth.identities where user_id = real_venue), 'Identity kept';
+  assert (select first_name = 'Smazaný' and last_name = 'účet' and phone is null from public.profiles where id = real_venue), 'Profile kept';
+  assert not exists (select 1 from public.favorites where user_id = real_venue), 'Favourites kept';
+  assert exists (select 1 from public.bookings where customer_id = real_venue) and exists (select 1 from public.payments where customer_id = real_venue),
+    'Booking records lost';
+  assert exists (select 1 from public.admin_audit_log where action = 'account_deleted' and target_id = real_venue), 'Deletion not audited';
+
+  -- 15. Retention runs every night and removes what the privacy policy says it removes.
+  insert into public.notifications (user_id, business_id, event, title, body, href, created_at)
+  values (merchant, venue.id, 'account', 'QA stará zpráva', 'Stará.', '/partner/provozovna', now() - interval '13 months');
+  perform private.flek_retention();
+  assert not exists (select 1 from public.notifications where title = 'QA stará zpráva'), 'Old notice kept';
+  assert exists (select 1 from public.notifications where user_id = merchant and title = 'Provozovna je schválená'), 'Recent notice removed';
+  assert exists (select 1 from cron.job where jobname = 'flek-retention'), 'Retention not scheduled';
+
+  -- 16. Grants.
   assert has_function_privilege('anon', 'public.legal_info()', 'EXECUTE')
     and has_function_privilege('anon', 'public.business_provider(uuid)', 'EXECUTE')
     and not has_function_privilege('anon', 'public.start_payment(uuid,text)', 'EXECUTE')
@@ -188,11 +278,16 @@ begin
     and not has_function_privilege('anon', 'public.export_my_data()', 'EXECUTE')
     and has_function_privilege('authenticated', 'public.start_payment(uuid,text)', 'EXECUTE')
     and not has_function_privilege('authenticated', 'private.current_legal_version(text)', 'EXECUTE')
-    and not has_function_privilege('authenticated', 'private.booking_contract(uuid)', 'EXECUTE'), 'Function grants';
+    and not has_function_privilege('authenticated', 'private.booking_contract(uuid)', 'EXECUTE')
+    and not has_function_privilege('authenticated', 'private.account_notice(uuid,uuid,text,text,text)', 'EXECUTE')
+    and not has_function_privilege('authenticated', 'private.flek_retention()', 'EXECUTE')
+    and not has_function_privilege('anon', 'public.delete_my_account()', 'EXECUTE')
+    and has_function_privilege('authenticated', 'public.delete_my_account()', 'EXECUTE')
+    and not has_function_privilege('anon', 'public.admin_set_booking_block(uuid,boolean,boolean,text)', 'EXECUTE'), 'Function grants';
   assert not has_table_privilege('authenticated', 'private.legal_acceptances', 'SELECT')
     and not has_table_privilege('anon', 'public.content_reports', 'SELECT')
     and not has_table_privilege('authenticated', 'public.content_reports', 'SELECT')
     and not has_table_privilege('authenticated', 'public.legal_documents', 'SELECT'), 'Legal tables readable by clients';
 end $$;
 rollback;
-select 'PASS: nothing enforced before publishing, customer consent with the version in force recorded once by the server, merchant terms before publishing and members only, DAC7 billing details and birth date rules, provider details without private data, IČO gate for real venues, content notices validated and limited with an audited resolution, own-data export, DAC7 quarters from live payments only, analytics without browser identifiers, grants; all fixtures rolled back' as result;
+select 'PASS: nothing enforced before publishing, customer consent with the version in force recorded once by the server, merchant terms before publishing and members only, DAC7 billing details and birth date rules, provider details without private data, IČO gate for real venues, content notices validated and limited with an audited resolution, own-data export, DAC7 quarters from live payments only, analytics without browser identifiers, mandatory customer e-mail with the contract, venue e-mail preferences, account notices with reasons, block reason required, account deletion, nightly retention, grants; all fixtures rolled back' as result;

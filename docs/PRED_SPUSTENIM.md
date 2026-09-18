@@ -20,7 +20,9 @@ Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B). Úkoly na 
 - 16 demo podniků má testovací účet Stripe. Demo FLEKy se každé ráno doplní na 3 dny dopředu.
 - **Potvrzování rezervací podnikem** (hold před Checkoutem, autorizace, potvrzení do 10/5/3 minut, stržení až potom) je od 15. 9. 15:54 zapnuté pro všechny podniky (`manual_confirmation_enabled = 'true'`), po zelených testech v režimu `demo` (akceptace 106/106, průchod se skutečnými testovacími platbami).
 - **WhatsApp** pro podniky i zákazníky (výchozí zapnutý, ověření čísla jedním klepnutím, vypínatelný v nastavení upozornění) je v kódu a databázi, čeká na účet Meta, pět šablon a secrets.
-- **Právní texty** verze 1.0 (podmínky pro zákazníky a pro podniky, zásady ochrany osobních údajů, pravidla obsahu) jsou v aplikaci, ale zobrazí se až s údaji provozovatele. Souhlas s verzí zapisuje server, analytika nic neukládá do prohlížeče.
+- **Právní texty** verze 1.0 (podmínky pro zákazníky s oddílem o nahlášení obsahu, podmínky pro podniky a zásady ochrany osobních údajů) jsou v aplikaci, ale zobrazí se až s údaji provozovatele. Souhlas s verzí zapisuje server, analytika nic neukládá do prohlížeče, e-mail o rezervaci chodí zákazníkovi vždy a účet jde smazat v Profilu.
+- **Přihlášení přes Google a Apple** je v kódu. Tlačítka se ukážou, až je Jakub zapne v Supabase (postup v `docs/NOTION.md`, Na tahu je Jakub).
+- **Nasazení webu** od 18. 9. padá, protože k projektu ve Vercelu je připojená uspaná databáze `supabase-cerulean-village` z Vercel Marketplace. Web běží na verzi z 15. 9., databáze a funkce jsou nové a s ní fungují.
 - Ověřeno: 101/101 akceptačních kontrol se skutečnými testovacími platbami Stripe (původní režim), SQL testy potvrzování a WhatsAppu, build a unit testy v CI.
 
 ---
@@ -117,21 +119,23 @@ Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B). Úkoly na 
 - [ ] **Resend klíč:** vytvořit nový API klíč (Sending access, doména `mail.app-flek.eu`), vložit ho jako `RESEND_API_KEY` do Edge Function secrets i jako heslo SMTP v Supabase Auth a smazat oba staré klíče („FLEK production“ a „FLEK production rotated“), které se objevily v záznamu Codexu.
 - [x] **VAPID klíče** uložené ve správci hesel, dočasný soubor s klíči smazaný (15. 9.).
 - [x] **Skutečné e-maily:** obnova hesla a upozornění doručené na jakub.hrncir24@gmail.com (Resend: Delivered, 13. 9.). Zbývá zkouška s rezervací kartou 4242 a push.
+- [ ] **Vercel: odpojit databázi `supabase-cerulean-village` od projektu flek.** Je uspaná (Suspended) a nasazení kvůli ní padá na kroku „Provisioning Integrations“. FLEK ji nepoužívá. Odpojení je změna nastavení Jakubova účtu, agent ji udělá jen s jeho výslovným svolením.
+- [ ] **Přihlášení přes Google a Apple:** klient OAuth v Google Cloud a Services ID s klíčem u Apple Developer, klíče vložit v Supabase → Authentication → Sign In / Providers, přidat `https://www.app-flek.eu/prihlaseni` do Redirect URLs. Postup krok za krokem je v `docs/NOTION.md` (Na tahu je Jakub). U Apple je potřeba každých 6 měsíců vygenerovat nový tajný klíč a zaregistrovat odesílací doménu pro skryté e-mailové adresy.
 - [ ] **Monitoring chyb:** účet Sentry (nebo podobné služby) a předání DSN do Vercelu jako `VITE_SENTRY_DSN`.
 - [ ] **Vercel:** proměnné `VITE_*` pro produkci, včetně skutečného `VITE_SUPPORT_EMAIL`.
 
 ### Právo, účetnictví a firma
 
-Texty napsal agent podle skutečného chování FLEKu (18. 9. 2026): `src/content/pravni/podminky.md` (zákazníci), `podminky-podniky.md` (podniky, P2B), `soukromi.md` (GDPR) a `pravidla.md` (DSA). Jsou veřejné v repozitáři; v aplikaci se ukážou na `/podminky`, `/podminky-podniky`, `/soukromi` a `/pravidla`, jakmile budou v databázi údaje provozovatele.
+Texty napsal agent podle skutečného chování FLEKu (18. 9. 2026): `src/content/pravni/podminky.md` (zákazníci, včetně nahlášení obsahu podle DSA), `podminky-podniky.md` (podniky, P2B, zakázaný obsah) a `soukromi.md` (GDPR). Jsou veřejné v repozitáři; v aplikaci se ukážou na `/podminky`, `/podminky-podniky` a `/soukromi`, jakmile budou v databázi údaje provozovatele. Po srovnání s Too Good To Go, TasteTown, Fresha a Reservio (viz `DECISIONS.md`) jsou pravidla obsahu oddílem podmínek, ne samostatným dokumentem.
 
-- [ ] **Údaje provozovatele.** Jakub pošle agentovi jméno (obchodní firmu), IČO, adresu místa podnikání (případně jinou doručovací adresu) a e-mail podpory. Agent je uloží do `private.settings` (`operator_name`, `operator_ico`, `operator_address`, `support_email`) a nastaví účinnost verze 1.0 (`legal_documents.effective_at`). Tím se objeví patička „O FLEKu“, texty, souhlas v rezervaci a patička e-mailů. Předtím musí běžet migrace s povinným potvrzením e-mailem, smazáním účtu a mazáním starých dat (část 2, E-maily a GDPR), protože texty tohle chování popisují.
+- [ ] **Údaje provozovatele.** Jakub pošle agentovi jméno (obchodní firmu), IČO, adresu místa podnikání (případně jinou doručovací adresu) a e-mail podpory. Agent je uloží do `private.settings` (`operator_name`, `operator_ico`, `operator_address`, `support_email`) a nastaví účinnost verze 1.0 (`legal_documents.effective_at`). Tím se objeví patička „O FLEKu“, texty, souhlas v rezervaci a patička e-mailů. U s.r.o. přidá Jakub zápis v obchodním rejstříku a agent upraví řádek o zápisu v podmínkách a v patičce. Co pak musí Jakub přepsat ve svých účtech (Stripe, Meta, Google, Apple, Vercel, doména, úřady), je v `docs/NOTION.md`.
 - [ ] **Právní kontrola textů a výchozích řešení před ostrým provozem** (právník). Agent zvolil tato výchozí řešení podle dnešní aplikace; právník potvrdí, nebo řekne, co změnit:
   - **Odstoupení:** výjimka z 14denní lhůty pro služby v určeném termínu (§ 1837 písm. j) občanského zákoníku) u všech kategorií. Nejistá je hlavně u kadeřnictví a kosmetiky.
   - **Storno a nedostavení:** zrušení zdarma do lhůty podniku (výchozí 60 minut před začátkem) nebo 10 minut od potvrzení; při nedostavení se nic nevrací; po 2 nedostaveních za 60 dní se rezervace zablokují.
   - **Vznik smlouvy:** potvrzením podniku; do té doby je částka na kartě jen blokovaná a kód se neukáže.
   - **Model plateb a DPH:** FLEK přijímá platbu přes Stripe jménem podniku, servisní poplatek je úplata za zprostředkování. Stripe destination charge bez `on_behalf_of` ale dělá z FLEKu obchodníka na výpisu z karty a spory nese FLEK; s daňovým poradcem rozhodnout, zda přejít na `on_behalf_of`.
   - **Tlačítko:** v aplikaci „Pokračovat k platbě“ s větou o souhlasu a o blokaci, na stránce Stripe Checkout „Zarezervovat“. Ověřit, že splňuje požadavek na tlačítko s povinností platby (§ 1826a).
-  - **P2B a DSA:** podmínky pro podniky (řazení, poplatky, pozastavení s odůvodněním, ukončení 30 dní předem, změny 15 dní předem), nahlášení obsahu, odůvodnění a odvolání.
+  - **P2B a DSA:** podmínky pro podniky (řazení, poplatky, pozastavení s odůvodněním, ukončení 30 dní předem, změny oznámené 15 dní předem a platné pokračováním ve spolupráci), nahlášení obsahu a odůvodnění jako oddíl podmínek. Formální vnitřní odvolání (čl. 20 DSA) mikropodnik mít nemusí, podmínky proto nabízejí jen nové posouzení na e-mailu.
   - **DAC7:** registrace provozovatele a roční oznámení; podklad stáhne admin v Administraci → Metriky.
   - **Zásady ochrany osobních údajů:** právní základy, doby uchování, zpracovatelé a předávání mimo EU.
   - Po kontrole: každá změna textu zvedne verzi (viz `AGENTS.md`).
@@ -183,7 +187,7 @@ Každý bod je samostatný úkol. Po dokončení agent aktualizuje dokumentaci p
 ### E-maily a upozornění
 
 - [x] Potvrzení a zrušení rezervace zákazníkovi e-mailem, v aplikaci a push (13. 9.).
-- [ ] Povinné potvrzení rezervace e-mailem (potvrzení smlouvy „na trvalém nosiči“): šablona s poskytovatelem, cenou, kódem, stornem, nedostavením, verzí podmínek a ADR je hotová v `supabase/functions/_shared/email.ts` a v patičce každého e-mailu je provozovatel. Databázová část (e-mail zákazníkovi nejde vypnout, podrobnosti rezervace do fronty) čeká na Jakubův souhlas s migrací.
+- [x] Povinné potvrzení rezervace e-mailem (potvrzení smlouvy „na trvalém nosiči“): poskytovatel, cena, kód, storno, nedostavení, verze podmínek a ADR (`supabase/functions/_shared/email.ts`), v patičce provozovatel; zákazníkovi ho nejde vypnout (18. 9.). Skutečný e-mail přes novou verzi zatím nikdo nedostal, demo účty e-maily nedostávají.
 - [ ] Připomínka před termínem.
 - [x] E-mail, push a upozornění v aplikaci podniku o nové rezervaci a o stornu, nastavitelné v Provozovně (13. 9.).
 - [ ] E-mail o vratce.
@@ -193,14 +197,15 @@ Každý bod je samostatný úkol. Po dokončení agent aktualizuje dokumentaci p
 - [ ] Povinné MFA (TOTP) pro administrátory: `is_admin()` vyžaduje `aal2` a v `/admin` se MFA nastavuje.
 - [ ] CAPTCHA (Cloudflare Turnstile) u registrace a obnovy hesla. Klíče založí člověk.
 - [ ] `secure_password_change`, požadavky na heslo a rozumné limity pokusů v `supabase/config.toml` i v dashboardu.
+- [x] Přihlášení přes Google a Apple v kódu (`SocialSignIn.tsx`): tlačítka jen pro poskytovatele zapnuté v Supabase, návrat na původní stránku, jméno z účtu Google do profilu (18. 9.). Klíče zakládá Jakub.
 
 ### GDPR a souhlasy
 
 - [x] Export dat uživatele v Profilu (RPC `export_my_data`, 18. 9.).
 - [x] Verze textu u souhlasu podniku (fakturační údaje, banner nové verze) i zákazníka (každá platba) zapisuje server do `private.legal_acceptances` (18. 9.).
 - [x] Analytika bez souhlasu: v prohlížeči se nic neukládá, události nejsou propojené identifikátorem relace (18. 9.).
-- [ ] Smazání účtu (`delete_my_account`: anonymizace profilu i přihlašovacího e-mailu, zrušení přihlášení, finanční záznamy zůstanou) a denní mazání starých dat (cron `flek-retention`: doručování a zprávy WhatsApp po 90 dnech, upozornění po 12 měsících, vyřízená nahlášení po 3 letech, záznamy cronu po 14 dnech). Připravené, čeká na Jakubův souhlas s migrací; do té doby Profil nabídne smazání přes e-mail podpory. Zásady ochrany osobních údajů tyto lhůty slibují, proto se texty zveřejní až po této migraci.
-- [ ] Zprávy dotčenému při schválení nebo pozastavení podniku a při blokaci zákazníka (s důvodem a možností se ohradit). Připravené ve stejné migraci.
+- [x] Smazání účtu v Profilu (`delete_my_account`: anonymizace profilu i přihlašovacího e-mailu, zrušení přihlášení, rezervace a platby zůstanou bez osobních údajů) a denní mazání starých dat (cron `flek-retention`: doručování a zprávy WhatsApp po 90 dnech, upozornění po 12 měsících, vyřízená nahlášení po 3 letech, záznamy cronu po 14 dnech) (18. 9.).
+- [x] Zprávy dotčenému při schválení nebo pozastavení podniku, při blokaci zákazníka (důvod je povinný) a oznamovateli po vyřízení nahlášení, v aplikaci i e-mailem (18. 9.).
 
 ### Provoz a spolehlivost
 

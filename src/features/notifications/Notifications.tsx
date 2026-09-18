@@ -155,6 +155,8 @@ export function NotificationSettings({ businessId }: { businessId?: string }) {
   // WhatsApp gets its column once FLEK has a number to send from, like the other channels: on by default.
   const whatsapp = useWhatsAppSettings(businessId);
   const channels: Channel[] = whatsapp.data?.available ? ['email', 'push', 'whatsapp'] : ['email', 'push'];
+  // The customer's e-mail about a booking confirms the contract, so the server always sends it.
+  const emailLocked = !formal;
 
   if (!NOTIFICATIONS_ENABLED || !userId) return null;
 
@@ -201,6 +203,7 @@ export function NotificationSettings({ businessId }: { businessId?: string }) {
       <h2 className="text-lg font-extrabold tracking-tight text-ink">Upozornění na rezervace</h2>
       <p className="mt-1 text-sm text-muted">
         {formal ? 'Vyberte, jak vás upozorníme.' : 'Vyber si, jak tě upozorníme.'} Zprávy v aplikaci zůstávají dostupné vždy.
+        {emailLocked ? ' E-mail o potvrzení a zrušení rezervace ti pošleme vždy, je to potvrzení tvé rezervace.' : ''}
       </p>
 
       {query.isError ? (
@@ -215,18 +218,21 @@ export function NotificationSettings({ businessId }: { businessId?: string }) {
             <fieldset key={event} className="mt-4 border-t border-line pt-3">
               <legend className="font-bold text-ink">{event === 'requested' ? 'Nová žádost o rezervaci' : event === 'confirmed' ? 'Potvrzená rezervace' : 'Zrušená rezervace'}</legend>
               <div className="mt-1 flex flex-wrap gap-x-5">
-                {channels.map((channel) => (
-                  <label key={channel} className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-medium text-ink">
-                    <input
-                      type="checkbox"
-                      className="size-5 accent-accent"
-                      checked={current?.[channel] ?? DEFAULTS[channel]}
-                      disabled={busy || query.isPending}
-                      onChange={(eventTarget) => void save(event, channel, eventTarget.target.checked)}
-                    />
-                    {channel === 'email' ? 'E-mail' : channel === 'push' ? 'Oznámení na telefonu' : 'WhatsApp'}
-                  </label>
-                ))}
+                {channels.map((channel) => {
+                  const locked = channel === 'email' && emailLocked;
+                  return (
+                    <label key={channel} className={`flex min-h-11 items-center gap-2 text-sm font-medium text-ink ${locked ? '' : 'cursor-pointer'}`}>
+                      <input
+                        type="checkbox"
+                        className="size-5 accent-accent"
+                        checked={locked || (current?.[channel] ?? DEFAULTS[channel])}
+                        disabled={locked || busy || query.isPending}
+                        onChange={(eventTarget) => void save(event, channel, eventTarget.target.checked)}
+                      />
+                      {channel === 'email' ? (locked ? 'E-mail (vždy)' : 'E-mail') : channel === 'push' ? 'Oznámení na telefonu' : 'WhatsApp'}
+                    </label>
+                  );
+                })}
               </div>
             </fieldset>
           );

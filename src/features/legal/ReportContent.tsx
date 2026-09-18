@@ -96,10 +96,7 @@ export function ReportContent({ businessId, offerId = null }: { businessId: stri
               <Textarea id="report-message" maxLength={2000} value={message} onChange={(event) => setMessage(event.target.value)} />
             </Field>
             {send.isError ? <Banner tone="warning">{errorMessage(send.error)}</Banner> : null}
-            <p className="text-sm text-muted">
-              Jak nahlášení posuzujeme, popisují{' '}
-              <a href="/pravidla" target="_blank" rel="noopener" className="font-bold text-ink underline underline-offset-4">Pravidla obsahu</a>.
-            </p>
+            <p className="text-sm text-muted">Každé nahlášení posoudí člověk, obvykle do 7 dnů, a dáme ti vědět, jak jsme rozhodli.</p>
           </form>
         )}
       </Sheet>

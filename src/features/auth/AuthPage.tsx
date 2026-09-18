@@ -10,6 +10,8 @@ import { Button, Field, Input, Wordmark } from '../../components/ui';
 import { Link, useRouter } from '../../app/router';
 import { ForgotPasswordForm, NewPasswordForm } from './PasswordReset';
 import { legalPublished, useLegalInfo } from '../legal/useLegal';
+import { useSession } from './session';
+import { SocialSignIn } from './SocialSignIn';
 
 const PENDING_SIGNUP_KEY = 'flek.pending-signup';
 
@@ -55,6 +57,8 @@ export function AuthPage() {
   const formal = merchant;
   const legal = useLegalInfo();
   const attempt = useRef(0);
+  const { session, ready } = useSession();
+  const oauth = search.get('oauth');
 
   const form = useForm<SignupValues>({
     resolver: zodResolver(mode === 'signup' ? signupSchema : loginSchema.extend({ first_name: z.string(), last_name: z.string() })),
@@ -81,6 +85,22 @@ export function AuthPage() {
     const next = requested === 'signup' || requested === 'forgot' || requested === 'reset' ? requested : 'login';
     if (next !== mode) changeMode(next);
   }, [requested]);
+
+  // Back from Apple or Google: the client has exchanged the code for a session, so continue where the person was going.
+  useEffect(() => {
+    if (!oauth || !ready) return;
+    if (session) {
+      navigate(returnTo, { replace: true });
+      return;
+    }
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    if (search.get('error') || hash.get('error')) {
+      const provider = oauth === 'apple' ? 'Apple' : 'Google';
+      setFailure(formal
+        ? `Přihlášení přes ${provider} se nedokončilo. Zkuste to znovu, nebo se přihlaste e-mailem.`
+        : `Přihlášení přes ${provider} se nedokončilo. Zkus to znovu, nebo se přihlas e-mailem.`);
+    }
+  }, [oauth, ready, session]);
 
   async function submit(values: SignupValues) {
     const currentAttempt = ++attempt.current;
@@ -234,6 +254,10 @@ export function AuthPage() {
             <Button variant="ghost" onClick={() => changeMode('signup')}>Opravit e-mail</Button>
           </div>
         </div>
+      ) : null}
+
+      {!confirmSent && !existingAccount && (mode === 'login' || mode === 'signup') ? (
+        <SocialSignIn formal={formal} returnTo={returnTo} merchant={merchant} />
       ) : null}
 
       {!confirmSent && !existingAccount && (mode === 'login' || mode === 'signup') ? <form className="mt-6 flex flex-col gap-4 rounded-2xl bg-card shadow-card p-5 sm:p-6" onSubmit={form.handleSubmit(submit)} noValidate>

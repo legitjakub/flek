@@ -55,7 +55,7 @@ FLEK nepoužívá reklamní ani analytické cookies a nic, co by tě sledovalo n
 
 - přihlášení k účtu,
 - poslední zvolenou polohu nebo město,
-- že jsi už viděl úvodní představení a že jsi skryl nabídku instalace,
+- že se ti úvodní představení už ukázalo a že je nabídka instalace skrytá,
 - rozpracovanou registraci (e-mail do potvrzení účtu) a kód pozvánky do dokončení registrace,
 - u podniků vybranou provozovnu a stav úvodního průvodce,
 - dočasnou značku, která po aktualizaci aplikace zabrání opakovanému načítání,

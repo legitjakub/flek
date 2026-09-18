@@ -14,7 +14,7 @@ Tyto podmínky upravují spolupráci mezi FLEKem a podniky, které přes FLEK Pa
 
 - Při registraci uvádíte pravdivé a úplné údaje: název provozovny, kategorii, adresu, kontakty a údaje o podnikateli (název nebo jméno, IČO, sídlo, u fyzické osoby datum narození). IČO ověřujeme v registru ARES.
 - Prohlašujete, že máte všechna oprávnění potřebná ke službám, které nabízíte (živnostenské oprávnění a případná další povolení), a že služby splňují předpisy, například hygienické a bezpečnostní.
-- Provozovnu před zveřejněním schvaluje FLEK. Ověřujeme, že podnik existuje, údaje odpovídají a nabídka je v souladu s [Pravidly obsahu](/pravidla). Když registraci zamítneme, sdělíme důvod.
+- Provozovnu před zveřejněním schvaluje FLEK. Ověřujeme, že podnik existuje, údaje odpovídají a nabídka je v souladu s těmito podmínkami. Když registraci zamítneme, sdělíme důvod.
 - Za přístupy členů podniku ke FLEK Partner odpovídáte vy.
 
 ## 3. Platby přes Stripe
@@ -68,11 +68,21 @@ Zákazníci si řazení volí sami. Výchozí řazení „Doporučené“ bere v
 
 ## 11. Obsah a licence
 
-Za texty, fotky a údaje, které zveřejníte, odpovídáte vy. Musíte k nim mít práva. Udělujete FLEKu bezplatnou nevýhradní licenci zobrazovat název, logo, fotky a nabídky podniku ve FLEKu a při jeho propagaci po dobu spolupráce. Zakázané služby a obsah popisují [Pravidla obsahu](/pravidla).
+Za texty, fotky a údaje, které zveřejníte, odpovídáte vy. Musíte k nim mít práva. Udělujete FLEKu bezplatnou nevýhradní licenci zobrazovat název, logo, fotky a nabídky podniku ve FLEKu a při jeho propagaci po dobu spolupráce.
+
+Na FLEKu nesmíte nabízet ani zveřejňovat:
+
+- služby, jejichž poskytování je nezákonné nebo k nim nemáte oprávnění, včetně zdravotních služeb bez oprávnění,
+- služby sexuální nebo erotické povahy, včetně erotických masáží,
+- klamavé údaje: vymyšlenou běžnou cenu, jiný rozsah, délku nebo místo služby, než jaké skutečně poskytujete,
+- fotky a texty bez práva je použít a fotky cizí provozovny,
+- osobní údaje jiných lidí bez jejich souhlasu a nenávistný, násilný nebo jinak nezákonný obsah.
+
+Nahlášení obsahu posuzuje člověk. Když kvůli němu nabídku nebo podnik omezíme, postupujeme podle oddílu 12.
 
 ## 12. Omezení, pozastavení a ukončení
 
-- FLEKy nebo celý podnik můžeme omezit či pozastavit při porušení těchto podmínek, Pravidel obsahu nebo zákona, při podezření na podvod, nebo když Stripe platby podniku omezí. Důvod vám sdělíme nejpozději v okamžiku omezení a ohradit se můžete na {{email}}.
+- FLEKy nebo celý podnik můžeme omezit či pozastavit při porušení těchto podmínek nebo zákona, při podezření na podvod, nebo když Stripe platby podniku omezí. Důvod vám sdělíme nejpozději v okamžiku omezení a ohradit se můžete na {{email}}.
 - Spolupráci můžeme ukončit výpovědí s lhůtou **30 dní**, kterou vám s odůvodněním pošleme e-mailem. Bez výpovědní lhůty jen při závažném nebo opakovaném porušení podmínek nebo zákona.
 - Spolupráci můžete ukončit kdykoli e-mailem na {{email}}. Potvrzené rezervace buď poskytnete, nebo zrušíte a zákazníci dostanou peníze zpět.
 
@@ -86,7 +96,7 @@ FLEK odpovídá za řádné zprostředkování. Neodpovídá za službu podniku 
 
 ## 15. Změny podmínek
 
-Změnu podmínek vám oznámíme nejméně **15 dní** před účinností e-mailem a v aplikaci. Pokud se změnou nesouhlasíte, můžete spolupráci před účinností ukončit. Po účinnosti nové verze je pro zveřejňování FLEKů potřeba s ní souhlasit.
+Změnu podmínek vám oznámíme nejméně **15 dní** před účinností e-mailem a v aplikaci. Pokud se změnou nesouhlasíte, můžete spolupráci před účinností ukončit. Když ji neukončíte a po účinnosti dál používáte FLEK, platí pro vás nová verze.
 
 ## 16. Závěrečná ustanovení
 

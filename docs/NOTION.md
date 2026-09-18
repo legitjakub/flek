@@ -11,11 +11,12 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 | Fáze | Fáze 1 — demo pilot (běží veřejně, platby přes Stripe v testovacím režimu) |
 | Web | https://www.app-flek.eu (původní https://flek-nine.vercel.app funguje dál) |
 | Kód | https://github.com/legitjakub/flek (větev `main`) |
-| Poslední nasazení | databáze a Edge Functions 18. 9. 2026; web ze 15. 9., nasazení 18. 9. na Vercelu selhalo na jejich straně a čeká na zopakování (běžně vždy poslední commit ve větvi `main`) |
+| Poslední nasazení | databáze a Edge Functions 18. 9. 2026; web ze 15. 9.: nasazení na Vercelu padá kvůli uspané databázi připojené k projektu (úkol pro Jakuba níže); běžně se nasazuje vždy poslední commit ve větvi `main` |
 | Testy | unit testy a build v CI při každém pushi, akceptační kontroly proti hostované databázi (18. 9.: 106/106 s potvrzováním; 15. 9.: 101/101 bez potvrzování), SQL testy potvrzování rezervací, WhatsAppu a právního minima |
 | Potvrzování rezervací podnikem | **zapnuté pro všechny podniky** od 15. 9. 15:54 (předtím demo: akceptace 106/106 a průchod se skutečnými testovacími platbami) |
-| WhatsApp | pro podniky i zákazníky, výchozí zapnutý a vypínatelný v nastavení upozornění, ověření čísla jedním klepnutím; čeká na účet Meta a pět šablon |
-| Právní texty | obchodní podmínky pro zákazníky a pro podniky, zásady ochrany osobních údajů a pravidla obsahu ve verzi 1.0 jsou v aplikaci; zveřejní se, až Jakub pošle údaje provozovatele, a před ostrým provozem je zkontroluje právník |
+| WhatsApp | pro podniky i zákazníky, výchozí zapnutý a vypínatelný v nastavení upozornění, ověření čísla jedním klepnutím; aplikace FLEK u Meta je založená, další krok je odsouhlasit podmínky Meta pro WhatsApp, pak testovací číslo a pět šablon |
+| Právní texty | obchodní podmínky pro zákazníky a pro podniky a zásady ochrany osobních údajů ve verzi 1.0 jsou v aplikaci (nahlášení obsahu je oddílem podmínek jako u Too Good To Go nebo Reservia); zveřejní se, až Jakub pošle údaje provozovatele, a před ostrým provozem je zkontroluje právník |
+| Přihlášení | e-mail a heslo; tlačítka „Pokračovat přes Google“ a „Pokračovat přes Apple“ jsou v aplikaci a objeví se, až je Jakub zapne v Supabase (postup níže) |
 | Data v produkci (13. 9.) | 18 schválených podniků, 330 nabídek, 321 rezervací, 16 účtů (12 demo, 4 ostatní), od 13. 9. platby jen přes Stripe (test), 16 demo podniků s testovacím Stripe účtem |
 | Pro AI agenty | `AGENTS.md` v kořeni repozitáře (Claude Code ho načítá přes `CLAUDE.md`) |
 
@@ -39,12 +40,39 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 - [x] **Nasadit funkce pro potvrzování rezervací.** Push do `main` je nasadil sám přes GitHub integraci, `stripe-checkout` a `stripe-test-pay` doplnil Claude (15. 9.).
 - [x] **Přidat události do testovacího webhooku ve Stripe.** Claude je 15. 9. přidal bez Dashboardu přes admin funkci `stripe-webhook-setup` (klíč zůstal v Supabase), zapnul potvrzování pro demo podniky a testy prošly.
 - [x] **Zapnout potvrzování pro všechny podniky.** Po tvém souhlasu přepnul Claude 15. 9. v 15:54 na `true` a upravil dva texty pro podniky.
-- [ ] **Založit WhatsApp u Meta** podle `docs/PRED_SPUSTENIM.md`: pro pilot stačí testovací číslo v aplikaci Meta (bez ověření firmy, zprávy až na 5 přidaných čísel), webhook, pět šablon s texty z dokumentu a klíče do Supabase secrets. Pak pošli agentovi zobrazované číslo a na telefonu vyzkoušej „Ověřit ve WhatsAppu“ v Profilu i v Provozovně. Agent to 15. 9. zkusil: v Chromu nejsi u Meta for Developers přihlášený a klíče do Supabase vložit nesmí.
+- [ ] **Dokončit WhatsApp u Meta.** Aplikace FLEK u Meta už existuje (App ID 1411715626993032, portfolio Firma Jakub Hrnčíř). Další krok: developers.facebook.com → FLEK → Případy použití → WhatsApp → Continue. Tím se odsouhlasí Facebook Terms for WhatsApp Business a Meta Hosting Terms for Cloud API, takže to buď klikni sám, nebo napiš agentovi „odsouhlas podmínky Meta“. Potom podle `docs/PRED_SPUSTENIM.md`: testovací číslo (zprávy až na 5 přidaných čísel), webhook, pět šablon s texty z dokumentu a klíče do Supabase secrets (ty vkládáš ty). Nakonec pošli agentovi zobrazované číslo a na telefonu vyzkoušej „Ověřit ve WhatsAppu“ v Profilu i v Provozovně.
 - [x] **Zkontrolovat SMTP odesílatele v Supabase Auth.** Uložené správně (15. 9.): zapnuté, odesílatel `ucet@mail.app-flek.eu`, jméno FLEK, uživatel `resend`, port 465.
 - [ ] **Vyzkoušet registraci nové adresy** s odkazem otevřeným v jiném prohlížeči (agent účty zakládat nesmí).
-- [ ] **Znovu nasadit web.** Vercel 18. 9. nasazení commitu „Právní minimum…“ hned na startu odmítl (Resource provisioning failed, chyba na straně Vercelu; kód prošel buildem i CI). Opakování přes API zablokoval agentovi automatický režim. Buď ve Vercelu otevři projekt flek → Deployments → poslední nasazení (Error) → ⋯ → Redeploy, nebo napiš agentovi „povoluju nasadit“. Do té doby běží web ze 15. 9., databáze a funkce jsou už nové a se starým webem fungují.
-- [ ] **Poslat agentovi údaje provozovatele:** jméno, IČO, adresu místa podnikání (případně jinou doručovací adresu) a e-mail podpory. Agent je uloží do databáze a zveřejní právní texty verze 1.0; do té doby je aplikace neukazuje.
-- [ ] **Právní kontrola textů a výchozích řešení před ostrým provozem.** Texty jsou veřejné v repozitáři (`src/content/pravni`), po zveřejnění na `/podminky`, `/podminky-podniky`, `/soukromi` a `/pravidla`. Kontrolní seznam pro právníka je v `docs/PRED_SPUSTENIM.md` (Právo, účetnictví a firma).
+- [ ] **Odpojit uspanou databázi od projektu ve Vercelu.** Nasazení webu od 18. 9. padá na kroku „Provisioning Integrations“ („One or more integration resources failed to provision“). K projektu flek je připojená databáze `supabase-cerulean-village`: Supabase zdarma přes Vercel Marketplace, založená 9. 9., stav Suspended. FLEK ji nepoužívá, běží na Supabase projektu `yupkrntknbkvmlajwlph`. Buď napiš agentovi „odpoj ji“, nebo ve Vercelu otevři projekt flek → Storage → `supabase-cerulean-village` a v seznamu připojených projektů u flek zvol odpojení (Disconnect, případně Remove connection). Databáze zůstane a jde znovu připojit. Pak agent web nasadí. Do té doby běží web ze 15. 9. a databáze i funkce jsou už nové a se starým webem fungují.
+- [ ] **Údaje provozovatele, až založíš firmu nebo živnost.** Bez nich se právní texty, patička „O FLEKu“ a patička e-mailů nezobrazí.
+  1. Pošli agentovi jméno nebo obchodní firmu, IČO, sídlo (místo podnikání), případně jinou doručovací adresu, a e-mail podpory, nejlépe na vlastní doméně (třeba podpora@app-flek.eu).
+  2. U s.r.o. přidej zápis v obchodním rejstříku (soud, oddíl a vložka) a DIČ, pokud budeš plátce DPH.
+  3. Agent údaje uloží do databáze, upraví v textech řádek o zápisu (živnostenský, nebo obchodní rejstřík), zveřejní podmínky a zásady a zkontroluje patičku webu i e-mailů.
+  4. Stejné údaje pak doplň sám ve svých účtech (agent do nich zasahovat nesmí):
+     - Stripe → Settings → Business: údaje o firmě, adresa, e-mail podpory a text na výpisu z karty „FLEK“. Při přechodu z OSVČ na s.r.o. Stripe firmu ověří znovu.
+     - Meta → Business portfolio: název, adresa a web app-flek.eu; později ověření firmy kvůli ostrému číslu WhatsApp.
+     - Google Cloud → Branding pro přihlášení přes Google: název, e-mail podpory, odkazy na /soukromi a /podminky.
+     - Apple Developer, pokud chceš přihlášení přes Apple: u s.r.o. členství na firmu (potřebuje číslo D-U-N-S).
+     - Vercel → Environment Variables: `VITE_SUPPORT_EMAIL` na nový e-mail podpory.
+     - Registrátor domény app-flek.eu: držitel domény.
+     - Supabase, GitHub, Vercel a Notion: firemní účet nebo druhý vlastník a dvoufázové ověření.
+     - Úřady s daňovým poradcem: registrace DAC7, DPH, obor živnosti „Zprostředkování obchodu a služeb“.
+     - Bankovní účet firmy pro výplaty ze Stripe, fakturace poplatků podnikům (třeba Fakturoid) a pojištění odpovědnosti.
+- [ ] **Přihlášení přes Google** (zdarma, asi 15 minut; klíče vkládáš ty):
+  1. console.cloud.google.com → nový projekt „FLEK“.
+  2. Google Auth Platform → Branding: název FLEK, e-mail podpory, domovská stránka `https://www.app-flek.eu`, zásady `https://www.app-flek.eu/soukromi`, podmínky `https://www.app-flek.eu/podminky`, autorizované domény `app-flek.eu` a `yupkrntknbkvmlajwlph.supabase.co`. Audience: External, In production.
+  3. Clients → Create client → Web application. Authorized JavaScript origins `https://www.app-flek.eu`, Authorized redirect URIs `https://yupkrntknbkvmlajwlph.supabase.co/auth/v1/callback`.
+  4. Client ID a Client secret vlož v Supabase → Authentication → Sign In / Providers → Google → Enable → Save.
+  5. Supabase → Authentication → URL Configuration → Redirect URLs: přidej `https://www.app-flek.eu/prihlaseni`.
+  6. Na www.app-flek.eu/prihlaseni se objeví „Pokračovat přes Google“, vyzkoušej ho.
+- [ ] **Přihlášení přes Apple** (placené členství Apple Developer 99 USD ročně, tajný klíč platí nejvýš 6 měsíců):
+  1. developer.apple.com → Certificates, Identifiers & Profiles → Identifiers → App IDs: nové ID (třeba `eu.app-flek.web`) se zapnutým Sign in with Apple.
+  2. Identifiers → Services IDs: nové ID (třeba `eu.app-flek.signin`), zapnout Sign in with Apple → Configure: primární App ID z bodu 1, doména `yupkrntknbkvmlajwlph.supabase.co`, Return URL `https://yupkrntknbkvmlajwlph.supabase.co/auth/v1/callback`.
+  3. Keys → nový klíč se Sign in with Apple, stáhnout soubor `.p8` (jde jen jednou), poznamenat Key ID a Team ID.
+  4. Z klíče vygenerovat tajný klíč podle návodu Supabase „Login with Apple“ a vložit ho v Supabase → Authentication → Sign In / Providers → Apple (Client IDs = Services ID z bodu 2) → Enable → Save. Do kalendáře si dej připomínku za 5 měsíců: klíč vygenerovat znovu.
+  5. Sign in with Apple for Email Communication: zaregistrovat odesílací doménu `mail.app-flek.eu` a adresy `rezervace@mail.app-flek.eu` a `ucet@mail.app-flek.eu`. Bez toho e-maily na skryté adresy Apple (…@privaterelay.appleid.com) nedojdou a potvrzení rezervace e-mailem je povinné.
+  6. Vyzkoušet „Pokračovat přes Apple“ na www.app-flek.eu/prihlaseni.
+- [ ] **Právní kontrola textů a výchozích řešení před ostrým provozem.** Texty jsou veřejné v repozitáři (`src/content/pravni`), po zveřejnění na `/podminky`, `/podminky-podniky` a `/soukromi`. Kontrolní seznam pro právníka je v `docs/PRED_SPUSTENIM.md` (Právo, účetnictví a firma).
 - [ ] **Firma a úřady:** ověřit obory živnosti (zprostředkování obchodu a služeb), s daňovým poradcem registraci a oznámení DAC7 a DPH, zvážit s.r.o. a pojištění odpovědnosti, ochrannou známku FLEK a licenci map pro komerční provoz.
 
 ## Todolist
@@ -94,12 +122,14 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 - [ ] Skrýt ve feedu FLEKy podniků, kterým Stripe omezil platby; formulář „Výplatní údaje“ sladit se Stripe (číslo účtu už zadává podnik u Stripe)
 - [ ] Fakturace servisního poplatku podnikům a účetní export plateb
 - [ ] Povinné MFA (TOTP) pro administrátory, CAPTCHA (Turnstile) u registrace, `secure_password_change`, přísnější limity
-- [x] Obchodní podmínky pro zákazníky (výjimka z odstoupení u služeb s termínem, storno a nedostavení, reklamace, ADR) a pro podniky (P2B: řazení, poplatky, pozastavení, ukončení, stížnosti), pravidla obsahu (DSA); verze 1.0 v aplikaci, zveřejní se s údaji provozovatele (18. 9.)
+- [x] Obchodní podmínky pro zákazníky (výjimka z odstoupení u služeb s termínem, storno a nedostavení, reklamace, ADR, nahlášení obsahu podle DSA) a pro podniky (P2B: řazení, poplatky, pozastavení, ukončení, stížnosti, zakázaný obsah); verze 1.0 v aplikaci, zveřejní se s údaji provozovatele (18. 9.)
 - [x] Zásady ochrany osobních údajů se zpracovateli a dobami uchování; analytika bez identifikátoru v prohlížeči, takže bez cookie lišty (18. 9.)
 - [x] Verze textu u souhlasu podniku i zákazníka zapisuje server; bez souhlasu s platnou verzí platba nezačne a podnik nezveřejní FLEK (18. 9.)
 - [x] Export dat v Profilu (18. 9.)
-- [ ] Smazání účtu (anonymizace i v přihlašování, finanční záznamy zůstanou) a denní mazání starých dat: připravené, čeká na Jakubův souhlas s migrací; do té doby Profil nabídne smazání přes podporu
-- [ ] Povinné potvrzení rezervace e-mailem s poskytovatelem, cenou, kódem a stornem (šablona hotová, databázová část čeká na souhlas s migrací), zprávy podnikům o schválení a pozastavení, důvod blokace zákazníka
+- [x] Smazání účtu v Profilu (anonymizace i v přihlašování, rezervace a platby zůstanou bez osobních údajů) a denní mazání starých dat `flek-retention` (18. 9.)
+- [x] Povinné potvrzení rezervace e-mailem s poskytovatelem, cenou, kódem a stornem, zprávy podnikům o schválení a pozastavení s důvodem, důvod blokace zákazníka, zpráva o vyřízení nahlášení (18. 9.)
+- [x] Právní texty porovnané s Too Good To Go, TasteTown, Fresha a Reservio: pravidla obsahu sloučená do podmínek (3 dokumenty místo 4), bez formální lhůty na odvolání, podnik s podmínkami souhlasí jednou a nová verze platí pokračováním ve spolupráci (18. 9.)
+- [x] Přihlášení přes Google a Apple v kódu, jméno z účtu se předvyplní; tlačítka se ukážou po zapnutí v Supabase (18. 9.)
 - [x] Kdo službu poskytuje (název, IČO, adresa) u rezervace a na stránce podniku, IČO ověřené v ARES, schválení podniku jen s IČO (18. 9.)
 - [x] Nahlášení nabídky nebo podniku s frontou v administraci, podklad pro oznámení DAC7 (CSV) (18. 9.)
 - [ ] **Právní kontrola textů a výchozích řešení před ostrým provozem** (právník, kontrolní seznam v `docs/PRED_SPUSTENIM.md`)
@@ -180,7 +210,7 @@ Schvaluje provozovny (skutečný podnik jen s IČO), kontroluje nabídky a rezer
 
 | Část | Služba | Poznámka |
 | --- | --- | --- |
-| Web aplikace | Vercel | automatické nasazení z `main` na GitHubu; nastavení ve `vercel.json` |
+| Web aplikace | Vercel | automatické nasazení z `main` na GitHubu; nastavení ve `vercel.json`; k projektu je připojená nepoužívaná uspaná databáze `supabase-cerulean-village`, kvůli které nasazení od 18. 9. padá |
 | Databáze, přihlašování, soubory | Supabase (projekt `yupkrntknbkvmlajwlph`) | PostgreSQL + PostGIS, Auth, Storage, zabezpečení RLS |
 | Realtime upozornění | Supabase Realtime | záložně se aplikace ptá každých 15 s |
 | Pravidelná údržba | Supabase `pg_cron`, job `flek-maintenance` | každých 15 min dokončí rezervace 24 h po konci |
@@ -201,7 +231,9 @@ Schvaluje provozovny (skutečný podnik jen s IČO), kontroluje nabídky a rezer
 | Hledání adresy | Photon (komoot) nad OpenStreetMap | výběr místa a adresa provozovny |
 | Navigace | odkaz do Google Map | tlačítko Navigovat, bez API klíče |
 | Analytika | vlastní tabulka přes RPC `record_event` | vyhledávání, zobrazení, rezervace, oblíbené, sdílení, pozvánky; v prohlížeči nic neukládá (bez cookie lišty) |
-| Právní texty | `src/content/pravni/*.md`, verze v `public.legal_documents`, údaje provozovatele v `private.settings` | zveřejní se až s údaji provozovatele a platnou verzí; souhlasy v `private.legal_acceptances` |
+| Právní texty | `src/content/pravni/*.md` (podmínky pro zákazníky, pro podniky a zásady), verze v `public.legal_documents`, údaje provozovatele v `private.settings` | zveřejní se až s údaji provozovatele a platnou verzí; souhlasy v `private.legal_acceptances` |
+| Mazání starých dat | `pg_cron`, job `flek-retention` (každou noc ve 3:40) | doručování a zprávy WhatsApp po 90 dnech, upozornění po 12 měsících, vyřízená nahlášení po 3 letech, záznamy cronu po 14 dnech |
+| Přihlášení přes Google a Apple | Supabase Auth → Sign In / Providers | zatím vypnuté; tlačítka se ukážou, až je Jakub zapne s klíči |
 | Ověření IČO | Edge Function `ares-lookup` nad veřejným API ARES | název a sídlo podniku z registru, bez klíče |
 | Ilustrační fotky | složka `public/images/services` + Unsplash | náhledy pro špendlíky v `thumbs/` |
 | Kód | GitHub `legitjakub/flek` | — |
@@ -233,7 +265,7 @@ Service-role klíč nikdy nepatří do aplikace ani do repozitáře. Hesla demo 
 
 | Role | Adresy |
 | --- | --- |
-| Zákazník | `/` Objevit, `/mapa`, `/nabidka/:id`, `/podnik/:id`, `/oblibene`, `/rezervace`, `/profil`, `/prihlaseni`, `/potvrzeni`, `/r/:kód`; právní texty `/podminky`, `/podminky-podniky`, `/soukromi`, `/pravidla` |
+| Zákazník | `/` Objevit, `/mapa`, `/nabidka/:id`, `/podnik/:id`, `/oblibene`, `/rezervace`, `/profil`, `/prihlaseni`, `/potvrzeni`, `/r/:kód`; právní texty `/podminky`, `/podminky-podniky`, `/soukromi` |
 | Podnik | `/partner`, `/partner/nabidky`, `/partner/rezervace`, `/partner/sluzby`, `/partner/provozovna`, `/partner/metriky`, `/partner/registrace` |
 | Admin | `/admin`, `/admin/nabidky`, `/admin/rezervace`, `/admin/uzivatele`, `/admin/metriky`, `/admin/audit`, `/admin/nahlaseni` |
 
@@ -274,6 +306,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 18. 9. 2026 | Povinné potvrzení rezervace e-mailem, zprávy podnikům a zákazníkům s důvodem, smazání účtu v Profilu a noční mazání starých dat; přihlášení přes Google a Apple (čeká na klíče); právní texty porovnané s Too Good To Go, TasteTown, Fresha a Reservio a zjednodušené; web čeká na odpojení uspané databáze ve Vercelu |
 | 18. 9. 2026 | Právní minimum: obchodní podmínky pro zákazníky a pro podniky, zásady ochrany osobních údajů a pravidla obsahu (verze 1.0, zveřejní se s údaji provozovatele, pak je zkontroluje právník), souhlas s verzí při platbě i u podniku, kdo službu poskytuje, ověření IČO v ARES, nahlášení obsahu, export dat, podklad DAC7, analytika bez ukládání do prohlížeče, texty v režimu potvrzování |
 | 15. 9. 2026 | Potvrzování rezervací zapnuté pro všechny podniky (15:54) a texty pro podniky upravené; Kubova je se Stripe propojená od 14. 9. |
 | 15. 9. 2026 | Potvrzování rezervací zapnuté pro demo podniky: události ve Stripe doplněné admin funkcí, akceptace 106/106 v režimu potvrzování, průchod se skutečnými testovacími platbami (potvrzení i odmítnutí); pro všechny čeká na souhlas; neuložené kopie Codexu uklizené do zálohy |

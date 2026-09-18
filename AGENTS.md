@@ -35,9 +35,9 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik zveř
 | `src/features/merchant` | FLEK Partner: provozovna, služby, zveřejnění FLEKu, rezervace, metriky, upozornění |
 | `src/features/admin` | administrace, fronta nahlášení (`AdminReports.tsx`), podklad DAC7 (`Dac7Export.tsx`, `dac7.ts`) |
 | `src/features/legal` | právní stránky, patička „O FLEKu“, věta o poskytovateli, nahlášení obsahu; vykreslení omezeného markdownu bez HTML (`markdown.tsx`), verze textů (`documents.ts`) |
-| `src/content/pravni` | právní texty v markdownu: `podminky.md`, `podminky-podniky.md`, `soukromi.md`, `pravidla.md` |
+| `src/content/pravni` | právní texty v markdownu: `podminky.md` (včetně nahlášení obsahu podle DSA), `podminky-podniky.md`, `soukromi.md` |
 | `src/features/notifications` | zvonek s upozorněními a nastavení e-mailu, push a WhatsApp (zákazník v Profilu, podnik v Provozovně), zapíná `VITE_NOTIFICATIONS_ENABLED`; `WhatsApp.tsx` ověření čísla jedním klepnutím a výzvy |
-| `src/features/{auth,profile,favorites,referral,onboarding,pwa,business,ratings}` | profil, oblíbené, pozvánky, intro, instalace, stránka podniku, Google hodnocení |
+| `src/features/{auth,profile,favorites,referral,onboarding,pwa,business,ratings}` | přihlášení (e-mail, `SocialSignIn.tsx` pro Google a Apple, jen když jsou zapnuté v Supabase), profil, oblíbené, pozvánky, intro, instalace, stránka podniku, Google hodnocení |
 | `src/components/ui.tsx` | sdílené komponenty (Button, PromoCard, SettingsList, Tabs, Sheet…) |
 | `src/lib/api.ts` | všechna volání Supabase RPC |
 | `src/lib/pricing.ts` | výpočet ceny a poplatku (zrcadlí SQL, test `tests/fixtures/fee-vector.json`) |
@@ -47,7 +47,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik zveř
 | `tests` | unit testy (Vitest), `integration.test.ts` (potřebuje Docker), `pilot-maintenance.sql`, `stripe-refunds.sql`, `manual-confirmation.sql`, `whatsapp-notifications.sql` a `legal.sql` (SQL v transakci s rollbackem) |
 | `scripts` | `acceptance.mjs` (API kontroly), `sync-notion.mjs`, lokální Supabase |
 
-Routy: zákazník `/`, `/mapa`, `/nabidka/:id`, `/podnik/:id`, `/oblibene`, `/rezervace`, `/profil`, `/prihlaseni`, `/potvrzeni`, `/r/:code`, právní texty `/podminky`, `/podminky-podniky`, `/soukromi`, `/pravidla`; podnik `/partner` (+ `/nabidky`, `/rezervace`, `/sluzby`, `/provozovna`, `/metriky`, `/registrace`); admin `/admin` (+ `/nabidky`, `/rezervace`, `/uzivatele`, `/metriky`, `/audit`, `/nahlaseni`).
+Routy: zákazník `/`, `/mapa`, `/nabidka/:id`, `/podnik/:id`, `/oblibene`, `/rezervace`, `/profil`, `/prihlaseni`, `/potvrzeni`, `/r/:code`, právní texty `/podminky`, `/podminky-podniky`, `/soukromi`; podnik `/partner` (+ `/nabidky`, `/rezervace`, `/sluzby`, `/provozovna`, `/metriky`, `/registrace`); admin `/admin` (+ `/nabidky`, `/rezervace`, `/uzivatele`, `/metriky`, `/audit`, `/nahlaseni`).
 
 ## Pravidla, která se nesmí porušit
 
@@ -62,7 +62,7 @@ Routy: zákazník `/`, `/mapa`, `/nabidka/:id`, `/podnik/:id`, `/oblibene`, `/re
 - Nová externí doména (API, obrázky, dlaždice) musí do CSP ve `vercel.json`. Žádné `eval`, inline skripty ani `dangerouslySetInnerHTML`.
 - Stripe klíče (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`) a klíče Meta (`WHATSAPP_*`) žijí jen v Supabase secrets. Místo podniku zaplatí a obsadí jen webhook Stripe; klient nikdy neoznačuje platbu jako zaplacenou.
 - Potvrzování rezervací (přepínač `manual_confirmation_enabled`): místo drží už `start_payment`, peníze se jen autorizují a strhne je až `booking-confirmation` po potvrzení podnikem. Rezervaci potvrzuje nebo odmítá jen `private.decide_booking` (aplikace přes `respond_to_booking`, WhatsApp přes `whatsapp_decide`); nový kanál nesmí mít vlastní logiku. Nedohodnutá žádost nikdy neukáže kód a uvolněná autorizace se nikdy nevrací jako vratka. Nová funkce nad `bookings` musí počítat se stavy `pending_payment`, `pending_merchant` a `capturing` (`private.booking_was_agreed`).
-- Upozornění na rezervace vytváří jen trigger `booking_notification` nad `bookings`; klient je nezakládá. Push nese jen odkaz, žádné detaily rezervace. WhatsApp jde jen na číslo ověřené zprávou z toho čísla (`private.whatsapp_contacts`) a rozhodovat tlačítkem jde jen ze žádosti pro podnik.
+- Upozornění na rezervace vytváří jen trigger `booking_notification` nad `bookings`; klient je nezakládá. E-mail zákazníkovi o jeho rezervaci jde vždy (potvrzení smlouvy), předvolby řídí jen ostatní kanály a zprávy podnikům. Zprávy o účtu (stav podniku, blokace, vyřízené nahlášení) jdou jen přes `private.account_notice`. Push nese jen odkaz, žádné detaily rezervace. WhatsApp jde jen na číslo ověřené zprávou z toho čísla (`private.whatsapp_contacts`) a rozhodovat tlačítkem jde jen ze žádosti pro podnik.
 - Právní texty jsou v `src/content/pravni` a popisují jen skutečné chování FLEKu. Změna chování, o kterém text mluví (storno, poplatek, platby, data, lhůty), znamená upravit i text. Každá změna zveřejněného textu dostane novou verzi: `version` v `src/features/legal/documents.ts` a nový řádek v `public.legal_documents` migrací (`effective_at` u podmínek pro podniky nejméně 15 dní dopředu), a bod ke kontrole právníkem v `docs/PRED_SPUSTENIM.md`. Souhlas zapisuje jen server (`private.legal_acceptances`); texty se ukážou, až jsou v `private.settings` údaje provozovatele.
 - Analytika nic neukládá do prohlížeče (bez cookie lišty). Nový identifikátor v `localStorage`, `sessionStorage` nebo cookie jen nezbytný pro funkci, kterou si člověk vyžádal, a zapsaný v `soukromi.md`.
 - Service-role klíč nepatří do prohlížeče ani repozitáře. Hesla (admin, demo účty) se nikdy necommitují; v testech se přihlašuje vložením session, ne psaním hesla do formuláře.

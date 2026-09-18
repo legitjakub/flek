@@ -159,6 +159,23 @@ export async function startPayment(offerId: string, termsVersion: string | null 
   return await result<Payment>(supabase.rpc('start_payment', { p_offer_id: offerId, p_terms_version: termsVersion }));
 }
 
+export type OAuthProvider = 'apple' | 'google';
+
+/** Which sign-ins with another account Supabase Auth has switched on: its public settings, no secrets. */
+export async function authProviders(): Promise<Record<OAuthProvider, boolean>> {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/auth/v1/settings`, {
+      headers: { apikey: import.meta.env.VITE_SUPABASE_ANON_KEY },
+    });
+    if (!response.ok) return { apple: false, google: false };
+    const settings = (await response.json()) as { external?: Partial<Record<string, boolean>> };
+    return { apple: settings.external?.apple === true, google: settings.external?.google === true };
+  } catch {
+    // Without the settings the page offers e-mail only, as it always has.
+    return { apple: false, google: false };
+  }
+}
+
 /** Operator details and which legal documents are in force, for anyone. */
 export async function legalInfo(): Promise<LegalInfo> {
   const info = await result<LegalInfo>(supabase.rpc('legal_info'));
@@ -448,12 +465,14 @@ export async function adminUserLookup(email: string): Promise<AdminUser[]> {
   return (await result<AdminUser[]>(supabase.rpc('admin_user_lookup', { p_email: email }))) ?? [];
 }
 
-export async function adminSetBookingBlock(userId: string, blocked: boolean, overrideNoShows = false): Promise<void> {
+/** Blocking needs a reason: the customer gets it in the app and by e-mail. */
+export async function adminSetBookingBlock(userId: string, blocked: boolean, overrideNoShows = false, reason: string | null = null): Promise<void> {
   await result(
     supabase.rpc('admin_set_booking_block', {
       p_user_id: userId,
       p_blocked: blocked,
       p_override_no_shows: overrideNoShows,
+      p_reason: reason,
     }),
   );
 }

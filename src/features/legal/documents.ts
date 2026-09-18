@@ -1,9 +1,8 @@
 import customerTerms from '../../content/pravni/podminky.md?raw';
 import merchantTerms from '../../content/pravni/podminky-podniky.md?raw';
 import privacy from '../../content/pravni/soukromi.md?raw';
-import contentRules from '../../content/pravni/pravidla.md?raw';
 
-export type LegalKind = 'customer_terms' | 'merchant_terms' | 'privacy' | 'content_rules';
+export type LegalKind = 'customer_terms' | 'merchant_terms' | 'privacy';
 
 export type LegalDocument = {
   kind: LegalKind;
@@ -19,7 +18,6 @@ export const LEGAL_DOCUMENTS: Record<LegalKind, LegalDocument> = {
   customer_terms: { kind: 'customer_terms', path: '/podminky', label: 'Obchodní podmínky', version: '1.0', source: customerTerms },
   merchant_terms: { kind: 'merchant_terms', path: '/podminky-podniky', label: 'Podmínky pro podniky', version: '1.0', source: merchantTerms },
   privacy: { kind: 'privacy', path: '/soukromi', label: 'Ochrana osobních údajů', version: '1.0', source: privacy },
-  content_rules: { kind: 'content_rules', path: '/pravidla', label: 'Pravidla obsahu', version: '1.0', source: contentRules },
 };
 
-export const LEGAL_ORDER: LegalKind[] = ['customer_terms', 'privacy', 'content_rules', 'merchant_terms'];
+export const LEGAL_ORDER: LegalKind[] = ['customer_terms', 'privacy', 'merchant_terms'];

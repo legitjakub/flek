@@ -107,7 +107,6 @@ const ROUTES: { path: string; render: (params: Record<string, string>) => ReactN
   { path: '/podminky', render: () => <LegalPage kind="customer_terms" />, shell: true },
   { path: '/podminky-podniky', render: () => <LegalPage kind="merchant_terms" />, shell: true },
   { path: '/soukromi', render: () => <LegalPage kind="privacy" />, shell: true },
-  { path: '/pravidla', render: () => <LegalPage kind="content_rules" />, shell: true },
   { path: '/prihlaseni', render: () => <AuthPage />, shell: false },
   { path: '/potvrzeni', render: () => <ConfirmationPage />, shell: false },
   // Invitation links are public and must render before anyone signs in.

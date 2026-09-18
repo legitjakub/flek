@@ -55,7 +55,7 @@ Najednou můžeš mít nejvýš 3 nadcházející rezervace. Kdo za hodinu nech�
 ## 6. Zrušení rezervace a nedostavení
 
 - Potvrzenou rezervaci zrušíš **zdarma** v sekci Rezervace do lhůty, kterou nastavil podnik, nebo do 10 minut od potvrzení, podle toho, co nastane později. Výchozí lhůta je 60 minut před začátkem, přesnou lhůtu vidíš u nabídky i v rezervaci.
-- Při bezplatném zrušení vrátíme celou částku včetně servisního poplatku na kartu, kterou jsi platil. Připsání závisí na bance a obvykle trvá několik pracovních dní.
+- Při bezplatném zrušení vrátíme celou částku včetně servisního poplatku na kartu, ze které šla platba. Připsání závisí na bance a obvykle trvá několik pracovních dní.
 - Po uplynutí lhůty už rezervaci zrušit nejde a zaplacená částka se nevrací.
 - Když na termín nepřijdeš, podnik rezervaci označí jako nedostavení a částka se nevrací. Po **2 nedostaveních za 60 dní** ti rezervace dočasně zablokujeme. O přezkoumání nebo výjimku můžeš požádat na {{email}}.
 - Když podnik termín zruší nebo službu nemůže poskytnout, vrátíme ti celou částku.
@@ -74,11 +74,14 @@ Všechny FLEKy jsou služby v oblasti využití volného času s pevně určený
 
 Pokud spor nevyřešíme dohodou, můžeš se obrátit na subjekt mimosoudního řešení spotřebitelských sporů, kterým je **Česká obchodní inspekce** ([adr.coi.cz](https://adr.coi.cz)). Dozor nad ochranou spotřebitele vykonává Česká obchodní inspekce, nad osobními údaji Úřad pro ochranu osobních údajů a nad digitálními službami Český telekomunikační úřad.
 
-## 10. Pravidla používání
+## 10. Pravidla používání a nahlášení obsahu
 
 - FLEK nepoužívej k falešným rezervacím, obcházení plateb, hromadnému stahování dat ani k jinému zneužití.
-- Obsah, který na FLEKu nesmí být, a postup nahlášení popisují [Pravidla obsahu](/pravidla).
-- Při porušení můžeme účet omezit nebo zablokovat. Důvod ti vždy sdělíme a ohradit se můžeš na {{email}}.
+- Na FLEKu nesmí být nezákonné služby ani obsah, služby sexuální povahy, klamavé údaje (třeba vymyšlená běžná cena) ani cizí fotky a údaje bez práva je použít.
+- **Nahlášení:** nezákonný obsah nebo nabídku nahlásíš tlačítkem **Nahlásit** u nabídky nebo na stránce podniku, nebo e-mailem na {{email}}. Napiš, o co jde a proč to podle tebe porušuje zákon nebo tyto podmínky.
+- Každé nahlášení posoudí člověk, obvykle do 7 dnů, a dáme ti vědět, jak jsme rozhodli. Tomu, koho se opatření týká, sdělíme, co jsme omezili a proč.
+- Při porušení můžeme nabídku skrýt, podnik pozastavit nebo účet omezit či zablokovat. Důvod ti vždy sdělíme a ohradit se můžeš na {{email}}, rozhodnutí pak znovu posoudí člověk.
+- Kontaktním místem pro uživatele i úřady podle nařízení o digitálních službách je {{email}}, komunikujeme česky nebo anglicky. O trestném činu, který ohrožuje život nebo bezpečnost lidí, informujeme policii.
 
 ## 11. Upozornění
 
@@ -98,7 +101,7 @@ Jak s tvými údaji zacházíme, popisují [Zásady ochrany osobních údajů](/
 
 ## 15. Změny podmínek
 
-Novou verzi podmínek zveřejníme v aplikaci s datem účinnosti. Pro už uzavřenou rezervaci platí verze, se kterou jsi souhlasil. Pro další rezervaci budeš potřebovat souhlas s novou verzí.
+Novou verzi podmínek zveřejníme v aplikaci s datem účinnosti. Pro už uzavřenou rezervaci platí verze platná při jejím uzavření, další rezervací souhlasíš s novou verzí.
 
 ## 16. Závěrečná ustanovení
 

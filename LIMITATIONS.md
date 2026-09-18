@@ -84,10 +84,21 @@ Více provozoven na účet je podporováno přepínačem v partnerské části. 
 
 ## Právní minimum (18. 9. 2026)
 
-- Právní texty verze 1.0 nejsou zveřejněné: chybí údaje provozovatele v `private.settings` a účinnost verzí. Do té doby aplikace nemá patičku „O FLEKu“, souhlas v rezervaci ani odkaz na zásady v registraci a podnik souhlasí s „obchodními podmínkami FLEKu“ bez odkazu jako dřív.
-- Texty napsal agent, ne právník (**IMPLEMENTOVÁNO, ALE VYŽADUJE RUČNÍ EXTERNÍ OVĚŘENÍ** právníkem před ostrým provozem). Zásady popisují i povinné potvrzení e-mailem, smazání účtu a doby uchování z migrace, která čeká na souhlas; proto se texty zveřejní až po ní.
-- Smazání účtu zatím nejde v aplikaci: Profil nabídne e-mail podpory. E-mail zákazníkovi o rezervaci jde dál vypnout v nastavení upozornění a podrobnosti smlouvy (poskytovatel, cena, kód, storno) v něm budou až po migraci.
+- Právní texty verze 1.0 (podmínky pro zákazníky, pro podniky a zásady) nejsou zveřejněné: chybí údaje provozovatele v `private.settings` a účinnost verzí. Do té doby aplikace nemá patičku „O FLEKu“, souhlas v rezervaci ani odkaz na zásady v registraci a podnik souhlasí s „obchodními podmínkami FLEKu“ bez odkazu jako dřív.
+- Texty napsal agent, ne právník (**IMPLEMENTOVÁNO, ALE VYŽADUJE RUČNÍ EXTERNÍ OVĚŘENÍ** právníkem před ostrým provozem). Řádek o zápisu provozovatele říká „podnikatel zapsaný v živnostenském rejstříku“; u s.r.o. se musí změnit.
+- Skutečný e-mail s podrobnostmi smlouvy zatím neodešel: demo účty e-maily nedostávají a jiná rezervace od nasazení nebyla.
 - Podnik, který se registroval před 18. 9., nemá typ podnikatele, datum narození ani ověření v ARES; doplní je ve fakturačních údajích. DAC7 podklad je jen podklad pro ruční oznámení, registraci provozovatele neřeší.
 - `ares-lookup` čte veřejné API ARES bez klíče a bez smlouvy; při výpadku ARES podnik vyplní údaje ručně a admin je ověří sám.
-- Staré analytické události mají `session_id` vyplněný dál, nové už ne. Trychtýř pro nepřihlášené proto nejde spojit na návštěvu.
+- Nová verze podmínek pro podniky platí pokračováním ve spolupráci. Aplikace ukáže banner, ale e-mail o nové verzi 15 dní předem se neposílá sám; při vydání nové verze ho musí poslat člověk.
+- Smazaný účet zůstává v `auth.users` s adresou `smazany-…@smazany.invalid` a blokací, aby rezervace a platby měly na koho ukazovat. Člen podniku a admin smazání v aplikaci nemají.
 
+## Přihlášení přes Google a Apple (18. 9. 2026)
+
+- V produkci je zatím vypnuté, dokud Jakub nevloží klíče do Supabase. Tlačítka se do té doby neukazují.
+- Apple pošle jméno jen při prvním přihlášení a často jen skrytý e-mail (`…@privaterelay.appleid.com`). Bez registrace odesílací domény u Apple tam e-maily nedojdou, i povinné potvrzení rezervace. Tajný klíč Apple platí nejvýš 6 měsíců.
+- Návrat z Google nebo Apple míří na `/prihlaseni`. Když ho Jakub nepřidá do Redirect URLs v Supabase, přihlášení skončí na úvodní stránce a původní cíl (třeba rozkliknutá nabídka) se ztratí.
+- Účet z Google má jméno z Googlu (první slovo jako jméno, zbytek jako příjmení); telefon si vyžádá první rezervace.
+
+## Nasazení webu (18. 9. 2026)
+
+- Vercel od 18. 9. nenasazuje web: k projektu flek je připojená uspaná databáze `supabase-cerulean-village` z Vercel Marketplace a krok „Provisioning Integrations“ kvůli ní selže. Odpojení je změna Jakubova účtu. Do té doby běží web z 15. 9.; databáze a Edge Functions jsou nové a se starým webem fungují (starý web volá `start_payment` bez verze, `record_event` s identifikátorem, který se neukládá, a fakturační údaje bez nových polí). Výjimka: v administraci starého webu nejde zablokovat zákazníka, protože blokace nově vyžaduje důvod.
