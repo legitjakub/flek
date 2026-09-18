@@ -88,6 +88,6 @@ Více provozoven na účet je podporováno přepínačem v partnerské části. 
 - Texty napsal agent, ne právník (**IMPLEMENTOVÁNO, ALE VYŽADUJE RUČNÍ EXTERNÍ OVĚŘENÍ** právníkem před ostrým provozem). Zásady popisují i povinné potvrzení e-mailem, smazání účtu a doby uchování z migrace, která čeká na souhlas; proto se texty zveřejní až po ní.
 - Smazání účtu zatím nejde v aplikaci: Profil nabídne e-mail podpory. E-mail zákazníkovi o rezervaci jde dál vypnout v nastavení upozornění a podrobnosti smlouvy (poskytovatel, cena, kód, storno) v něm budou až po migraci.
 - Podnik, který se registroval před 18. 9., nemá typ podnikatele, datum narození ani ověření v ARES; doplní je ve fakturačních údajích. DAC7 podklad je jen podklad pro ruční oznámení, registraci provozovatele neřeší.
-- `ares-lookup` je ověřený jen unit testy nad vzorovou odpovědí ARES; proti skutečnému registru poběží až po nasazení.
+- `ares-lookup` čte veřejné API ARES bez klíče a bez smlouvy; při výpadku ARES podnik vyplní údaje ručně a admin je ověří sám.
 - Staré analytické události mají `session_id` vyplněný dál, nové už ne. Trychtýř pro nepřihlášené proto nejde spojit na návštěvu.
 

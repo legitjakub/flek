@@ -11,8 +11,8 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 | Fáze | Fáze 1 — demo pilot (běží veřejně, platby přes Stripe v testovacím režimu) |
 | Web | https://www.app-flek.eu (původní https://flek-nine.vercel.app funguje dál) |
 | Kód | https://github.com/legitjakub/flek (větev `main`) |
-| Poslední nasazení | 18. 9. 2026 (vždy poslední commit ve větvi `main`) |
-| Testy | unit testy a build v CI při každém pushi, akceptační kontroly proti hostované databázi (15. 9.: 101/101 bez potvrzování, 106/106 s potvrzováním), SQL testy potvrzování rezervací a WhatsAppu |
+| Poslední nasazení | databáze a Edge Functions 18. 9. 2026; web ze 15. 9., nasazení 18. 9. na Vercelu selhalo na jejich straně a čeká na zopakování (běžně vždy poslední commit ve větvi `main`) |
+| Testy | unit testy a build v CI při každém pushi, akceptační kontroly proti hostované databázi (18. 9.: 106/106 s potvrzováním; 15. 9.: 101/101 bez potvrzování), SQL testy potvrzování rezervací, WhatsAppu a právního minima |
 | Potvrzování rezervací podnikem | **zapnuté pro všechny podniky** od 15. 9. 15:54 (předtím demo: akceptace 106/106 a průchod se skutečnými testovacími platbami) |
 | WhatsApp | pro podniky i zákazníky, výchozí zapnutý a vypínatelný v nastavení upozornění, ověření čísla jedním klepnutím; čeká na účet Meta a pět šablon |
 | Právní texty | obchodní podmínky pro zákazníky a pro podniky, zásady ochrany osobních údajů a pravidla obsahu ve verzi 1.0 jsou v aplikaci; zveřejní se, až Jakub pošle údaje provozovatele, a před ostrým provozem je zkontroluje právník |
@@ -42,6 +42,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 - [ ] **Založit WhatsApp u Meta** podle `docs/PRED_SPUSTENIM.md`: pro pilot stačí testovací číslo v aplikaci Meta (bez ověření firmy, zprávy až na 5 přidaných čísel), webhook, pět šablon s texty z dokumentu a klíče do Supabase secrets. Pak pošli agentovi zobrazované číslo a na telefonu vyzkoušej „Ověřit ve WhatsAppu“ v Profilu i v Provozovně. Agent to 15. 9. zkusil: v Chromu nejsi u Meta for Developers přihlášený a klíče do Supabase vložit nesmí.
 - [x] **Zkontrolovat SMTP odesílatele v Supabase Auth.** Uložené správně (15. 9.): zapnuté, odesílatel `ucet@mail.app-flek.eu`, jméno FLEK, uživatel `resend`, port 465.
 - [ ] **Vyzkoušet registraci nové adresy** s odkazem otevřeným v jiném prohlížeči (agent účty zakládat nesmí).
+- [ ] **Znovu nasadit web.** Vercel 18. 9. nasazení commitu „Právní minimum…“ hned na startu odmítl (Resource provisioning failed, chyba na straně Vercelu; kód prošel buildem i CI). Opakování přes API zablokoval agentovi automatický režim. Buď ve Vercelu otevři projekt flek → Deployments → poslední nasazení (Error) → ⋯ → Redeploy, nebo napiš agentovi „povoluju nasadit“. Do té doby běží web ze 15. 9., databáze a funkce jsou už nové a se starým webem fungují.
 - [ ] **Poslat agentovi údaje provozovatele:** jméno, IČO, adresu místa podnikání (případně jinou doručovací adresu) a e-mail podpory. Agent je uloží do databáze a zveřejní právní texty verze 1.0; do té doby je aplikace neukazuje.
 - [ ] **Právní kontrola textů a výchozích řešení před ostrým provozem.** Texty jsou veřejné v repozitáři (`src/content/pravni`), po zveřejnění na `/podminky`, `/podminky-podniky`, `/soukromi` a `/pravidla`. Kontrolní seznam pro právníka je v `docs/PRED_SPUSTENIM.md` (Právo, účetnictví a firma).
 - [ ] **Firma a úřady:** ověřit obory živnosti (zprostředkování obchodu a služeb), s daňovým poradcem registraci a oznámení DAC7 a DPH, zvážit s.r.o. a pojištění odpovědnosti, ochrannou známku FLEK a licenci map pro komerční provoz.
