@@ -43,7 +43,7 @@ FLEK je online tržiště. Podniky (kadeřnictví a holičství, masáže, kosme
 
 Žádost můžeš do rozhodnutí podniku kdykoli zrušit a blokace se uvolní. Pokud podnik rezervace nepotvrzuje, vzniká smlouva zaplacením.
 
-Najednou můžeš mít nejvýš 3 nadcházející rezervace. Kdo za hodinu nechá 5 podržených termínů propadnout bez zaplacení, nemůže hodinu rezervovat, aby termíny neblokoval ostatním.
+Najednou můžeš mít nejvýš 3 nadcházející rezervace. Kdo za hodinu nechá 5 podržených termínů propadnout bez zaplacení, nemůže až hodinu rezervovat, aby termíny neblokoval ostatním.
 
 ## 5. Platba
 

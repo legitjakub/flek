@@ -69,7 +69,7 @@ Na to souhlas potřeba není. Platební stránka Stripe používá vlastní nezb
 
 ## 5. Automatické rozhodování
 
-Po 2 nedostaveních za 60 dní systém automaticky zablokuje další rezervace, dokud starší z nich není víc než 60 dní staré. Kdo za hodinu nechá 5 podržených termínů propadnout bez zaplacení, nemůže hodinu rezervovat. O přezkoumání člověkem můžeš požádat na {{email}}.
+Po 2 nedostaveních za 60 dní systém automaticky zablokuje další rezervace, dokud starší z nich není víc než 60 dní staré. Kdo za hodinu nechá 5 podržených termínů propadnout bez zaplacení, nemůže až hodinu rezervovat. O přezkoumání člověkem můžeš požádat na {{email}}.
 
 ## 6. Tvoje práva
 

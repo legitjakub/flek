@@ -226,4 +226,12 @@ Lokální Docker integrační sada, fyzický iPhone/Safari, skutečná kamera, n
 - `npm run test:acceptance` po migraci `legal_notices`: **106/106**. Testy WhatsAppu a potvrzování počítají jen zprávy na WhatsApp a samotná upozornění a demo účty e-maily nedostávají, změna e-mailů je proto neovlivní.
 - `npm run build` a `npm run test:unit` (131 testů; ubyly tři testy zrušeného dokumentu pravidel obsahu).
 - Prohlížeč (lokální server nad hostovanou DB, relace demo účtů vložená do `localStorage`): zákazník na 375 px v Profilu vidí u potvrzené i zrušené rezervace „E-mail (vždy)“ zaškrtnuté a zamčené s vysvětlením; admin na 375 px po „Zablokovat rezervace“ dostane okno s povinným důvodem a vysvětlením, co zákazník dostane (neodesláno). Tlačítka „Pokračovat přes Apple“ a „Pokračovat přes Google“ s logy a větou o 18 letech ověřená s lokálně podvrženým nastavením poskytovatelů (vráceno): výška 52 px, bez přetečení na 375, 390 a 1280 px, bez chyb v konzoli. V produkci jsou Google i Apple v Supabase vypnuté (`/auth/v1/settings`), tlačítka se tam neukazují.
-- Neověřeno: skutečné přihlášení přes Google a Apple (chybí klíče), skutečný e-mail s podrobnostmi smlouvy, web v produkci (nasazení blokuje uspaná databáze ve Vercelu).
+- Neověřeno: skutečné přihlášení přes Google a Apple (chybí klíče), skutečný e-mail s podrobnostmi smlouvy. Web v produkci viz další oddíl.
+
+## Kontrola kvality textů, nasazení webu a Meta — 18.–19. 9. 2026
+
+- `npm run build` a `npm run test:unit` před commitem 060491e i po úpravě „až hodinu“ (19. 9.).
+- `stripe-checkout` v10 (tlačítko „Zaplatit“) nasazená přes MCP. Skript nad demo účtem založil platbu a nechal Stripe vytvořit testovací platební stránku; Stripe ji s novým `submit_type` přijal a podržení termínu se hned uvolnilo. Samotné tlačítko na stránce Stripe se kartou neproklikávalo (číslo karty agent do formuláře nezadává).
+- Vercel: po odpojení uspané databáze od projektu (Storage → Projects → Remove Project Connection, Jakubův souhlas) hlásí GitHub status u commitu 060491e „Deployment has completed“. 19. 9. znovu ověřeno na www.app-flek.eu: načtený soubor `App-*.js` obsahuje novou větu „i když je to do 14 dnů“ z rezervačního okna.
+- Meta (Jakubův souhlas): v aplikaci FLEK odsouhlasené Facebook Terms for WhatsApp Business a Meta Hosting Terms for Cloud API; přes hlášku „Onboarding failure“ vznikl testovací WhatsApp účet a testovací číslo (krok 1 „Completed“), ve WhatsApp Manageru jsou jen ukázkové šablony Meta.
+- Neověřeno: šablony WhatsApp (WhatsApp Manager v Chromu po kliknutí opakovaně na minuty zamrzl, žádná šablona se neuložila), webhook a zprávy na telefon.

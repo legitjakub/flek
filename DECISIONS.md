@@ -183,3 +183,15 @@ Jakub povolil migraci s povinnými zprávami a mazáním dat, chtěl přihláše
 - **Blokace zákazníka jen s důvodem**, který dostane v aplikaci i e-mailem. Podnik dostane důvod zamítnutí nebo pozastavení stejně.
 - **Smazání účtu** smaže osobní údaje i přihlašovací identitu a účet zablokuje, rezervace a platby zůstanou (účetní a daňové lhůty). Jméno v profilu se změní na „Smazaný účet“, aby podnik u starých rezervací neviděl prázdné místo. Člen podniku a admin mažou účet přes podporu.
 - **Google a Apple přes Supabase Auth (PKCE)**, bez vlastního serveru. Tlačítko se ukáže jen pro poskytovatele zapnutého v Supabase (veřejné `/auth/v1/settings`), takže kód mohl jít do produkce dřív než klíče. Jméno z účtu předvyplní `handle_new_user`, telefon si vyžádá první rezervace jako dosud. Doporučení: nejdřív Google (zdarma), Apple až s plánem na aplikaci v App Store (99 USD ročně, klíč každých 6 měsíců, registrace odesílací domény kvůli skrytým e-mailům).
+
+## Kontrola kvality právních textů — 18. 9. 2026
+
+Jakub: „u podmínek nejde o délku, ale o kvalitu“. Texty prošly proti zákonu a proti tomu, co aplikace skutečně dělá; opravy jsou v commitu 060491e, texty zůstávají ve verzi 1.0, protože ještě nejsou zveřejněné (chybí údaje provozovatele).
+
+- **Odstoupení ve dvou vrstvách.** Výjimka § 1837 písm. j) jistě kryje služby využití volného času v určeném termínu (sport, jóga, wellness, masáže), u kadeřnictví a kosmetiky je nejistá. Pro ně podmínky i věta před platbou obsahují výslovnou žádost o poskytnutí služby v rezervovaném termínu, tedy před koncem 14denní lhůty: po úplném poskytnutí právo zaniká (§ 1837 písm. a)) a při odstoupení během poskytování se platí poměrná část (§ 1834). Bezplatné zrušení podle podmínek je pro zákazníka výhodnější a zůstává. Rozhodne právník.
+- **Tlačítko na platební stránce Stripe „Zaplatit“** (`submit_type: 'pay'`, `stripe-checkout` v10). Z textu „Rezervovat“ (`book`) nevyplývá povinnost platit, jak žádá § 1826a odst. 3. V režimu potvrzování věta pod tlačítkem říká, že se částka nejdřív jen zablokuje.
+- **Lhůty přesně podle SQL:** blokace po 2 nedostaveních trvá, dokud starší z nich není starší než 60 dní; po 5 propadlých podrženích za hodinu nejvýš hodinu. Neurčité „dočasně“ a „chvíli“ pryč.
+- **Ukázkové podniky** jsou výslovná výjimka z věty, že všechny podniky jsou podnikatelé; rezervace u nich slouží jen k vyzkoušení.
+- **Podnikům doplněno, co P2B žádá a chybělo:** spolupráce na dobu neurčitou bez omezení nabízet jinde (FLEK nemá doložku parity), komu předáváme data podniku (Stripe, Finanční správa) a co s nimi po skončení spolupráce.
+- **Zásady doplněné** o přihlášení přes Google a Apple, o to, které údaje jsou povinné a proč (čl. 13 odst. 2 písm. e) GDPR), a o způsob námitky.
+- **Účet:** místo „za vše, co se v účtu stane, odpovídáš ty“ (nevyvážené vůči spotřebiteli) jen povinnost chránit heslo a ozvat se při zneužití.
