@@ -1,5 +1,13 @@
 # Ověření FLEK
 
+## Vlastní fotografie služby má přednost — 20. 9. 2026
+
+- `serviceIllustration` vrací uloženou `services.image_url` dřív než fotografii aktivity, kategorie i univerzální FLEK. Unit test používá skutečný tvar veřejné Storage URL a ověřuje, že se nezamění za ilustrační fotografii.
+- Partner má v editoru služby ovladač „Nahrát fotku“ pro JPG, PNG a WebP do 5 MB. Soubor se ukládá do `covers/{business_id}/services`; existující Storage RLS dovolí zápis jen členovi dané provozovny. Uložení služby je během uploadu zamčené.
+- Označení „ilustrační foto“ se počítá podle zdroje: katalog FLEKu a starší stock fotografie ano, vlastní Storage URL a fotka provozovny ne. Stejné pravidlo používá Objevit, náhled na mapě, detail nabídky a obě partnerské obrazovky.
+- Produkční partnerský editor zkontrolovaný v přihlášeném Chromu při viewportu 380 × 842 px: upload má 44px dotykovou výšku, pravý okraj 347 px, stránka nemá horizontální přetečení a input přijímá přesně `image/jpeg,image/png,image/webp`.
+- `npm run build` a `npm run test:unit`: 151/151 testů. GitHub kontrola typů/build/testů, Supabase Preview a Vercel nasazení commitu `b430df2` doběhly úspěšně.
+
 ## Aktivní fotky a rozšířený demo katalog — 20. 9. 2026
 
 - Migrace `refresh_activity_photos_and_demo_services` proběhla před nasazením celá v transakci s rollbackem proti hostované databázi. Kontroly uvnitř stejné transakce potvrdily 37 katalogových aktivit, 24 nových služeb jen u provozoven vlastněných výhradně účty `@flek.test` a žádnou aktivní službu s chybějícím, Unsplash nebo starým `/images/services` obrázkem.
