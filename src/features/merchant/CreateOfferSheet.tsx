@@ -1,4 +1,4 @@
-import { ChevronDown, ImageOff, Minus, Plus } from 'lucide-react';
+import { ChevronDown, Minus, Plus } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { publishFlek } from '../../lib/api';
@@ -10,6 +10,7 @@ import { serverNow } from '../../lib/clock';
 import { Banner, Button, Chip, Field, Input, Sheet } from '../../components/ui';
 import { Link } from '../../app/router';
 import type { Service } from '../../types/database';
+import { serviceIllustration } from '../../lib/serviceIllustrations';
 
 /** A previous FLEK to repeat: the merchant's own price, not the customer's. */
 export type OfferDraft = { service_id: string; merchant_price_cents: number; start_at?: string; capacity_total?: number } | null;
@@ -222,13 +223,11 @@ export function CreateOfferSheet({
             */}
             {service ? (
               <div className="mt-3 flex items-center gap-3 rounded-xl bg-surface p-3">
-                {service.image_url ? (
-                  <img src={service.image_url} alt="" className="size-16 shrink-0 rounded-lg object-cover" />
-                ) : (
-                  <span className="grid size-16 shrink-0 place-items-center rounded-lg bg-line text-muted">
-                    <ImageOff size={20} aria-hidden="true" />
-                  </span>
-                )}
+                <img
+                  src={serviceIllustration(service.name, service.image_url, service.category_slug)}
+                  alt=""
+                  className="size-16 shrink-0 rounded-lg object-cover"
+                />
                 <p className="text-sm text-muted">
                   {service.image_url ? (
                     <>

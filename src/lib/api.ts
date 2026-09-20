@@ -264,6 +264,32 @@ export async function listServicePhotos(): Promise<ServicePhoto[]> {
   );
 }
 
+const SERVICE_PHOTO_TYPES: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+};
+
+/** Uploads a merchant's real service photo into the business-owned part of public Storage. */
+export async function uploadServicePhoto(businessId: string, file: File): Promise<string> {
+  const extension = SERVICE_PHOTO_TYPES[file.type];
+  if (!extension) throw new Error('Vyberte fotografii ve formátu JPG, PNG nebo WebP.');
+  if (file.size === 0) throw new Error('Vybraná fotografie je prázdná.');
+  if (file.size > 5 * 1024 * 1024) throw new Error('Fotografie může mít nejvýše 5 MB.');
+
+  const token = globalThis.crypto?.randomUUID?.()
+    ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const path = `${businessId}/services/${token}.${extension}`;
+  const { error } = await supabase.storage.from('covers').upload(path, file, {
+    contentType: file.type,
+    cacheControl: '31536000',
+    upsert: false,
+  });
+  if (error) throw new Error('Fotku se nepodařilo nahrát. Zkontrolujte připojení a zkuste to znovu.');
+
+  return supabase.storage.from('covers').getPublicUrl(path).data.publicUrl;
+}
+
 /**
  * A venue's own page. Public on purpose: a link handed to someone who has never opened FLEK
  * has to render before they sign in.

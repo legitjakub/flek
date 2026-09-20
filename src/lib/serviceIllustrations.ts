@@ -2,6 +2,17 @@ import { ACTIVITY_GALLERIES, activityForName } from './activityGalleries';
 
 export const SERVICE_PLACEHOLDER = '/images/flek-placeholder.svg';
 
+/**
+ * Prepared catalogue imagery is disclosed as illustrative. Merchant uploads live in Supabase
+ * Storage and deliberately return false: a real photo must never be presented as a placeholder.
+ */
+export function isIllustrativeServiceImage(imageUrl: string | null | undefined): boolean {
+  if (!imageUrl || imageUrl === SERVICE_PLACEHOLDER) return false;
+  return imageUrl.startsWith('/images/activities/')
+    || imageUrl.startsWith('/images/services/')
+    || imageUrl.startsWith('https://images.unsplash.com/');
+}
+
 const HAIR = 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=640&q=70&auto=format&fit=crop';
 const MASSAGE = 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=640&q=70&auto=format&fit=crop';
 const NAILS = 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=640&q=70&auto=format&fit=crop';

@@ -10,7 +10,7 @@ import { ActivitySuggestions, ServicePhotoPicker } from './ActivityPicker';
 import { useServices } from './useBusiness';
 import type { Business, Service } from '../../types/database';
 import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
-import { SERVICE_PLACEHOLDER, serviceIllustration } from '../../lib/serviceIllustrations';
+import { isIllustrativeServiceImage, serviceIllustration } from '../../lib/serviceIllustrations';
 
 const DURATION_PRESETS = [15, 30, 45, 60, 90, 120] as const;
 
@@ -63,7 +63,7 @@ function Services({ business }: { business: Business }) {
                 {image ? (
                   <span className="relative size-20 shrink-0 overflow-hidden rounded-xl">
                     <img src={image} alt="" className="size-full object-cover" />
-                    {image !== SERVICE_PLACEHOLDER ? <IllustrativePhotoLabel compact className="right-1 bottom-1" /> : null}
+                    {isIllustrativeServiceImage(image) ? <IllustrativePhotoLabel compact className="right-1 bottom-1" /> : null}
                   </span>
                 ) : (
                   <span className="grid size-20 shrink-0 place-items-center rounded-xl bg-surface text-muted">
@@ -124,6 +124,7 @@ function ServiceSheet({
   const [advanced, setAdvanced] = useState(Boolean(service?.description));
   const [attempted, setAttempted] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
 
   const trimmedName = name.trim();
   const minutesNumber = Number(minutes);
@@ -182,7 +183,7 @@ function ServiceSheet({
       footer={
         <div>
           {attempted && !valid ? <p className="mb-2 text-center text-sm font-medium text-danger">Doplňte označená pole.</p> : null}
-          <Button className="w-full" size="lg" loading={save.isPending} onClick={submit}>
+          <Button className="w-full" size="lg" disabled={photoUploading} loading={save.isPending} onClick={submit}>
             {service ? 'Uložit změny' : 'Uložit službu'}
           </Button>
         </div>
@@ -292,12 +293,14 @@ function ServiceSheet({
         </Field>
 
         <ServicePhotoPicker
+          businessId={business.id}
           categorySlug={category}
           templateSlug={template}
           serviceName={trimmedName}
           value={imageUrl}
           venueCover={business.cover_url}
           onPick={setImageUrl}
+          onUploadingChange={setPhotoUploading}
         />
 
         <section aria-labelledby="service-preview-title">
@@ -306,7 +309,7 @@ function ServiceSheet({
             {previewImage ? (
               <span className="relative h-28 w-28 shrink-0">
                 <img src={previewImage} alt="" className="size-full object-cover" />
-                {previewImage !== SERVICE_PLACEHOLDER ? <IllustrativePhotoLabel compact className="right-1.5 bottom-1.5" /> : null}
+                {isIllustrativeServiceImage(previewImage) ? <IllustrativePhotoLabel compact className="right-1.5 bottom-1.5" /> : null}
               </span>
             ) : (
               <span className="grid h-28 w-28 shrink-0 place-items-center bg-line/50 text-muted"><ImageOff size={22} aria-hidden="true" /></span>

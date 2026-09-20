@@ -9,7 +9,7 @@ import { relativeTime } from '../../lib/clock';
 import { GooglePlaceRating } from '../ratings/GooglePlaceRating';
 import type { SearchRow } from '../../types/database';
 import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
-import { SERVICE_PLACEHOLDER, serviceIllustration } from '../../lib/serviceIllustrations';
+import { isIllustrativeServiceImage, SERVICE_PLACEHOLDER, serviceIllustration } from '../../lib/serviceIllustrations';
 import { CapacityLabel } from '../../components/CapacityLabel';
 import { cx } from '../../components/ui';
 import { slotLabels, visibleSlots } from './slots';
@@ -183,7 +183,7 @@ export function OfferCard({
         <DiscountBadge pct={offer.discount_pct} size="lg" className="shrink-0 shadow-card" />
       </div>
 
-      {photo && photo !== SERVICE_PLACEHOLDER ? (
+      {isIllustrativeServiceImage(photo) ? (
         <IllustrativePhotoLabel className={offer.discount_pct > 0 ? 'top-13 right-4' : 'top-4 right-4'} />
       ) : null}
 

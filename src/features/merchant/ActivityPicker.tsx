@@ -1,11 +1,11 @@
-import { useEffect, useMemo, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Check, ChevronLeft, ChevronRight, Image, PenLine, Store } from 'lucide-react';
-import { listServicePhotos } from '../../lib/api';
+import { Check, ChevronLeft, ChevronRight, Image, PenLine, Store, Upload } from 'lucide-react';
+import { listServicePhotos, uploadServicePhoto } from '../../lib/api';
 import { cx, Skeleton } from '../../components/ui';
 import { useSnapCarousel } from '../../components/useSnapCarousel';
 import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
-import { SERVICE_PLACEHOLDER } from '../../lib/serviceIllustrations';
+import { isIllustrativeServiceImage, SERVICE_PLACEHOLDER } from '../../lib/serviceIllustrations';
 import { ACTIVITY_GALLERIES, activityForName, activityPhotoSrcSet } from '../../lib/activityGalleries';
 
 function usePhotos() {
@@ -91,21 +91,28 @@ type PhotoOption = {
 
 /** One selected preview and a carousel that always settles on a whole thumbnail. */
 export function ServicePhotoPicker({
+  businessId,
   categorySlug,
   templateSlug,
   serviceName,
   value,
   venueCover,
   onPick,
+  onUploadingChange,
 }: {
+  businessId: string;
   categorySlug: string;
   templateSlug: string | null;
   serviceName: string;
   value: string | null;
   venueCover: string | null;
   onPick: (imageUrl: string | null) => void;
+  onUploadingChange?: (uploading: boolean) => void;
 }) {
   const photos = usePhotos();
+  const uploadId = useId();
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const choices = useMemo<PhotoOption[]>(() => {
     const catalogue = photos.data ?? [];
     const inferred = [...catalogue]
@@ -142,6 +149,21 @@ export function ServicePhotoPicker({
     carousel.goTo(selectedIndex, 'auto');
   }, [selectedIndex]);
 
+  async function upload(file: File | undefined) {
+    if (!file || uploading) return;
+    setUploadError(null);
+    setUploading(true);
+    onUploadingChange?.(true);
+    try {
+      onPick(await uploadServicePhoto(businessId, file));
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : 'Fotku se nepodařilo nahrát. Zkuste to znovu.');
+    } finally {
+      setUploading(false);
+      onUploadingChange?.(false);
+    }
+  }
+
   if (photos.isPending) return <Skeleton className="h-52 w-full" />;
 
   return (
@@ -162,11 +184,43 @@ export function ServicePhotoPicker({
         </span>
       </div>
 
+      <div className="mt-3 rounded-2xl border border-line bg-surface p-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-bold text-ink">Vlastní fotografie</span>
+            <span className="mt-0.5 block text-xs text-muted">Má vždy přednost před ilustračními fotkami. JPG, PNG nebo WebP, nejvýše 5 MB.</span>
+          </span>
+          <label
+            htmlFor={uploadId}
+            aria-busy={uploading || undefined}
+            className={cx(
+              'inline-flex min-h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl border border-line bg-card px-3 text-sm font-bold text-ink hover:border-accent',
+              uploading && 'pointer-events-none opacity-55',
+            )}
+          >
+            <Upload size={17} aria-hidden="true" />
+            {uploading ? 'Nahrávám…' : 'Nahrát fotku'}
+          </label>
+          <input
+            id={uploadId}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="sr-only"
+            disabled={uploading}
+            onChange={(event) => {
+              void upload(event.target.files?.[0]);
+              event.target.value = '';
+            }}
+          />
+        </div>
+        {uploadError ? <p role="alert" className="mt-2 text-sm font-medium text-danger">{uploadError}</p> : null}
+      </div>
+
       <div className="relative mt-3 overflow-hidden rounded-2xl bg-line/45">
         {selected?.imageUrl ? (
           <>
             <img src={selected.imageUrl} srcSet={activityPhotoSrcSet(selected.imageUrl)} sizes="(min-width: 768px) 560px, 100vw" alt="" className="aspect-[16/9] max-h-52 w-full object-cover" />
-            {selected.imageUrl !== SERVICE_PLACEHOLDER ? <IllustrativePhotoLabel className="top-2 left-2" /> : null}
+            {isIllustrativeServiceImage(selected.imageUrl) ? <IllustrativePhotoLabel className="top-2 left-2" /> : null}
           </>
         ) : (
           <span className="flex aspect-[16/9] max-h-52 items-center justify-center text-muted">{selected?.fallback ?? <Image size={28} aria-hidden="true" />}</span>
@@ -222,7 +276,7 @@ function PhotoChoice({ active, label, imageUrl, fallback, onClick }: {
       {imageUrl ? (
         <>
           <img src={imageUrl} srcSet={activityPhotoSrcSet(imageUrl)} sizes="96px" alt="" loading="lazy" className="aspect-square w-full object-cover" />
-          {imageUrl !== SERVICE_PLACEHOLDER ? <IllustrativePhotoLabel compact className="bottom-[2.05rem] left-1" /> : null}
+          {isIllustrativeServiceImage(imageUrl) ? <IllustrativePhotoLabel compact className="bottom-[2.05rem] left-1" /> : null}
         </>
       ) : (
         <span className="flex aspect-square items-center justify-center bg-line/45 text-muted">{fallback ?? <Image size={22} aria-hidden="true" />}</span>

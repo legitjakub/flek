@@ -25,7 +25,7 @@ import { UnavailableOfferRecovery } from './UnavailableOfferRecovery';
 import { unavailableReason } from './unavailable';
 import { GooglePlaceRating } from '../ratings/GooglePlaceRating';
 import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
-import { SERVICE_PLACEHOLDER, serviceIllustration } from '../../lib/serviceIllustrations';
+import { isIllustrativeServiceImage, SERVICE_PLACEHOLDER, serviceIllustration } from '../../lib/serviceIllustrations';
 import { CapacityLabel } from '../../components/CapacityLabel';
 import { TimePicker } from './TimePicker';
 import { Recommendations } from './Recommendations';
@@ -225,7 +225,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
                   businessName={offer.business_name}
                 />
               </div>
-              {image !== SERVICE_PLACEHOLDER ? <IllustrativePhotoLabel className="right-3 bottom-3" /> : null}
+              {isIllustrativeServiceImage(image) ? <IllustrativePhotoLabel className="right-3 bottom-3" /> : null}
             </div>
           ) : null}
           {/*

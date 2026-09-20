@@ -6,7 +6,7 @@ import { DiscountBadge, OriginalPrice } from '../../components/Price';
 import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
 import { useSnapCarousel } from '../../components/useSnapCarousel';
 import { distance, money } from '../../lib/format';
-import { SERVICE_PLACEHOLDER, serviceIllustration } from '../../lib/serviceIllustrations';
+import { isIllustrativeServiceImage, SERVICE_PLACEHOLDER, serviceIllustration } from '../../lib/serviceIllustrations';
 import { thumbnail } from '../../lib/thumbnail';
 import { clockTime, dayLabel, duration } from '../../lib/time';
 import type { SearchRow } from '../../types/database';
@@ -138,7 +138,7 @@ function PreviewCard({
       <div className="relative h-28 bg-accent-soft sm:h-32 [@media(max-height:720px)]:h-20">
         <img src={photo} alt="" decoding="async" onError={() => setFailed(true)} className="size-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-ink/35 to-transparent" aria-hidden="true" />
-        {photo !== SERVICE_PLACEHOLDER ? <IllustrativePhotoLabel className="bottom-2.5 right-3" /> : null}
+        {isIllustrativeServiceImage(photo) ? <IllustrativePhotoLabel className="bottom-2.5 right-3" /> : null}
         <div className="absolute top-2.5 left-3 flex items-center gap-2">
           <DiscountBadge pct={offer.discount_pct} className="shadow-card" />
           {position ? (

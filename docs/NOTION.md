@@ -125,6 +125,7 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 - [x] Víc časů jedné služby na jedné kartě (feed, mapa, podnik, oblíbené) a výběr času na detailu; stejně vysoké karty v náhledu na mapě (15. 9.)
 - [x] Karusel „Mohlo by se ti líbit“ na detailu nabídky a lepší obrázek pro službu bez fotky (15. 9.)
 - [x] Vyměnit staré obrázky u aktivních demo služeb za knihovnu podle konkrétní aktivity a rozšířit demo provozovny o 24 testovacích služeb (20. 9.)
+- [x] Umožnit podniku nahrát vlastní fotografii služby; vlastní fotografie má všude přednost a ilustrační katalog slouží jen jako placeholder (20. 9.)
 - [x] Registrace existujícího e-mailu nabídne přihlášení nebo obnovu hesla místo „Poslali jsme odkaz“ (15. 9.)
 - [x] Platby přes Stripe Connect: Checkout, poplatek FLEKu jako application fee, výplaty a KYC podniků přes Stripe, ověřený webhook, vratky přes refund API (13. 9., testovací režim)
 - [x] Odebrat demo platby (`start_payment` jen Stripe, `demo_confirm_payment` zrušená) (13. 9.)
@@ -247,7 +248,7 @@ Schvaluje provozovny (skutečný podnik jen s IČO), kontroluje nabídky a rezer
 | Mazání starých dat | `pg_cron`, job `flek-retention` (každou noc ve 3:40) | doručování a zprávy WhatsApp po 90 dnech, upozornění po 12 měsících, vyřízená nahlášení po 3 letech, záznamy cronu po 14 dnech |
 | Přihlášení přes Google a Apple | Supabase Auth → Sign In / Providers | Google zapnutý 20. 9. (klient v Google Cloud, Redirect URLs `https://www.app-flek.eu/**`), Apple zatím ne. Stav vypíše `npm run check:oauth` |
 | Ověření IČO | Edge Function `ares-lookup` nad veřejným API ARES | název a sídlo podniku z registru, bez klíče |
-| Ilustrační fotky | `public/images/activities` (74 originálů 1254 px, deriváty 800/176 px) a `service_photos` | dvě varianty pro všech 37 aktivit; aktivní demo služby používají odpovídající aktivitu, vlastní fotka podniku má přednost a mapové body nestahují velké soubory |
+| Fotky služeb | vlastní snímky ve Storage `covers/{business_id}/services`, fallback v `public/images/activities` (74 originálů 1254 px, deriváty 800/176 px) a `service_photos` | podnik nahraje JPG/PNG/WebP do 5 MB; vlastní fotka má všude přednost a není označená jako ilustrační, dvě ilustrační varianty pro všech 37 aktivit jsou jen placeholder |
 | Kód | GitHub `legitjakub/flek` | — |
 | Instalace na telefon | PWA (`public/sw.js`, manifest) | cachuje jen skořápku aplikace, nabídky nikdy |
 | Notion | stránka „FLEK — přehled projektu“ | kopie `docs/NOTION.md` |
@@ -318,6 +319,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 20. 9. 2026 | Podnik může u služby nahrát vlastní fotografii; ta má před ilustračním katalogem přednost na kartách, mapě, detailu i v partnerské části a nenese označení „ilustrační foto“. |
 | 20. 9. 2026 | Zásady ochrany osobních údajů jsou v aplikaci zveřejněné na Jakuba jako fyzickou osobu; obchodní podmínky čekají na IČO. |
 | 20. 9. 2026 | Karty a navigace dostaly matné sklo (fotka a mapa pod nimi prosvítají) a e-maily konečně nesou skutečné logo FLEK místo textu „flek′“. |
 | 20. 9. 2026 | Administrace ukazuje u provozovny seznam ke kontrole (IČO a ARES, podmínky, kontakt, adresa, služby, Stripe), počet čekajících a filtr; podnik bez IČO nejde schválit a je vidět proč. |

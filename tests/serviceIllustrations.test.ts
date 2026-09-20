@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { ACTIVITY_GALLERIES, ACTIVITY_LABELS } from '../src/lib/activityGalleries';
-import { SERVICE_PLACEHOLDER, serviceIllustration } from '../src/lib/serviceIllustrations';
+import { isIllustrativeServiceImage, SERVICE_PLACEHOLDER, serviceIllustration } from '../src/lib/serviceIllustrations';
 
 /**
  * A service shows the most specific picture there is. A venue's general cover is not one of them:
@@ -10,7 +10,15 @@ import { SERVICE_PLACEHOLDER, serviceIllustration } from '../src/lib/serviceIllu
  */
 describe('serviceIllustration', () => {
   it('prefers the photo the merchant chose for the service', () => {
-    expect(serviceIllustration('Padel 60 min', '/images/services/massage-prague.jpg', null)).toBe('/images/services/massage-prague.jpg');
+    const upload = 'https://yupkrntknbkvmlajwlph.supabase.co/storage/v1/object/public/covers/business/services/real.jpg';
+    expect(serviceIllustration('Padel 60 min', upload, null)).toBe(upload);
+    expect(isIllustrativeServiceImage(upload)).toBe(false);
+  });
+
+  it('discloses prepared catalogue photos, but not a merchant upload', () => {
+    expect(isIllustrativeServiceImage('/images/activities/sport-padel-1.jpg')).toBe(true);
+    expect(isIllustrativeServiceImage('/images/services/padel-prague.jpg')).toBe(true);
+    expect(isIllustrativeServiceImage(SERVICE_PLACEHOLDER)).toBe(false);
   });
 
   it('falls back to the prepared picture of the activity, matched without diacritics', () => {
