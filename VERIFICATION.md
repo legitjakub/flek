@@ -3,7 +3,7 @@
 ## Aktivní fotky a rozšířený demo katalog — 20. 9. 2026
 
 - Migrace `refresh_activity_photos_and_demo_services` proběhla před nasazením celá v transakci s rollbackem proti hostované databázi. Kontroly uvnitř stejné transakce potvrdily 37 katalogových aktivit, 24 nových služeb jen u provozoven vlastněných výhradně účty `@flek.test` a žádnou aktivní službu s chybějícím, Unsplash nebo starým `/images/services` obrázkem.
-- Po nasazení je migrace v produkci jako `20260920210547`: všech 37 katalogových řádků a všech 60 aktivních služeb míří do `/images/activities`, staré i chybějící zdroje mají nulový počet. Nových 24 služeb vytvořilo 128 budoucích zveřejněných FLEKů.
+- Po nasazení je účinná migrace v produkci jako `20260920210547`: všech 37 katalogových řádků a všech 60 aktivních služeb míří do `/images/activities`, staré i chybějící zdroje mají nulový počet. Nových 24 služeb vytvořilo 128 budoucích zveřejněných FLEKů. Supabase eviduje také verzi `20260920164139` z transakčního dry runu; lokální no-op soubor ji zachovává, aby preview databáze neměla rozpadlou historii.
 - Reálné obrázky nahrané podnikem do Supabase Storage se nemění. Ukázkové provozovny dostávají odpovídající obálku a `private.flek_demo_refresh(3)` připraví nabídky nových služeb na tři dny dopředu.
 - Statická kontrola knihovny: 74 originálů 1254 × 1254 px, ke každému 800px a 176px derivát; celkem 222 JPG souborů. Po sloučení s nejnovějším `main` prošel `npm run build` a `npm run test:unit` (150 testů). Vercel nasazení commitu `c9b7819` doběhlo úspěšně a produkční doména vrací nový obrázek půjčení kola s HTTP 200.
 

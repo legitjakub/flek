@@ -158,7 +158,7 @@ Nejdůležitější migrace:
 | `20260918145409_oauth_profile_names.sql` | `handle_new_user` vezme jméno i z údajů Google a Apple (`full_name`, `name`) |
 | `20260918145910_legal_simplify.sql` | bez samostatných pravidel obsahu (`content_rules`), podmínky pro podniky stačí odsouhlasit jednou |
 | `20260915192546_legal_reports.sql` | `content_reports` a `report_content`, admin fronta nahlášení, `export_my_data`, `admin_dac7_report`, `record_event` bez identifikátoru relace |
-| `20260920210547_refresh_activity_photos_and_demo_services.sql` | nová knihovna na katalogu a aktivních službách, oprava půjčení kola, 24 dalších služeb pouze u demo provozoven a jejich nabídky na tři dny |
+| `20260920164139_…_dry_run_record.sql`, `20260920210547_refresh_activity_photos_and_demo_services.sql` | první verze drží shodu s historií Supabase po transakčním dry runu; druhá účinně nasadila novou knihovnu na katalog a aktivní služby, opravu půjčení kola, 24 dalších služeb pouze u demo provozoven a jejich nabídky na tři dny |
 
 ## Ověření a otevřené body
 
