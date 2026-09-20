@@ -47,7 +47,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik zveř
 | `tests` | unit testy (Vitest), `integration.test.ts` (potřebuje Docker), `pilot-maintenance.sql`, `stripe-refunds.sql`, `manual-confirmation.sql`, `whatsapp-notifications.sql`, `legal.sql` a `oauth-profile.sql` (SQL v transakci s rollbackem) |
 | `scripts` | `acceptance.mjs` (API kontroly), `check-oauth.mjs` (stav přihlášení přes Google a Apple), `sync-notion.mjs`, lokální Supabase |
 
-Routy: zákazník `/`, `/mapa`, `/nabidka/:id`, `/podnik/:id`, `/oblibene`, `/rezervace`, `/profil`, `/prihlaseni`, `/potvrzeni`, `/r/:code`, právní texty `/podminky`, `/podminky-podniky`, `/soukromi`; podnik `/partner` (+ `/nabidky`, `/rezervace`, `/sluzby`, `/provozovna`, `/metriky`, `/registrace`); admin `/admin` (+ `/nabidky`, `/rezervace`, `/uzivatele`, `/metriky`, `/audit`, `/nahlaseni`).
+Routy: zákazník `/`, `/mapa`, `/nabidka/:id`, `/podnik/:id`, `/oblibene`, `/rezervace`, `/profil`, `/prihlaseni`, `/potvrzeni`, `/r/:code`, právní texty `/podminky`, `/podminky-podniky`, `/soukromi`; podnik `/partner` (+ `/nabidky`, `/rezervace`, `/sluzby`, `/provozovna`, `/metriky`, `/registrace`); admin `/admin` (+ `/nabidky`, `/rezervace`, `/uzivatele`, `/metriky`, `/audit`, `/nahlaseni`, `/nastaveni`).
 
 ## Pravidla, která se nesmí porušit
 
