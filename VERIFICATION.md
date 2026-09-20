@@ -267,3 +267,10 @@ Lokální Docker integrační sada, fyzický iPhone/Safari, skutečná kamera, n
 - Zkušební zpráva přes `private.account_notice` na jakub.hrncir24@gmail.com: řádek ve frontě má `status = sent`, `attempts = 1`, bez chyby. Resend i `notification-delivery` tedy fungují.
 - Skutečná mezera: registrace provozovny neposílala nic. Migrace `20260920175100` přidává trigger na `business_members` (ne na `businesses` — `create_business` vkládá vlastníka až po provozovně), který pošle majiteli potvrzení a adminům „Nová provozovna ke schválení“. Admin, který si provozovnu zakládá sám, dostane jen zprávu majitele; demo podniky ze seedu jsou vynechané, aby při seedu nenaskákalo osmnáct zpráv.
 - Neověřeno: skutečné doručení do schránky (Resend hlásí přijetí, ne otevření) a průchod registrací nové provozovny v prohlížeči — trigger je ověřený jen logikou a zkušební zprávou toutéž cestou.
+
+## Administrace provozoven — 20. 9. 2026
+
+- RPC `admin_businesses` nově posílá `billing` (IČO, DIČ, typ prodejce, souhlas s podmínkami, kontaktní osoba, co našel ARES) a `is_demo`. Číslo účtu ani datum narození se do administrace neposílají — ke schválení nejsou potřeba. Tvar odpovědi ověřený dotazem s podvrženým adminským JWT v transakci s rollbackem.
+- `approvalChecklist` počítá totéž, na čem schválení odmítne server: skutečný podnik musí mít IČO, ukázkový ne. Pokryto pěti testy (`tests/approvalChecklist.test.ts`), celkem 141 unit testů.
+- Vykresleno v Chromiu na 390 a 1280 px nad dvěma případy (podnik bez IČO a kompletní podnik): bez horizontálního přetečení, zakázané „Schválit“ má důvod hned nad sebou, řádky seznamu mají ikonu podle stavu (zelená hotovo, červená blokuje, žlutá jen upozorňuje).
+- Neověřeno: průchod administrací nad živými daty v prohlížeči — z prostředí agenta není přístup na web.

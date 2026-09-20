@@ -282,6 +282,16 @@ export type AdminBusiness = Business & {
   owner_email: string | null;
   services: Pick<Service, 'id' | 'name' | 'duration_minutes' | 'normal_price_cents' | 'is_active'>[];
   upcoming_offers: number;
+  /** Ukázkový podnik (všichni členové mají účet `@flek.test`) smí být schválený bez IČO. */
+  is_demo: boolean;
+  /** RPC posílá celý řádek provozovny, takže stav Stripe je tu taky. */
+  stripe_account_id: string | null;
+  stripe_charges_enabled: boolean;
+  /** Co admin potřebuje ke kontrole poskytovatele. Nikdy číslo účtu ani datum narození. */
+  billing: Pick<BusinessBilling,
+    'ico' | 'dic' | 'seller_type' | 'legal_name' | 'contact_person' | 'contact_phone'
+    | 'terms_accepted_at' | 'ares_name' | 'ares_address' | 'ares_checked_at'
+    | 'billing_address_line' | 'billing_city' | 'billing_postal_code'> | null;
 };
 
 export type AdminUser = Profile & { email: string; bookings: AdminBooking[] };
