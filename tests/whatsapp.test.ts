@@ -1,7 +1,8 @@
 import { createHmac } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import {
-  TEMPLATE_SECRETS, actionPayload, decisionReply, pairingReply, parseWebhook, templateMessage, textMessage, timingSafeEqual, verifySignature,
+  TEMPLATE_DEFINITIONS, TEMPLATE_SECRETS, actionPayload, decisionReply, pairingReply, parseWebhook, templateCreatePayload, templateMessage, textMessage,
+  timingSafeEqual, verifySignature,
 } from '../supabase/functions/_shared/whatsapp';
 import { displayPhone, pairingCode, whatsappLink } from '../src/lib/phone';
 
@@ -141,5 +142,41 @@ describe('WhatsApp messages', () => {
     expect(pairingCode((values) => { values[0] = 4217; })).toBe('004217');
     expect(pairingCode((values) => { values[0] = 4_294_967_295; })).toBe('967295');
     expect(pairingCode()).toMatch(/^[0-9]{6}$/);
+  });
+});
+
+describe('WhatsApp templates at Meta', () => {
+  it('has one definition per message, with the parameters the database sends', () => {
+    // Pořadí parametrů skládá `claim_whatsapp_deliveries`; počet ukázek tedy musí sedět s {{n}}
+    // v textu, jinak Meta šablonu odmítne — nebo, hůř, schválí a zpráva vyjde s prohozenými údaji.
+    expect(TEMPLATE_DEFINITIONS.map((definition) => definition.template).sort()).toEqual(Object.keys(TEMPLATE_SECRETS).sort());
+    for (const definition of TEMPLATE_DEFINITIONS) {
+      const placeholders = [...definition.body.matchAll(/\{\{(\d+)\}\}/g)].map((match) => Number(match[1]));
+      expect(placeholders).toEqual(definition.example.map((_, index) => index + 1));
+      // Meta odmítne ukázku s koncem řádku nebo tabulátorem, stejně jako `parameter()` v odesílání.
+      for (const value of definition.example) expect(value).toBe(value.replace(/\s+/g, ' ').trim());
+      expect(definition.name).toMatch(/^[a-z0-9_]{1,512}$/);
+    }
+    // Tlačítka má jen žádost pro podnik: jen u ní `templateMessage` posílá dvě rychlé odpovědi.
+    expect(TEMPLATE_DEFINITIONS.filter((definition) => definition.buttons).map((definition) => definition.template)).toEqual(['business_request']);
+    expect(TEMPLATE_DEFINITIONS.find((definition) => definition.template === 'business_request')?.buttons).toEqual(['Potvrdit', 'Nemohu přijmout']);
+  });
+
+  it('builds the request Meta accepts', () => {
+    const request = TEMPLATE_DEFINITIONS.find((definition) => definition.template === 'business_request')!;
+    expect(templateCreatePayload(request, 'flek_booking_request', 'cs')).toEqual({
+      name: 'flek_booking_request',
+      language: 'cs',
+      category: 'UTILITY',
+      components: [
+        { type: 'BODY', text: request.body, example: { body_text: [['dnes 14:30', 'Pánský střih (45 min)', '750 Kč', '14:08']] } },
+        { type: 'BUTTONS', buttons: [{ type: 'QUICK_REPLY', text: 'Potvrdit' }, { type: 'QUICK_REPLY', text: 'Nemohu přijmout' }] },
+      ],
+    });
+    // Zpráva bez tlačítek je jen tělo; název může přebít tajný klíč, kdyby šablona u Mety už byla.
+    const confirmed = TEMPLATE_DEFINITIONS.find((definition) => definition.template === 'customer_confirmed')!;
+    const payload = templateCreatePayload(confirmed, 'flek_customer_confirmed_v2', 'cs');
+    expect(payload.components).toHaveLength(1);
+    expect(payload.name).toBe('flek_customer_confirmed_v2');
   });
 });

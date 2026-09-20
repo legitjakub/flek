@@ -443,3 +443,7 @@ verify_jwt = false
 # Looks an IČO up in the business register for a signed-in venue member.
 [functions.ares-lookup]
 verify_jwt = true
+
+# Zakládá šablony zpráv u Mety; jen pro adminy, kontrola je uvnitř funkce.
+[functions.whatsapp-templates-setup]
+verify_jwt = true
