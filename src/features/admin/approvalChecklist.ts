@@ -103,7 +103,5 @@ export function approvalChecklist(business: AdminBusiness): CheckItem[] {
 export function approvalBlocker(business: AdminBusiness): string | null {
   const blocked = approvalChecklist(business).find((item) => item.blocking && !item.ok);
   if (!blocked) return null;
-  return blocked.key === 'ico'
-    ? 'skutečný podnik jde schválit až s IČO'
-    : `chybí ${blocked.label.toLocaleLowerCase('cs-CZ')}`;
+  return blocked.key === 'ico' ? 'chybí IČO' : `chybí ${blocked.label.toLocaleLowerCase('cs-CZ')}`;
 }

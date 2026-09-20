@@ -32,7 +32,7 @@ describe('approvalChecklist', () => {
 
   it('bez IČO schválení blokuje a řekne, kdo ho doplní', () => {
     const missing = business({ billing: { ...business().billing!, ico: null } });
-    expect(approvalBlocker(missing)).toBe('skutečný podnik jde schválit až s IČO');
+    expect(approvalBlocker(missing)).toBe('chybí IČO');
     const ico = approvalChecklist(missing).find((item) => item.key === 'ico');
     expect(ico?.ok).toBe(false);
     expect(ico?.blocking).toBe(true);
