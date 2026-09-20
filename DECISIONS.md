@@ -224,3 +224,9 @@ Jakub ukázal aplikaci s mapou, kde má každý špendlík značku aplikace, a s
 - **Rotace slotů s krokem 7 z 25 půlhodin** (8:00–20:00). Krok nesoudělný s počtem slotů projde všechny a dva termíny téže služby od sebe dělí několik hodin, takže karta „další časy“ ukazuje rozumnou nabídku místo tří časů za sebou.
 - **Strop šest na den** (`p_per_day` se ořízne), aby se z dema nestala zeď stejných nabídek.
 - **Fotky se srovnaly migrací, ne v kódu.** Katalog v `serviceIllustrations.ts` se od 10. 9. měnil, ale existující řádky zůstaly na seedu a aplikace dává přednost fotce uložené u služby. Migrace mění jen řádky s přesně původní seedovanou hodnotou; co si podnik nahrál sám, zůstává.
+
+## Karta na mapě vede k rezervaci — 20. 9. 2026
+
+- **„Navigovat“ z karty pryč.** Na mapě člověk řeší, jestli se mu termín vyplatí, ne jak se tam dostane; čtvrť i vzdálenost má na kartě a trasu si hledá, až je FLEK jeho. Navigace zůstává na detailu a na voucheru po zaplacení.
+- **Místo ní „Chytit FLEK“** se stejným slovesem jako na detailu, aby se stejná akce neučila dvakrát. Otevře detail s `?rezervovat=1`, což je parametr, který aplikace uměla už kvůli návratu z přihlášení — nevznikla druhá cesta do rezervace.
+- **„Detail“ zůstává vedle** jako vedlejší akce pro toho, kdo si chce nejdřív přečíst popis a zrušení. U termínu, který se mezitím vyprodal, je tlačítko jediné a vede na záchrannou nabídku podobných termínů.

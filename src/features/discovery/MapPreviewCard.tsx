@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Clock3, Navigation, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock3, X } from 'lucide-react';
 import { Link } from '../../app/router';
 import { buttonClass, cx } from '../../components/ui';
 import { DiscountBadge, OriginalPrice } from '../../components/Price';
 import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
 import { useSnapCarousel } from '../../components/useSnapCarousel';
 import { distance, money } from '../../lib/format';
-import { navigationHref } from '../../lib/maps';
 import { SERVICE_PLACEHOLDER, serviceIllustration } from '../../lib/serviceIllustrations';
 import { thumbnail } from '../../lib/thumbnail';
 import { clockTime, dayLabel, duration } from '../../lib/time';
@@ -99,10 +98,15 @@ export function MapPreviewCard({
   );
 }
 
+/** The detail page opens its booking sheet on `rezervovat=1`, the same way it does after sign-in. */
+function bookingHref(href: string): string {
+  return `${href}${href.includes('?') ? '&' : '?'}rezervovat=1`;
+}
+
 /*
  * The full card is back (14. 9.): a compact row with only the name, time and price dropped the
- * discount, the struck list price, the distance and the way to get there, which are exactly what
- * decide a last-minute booking. The map keeps the pin in sight above it, because MapPage measures
+ * discount, the struck list price and the distance, which are exactly what decide a last-minute
+ * booking. The map keeps the pin in sight above it, because MapPage measures
  * the card and passes its real height as the area the camera has to avoid.
  */
 function PreviewCard({
@@ -126,6 +130,8 @@ function PreviewCard({
   const photo = failed ? SERVICE_PLACEHOLDER : (thumbnail(source, 720, false) ?? SERVICE_PLACEHOLDER);
   const away = distance(offer.distance_m);
   const place = [offer.business_name, offer.district, away].filter(Boolean).join(' · ');
+  // The search only returns bookable appointments, but a card left open on the map can go stale.
+  const bookable = offer.capacity_remaining > 0 && Date.parse(offer.booking_cutoff_at) > Date.parse(now);
 
   return (
     <article className="flex w-full flex-col overflow-hidden rounded-3xl bg-card shadow-lift">
@@ -202,20 +208,30 @@ function PreviewCard({
           </p>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <a
-            href={navigationHref(offer)}
-            target="_blank"
-            rel="noreferrer"
-            className={buttonClass({ variant: 'soft', shape: 'pill' })}
-          >
-            <Navigation size={16} aria-hidden="true" />
-            Navigovat
-          </a>
-          <Link to={detailHref(offer.id)} className={buttonClass({ shape: 'pill' })}>
-            Detail
-          </Link>
-        </div>
+        {/*
+          Navigation used to sit here, next to Detail. On the map the question is still "is this
+          worth it", not "how do I get there" — the card already states the district and the
+          distance, and the way there is what you look up once the FLEK is yours (the detail page
+          and the voucher both offer it). So the pin leads where the money is: the same verb and
+          the same sheet as the detail page, one tap earlier.
+        */}
+        {bookable ? (
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <Link to={bookingHref(detailHref(offer.id))} className={buttonClass({ shape: 'pill' })}>
+              Chytit FLEK
+            </Link>
+            <Link to={detailHref(offer.id)} className={buttonClass({ variant: 'soft', shape: 'pill' })}>
+              Detail
+            </Link>
+          </div>
+        ) : (
+          // A card that went stale while the map was open: the detail page has the recovery block.
+          <div className="mt-4">
+            <Link to={detailHref(offer.id)} className={cx(buttonClass({ shape: 'pill' }), 'w-full')}>
+              Detail
+            </Link>
+          </div>
+        )}
       </div>
     </article>
   );
