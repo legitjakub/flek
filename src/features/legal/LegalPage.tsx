@@ -3,12 +3,14 @@ import { LoadingList } from '../../components/ui';
 import { LEGAL_DOCUMENTS, type LegalKind } from './documents';
 import { LegalFooter } from './LegalFooter';
 import { fillPlaceholders, LegalMarkdown } from './markdown';
-import { documentValues, legalPublished, useLegalInfo } from './useLegal';
+import { documentValues, legalPublished, privacyPublished, useLegalInfo } from './useLegal';
 
 export function LegalPage({ kind }: { kind: LegalKind }) {
   const info = useLegalInfo();
   const document = LEGAL_DOCUMENTS[kind];
-  const published = legalPublished(info.data) && Boolean(info.data.documents[kind]?.version);
+  // Zásady se zveřejní i bez IČO (viz privacyPublished); obchodní podmínky předpokládají podnikatele.
+  const gate = kind === 'privacy' ? privacyPublished : legalPublished;
+  const published = gate(info.data) && Boolean(info.data.documents[kind]?.version);
 
   useEffect(() => {
     const previous = window.document.title;

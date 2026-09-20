@@ -4,7 +4,7 @@ import { authProviders, type OAuthProvider } from '../../lib/api';
 import { supabase } from '../../lib/supabase';
 import { errorMessage } from '../../lib/errors';
 import { Button } from '../../components/ui';
-import { legalPublished, useLegalInfo } from '../legal/useLegal';
+import { privacyPublished, useLegalInfo } from '../legal/useLegal';
 
 const LABELS: Record<OAuthProvider, string> = { apple: 'Apple', google: 'Google' };
 
@@ -75,7 +75,7 @@ export function SocialSignIn({ formal, returnTo, merchant }: { formal: boolean; 
         {formal
           ? 'Když účet ještě nemáte, vytvoří se. Pokračováním potvrzujete, že je vám aspoň 18 let.'
           : 'Když účet ještě nemáš, vytvoří se. Pokračováním potvrzuješ, že je ti aspoň 18 let.'}
-        {legalPublished(legal.data) ? (
+        {privacyPublished(legal.data) ? (
           <>
             {' '}{formal ? 'Jak nakládáme s údaji, popisují' : 'Jak nakládáme s tvými údaji, popisují'}{' '}
             <a href="/soukromi" target="_blank" rel="noopener" className="font-bold text-ink underline underline-offset-4">Zásady ochrany osobních údajů</a>.

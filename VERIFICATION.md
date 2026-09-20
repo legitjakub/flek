@@ -281,3 +281,9 @@ Lokální Docker integrační sada, fyzický iPhone/Safari, skutečná kamera, n
 - Vykresleno v Chromiu (400 px, 2× DPI) nad fotografií kurtu, nad čistě černým podkladem a nad barevným podkladem imitujícím mapu: panel s fakty, pilulka s časem i karta nad mapou zůstávají čitelné, fotka a mapa pod nimi prosvítají. Vypočtené hodnoty odpovídají tomu, co prohlížeč skutečně použil (`color(srgb 1 1 1 / 0.86)`, `blur(20px) saturate(1.65)`).
 - Logo do e-mailů vyrenderované z tvaru, který kreslí `components/ui.tsx` (slovo „flek“ v Instrument Sans + špendlík s hodinami a třemi čárkami), do `public/images/email-logo.png` 540 × 216 px s průhledným pozadím; v e-mailu je vloženo na 135 × 54 px, tedy v poměru 2,5 : 1 bez deformace. Hlavička zkontrolovaná v náhledu potvrzovacího e-mailu.
 - Neověřeno: jak se sklo a logo chovají ve skutečných poštovních klientech a na skutečném telefonu — z prostředí agenta není přístup na web ani do schránky.
+
+## Zveřejnění zásad ochrany osobních údajů — 20. 9. 2026
+
+- Migrace `20260920200932` zapsala provozovatele (`operator_name`, `operator_address`, `support_email`) a dala verzi 1.0 zásad účinnost. `legal_info()` v produkci vrací správce „Jakub Hrnčíř“, adresu „Sinkulova 25, 147 00 Praha 4“, kontakt `jakub@app-flek.eu` a účinné zásady; `customer_terms` i `merchant_terms` zůstávají prázdné, jak mají.
+- Pět nových unit testů v `tests/legal.test.ts` (celkem 146): zásady se bez IČO zveřejní a obchodní podmínky ne; bez účinné verze se nezveřejní nic; chybějící adresa nebo e-mail zásady zastaví; věta o správci vynechá IČO, dokud žádné není; a v textu nezůstane „IČO —“.
+- Neověřeno: jak stránka `/soukromi` a patička vypadají nad živými daty v prohlížeči — z prostředí agenta není přístup na web. Text zásad před ostrým provozem zkontroluje právník.

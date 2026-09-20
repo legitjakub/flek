@@ -6,7 +6,7 @@ Tady najdeš, jaké údaje FLEK zpracovává, proč, jak dlouho a komu je před�
 
 ## 1. Kdo tvoje údaje zpracovává
 
-Správcem je **{{provozovatel}}**, IČO {{ico}}, místo podnikání {{sidlo}}. S čímkoli ohledně osobních údajů piš na {{email}}. Pověřence pro ochranu osobních údajů jmenovaného nemáme, protože nám to zákon neukládá.
+Správcem je **{{spravce}}**. S čímkoli ohledně osobních údajů piš na {{email}}. Pověřence pro ochranu osobních údajů jmenovaného nemáme, protože nám to zákon neukládá.
 
 ## 2. Jaké údaje zpracováváme a proč
 

@@ -15,7 +15,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 | Testy | unit testy a build v CI při každém pushi, akceptační kontroly proti hostované databázi (18. 9.: 106/106 s potvrzováním; 15. 9.: 101/101 bez potvrzování), SQL testy potvrzování rezervací, WhatsAppu a právního minima |
 | Potvrzování rezervací podnikem | **zapnuté pro všechny podniky** od 15. 9. 15:54 (předtím demo: akceptace 106/106 a průchod se skutečnými testovacími platbami) |
 | WhatsApp | pro podniky i zákazníky, výchozí zapnutý a vypínatelný v nastavení upozornění, ověření čísla jedním klepnutím; u Meta je aplikace FLEK s odsouhlasenými podmínkami a testovacím číslem (18. 9.), chybí pět šablon, webhook a klíče v Supabase (úkol pro Jakuba níže) |
-| Právní texty | obchodní podmínky pro zákazníky a pro podniky a zásady ochrany osobních údajů ve verzi 1.0 jsou v aplikaci (nahlášení obsahu je oddílem podmínek jako u Too Good To Go nebo Reservia); zveřejní se, až Jakub pošle údaje provozovatele, a před ostrým provozem je zkontroluje právník |
+| Právní texty | **zásady ochrany osobních údajů jsou od 20. 9. zveřejněné** (správce Jakub Hrnčíř jako fyzická osoba, kontakt jakub@app-flek.eu); obchodní podmínky pro zákazníky i pro podniky ve verzi 1.0 čekají na IČO. Všechny texty před ostrým provozem zkontroluje právník |
 | Přihlášení | e-mail a heslo; **Google od 20. 9. funguje** (v Google Cloud zatím režim Testing, přihlásí se jen účty v seznamu test users); Apple čeká na placené členství v Apple Developer Program |
 | Data v produkci (13. 9.) | 18 schválených podniků, 330 nabídek, 321 rezervací, 16 účtů (12 demo, 4 ostatní), od 13. 9. platby jen přes Stripe (test), 16 demo podniků s testovacím Stripe účtem |
 | Pro AI agenty | `AGENTS.md` v kořeni repozitáře (Claude Code ho načítá přes `CLAUDE.md`) |
@@ -315,6 +315,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 20. 9. 2026 | Zásady ochrany osobních údajů jsou v aplikaci zveřejněné na Jakuba jako fyzickou osobu; obchodní podmínky čekají na IČO. |
 | 20. 9. 2026 | Karty a navigace dostaly matné sklo (fotka a mapa pod nimi prosvítají) a e-maily konečně nesou skutečné logo FLEK místo textu „flek′“. |
 | 20. 9. 2026 | Administrace ukazuje u provozovny seznam ke kontrole (IČO a ARES, podmínky, kontakt, adresa, služby, Stripe), počet čekajících a filtr; podnik bez IČO nejde schválit a je vidět proč. |
 | 20. 9. 2026 | Registrace provozovny dá vědět majiteli i adminovi (dřív se o nové provozovně nedozvěděl nikdo a ležela v administraci). Ověřeno, že e-maily z aplikace odcházejí — demo účty je schválně nedostávají. |

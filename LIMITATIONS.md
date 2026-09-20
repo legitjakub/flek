@@ -84,7 +84,7 @@ Více provozoven na účet je podporováno přepínačem v partnerské části. 
 
 ## Právní minimum (18. 9. 2026)
 
-- Právní texty verze 1.0 (podmínky pro zákazníky, pro podniky a zásady) nejsou zveřejněné: chybí údaje provozovatele v `private.settings` a účinnost verzí. Do té doby aplikace nemá patičku „O FLEKu“, souhlas v rezervaci ani odkaz na zásady v registraci a podnik souhlasí s „obchodními podmínkami FLEKu“ bez odkazu jako dřív.
+- Od 20. 9. jsou zveřejněné **jen zásady ochrany osobních údajů** (na Jakuba jako fyzickou osobu). Obchodní podmínky pro zákazníky i pro podniky zůstávají schované, dokud nebude IČO — do té doby aplikace nemá souhlas s podmínkami v rezervaci a podnik souhlasí s „obchodními podmínkami FLEKu“ bez odkazu jako dřív. Do té doby aplikace nemá patičku „O FLEKu“, souhlas v rezervaci ani odkaz na zásady v registraci a podnik souhlasí s „obchodními podmínkami FLEKu“ bez odkazu jako dřív.
 - Texty napsal agent, ne právník (**IMPLEMENTOVÁNO, ALE VYŽADUJE RUČNÍ EXTERNÍ OVĚŘENÍ** právníkem před ostrým provozem). Řádek o zápisu provozovatele říká „podnikatel zapsaný v živnostenském rejstříku“; u s.r.o. se musí změnit.
 - Skutečný e-mail s podrobnostmi smlouvy zatím neodešel: demo účty e-maily nedostávají a jiná rezervace od nasazení nebyla.
 - Podnik, který se registroval před 18. 9., nemá typ podnikatele, datum narození ani ověření v ARES; doplní je ve fakturačních údajích. DAC7 podklad je jen podklad pro ruční oznámení, registraci provozovatele neřeší.

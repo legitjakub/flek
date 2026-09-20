@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { fillPlaceholders, parseLegal, slug } from '../src/features/legal/markdown';
 import { LEGAL_DOCUMENTS, LEGAL_ORDER } from '../src/features/legal/documents';
-import { documentValues, legalPublished } from '../src/features/legal/useLegal';
+import { documentValues, legalPublished, operatorIdentification, privacyPublished } from '../src/features/legal/useLegal';
 import { dac7Csv } from '../src/features/admin/dac7';
 import type { Dac7Row, LegalInfo } from '../src/types/database';
 
@@ -112,5 +112,44 @@ describe('DAC7 export', () => {
     expect(dac7Csv([row]).startsWith('\uFEFF')).toBe(true);
     expect(header.split(';')).toHaveLength(23);
     expect(line).toBe('"Studio; Praha";"Jan ""Honza"" Novák";fyzická osoba;12345678;;1990-01-31;CZ;Ulice 1, 11000 Praha;acct_1;ano;ne;2;1500,00;75,00;0;0,00;0,00;1;750,50;38,00;0;0,00;0,00');
+  });
+});
+
+describe('zveřejnění zásad bez IČO', () => {
+  // Fyzická osoba bez IČO: správcem podle GDPR být může, podnikatelem v podmínkách ne.
+  const osoba: LegalInfo = {
+    ...info,
+    operator: { name: 'Jakub Hrnčíř', ico: null, address: 'Sinkulova 25, 147 00 Praha 4', email: 'jakub@app-flek.eu' },
+    documents: {
+      customer_terms: { version: null, effective_at: null, upcoming_version: null, upcoming_effective_at: null },
+      merchant_terms: { version: null, effective_at: null, upcoming_version: null, upcoming_effective_at: null },
+      privacy: info.documents.privacy,
+    },
+  };
+
+  it('zásady se zveřejní, obchodní podmínky ne', () => {
+    expect(privacyPublished(osoba)).toBe(true);
+    expect(legalPublished(osoba)).toBe(false);
+  });
+
+  it('bez účinných zásad se nezveřejní nic', () => {
+    const bez = { ...osoba, documents: { ...osoba.documents, privacy: { version: null, effective_at: null, upcoming_version: null, upcoming_effective_at: null } } };
+    expect(privacyPublished(bez)).toBe(false);
+  });
+
+  it('chybějící adresa nebo e-mail zásady zastaví', () => {
+    expect(privacyPublished({ ...osoba, operator: { ...osoba.operator, address: null } })).toBe(false);
+    expect(privacyPublished({ ...osoba, operator: { ...osoba.operator, email: null } })).toBe(false);
+  });
+
+  it('věta o správci vynechá IČO, dokud žádné není', () => {
+    expect(operatorIdentification(osoba)).toBe('Jakub Hrnčíř, Sinkulova 25, 147 00 Praha 4');
+    expect(operatorIdentification(info)).toBe('Jan Novák, IČO 12345678, Ulice 1, 110 00 Praha');
+  });
+
+  it('v textu zásad nezůstane pomlčka místo chybějícího IČO', () => {
+    const filled = fillPlaceholders(LEGAL_DOCUMENTS.privacy.source, documentValues(osoba, 'privacy'));
+    expect(filled).toContain('Správcem je **Jakub Hrnčíř, Sinkulova 25, 147 00 Praha 4**.');
+    expect(filled).not.toContain('IČO —');
   });
 });
