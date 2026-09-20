@@ -81,7 +81,7 @@ export function MapPage() {
       id: group.id, lat: group.lat, lng: group.lng,
       label: `${group.offers.length > 1 ? 'od ' : ''}${money(group.minPrice)}`,
       count: group.offers.length, price: group.minPrice,
-      image: thumbnail(serviceIllustration(first.service_name, first.image_url, first.category_slug)),
+      category: first.category_slug,
       description: group.offers.length === 1
         ? `${first.service_name}, ${first.business_name}, ${markerTime.format(new Date(first.start_at))}, ${money(group.minPrice)}. Zobrazit náhled.`
         : `${first.business_name}: ${group.offers.length} termíny, od ${money(group.minPrice)}. Zobrazit termíny.`,

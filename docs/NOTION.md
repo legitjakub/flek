@@ -16,7 +16,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 | Potvrzování rezervací podnikem | **zapnuté pro všechny podniky** od 15. 9. 15:54 (předtím demo: akceptace 106/106 a průchod se skutečnými testovacími platbami) |
 | WhatsApp | pro podniky i zákazníky, výchozí zapnutý a vypínatelný v nastavení upozornění, ověření čísla jedním klepnutím; u Meta je aplikace FLEK s odsouhlasenými podmínkami a testovacím číslem (18. 9.), chybí pět šablon, webhook a klíče v Supabase (úkol pro Jakuba níže) |
 | Právní texty | obchodní podmínky pro zákazníky a pro podniky a zásady ochrany osobních údajů ve verzi 1.0 jsou v aplikaci (nahlášení obsahu je oddílem podmínek jako u Too Good To Go nebo Reservia); zveřejní se, až Jakub pošle údaje provozovatele, a před ostrým provozem je zkontroluje právník |
-| Přihlášení | e-mail a heslo; tlačítka „Pokračovat přes Google“ a „Pokračovat přes Apple“ jsou v aplikaci a objeví se, až je Jakub zapne v Supabase (postup níže) |
+| Přihlášení | e-mail a heslo; tlačítka „Pokračovat přes Google“ a „Pokračovat přes Apple“ jsou v aplikaci a objeví se, až je Jakub zapne v Supabase (postup níže, ověřeno 20. 9. — obojí je zatím vypnuté) |
 | Data v produkci (13. 9.) | 18 schválených podniků, 330 nabídek, 321 rezervací, 16 účtů (12 demo, 4 ostatní), od 13. 9. platby jen přes Stripe (test), 16 demo podniků s testovacím Stripe účtem |
 | Pro AI agenty | `AGENTS.md` v kořeni repozitáře (Claude Code ho načítá přes `CLAUDE.md`) |
 
@@ -66,18 +66,19 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
      - Bankovní účet firmy pro výplaty ze Stripe, fakturace poplatků podnikům (třeba Fakturoid) a pojištění odpovědnosti.
 - [ ] **Přihlášení přes Google** (zdarma, asi 15 minut; klíče vkládáš ty):
   1. console.cloud.google.com → nový projekt „FLEK“.
-  2. Google Auth Platform → Branding: název FLEK, e-mail podpory, domovská stránka `https://www.app-flek.eu`, zásady `https://www.app-flek.eu/soukromi`, podmínky `https://www.app-flek.eu/podminky`, autorizované domény `app-flek.eu` a `yupkrntknbkvmlajwlph.supabase.co`. Audience: External, In production.
+  2. Google Auth Platform → Branding: název FLEK, e-mail podpory, domovská stránka `https://www.app-flek.eu`, zásady `https://www.app-flek.eu/soukromi`, podmínky `https://www.app-flek.eu/podminky`, autorizované domény `app-flek.eu` a `yupkrntknbkvmlajwlph.supabase.co`. Audience: External, In production. (Dokud nepošleš údaje provozovatele, ukazuje `/soukromi` jen „Tento dokument právě připravujeme“ — lepší je vyplnit Branding až po nich.)
   3. Clients → Create client → Web application. Authorized JavaScript origins `https://www.app-flek.eu`, Authorized redirect URIs `https://yupkrntknbkvmlajwlph.supabase.co/auth/v1/callback`.
   4. Client ID a Client secret vlož v Supabase → Authentication → Sign In / Providers → Google → Enable → Save.
-  5. Supabase → Authentication → URL Configuration → Redirect URLs: přidej `https://www.app-flek.eu/prihlaseni`.
-  6. Na www.app-flek.eu/prihlaseni se objeví „Pokračovat přes Google“, vyzkoušej ho.
+  5. Supabase → Authentication → URL Configuration: Site URL `https://www.app-flek.eu` a do Redirect URLs přidej **`https://www.app-flek.eu/**`** (s hvězdičkami). Aplikace se vrací na `/prihlaseni?oauth=google&returnTo=…` a Supabase porovnává celou adresu včetně dotazu, takže samotné `https://www.app-flek.eu/prihlaseni` nestačí a přihlášení by skončilo na úvodní stránce. Na starém webu navíc `https://flek-nine.vercel.app/**`.
+  6. Na www.app-flek.eu/prihlaseni se objeví „Pokračovat přes Google“, vyzkoušej ho. Když se něco nepovede, `npm run check:oauth` řekne, jestli je vypnutý poskytovatel, nebo chybí návratová adresa.
 - [ ] **Přihlášení přes Apple** (placené členství Apple Developer 99 USD ročně, tajný klíč platí nejvýš 6 měsíců):
   1. developer.apple.com → Certificates, Identifiers & Profiles → Identifiers → App IDs: nové ID (třeba `eu.app-flek.web`) se zapnutým Sign in with Apple.
   2. Identifiers → Services IDs: nové ID (třeba `eu.app-flek.signin`), zapnout Sign in with Apple → Configure: primární App ID z bodu 1, doména `yupkrntknbkvmlajwlph.supabase.co`, Return URL `https://yupkrntknbkvmlajwlph.supabase.co/auth/v1/callback`.
   3. Keys → nový klíč se Sign in with Apple, stáhnout soubor `.p8` (jde jen jednou), poznamenat Key ID a Team ID.
   4. Z klíče vygenerovat tajný klíč podle návodu Supabase „Login with Apple“ a vložit ho v Supabase → Authentication → Sign In / Providers → Apple (Client IDs = Services ID z bodu 2) → Enable → Save. Do kalendáře si dej připomínku za 5 měsíců: klíč vygenerovat znovu.
   5. Sign in with Apple for Email Communication: zaregistrovat odesílací doménu `mail.app-flek.eu` a adresy `rezervace@mail.app-flek.eu` a `ucet@mail.app-flek.eu`. Bez toho e-maily na skryté adresy Apple (…@privaterelay.appleid.com) nedojdou a potvrzení rezervace e-mailem je povinné.
-  6. Vyzkoušet „Pokračovat přes Apple“ na www.app-flek.eu/prihlaseni.
+  6. Stejné Redirect URLs jako u Googlu (bod 5 výš) platí i pro Apple — stačí je nastavit jednou.
+  7. Vyzkoušet „Pokračovat přes Apple“ na www.app-flek.eu/prihlaseni. Počítej s tím, že Apple ve webovém přihlášení **jméno neposílá vůbec** (dává ho jen nativním aplikacím), takže účet vznikne bez jména a aplikace si o něj řekne před první rezervací.
 - [ ] **Právní kontrola textů a výchozích řešení před ostrým provozem.** Texty jsou veřejné v repozitáři (`src/content/pravni`), po zveřejnění na `/podminky`, `/podminky-podniky` a `/soukromi`. Kontrolní seznam pro právníka je v `docs/PRED_SPUSTENIM.md` (Právo, účetnictví a firma).
 - [ ] **Firma a úřady:** ověřit obory živnosti (zprostředkování obchodu a služeb), s daňovým poradcem registraci a oznámení DAC7 a DPH, zvážit s.r.o. a pojištění odpovědnosti, ochrannou známku FLEK a licenci map pro komerční provoz.
 
@@ -136,7 +137,7 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 - [x] Povinné potvrzení rezervace e-mailem s poskytovatelem, cenou, kódem a stornem, zprávy podnikům o schválení a pozastavení s důvodem, důvod blokace zákazníka, zpráva o vyřízení nahlášení (18. 9.)
 - [x] Právní texty porovnané s Too Good To Go, TasteTown, Fresha a Reservio: pravidla obsahu sloučená do podmínek (3 dokumenty místo 4), bez formální lhůty na odvolání, podnik s podmínkami souhlasí jednou a nová verze platí pokračováním ve spolupráci (18. 9.)
 - [x] Kontrola kvality právních textů: odstoupení i u kadeřnictví a kosmetiky (výslovná žádost o službu v termínu), tlačítko „Zaplatit“ na platební stránce Stripe, přesné lhůty blokací, u podniků doba neurčitá a komu předáváme data, v zásadách Google a Apple a povinné údaje (18. 9.)
-- [x] Přihlášení přes Google a Apple v kódu, jméno z účtu se předvyplní; tlačítka se ukážou po zapnutí v Supabase (18. 9.)
+- [x] Přihlášení přes Google a Apple v kódu; jméno z účtu Google se předvyplní (Apple ho ve webovém toku neposílá), tlačítka se ukážou po zapnutí v Supabase (18. 9., prověřeno testem `tests/oauth-profile.sql` a skriptem `npm run check:oauth` 20. 9.)
 - [x] Kdo službu poskytuje (název, IČO, adresa) u rezervace a na stránce podniku, IČO ověřené v ARES, schválení podniku jen s IČO (18. 9.)
 - [x] Nahlášení nabídky nebo podniku s frontou v administraci, podklad pro oznámení DAC7 (CSV) (18. 9.)
 - [ ] **Právní kontrola textů a výchozích řešení před ostrým provozem** (právník, kontrolní seznam v `docs/PRED_SPUSTENIM.md`)
@@ -240,7 +241,7 @@ Schvaluje provozovny (skutečný podnik jen s IČO), kontroluje nabídky a rezer
 | Analytika | vlastní tabulka přes RPC `record_event` | vyhledávání, zobrazení, rezervace, oblíbené, sdílení, pozvánky; v prohlížeči nic neukládá (bez cookie lišty) |
 | Právní texty | `src/content/pravni/*.md` (podmínky pro zákazníky, pro podniky a zásady), verze v `public.legal_documents`, údaje provozovatele v `private.settings` | zveřejní se až s údaji provozovatele a platnou verzí; souhlasy v `private.legal_acceptances` |
 | Mazání starých dat | `pg_cron`, job `flek-retention` (každou noc ve 3:40) | doručování a zprávy WhatsApp po 90 dnech, upozornění po 12 měsících, vyřízená nahlášení po 3 letech, záznamy cronu po 14 dnech |
-| Přihlášení přes Google a Apple | Supabase Auth → Sign In / Providers | zatím vypnuté; tlačítka se ukážou, až je Jakub zapne s klíči |
+| Přihlášení přes Google a Apple | Supabase Auth → Sign In / Providers | zatím vypnuté (ověřeno 20. 9. na `/auth/v1/settings`); tlačítka se ukážou, až je Jakub zapne s klíči. Stav vypíše `npm run check:oauth` |
 | Ověření IČO | Edge Function `ares-lookup` nad veřejným API ARES | název a sídlo podniku z registru, bez klíče |
 | Ilustrační fotky | složka `public/images/services` + Unsplash | náhledy pro špendlíky v `thumbs/` |
 | Kód | GitHub `legitjakub/flek` | — |
@@ -313,6 +314,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 20. 9. 2026 | Mapa: špendlík ukazuje ikonu oboru (nůžky, ruka, jiskry, činka, květ, vlny) místo fotky služby, neznámá kategorie značku FLEK. Detail nabídky: časy téže služby jsou karty s cenou, slevou, délkou a posledním místem místo pilulek; rezervuje se jedním tlačítkem u vybraného času, nad pět časů se zbytek schová. Přihlášení přes Google a Apple prověřené do posledního kroku (nový test profilu, skript `npm run check:oauth`, opravený postup s Redirect URLs); zapnout ho může jen Jakub. |
 | 20. 9. 2026 | Nová úvodní stránka v duchu aplikace move+: fotka je celá karta, fakta na matném panelu přes její spodní okraj, na fotce jen čas a sleva; „Začíná brzy“ se listuje do strany a nadpis je dvouřádkový. Promo bloky pro nepřihlášené mají jednu výšku. |
 | 18. 9. 2026 | Kontrola kvality právních textů (odstoupení u kadeřnictví a kosmetiky, tlačítko „Zaplatit“ u Stripe, přesné lhůty, doplněné podmínky pro podniky a zásady); uspaná databáze odpojená od projektu ve Vercelu a web znovu nasazený; u Meta odsouhlasené podmínky WhatsAppu a založené testovací číslo, šablony zatím ne (WhatsApp Manager v Chromu zamrzá) |
 | 18. 9. 2026 | Povinné potvrzení rezervace e-mailem, zprávy podnikům a zákazníkům s důvodem, smazání účtu v Profilu a noční mazání starých dat; přihlášení přes Google a Apple (čeká na klíče); právní texty porovnané s Too Good To Go, TasteTown, Fresha a Reservio a zjednodušené; web čeká na odpojení uspané databáze ve Vercelu |

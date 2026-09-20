@@ -92,12 +92,19 @@ Více provozoven na účet je podporováno přepínačem v partnerské části. 
 - Nová verze podmínek pro podniky platí pokračováním ve spolupráci. Aplikace ukáže banner, ale e-mail o nové verzi 15 dní předem se neposílá sám; při vydání nové verze ho musí poslat člověk.
 - Smazaný účet zůstává v `auth.users` s adresou `smazany-…@smazany.invalid` a blokací, aby rezervace a platby měly na koho ukazovat. Člen podniku a admin smazání v aplikaci nemají.
 
-## Přihlášení přes Google a Apple (18. 9. 2026)
+## Přihlášení přes Google a Apple (18. 9. 2026, ověřeno 20. 9.)
 
-- V produkci je zatím vypnuté, dokud Jakub nevloží klíče do Supabase. Tlačítka se do té doby neukazují.
-- Apple pošle jméno jen při prvním přihlášení a často jen skrytý e-mail (`…@privaterelay.appleid.com`). Bez registrace odesílací domény u Apple tam e-maily nedojdou, i povinné potvrzení rezervace. Tajný klíč Apple platí nejvýš 6 měsíců.
-- Návrat z Google nebo Apple míří na `/prihlaseni`. Když ho Jakub nepřidá do Redirect URLs v Supabase, přihlášení skončí na úvodní stránce a původní cíl (třeba rozkliknutá nabídka) se ztratí.
+- V produkci je zatím vypnuté, dokud Jakub nevloží klíče do Supabase. Ověřeno 20. 9. dotazem na `/auth/v1/settings`: `google: false`, `apple: false`, všech 17 účtů má identitu `email`. Tlačítka se do té doby neukazují.
+- **Apple ve webovém toku jméno neposílá vůbec.** Dokumentace Supabase to říká výslovně: celé jméno dává Apple jen nativnímu SDK a Sign in with Apple JS, ne OAuth toku, který FLEK používá. Účet z Apple tedy vznikne bez jména a o jméno si řekne rezervační formulář před první rezervací (stejně jako o telefon). Dřív tu stálo, že Apple pošle jméno při prvním přihlášení; to platí jen pro nativní aplikace.
+- Apple často pošle jen skrytý e-mail (`…@privaterelay.appleid.com`). Bez registrace odesílací domény `mail.app-flek.eu` v Sign in with Apple for Email Communication tam e-maily nedojdou, ani povinné potvrzení rezervace. Tajný klíč Apple platí nejvýš 6 měsíců.
+- Návrat z Google nebo Apple míří na `/prihlaseni?oauth=…&returnTo=…`, tedy s dotazem v adrese. Supabase porovnává celou adresu včetně dotazu a oddělovače jsou jen `.` a `/`, takže samotné `https://www.app-flek.eu/prihlaseni` v Redirect URLs nestačí — patří tam `https://www.app-flek.eu/**`. Bez toho přihlášení skončí na úvodní stránce a původní cíl (třeba rozkliknutá nabídka) se ztratí. Stav obojího vypíše `npm run check:oauth`.
 - Účet z Google má jméno z Googlu (první slovo jako jméno, zbytek jako příjmení); telefon si vyžádá první rezervace.
+- Google Auth Platform → Branding chce odkaz na zásady ochrany osobních údajů. Než budou v databázi údaje provozovatele, `/soukromi` ukazuje jen „Tento dokument právě připravujeme“, takže Branding má smysl vyplňovat až po nich.
+
+## Ikony a časy (20. 9. 2026)
+
+- Špendlík na mapě kreslí ikonu oboru pro šest kategorií z `public.categories`. Sedmá kategorie dostane obecnou značku FLEK, dokud jí v `src/lib/categoryGlyphs.ts` nepřibude tvar; fotka služby už ve špendlíku není (zůstala v náhledové kartě a v seznamu).
+- Karty s časy na detailu nabídky nesou vlastní tlačítko jen u vybraného času. Rezervovat jiný čas jsou tedy dvě klepnutí (vybrat, pak rezervovat), aby na mobilu zůstala jediná spodní lišta s výzvou.
 
 ## Nasazení webu (18. 9. 2026)
 

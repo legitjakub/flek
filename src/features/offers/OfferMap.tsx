@@ -3,7 +3,7 @@
 import './mapWorker';
 import { clusterPins } from '../discovery/mapClusters';
 import { money } from '../../lib/format';
-import { SERVICE_PLACEHOLDER } from '../../lib/serviceIllustrations';
+import { categoryGlyph } from '../../lib/categoryGlyphs';
 import { useEffect, useRef } from 'react';
 import { LngLatBounds, Map as MapLibreMap, Marker, NavigationControl, type MapOptions, type StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -69,14 +69,12 @@ export type MapMarker = {
   description?: string;
   count?: number;
   price?: number;
-  /** A small, already-resized picture; missing or broken photos use FLEK's abstract tile. */
-  image?: string | null;
+  /** Category slug of the service, drawn in the pin; an unknown one gets FLEK's own mark. */
+  category?: string | null;
 };
 
 /** Beyond this zoom a cluster stops zooming in and hands its appointments to the page instead. */
 const CLUSTER_MAX_ZOOM = 17;
-
-const GLYPH = '<svg viewBox="0 0 36 34" focusable="false"><path d="M12 31s11-11.8 11-17.8a11 11 0 1 0-22 0C1 19.2 12 31 12 31z" class="map-pin-shape"/><circle cx="12" cy="13.2" r="6.5" class="map-pin-face"/><path d="M12 8.8v4.5l3.4 2" class="map-pin-hands"/></svg>';
 
 /**
  * OpenMapTiles ships every name in `name` (local/English) plus translations in `name:xx`.
@@ -242,7 +240,7 @@ export function MapCanvas({
       drawn.current.forEach((marker) => marker.remove());
       const projected = markers.map((marker, index) => {
         const point = instance.project([marker.lng, marker.lat]);
-        // A photo over a price ticket: as wide as the ticket, never narrower than the photo.
+        // A glyph tile over a price ticket: as wide as the ticket, never narrower than the tile.
         return { x: point.x, y: point.y, width: Math.max(56, marker.label.length * 7.5 + 24), indexes: [index] };
       });
       const clusters = groupRef.current ? clusterPins(projected) : projected;
@@ -272,33 +270,15 @@ export function MapCanvas({
         } else {
           el.className = 'map-pin';
           el.setAttribute('aria-label', entries[0].description ?? label);
-          const photo = document.createElement('span');
-          photo.className = 'map-pin-photo';
-          photo.setAttribute('aria-hidden', 'true');
-          const image = entries[0].image;
-          if (image) {
-            const img = document.createElement('img');
-            img.src = image;
-            img.alt = '';
-            img.decoding = 'async';
-            img.width = 44;
-            img.height = 44;
-            img.addEventListener('error', () => {
-              if (img.src.endsWith(SERVICE_PLACEHOLDER)) {
-                photo.innerHTML = GLYPH;
-                photo.classList.add('map-pin-photo--glyph');
-                return;
-              }
-              img.src = SERVICE_PLACEHOLDER;
-            });
-            photo.append(img);
-          } else {
-            photo.innerHTML = GLYPH;
-            photo.classList.add('map-pin-photo--glyph');
-          }
+          const glyph = categoryGlyph(entries[0].category);
+          const tile = document.createElement('span');
+          tile.className = `map-pin-tile map-pin-tile--${glyph.modifier}`;
+          tile.setAttribute('aria-hidden', 'true');
+          // Constant markup from categoryGlyphs.ts, never anything that came from the database.
+          tile.innerHTML = glyph.markup;
           price.className = 'map-pin-price';
           price.setAttribute('aria-hidden', 'true');
-          el.append(photo, price);
+          el.append(tile, price);
           if (count > 1) {
             const badge = document.createElement('span');
             badge.className = 'map-pin-count';
