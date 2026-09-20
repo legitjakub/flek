@@ -125,6 +125,70 @@ export const TEMPLATE_SECRETS: Record<WhatsAppTemplate, string> = {
   customer_cancelled: 'WHATSAPP_TEMPLATE_CUSTOMER_CANCELLED',
 };
 
+/**
+ * Znění pěti šablon tak, jak je má schválit Meta. Drží se tu, protože pořadí parametrů musí sedět
+ * s tím, co posílá `claim_whatsapp_deliveries`, a s tím, co skládá `templateMessage` — jedna změna
+ * textu bez druhé by znamenala zprávu s prohozenými údaji.
+ *
+ * Zakládá je `whatsapp-templates-setup` přes Graph API, protože WhatsApp Manager v prohlížeči
+ * opakovaně zamrzal. Kategorie Utility: jde o stav rezervace, ne o reklamu.
+ */
+export type TemplateDefinition = {
+  template: WhatsAppTemplate;
+  /** Výchozí název u Meta; přebije ho tajný klíč z `TEMPLATE_SECRETS`, pokud je vyplněný. */
+  name: string;
+  body: string;
+  /** Ukázkové hodnoty {{1}}…{{n}}, které Meta vyžaduje ke schválení. */
+  example: string[];
+  /** Rychlé odpovědi; jen u žádosti pro podnik. */
+  buttons?: string[];
+};
+
+export const TEMPLATE_DEFINITIONS: TemplateDefinition[] = [
+  {
+    template: 'business_request',
+    name: 'flek_booking_request',
+    body: 'Nová rezervace čeká na potvrzení.\nTermín: {{1}}\nSlužba: {{2}}\nVy dostanete: {{3}}\nPotvrďte do {{4}}, jinak žádost vyprší a zákazník nic nezaplatí.',
+    example: ['dnes 14:30', 'Pánský střih (45 min)', '750 Kč', '14:08'],
+    buttons: ['Potvrdit', 'Nemohu přijmout'],
+  },
+  {
+    template: 'business_confirmed',
+    name: 'flek_business_confirmed',
+    body: 'Máte novou potvrzenou rezervaci.\nTermín: {{1}}\nSlužba: {{2}}\nVy dostanete: {{3}}\nKód zákazníka ověříte v aplikaci FLEK Partner.',
+    example: ['zítra 9:00', 'Masáž zad (60 min)', '586 Kč'],
+  },
+  {
+    template: 'business_cancelled',
+    name: 'flek_business_cancelled',
+    body: 'Změna rezervace ve FLEKu.\nTermín: {{1}}\nSlužba: {{2}}\nStav: {{3}}\nPodrobnosti najdete v aplikaci FLEK Partner v Rezervacích.',
+    example: ['st 17. 9. 18:15', 'Pánský střih (45 min)', 'Rezervace byla zrušena'],
+  },
+  {
+    template: 'customer_confirmed',
+    name: 'flek_customer_confirmed',
+    body: 'Tvůj FLEK je potvrzený.\nPodnik: {{1}}\nTermín: {{2}}\nSlužba: {{3}}\nRezervační kód: {{4}}\nKód ukážeš v podniku, rezervaci najdeš i v aplikaci FLEK.',
+    example: ['Studio Dobrá hodina', 'dnes 17:00', 'Pánský střih (45 min)', 'FLEK-7K2QHM'],
+  },
+  {
+    template: 'customer_cancelled',
+    name: 'flek_customer_cancelled',
+    body: 'Změna tvé rezervace ve FLEKu.\nPodnik: {{1}}\nTermín: {{2}}\nSlužba: {{3}}\nStav: {{4}}\nCo to znamená pro platbu, najdeš v aplikaci FLEK v Rezervacích.',
+    example: ['Studio Dobrá hodina', 'zítra 13:00', 'Pánský střih (45 min)', 'Podnik rezervaci nepotvrdil'],
+  },
+];
+
+/** Tělo požadavku, kterým Meta šablonu založí. */
+export function templateCreatePayload(definition: TemplateDefinition, name: string, language: string) {
+  const components: Record<string, unknown>[] = [
+    { type: 'BODY', text: definition.body, example: { body_text: [definition.example] } },
+  ];
+  if (definition.buttons) {
+    components.push({ type: 'BUTTONS', buttons: definition.buttons.map((text) => ({ type: 'QUICK_REPLY', text })) });
+  }
+  return { name, language, category: 'UTILITY', components };
+}
+
 /** What `claim_whatsapp_deliveries` hands over for one message: parameters in the template's order. */
 export type TemplateJob = { to: string; template: WhatsAppTemplate; params: string[]; token: string | null };
 

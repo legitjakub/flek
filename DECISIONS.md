@@ -245,3 +245,10 @@ Jakub ukázal aplikaci s mapou, kde má každý špendlík značku aplikace, a s
 - **Proč to nepočkalo na firmu:** aplikace už veřejně běží a sbírá e-mail, jméno, telefon a přibližnou polohu. Informační povinnost se váže na okamžik sběru, ne na založení živnosti. Nechat veřejnou aplikaci sbírat údaje úplně bez zásad je horší než je zveřejnit na fyzickou osobu a po založení firmy je překlopit na novou verzi.
 - **Jedna věta o správci místo tří polí.** Text měl natvrdo „IČO {{ico}}, místo podnikání {{sidlo}}“, což by bez IČO vykreslilo „IČO —“. Nově je to jeden údaj `{{spravce}}`, který IČO vynechá, dokud žádné není. Verze textu zůstává 1.0, protože pravidlo o nové verzi platí pro změnu **zveřejněného** textu a tenhle zveřejněný nikdy nebyl.
 - **Patička odkazuje jen na to, co platí.** Dřív vypisovala všechny tři dokumenty; teď jen ty s účinnou verzí, aby odkaz nevedl na „Tento dokument právě připravujeme“. Řádek o živnostenském rejstříku se ukáže až s IČO.
+
+## Šablony WhatsAppu zakládá funkce — 20. 9. 2026
+
+- Znění pěti šablon je v `supabase/functions/_shared/whatsapp.ts` vedle odesílání, ne jen v dokumentaci. Pořadí parametrů drží `claim_whatsapp_deliveries` v SQL a `templateMessage` v odesílání; kdyby text žil jen ve WhatsApp Manageru, jedna úprava by tiše rozhodila údaje ve zprávě. Unit test hlídá, že `{{n}}` v textu sedí s počtem ukázek.
+- Zakládá je admin funkce `whatsapp-templates-setup` přes Graph API, ne člověk v prohlížeči: WhatsApp Manager v Chromu 18. i 19. 9. po každém kroku zamrzal a neuložil jedinou šablonu. Stejný vzor jako `stripe-webhook-setup` — klíč zůstává v Supabase secrets, v odpovědi nikdy není.
+- Šablonu, která už u Mety je, funkce nepřepisuje, jen vrátí její stav (APPROVED, PENDING, REJECTED). Přepsání schválené šablony znamená nové schvalování, a to není nic, co by měl spustit omylem jeden dotaz.
+- Název šablony si může přebít tajný klíč z `TEMPLATE_SECRETS`. Kdyby Meta nějaký název zamítla, založí se pod jiným a odesílání se přenastaví změnou secretu, bez zásahu do kódu.
