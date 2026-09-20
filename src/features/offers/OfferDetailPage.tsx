@@ -1,5 +1,6 @@
 import { ArrowLeft, CalendarDays, CalendarPlus, ChevronDown, Clock3, MapPin, Banknote, Check } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { activityPhotoSrcSet } from '../../lib/activityGalleries';
 import { useEffect, useState } from 'react';
 import { businessOffers, confirmationQuote, getOfferDetail, setFavorite } from '../../lib/api';
 import { track } from '../../lib/analytics';
@@ -201,6 +202,8 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             <div className="relative -mx-4 mb-3 md:mx-0 md:mb-4">
               <img
                 src={image!}
+                srcSet={activityPhotoSrcSet(image!)}
+                sizes="(min-width: 1024px) 800px, 100vw"
                 onError={() => setFailedPhoto(source)}
                 alt=""
                 className="aspect-[16/9] w-full object-cover md:aspect-[2/1] md:rounded-2xl"

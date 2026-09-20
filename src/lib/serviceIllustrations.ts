@@ -1,3 +1,5 @@
+import { ACTIVITY_GALLERIES, activityForName } from './activityGalleries';
+
 export const SERVICE_PLACEHOLDER = '/images/flek-placeholder.svg';
 
 const HAIR = 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=640&q=70&auto=format&fit=crop';
@@ -79,6 +81,8 @@ export function serviceIllustration(
   category?: string | null,
 ): string {
   if (serviceImage) return serviceImage;
+  const activity = activityForName(serviceName, category);
+  if (activity) return ACTIVITY_GALLERIES[activity]?.[0] ?? SERVICE_PLACEHOLDER;
   const name = searchable(serviceName);
   return PREPARED_ILLUSTRATIONS.find(([needle]) => name.includes(needle))?.[1]
     ?? (category ? CATEGORY_ILLUSTRATIONS[category] : undefined)

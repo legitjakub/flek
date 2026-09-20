@@ -9,6 +9,9 @@
  */
 export function thumbnail(url: string | null | undefined, px = 132, square = true): string | null {
   if (!url) return null;
+  if (/^\/images\/activities\/[a-z0-9-]+-[12]\.jpg$/.test(url)) {
+    return px <= 176 ? url.replace(/\.jpg$/, '-176.jpg') : px <= 800 ? url.replace(/\.jpg$/, '-800.jpg') : url;
+  }
   if (url.startsWith('/images/services/')) {
     return px <= 176 && !url.includes('/thumbs/') ? url.replace('/images/services/', '/images/services/thumbs/') : url;
   }

@@ -6,6 +6,7 @@ import { cx, Skeleton } from '../../components/ui';
 import { useSnapCarousel } from '../../components/useSnapCarousel';
 import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
 import { SERVICE_PLACEHOLDER } from '../../lib/serviceIllustrations';
+import { ACTIVITY_GALLERIES, activityForName, activityPhotoSrcSet } from '../../lib/activityGalleries';
 
 function usePhotos() {
   return useQuery({
@@ -88,16 +89,6 @@ type PhotoOption = {
   value: string | null;
 };
 
-/** Local, activity-specific imagery. Category-wide rails caused unrelated sports to mix. */
-const ACTIVITY_GALLERIES: Record<string, string[]> = {
-  'sport-padel': ['/images/services/padel-prague.jpg'],
-  'sport-tenis': ['/images/services/tennis-prague.jpg'],
-  'sport-squash': ['/images/services/squash-prague.jpg'],
-  'sport-badminton': ['/images/services/badminton-prague.jpg'],
-  'sport-osobni-trenink': ['/images/services/personal-training-prague.jpg'],
-  'sport-skupinova-lekce': ['/images/services/group-class-prague.jpg'],
-};
-
 /** One selected preview and a carousel that always settles on a whole thumbnail. */
 export function ServicePhotoPicker({
   categorySlug,
@@ -120,7 +111,7 @@ export function ServicePhotoPicker({
     const inferred = [...catalogue]
       .filter((photo) => photo.category_slug === categorySlug && serviceName.toLocaleLowerCase('cs-CZ').includes(photo.label_cs.toLocaleLowerCase('cs-CZ')))
       .sort((a, b) => b.label_cs.length - a.label_cs.length)[0]?.slug;
-    const activity = templateSlug && templateSlug !== 'custom' ? templateSlug : inferred;
+    const activity = templateSlug && templateSlug !== 'custom' ? templateSlug : (inferred ?? activityForName(serviceName, categorySlug));
     const reference = catalogue.find((photo) => photo.slug === activity);
     const gallery = activity ? (ACTIVITY_GALLERIES[activity] ?? (reference?.image_url ? [reference.image_url] : [])) : [];
     const options: PhotoOption[] = [
@@ -131,7 +122,7 @@ export function ServicePhotoPicker({
     }
     gallery.forEach((imageUrl, index) => options.push({
       key: `${activity}-${index}`,
-      label: reference?.label_cs ?? (serviceName || 'Fotka služby'),
+      label: `${reference?.label_cs ?? (serviceName || 'Fotka služby')} · ${index + 1}`,
       imageUrl,
       value: imageUrl,
     }));
@@ -174,7 +165,7 @@ export function ServicePhotoPicker({
       <div className="relative mt-3 overflow-hidden rounded-2xl bg-line/45">
         {selected?.imageUrl ? (
           <>
-            <img src={selected.imageUrl} alt="" className="aspect-[16/9] max-h-52 w-full object-cover" />
+            <img src={selected.imageUrl} srcSet={activityPhotoSrcSet(selected.imageUrl)} sizes="(min-width: 768px) 560px, 100vw" alt="" className="aspect-[16/9] max-h-52 w-full object-cover" />
             {selected.imageUrl !== SERVICE_PLACEHOLDER ? <IllustrativePhotoLabel className="top-2 left-2" /> : null}
           </>
         ) : (
@@ -230,7 +221,7 @@ function PhotoChoice({ active, label, imageUrl, fallback, onClick }: {
     >
       {imageUrl ? (
         <>
-          <img src={imageUrl} alt="" loading="lazy" className="aspect-square w-full object-cover" />
+          <img src={imageUrl} srcSet={activityPhotoSrcSet(imageUrl)} sizes="96px" alt="" loading="lazy" className="aspect-square w-full object-cover" />
           {imageUrl !== SERVICE_PLACEHOLDER ? <IllustrativePhotoLabel compact className="bottom-[2.05rem] left-1" /> : null}
         </>
       ) : (

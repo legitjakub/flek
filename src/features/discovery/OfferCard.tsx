@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { activityPhotoSrcSet } from '../../lib/activityGalleries';
 import { CalendarDays, Clock3, MapPin } from 'lucide-react';
 import { Link, useRouter } from '../../app/router';
 import { distance as formatDistance, money } from '../../lib/format';
@@ -153,6 +154,8 @@ export function OfferCard({
       {photo ? (
         <img
           src={photo}
+          srcSet={activityPhotoSrcSet(photo)}
+          sizes={tall ? '320px' : '(min-width: 1024px) 400px, (min-width: 768px) 50vw, 100vw'}
           onError={() => setFailedPhoto(source)}
           alt=""
           loading={priority ? 'eager' : 'lazy'}

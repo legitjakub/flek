@@ -18,7 +18,7 @@ describe('serviceIllustration', () => {
   it('matches the other kinds of service by name, and not on fragments of unrelated words', () => {
     expect(serviceIllustration('Ranní jóga')).toBe('/images/services/yoga-prague.jpg');
     expect(serviceIllustration('Privátní sauna')).toBe('/images/services/sauna-prague.jpg');
-    expect(serviceIllustration('Relaxační masáž')).toMatch(/images\.unsplash\.com/);
+    expect(serviceIllustration('Relaxační masáž')).toBe('/images/activities/masaze-relaxacni-1.jpg');
     // "vlastní" is not "vlasy", and "trasa" is not "řasy".
     expect(serviceIllustration('Vlastní lekce na trase', null, null)).toBe(SERVICE_PLACEHOLDER);
   });

@@ -102,6 +102,7 @@ Jeden řádek na rozhodnutí, chronologicky. Kde bylo zadání nejednoznačné, 
 - Push nese jen odkaz a obecný text, detaily si aplikace načte po otevření: zamykací obrazovka může být sdílená.
 - ~~Paleta „Mandarinka“~~ (13. 9. večer, 14. 9. nahrazená Nočním ultramarínem, viz níže): téměř černá `#17181C` pro text a hlavní tlačítka, mandarinková `#F2703F` jako výplň a zvýraznění (slevy, špendlíky, logo, kódy na tmavých blocích; s černou 6,1 : 1), tmavší `#B4460F` pro odkazy a ikony (5,5 : 1 na bílé), neutrální pozadí `#F6F5F3`. Barvy jsou jen v tokenech ve `src/styles.css`; logo, ikony aplikace (SVG i PNG), mapa, univerzální obrázek služby, manifest a e-maily používají stejné hodnoty.
 - Služba bez vlastní fotky a bez ilustrace aktivity ukáže univerzální obrázek FLEKu, ne obal provozovny: ten dělal z půjčovny kol wellness.
+- Originální ilustrační fotografie jsou čtvercové a kompozičně bezpečné pro ořez 4:5, 1:1 i 2:1; důležitý motiv je nad spodní třetinou, kterou na nových kartách překrývá informační panel. Pro kartu se nabízí 800px derivát a pro mapový bod 176px derivát. Fotka zvolená podnikem má vždy přednost.
 
 ## Vratky podle stavu ve Stripe — 14. 9. 2026
 
