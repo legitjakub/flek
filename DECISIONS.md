@@ -217,3 +217,10 @@ Jakub ukázal aplikaci s mapou, kde má každý špendlík značku aplikace, a s
 - **Tlačítko jen u vybraného času.** Tlačítko na každé kartě (jako v ukázce) by na mobilu soupeřilo se spodní lištou a z dlouhého seznamu udělalo stěnu stejných výzev. Karta tedy čas vybere a rezervuje se jedním tlačítkem — na telefonu ve spodní liště, na desktopu v kartě termínu.
 - **Strop výšky na desktopu.** Seznam časů má `md:max-h-96` a vlastní posuvník, protože karta „Tvůj termín“ je přilepená (`md:sticky`); bez stropu by šest karet vytlačilo cenu a tlačítko pod okraj obrazovky, kam se u přilepené karty nedá doscrollovat. Nad pět časů se zbytek schová za „Další časy (N)“ a vybraný čas se nikdy neschová.
 - **Záložky (Overview/Reviews/About) z ukázky nepřebíráme.** Detail FLEKu je krátký; „O službě“ a „Kde to je“ by se za záložkami jen schovaly.
+
+## Víc demo FLEKů na den — 20. 9. 2026
+
+- **Tři termíny na službu a den místo jednoho.** Jedna nabídka denně vypadala v datech rozumně (29 publikovaných), ale odpoledne už nebylo co rezervovat: v 16:00 zbývaly tři. Demo má ukazovat produkt, ne prázdný feed.
+- **Rotace slotů s krokem 7 z 25 půlhodin** (8:00–20:00). Krok nesoudělný s počtem slotů projde všechny a dva termíny téže služby od sebe dělí několik hodin, takže karta „další časy“ ukazuje rozumnou nabídku místo tří časů za sebou.
+- **Strop šest na den** (`p_per_day` se ořízne), aby se z dema nestala zeď stejných nabídek.
+- **Fotky se srovnaly migrací, ne v kódu.** Katalog v `serviceIllustrations.ts` se od 10. 9. měnil, ale existující řádky zůstaly na seedu a aplikace dává přednost fotce uložené u služby. Migrace mění jen řádky s přesně původní seedovanou hodnotou; co si podnik nahrál sám, zůstává.

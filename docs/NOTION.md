@@ -224,7 +224,7 @@ Schvaluje provozovny (skutečný podnik jen s IČO), kontroluje nabídky a rezer
 | Pravidelná údržba | Supabase `pg_cron`, job `flek-maintenance` | každých 15 min dokončí rezervace 24 h po konci |
 | Potvrzování rezervací | Edge Function `booking-confirmation`, cron `flek-confirmation-expiry` (každých 30 s) | strhne platbu po potvrzení nebo uvolní autorizaci, vrací místa po vypršení; přepínač `manual_confirmation_enabled` v `private.settings` (od 15. 9. `true`) |
 | WhatsApp | Meta WhatsApp Cloud API, Edge Function `whatsapp-webhook` (odesílá `notification-delivery`), cron `flek-whatsapp-events-cleanup` | podniky i zákazníci, pět šablon; u Meta aplikace FLEK a testovací číslo, chybí šablony, webhook a klíče; webhook `https://yupkrntknbkvmlajwlph.supabase.co/functions/v1/whatsapp-webhook` |
-| Obnova demo nabídek | `pg_cron`, job `flek-demo-refresh` (každé ráno) | doplní demo FLEKy na 3 dny dopředu; před ostrým provozem vypnout |
+| Obnova demo nabídek | `pg_cron`, job `flek-demo-refresh` (každé ráno) | doplní demo FLEKy na 3 dny dopředu, tři termíny na službu a den (od 20. 9.); před ostrým provozem vypnout |
 | Mazání staré analytiky | `pg_cron`, job `flek-analytics-retention` (každé ráno) | smaže události starší 180 dní |
 | Kontrola kódu | GitHub Actions (`.github/workflows/ci.yml`) | build, unit testy a audit závislostí při každém pushi; secret scanning a Dependabot |
 | Bezpečnostní hlavičky | Vercel (`vercel.json`) | CSP s allowlistem domén; nová služba se musí přidat |
@@ -314,6 +314,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 20. 9. 2026 | Fotky demo služeb a obálek srovnané s katalogem v kódu (padel, tenis, sauna, masáže) a víc demo FLEKů: tři termíny na službu a den místo jednoho, takže v aplikaci je co rezervovat i odpoledne. |
 | 20. 9. 2026 | Mapa: špendlík ukazuje ikonu oboru (nůžky, ruka, jiskry, činka, květ, vlny) místo fotky služby, neznámá kategorie značku FLEK. Detail nabídky: časy téže služby jsou karty s cenou, slevou, délkou a posledním místem místo pilulek; rezervuje se jedním tlačítkem u vybraného času, nad pět časů se zbytek schová. Přihlášení přes Google a Apple prověřené do posledního kroku (nový test profilu, skript `npm run check:oauth`, opravený postup s Redirect URLs); zapnout ho může jen Jakub. |
 | 20. 9. 2026 | Nová úvodní stránka v duchu aplikace move+: fotka je celá karta, fakta na matném panelu přes její spodní okraj, na fotce jen čas a sleva; „Začíná brzy“ se listuje do strany a nadpis je dvouřádkový. Promo bloky pro nepřihlášené mají jednu výšku. |
 | 18. 9. 2026 | Kontrola kvality právních textů (odstoupení u kadeřnictví a kosmetiky, tlačítko „Zaplatit“ u Stripe, přesné lhůty, doplněné podmínky pro podniky a zásady); uspaná databáze odpojená od projektu ve Vercelu a web znovu nasazený; u Meta odsouhlasené podmínky WhatsAppu a založené testovací číslo, šablony zatím ne (WhatsApp Manager v Chromu zamrzá) |
