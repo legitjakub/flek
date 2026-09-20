@@ -11,13 +11,14 @@ import {
   adminSetBusinessStatus,
   adminUserLookup,
 } from '../../lib/api';
-import { House } from 'lucide-react';
+import { ArrowUpRight, Check, House, TriangleAlert } from 'lucide-react';
 import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
 import { clockTime, dayLabel } from '../../lib/time';
 import { useServerNow } from '../../lib/clock';
-import { Banner, Button, EmptyState, ErrorState, Field, Input, LoadingList, Sheet, Wordmark } from '../../components/ui';
+import { Banner, Button, EmptyState, ErrorState, Field, Input, LoadingList, Sheet, Wordmark, cx } from '../../components/ui';
 import { SignOutButton } from '../auth/SignOutButton';
+import { approvalBlocker, approvalChecklist } from './approvalChecklist';
 import { Link, useRouter } from '../../app/router';
 import { useSession } from '../auth/session';
 import { LazyMap } from '../offers/LazyMap';
@@ -101,9 +102,17 @@ export function AdminFrame({ children }: { children: ReactNode }) {
   );
 }
 
+const BUSINESS_FILTERS = [
+  { key: 'pending', label: 'Čekají' },
+  { key: 'approved', label: 'Schválené' },
+  { key: 'other', label: 'Zamítnuté a pozastavené' },
+  { key: 'all', label: 'Vše' },
+] as const;
+
 export function AdminBusinessesPage() {
   const queryClient = useQueryClient();
   const query = useQuery({ queryKey: ['admin-businesses'], queryFn: () => adminBusinesses(null) });
+  const [filter, setFilter] = useState<(typeof BUSINESS_FILTERS)[number]['key']>('pending');
   const [action, setAction] = useState<{ business: AdminBusiness; status: 'rejected' | 'suspended' } | null>(null);
   const [reason, setReason] = useState('');
   const [failure, setFailure] = useState<string | null>(null);
@@ -120,9 +129,37 @@ export function AdminBusinessesPage() {
     onError: (error) => setFailure(errorMessage(error)),
   });
 
+  const all = query.data ?? [];
+  const waiting = all.filter((business) => business.status === 'pending').length;
+  const shown = all.filter((business) => {
+    if (filter === 'all') return true;
+    if (filter === 'other') return business.status === 'rejected' || business.status === 'suspended';
+    return business.status === filter;
+  });
+
   return (
     <AdminFrame>
       <h1 className="text-2xl font-extrabold tracking-tight text-ink">Provozovny</h1>
+      <p className="mt-1 text-sm text-muted">
+        {waiting === 0 ? 'Nic nečeká na schválení.' : `${waiting} ${waiting === 1 ? 'čeká' : waiting < 5 ? 'čekají' : 'čeká'} na schválení.`}
+      </p>
+      <div className="rail mt-3 flex gap-2 overflow-x-auto pb-1">
+        {BUSINESS_FILTERS.map((option) => (
+          <button
+            key={option.key}
+            type="button"
+            aria-pressed={filter === option.key}
+            onClick={() => setFilter(option.key)}
+            className={cx(
+              'inline-flex min-h-11 shrink-0 items-center rounded-full border px-4 text-sm font-bold transition-colors',
+              filter === option.key ? 'border-ink bg-ink text-accent-ink' : 'border-line bg-card text-ink hover:bg-surface',
+            )}
+          >
+            {option.label}
+            {option.key === 'pending' && waiting > 0 ? ` (${waiting})` : ''}
+          </button>
+        ))}
+      </div>
       {/* Schválení se děje rovnou z karty, bez panelu — než tohle přibylo, odmítnuté schválení
           (třeba podnik bez IČO) jen zhaslo tlačítko a vypadalo to, že se nestalo nic. */}
       {failure && !action ? (
@@ -134,7 +171,7 @@ export function AdminBusinessesPage() {
       {query.isError ? <ErrorState error={query.error} onRetry={() => query.refetch()} /> : null}
 
       <ul className="mt-4 flex flex-col gap-3">
-        {(query.data ?? []).map((business) => (
+        {shown.map((business) => (
           <li key={business.id} className="rounded-2xl bg-card shadow-card p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
@@ -152,6 +189,16 @@ export function AdminBusinessesPage() {
                 <p className="text-sm text-muted">
                   {business.services.length} služeb · {business.upcoming_offers} nadcházejících nabídek
                 </p>
+                {/* Podívat se na provozovnu očima zákazníka je půlka rozhodnutí. */}
+                <a
+                  href={`/podnik/${business.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-1 inline-flex min-h-11 items-center gap-1.5 text-sm font-bold text-accent underline underline-offset-4"
+                >
+                  Otevřít stránku podniku
+                  <ArrowUpRight size={15} aria-hidden="true" />
+                </a>
                 {business.status_reason ? (
                   <p className="mt-1 text-sm text-danger">Důvod: {business.status_reason}</p>
                 ) : null}
@@ -177,10 +224,13 @@ export function AdminBusinessesPage() {
               </ul>
             ) : null}
 
+            <ApprovalChecks business={business} />
+
             <div className="mt-3 flex flex-wrap gap-2">
               {business.status !== 'approved' ? (
                 <Button
                   loading={setStatus.isPending && setStatus.variables?.id === business.id}
+                  disabled={Boolean(approvalBlocker(business))}
                   onClick={() => {
                     setFailure(null);
                     setStatus.mutate({ id: business.id, status: 'approved', reason: null });
@@ -237,6 +287,43 @@ export function AdminBusinessesPage() {
         ) : null}
       </Sheet>
     </AdminFrame>
+  );
+}
+
+/**
+ * Co je u provozovny hotové a co chybí, na jednom místě. Bez toho admin klepal na „Schválit“
+ * naslepo: server odmítne podnik bez IČO a v administraci nebylo vidět, že žádné nemá.
+ */
+function ApprovalChecks({ business }: { business: AdminBusiness }) {
+  const items = approvalChecklist(business);
+  const blocker = approvalBlocker(business);
+  return (
+    <div className="mt-3 rounded-xl border border-line p-3">
+      <p className="text-xs font-bold text-muted">Ke kontrole</p>
+      <ul className="mt-2 flex flex-col gap-1.5">
+        {items.map((item) => (
+          <li key={item.key} className="flex items-start gap-2 text-sm">
+            <span
+              aria-hidden="true"
+              className={cx('mt-0.5 grid size-4 shrink-0 place-items-center rounded-full',
+                item.ok ? 'bg-positive text-card' : item.blocking ? 'bg-danger text-card' : 'bg-warning-soft text-warning')}
+            >
+              {item.ok ? <Check size={11} strokeWidth={3} /> : <TriangleAlert size={11} strokeWidth={3} />}
+            </span>
+            <span className="min-w-0">
+              <span className="font-bold text-ink">{item.label}</span>
+              <span className="sr-only">{item.ok ? ' — v pořádku' : item.blocking ? ' — chybí, schválit nejde' : ' — chybí'}</span>
+              <span className="text-muted"> · {item.detail}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+      {blocker && business.status !== 'approved' ? (
+        <p className="mt-2 rounded-lg bg-danger-soft px-2.5 py-2 text-sm font-bold text-danger">
+          Schválit zatím nejde — {blocker}.
+        </p>
+      ) : null}
+    </div>
   );
 }
 

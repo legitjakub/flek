@@ -314,6 +314,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 20. 9. 2026 | Administrace ukazuje u provozovny seznam ke kontrole (IČO a ARES, podmínky, kontakt, adresa, služby, Stripe), počet čekajících a filtr; podnik bez IČO nejde schválit a je vidět proč. |
 | 20. 9. 2026 | Registrace provozovny dá vědět majiteli i adminovi (dřív se o nové provozovně nedozvěděl nikdo a ležela v administraci). Ověřeno, že e-maily z aplikace odcházejí — demo účty je schválně nedostávají. |
 | 20. 9. 2026 | Fotky demo služeb a obálek srovnané s katalogem v kódu (padel, tenis, sauna, masáže) a víc demo FLEKů: tři termíny na službu a den místo jednoho, takže v aplikaci je co rezervovat i odpoledne. |
 | 20. 9. 2026 | Mapa: špendlík ukazuje ikonu oboru (nůžky, ruka, jiskry, činka, květ, vlny) místo fotky služby, neznámá kategorie značku FLEK. Detail nabídky: časy téže služby jsou karty s cenou, slevou, délkou a posledním místem místo pilulek; rezervuje se jedním tlačítkem u vybraného času, nad pět časů se zbytek schová. Přihlášení přes Google a Apple prověřené do posledního kroku (nový test profilu, skript `npm run check:oauth`, opravený postup s Redirect URLs); zapnout ho může jen Jakub. |
