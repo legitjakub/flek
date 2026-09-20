@@ -28,7 +28,7 @@ const messages:Record<string,string>={
  WHATSAPP_UNAVAILABLE:'WhatsApp upozornění zatím nejsou dostupná.',
  WHATSAPP_PAIRING_RATE_LIMITED:'Kód jste si nechali vygenerovat už několikrát. Zkuste to prosím za hodinu.',
  TERMS_OUTDATED:'Podmínky pro podniky se změnily. Přečtěte si novou verzi a potvrďte souhlas v Provozovně.',
- PROVIDER_DETAILS_REQUIRED:'Podnik nemá vyplněné IČO. Bez údajů o poskytovateli ho nejde schválit.',
+ PROVIDER_DETAILS_REQUIRED:'Podnik nemá vyplněné IČO. Bez údajů o poskytovateli ho nejde schválit — doplní je v Provozovně ve fakturačních údajích.',
  REPORT_RATE_LIMITED:'Dnes jste poslali už hodně nahlášení. Další pošlete zítra, nebo nám napište e-mailem.',
  INVALID_ICO:'IČO nesedí. Zkontrolujte, že má 8 číslic.',ARES_UNAVAILABLE:'Registr ARES teď neodpovídá. Údaje vyplňte ručně, nebo to zkuste za chvíli.',
  ACTIVE_BOOKINGS:'Účet teď smazat nejde, máte nadcházející rezervaci.',BUSINESS_MEMBER:'Účet patří k podniku. Jeho smazání vyřídíme e-mailem.',
