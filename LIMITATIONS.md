@@ -113,3 +113,9 @@ Více provozoven na účet je podporováno přepínačem v partnerské části. 
 ## Schvalování provozoven (20. 9. 2026)
 
 - Provozovnu, která není demo a nemá v `business_billing` vyplněné IČO, nejde schválit — server vrátí `PROVIDER_DETAILS_REQUIRED`. Je to záměr z 18. 9.: zákazník musí vidět, kdo mu službu poskytuje. Podnik IČO doplní v Provozovně ve fakturačních údajích (ověří se proti ARES), teprve pak ho admin schválí.
+
+## Sklo a e-maily (20. 9. 2026)
+
+- Sklo (`.glass`) je průhledné na 86 %, což je strop daný čitelností textu nad tmavou fotkou. Víc průhlednosti by shodilo malý text pod WCAG AA.
+- Logo v e-mailech je obrázek na `https://www.app-flek.eu/images/email-logo.png`. Klient, který blokuje obrázky, ukáže jen alt „FLEK“ — text e-mailu tím netrpí, ale hlavička je pak prázdná.
+- Šablony ověřovacích e-mailů (`supabase/templates/*.html`) jsou v repozitáři jen jako zdroj pravdy; Supabase Auth je čte ze svého nastavení. Změna v repozitáři se na odesílané e-maily projeví, až je člověk vloží v Supabase → Authentication → Emails.

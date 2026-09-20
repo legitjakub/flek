@@ -134,7 +134,7 @@ function PreviewCard({
   const bookable = offer.capacity_remaining > 0 && Date.parse(offer.booking_cutoff_at) > Date.parse(now);
 
   return (
-    <article className="flex w-full flex-col overflow-hidden rounded-3xl bg-card shadow-lift">
+    <article className="glass glass-lift flex w-full flex-col overflow-hidden rounded-3xl">
       <div className="relative h-28 bg-accent-soft sm:h-32 [@media(max-height:720px)]:h-20">
         <img src={photo} alt="" decoding="async" onError={() => setFailed(true)} className="size-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-ink/35 to-transparent" aria-hidden="true" />
@@ -142,7 +142,7 @@ function PreviewCard({
         <div className="absolute top-2.5 left-3 flex items-center gap-2">
           <DiscountBadge pct={offer.discount_pct} className="shadow-card" />
           {position ? (
-            <span className="tnum rounded-full bg-card/90 px-2 py-0.5 text-xs font-bold text-ink" aria-hidden="true">
+            <span className="glass tnum rounded-full px-2 py-0.5 text-xs font-bold text-ink" aria-hidden="true">
               {position}
             </span>
           ) : null}
@@ -153,7 +153,7 @@ function PreviewCard({
           aria-label="Zavřít náhled"
           className="absolute top-1.5 right-1.5 grid size-11 place-items-center rounded-full"
         >
-          <span className="grid size-8 place-items-center rounded-full bg-card/95 text-ink shadow-card">
+          <span className="glass grid size-8 place-items-center rounded-full text-ink">
             <X size={17} aria-hidden="true" />
           </span>
         </button>

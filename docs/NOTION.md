@@ -25,6 +25,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 Úkoly, které AI agent udělat nesmí nebo nemůže, protože jde o klíče, hesla nebo platbu kartou. Hotové odškrtni.
 
 - [x] **Doplnit klíče pro upozornění v Supabase.** `NOTIFICATION_FROM` a `VAPID_PUBLIC_KEY` doplnil Claude, `VAPID_PRIVATE_KEY` Jakub (13. 9.). Otisk klíče sedí se souborem a doručovací funkce s ním běží.
+- [ ] **Vložit nové šablony e-mailů do Supabase.** V repozitáři mají `supabase/templates/confirmation.html` a `recovery.html` nově skutečné logo; Supabase Auth ale čte šablony ze svého nastavení, ne z repozitáře. Otevři Supabase → Authentication → Emails, u „Confirm signup“ a „Reset password“ vlož obsah těch dvou souborů a ulož. (Upozornění na rezervace jdou přes Edge Function a ta se nasazuje z `main` sama.)
 - [ ] **Vyměnit klíč Resendu.**
   1. V resend.com otevři API keys → Create API key. Název „FLEK“, oprávnění Sending access, doména `mail.app-flek.eu`.
   2. Nový klíč vlož v Supabase na dvě místa: Edge Functions → Secrets jako `RESEND_API_KEY` a Authentication → Emails → SMTP Settings → Password.
@@ -314,6 +315,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 20. 9. 2026 | Karty a navigace dostaly matné sklo (fotka a mapa pod nimi prosvítají) a e-maily konečně nesou skutečné logo FLEK místo textu „flek′“. |
 | 20. 9. 2026 | Administrace ukazuje u provozovny seznam ke kontrole (IČO a ARES, podmínky, kontakt, adresa, služby, Stripe), počet čekajících a filtr; podnik bez IČO nejde schválit a je vidět proč. |
 | 20. 9. 2026 | Registrace provozovny dá vědět majiteli i adminovi (dřív se o nové provozovně nedozvěděl nikdo a ležela v administraci). Ověřeno, že e-maily z aplikace odcházejí — demo účty je schválně nedostávají. |
 | 20. 9. 2026 | Fotky demo služeb a obálek srovnané s katalogem v kódu (padel, tenis, sauna, masáže) a víc demo FLEKů: tři termíny na službu a den místo jednoho, takže v aplikaci je co rezervovat i odpoledne. |

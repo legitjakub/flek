@@ -212,7 +212,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
                 <Link
                   to={returnTo}
                   aria-label="Zpět na nabídky"
-                  className="grid size-11 place-items-center rounded-full bg-card/90 text-ink shadow-card backdrop-blur-sm hover:bg-card"
+                  className="glass grid size-11 place-items-center rounded-full text-ink hover:bg-card"
                 >
                   <ArrowLeft size={20} aria-hidden="true" />
                 </Link>
