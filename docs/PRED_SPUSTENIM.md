@@ -21,7 +21,7 @@ Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B). Úkoly na 
 - **Potvrzování rezervací podnikem** (hold před Checkoutem, autorizace, potvrzení do 10/5/3 minut, stržení až potom) je od 15. 9. 15:54 zapnuté pro všechny podniky (`manual_confirmation_enabled = 'true'`), po zelených testech v režimu `demo` (akceptace 106/106, průchod se skutečnými testovacími platbami).
 - **WhatsApp** pro podniky i zákazníky (výchozí zapnutý, ověření čísla jedním klepnutím, vypínatelný v nastavení upozornění) je v kódu a databázi. U Meta je od 18. 9. aplikace FLEK s odsouhlasenými podmínkami a testovacím číslem; čeká na pět šablon, webhook a secrets.
 - **Právní texty** verze 1.0 (podmínky pro zákazníky s oddílem o nahlášení obsahu, podmínky pro podniky a zásady ochrany osobních údajů) jsou v aplikaci, ale zobrazí se až s údaji provozovatele. Souhlas s verzí zapisuje server, analytika nic neukládá do prohlížeče, e-mail o rezervaci chodí zákazníkovi vždy a účet jde smazat v Profilu.
-- **Přihlášení přes Google a Apple** je v kódu. Tlačítka se ukážou, až je Jakub zapne v Supabase (postup v `docs/NOTION.md`, Na tahu je Jakub).
+- **Přihlášení přes Google a Apple** je v kódu a prověřené až k poslednímu kroku. Tlačítka se ukážou, až je Jakub zapne v Supabase (postup v `docs/NOTION.md`, Na tahu je Jakub); `npm run check:oauth` kdykoli vypíše, co ještě chybí. K 20. 9. je obojí vypnuté.
 - **Nasazení webu** jde zase samo z `main`: 18. 9. agent s Jakubovým souhlasem odpojil od projektu ve Vercelu uspanou databázi z Vercel Marketplace, která nasazení shazovala. Na webu běží verze z 18. 9.
 - Ověřeno: 101/101 akceptačních kontrol se skutečnými testovacími platbami Stripe (původní režim), SQL testy potvrzování a WhatsAppu, build a unit testy v CI.
 
@@ -198,6 +198,7 @@ Každý bod je samostatný úkol. Po dokončení agent aktualizuje dokumentaci p
 - [ ] CAPTCHA (Cloudflare Turnstile) u registrace a obnovy hesla. Klíče založí člověk.
 - [ ] `secure_password_change`, požadavky na heslo a rozumné limity pokusů v `supabase/config.toml` i v dashboardu.
 - [x] Přihlášení přes Google a Apple v kódu (`SocialSignIn.tsx`): tlačítka jen pro poskytovatele zapnuté v Supabase, návrat na původní stránku, jméno z účtu Google do profilu (18. 9.). Klíče zakládá Jakub.
+- [x] Prověřený zbytek cesty (20. 9.): `tests/oauth-profile.sql` hlídá, co trigger udělá se jménem od Googlu i s prázdnou odpovědí Apple, a `npm run check:oauth` rozliší vypnutého poskytovatele od nepovolené návratové adresy. Do Redirect URLs patří `https://www.app-flek.eu/**` (návrat nese dotaz `?oauth=…&returnTo=…`), ne samotné `/prihlaseni`. Apple ve webovém toku jméno neposílá.
 
 ### GDPR a souhlasy
 

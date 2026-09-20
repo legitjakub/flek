@@ -44,8 +44,8 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik zveř
 | `src/types/database.ts` | ručně psané typy, **negenerovat** |
 | `supabase/functions` | Edge Functions: `stripe-checkout`, `stripe-webhook`, `stripe-connect` (Accounts v2), `stripe-refunds`, `stripe-test-pay` (jen test), `stripe-webhook-setup` (jen admin: doplní události webhooku), `booking-confirmation` (capture nebo uvolnění autorizace po rozhodnutí podniku), sdílené `_shared/stripe.ts`; `notification-delivery` (e-mail přes Resend, Web Push a WhatsApp z fronty), `whatsapp-webhook` (Meta Cloud API, podpis `X-Hub-Signature-256`), sdílené `_shared/whatsapp.ts`; `ares-lookup` (IČO v ARES, `_shared/ares.ts`); e-maily skládá `_shared/email.ts` |
 | `supabase/migrations` | schéma, RLS a všechny RPC; názvy souborů = verze v hostované DB |
-| `tests` | unit testy (Vitest), `integration.test.ts` (potřebuje Docker), `pilot-maintenance.sql`, `stripe-refunds.sql`, `manual-confirmation.sql`, `whatsapp-notifications.sql` a `legal.sql` (SQL v transakci s rollbackem) |
-| `scripts` | `acceptance.mjs` (API kontroly), `sync-notion.mjs`, lokální Supabase |
+| `tests` | unit testy (Vitest), `integration.test.ts` (potřebuje Docker), `pilot-maintenance.sql`, `stripe-refunds.sql`, `manual-confirmation.sql`, `whatsapp-notifications.sql`, `legal.sql` a `oauth-profile.sql` (SQL v transakci s rollbackem) |
+| `scripts` | `acceptance.mjs` (API kontroly), `check-oauth.mjs` (stav přihlášení přes Google a Apple), `sync-notion.mjs`, lokální Supabase |
 
 Routy: zákazník `/`, `/mapa`, `/nabidka/:id`, `/podnik/:id`, `/oblibene`, `/rezervace`, `/profil`, `/prihlaseni`, `/potvrzeni`, `/r/:code`, právní texty `/podminky`, `/podminky-podniky`, `/soukromi`; podnik `/partner` (+ `/nabidky`, `/rezervace`, `/sluzby`, `/provozovna`, `/metriky`, `/registrace`); admin `/admin` (+ `/nabidky`, `/rezervace`, `/uzivatele`, `/metriky`, `/audit`, `/nahlaseni`).
 

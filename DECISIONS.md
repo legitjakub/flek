@@ -206,3 +206,14 @@ Jakub ukázal aplikaci move+ (moveplus.cz) a chtěl Objevit ve stejném duchu.
 - **Nadpis dvouřádkový** („Volné FLEKy.“ a „Se slevou.“ v barvě značky). Sleva je aspoň 10 %, takže druhý řádek platí vždy.
 - **Promo bloky pro nepřihlášené mají jednu výšku** (`min-h-80` v `EmptyState`), aby přepnutí mezi Oblíbenými a Rezervacemi neposkočilo o výšku zalomeného řádku. Delší text kartu roztáhne, kratší ji nezmenší.
 - **„Sleduj místa, kam se vracíš.“** místo „kam se rád vracíš“ — texty pro zákazníka zůstávají bez rodu.
+
+## Ikona oboru ve špendlíku a časy jako karty — 20. 9. 2026
+
+Jakub ukázal aplikaci s mapou, kde má každý špendlík značku aplikace, a stránku podniku, kde je každá nabídka karta s fakty a tlačítkem. Vybral ikonky podle kategorie a tlačítko jen u vybraného času.
+
+- **Ve špendlíku je ikona oboru, ne fotka služby.** Fotka ve 48px kolečku nic neřekla: ručník, lehátko a ošetřovna jsou při té velikosti stejný béžový čtverec, a šest fotek vedle sebe splývalo. Nůžky, ruka, jiskry, činka, květ a vlny se poznají na první pohled a mapa konečně nese obor. Tvary jsou z lucide, stejné sady, jakou kreslí zbytek aplikace, a názvy ikon už roky ležely v `public.categories.icon` nevyužité. Neznámá kategorie dostane značku FLEK.
+- **Tmavá dlaždice s jasnou značkou**, přesně ten vztah, jaký má ikona aplikace: ultramarín `brand-bright` na noční `ink` (4.1 : 1, AA pro grafiku). Rozměry dlaždice (48 px) i celého špendlíku (64 px) zůstaly, protože z nich počítá kolize shluků `mapClusters.ts`.
+- **Čas na detailu je karta, ne pilulka.** Pilulka unesla hodinu a nic víc, takže dva časy, které se liší o 150 Kč, o půl hodiny procedury nebo o poslední volné místo, vypadaly zaměnitelně a rozdíl se dal zjistit jen proklepáním. Karta rovnou říká, co si klepnutím koupíš: hodinu, konečnou cenu, slevu, délku a co zbývá.
+- **Tlačítko jen u vybraného času.** Tlačítko na každé kartě (jako v ukázce) by na mobilu soupeřilo se spodní lištou a z dlouhého seznamu udělalo stěnu stejných výzev. Karta tedy čas vybere a rezervuje se jedním tlačítkem — na telefonu ve spodní liště, na desktopu v kartě termínu.
+- **Strop výšky na desktopu.** Seznam časů má `md:max-h-96` a vlastní posuvník, protože karta „Tvůj termín“ je přilepená (`md:sticky`); bez stropu by šest karet vytlačilo cenu a tlačítko pod okraj obrazovky, kam se u přilepené karty nedá doscrollovat. Nad pět časů se zbytek schová za „Další časy (N)“ a vybraný čas se nikdy neschová.
+- **Záložky (Overview/Reviews/About) z ukázky nepřebíráme.** Detail FLEKu je krátký; „O službě“ a „Kde to je“ by se za záložkami jen schovaly.
