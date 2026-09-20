@@ -44,7 +44,7 @@ export function FavoritesPage() {
           <EmptyState
             tone="promo"
             icon={<Heart size={26} />}
-            title="Sleduj místa, kam se rád vracíš."
+            title="Sleduj místa, kam se vracíš."
             body="Dáme ti vědět, jakmile u nich přibude volný FLEK."
             action={
               <Link to="/prihlaseni?returnTo=%2Foblibene" className={buttonClass({ size: 'lg', shape: 'pill' })}>

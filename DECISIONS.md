@@ -195,3 +195,14 @@ Jakub: „u podmínek nejde o délku, ale o kvalitu“. Texty prošly proti zák
 - **Podnikům doplněno, co P2B žádá a chybělo:** spolupráce na dobu neurčitou bez omezení nabízet jinde (FLEK nemá doložku parity), komu předáváme data podniku (Stripe, Finanční správa) a co s nimi po skončení spolupráce.
 - **Zásady doplněné** o přihlášení přes Google a Apple, o to, které údaje jsou povinné a proč (čl. 13 odst. 2 písm. e) GDPR), a o způsob námitky.
 - **Účet:** místo „za vše, co se v účtu stane, odpovídáš ty“ (nevyvážené vůči spotřebiteli) jen povinnost chránit heslo a ozvat se při zneužití.
+
+## Úvodní stránka v duchu move+ — 20. 9. 2026
+
+Jakub ukázal aplikaci move+ (moveplus.cz) a chtěl Objevit ve stejném duchu.
+
+- **Fotka je celá karta.** Fakta leží na matném bílém panelu přes její spodní okraj, na obrázku zůstaly jen dvě věci, podle kterých se rozhoduje o klepnutí: kdy to začíná a kolik je to dolů. Dřív byla fotka v poměru 8 : 5 nad bílým blokem textu; karta je teď čtverec (v liště na výšku), takže na obrazovku telefonu se vejde celá jedna nabídka a kus druhé.
+- **Lišta jen pro první sekci.** „Začíná brzy“ se listuje do strany, ostatní sekce zůstaly mřížkou. Stránka samých lišt schová víc, než ukáže, a nabídky se mají procházet svisle.
+- **Žádné profilovky podniků ani pulzující tečka.** Obojí bylo v prvním návrhu podle move+ a Jakub je zrušil: FLEK nemá loga podniků a písmeno v kolečku bralo šířku názvu služby; blikající tečka nepřidávala nic k tomu, co už říká „za 29 min“.
+- **Nadpis dvouřádkový** („Volné FLEKy.“ a „Se slevou.“ v barvě značky). Sleva je aspoň 10 %, takže druhý řádek platí vždy.
+- **Promo bloky pro nepřihlášené mají jednu výšku** (`min-h-80` v `EmptyState`), aby přepnutí mezi Oblíbenými a Rezervacemi neposkočilo o výšku zalomeného řádku. Delší text kartu roztáhne, kratší ji nezmenší.
+- **„Sleduj místa, kam se vracíš.“** místo „kam se rád vracíš“ — texty pro zákazníka zůstávají bez rodu.

@@ -92,14 +92,14 @@ export function Recommendations({
           <li
             key={group.key}
             data-snap-item
-            className="flex w-[80%] max-w-72 shrink-0 snap-start"
+            className="flex w-[84%] max-w-80 shrink-0 snap-start md:w-80"
             onClickCapture={() => track('similar_offers_clicked', {
               offer_id: offer.id,
               to_offer_id: group.lead.id,
               source: group.lead.business_id === offer.business_id ? 'venue' : 'detail_carousel',
             })}
           >
-            <OfferCard offer={group.lead} slots={group.slots} now={now} />
+            <OfferCard offer={group.lead} slots={group.slots} now={now} tall />
           </li>
         ))}
       </ul>

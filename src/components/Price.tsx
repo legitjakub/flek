@@ -25,11 +25,20 @@ export function savings(originalCents: number, dealCents: number): number {
  * The brand ultramarine is the promotional highlight; white on it reads at 9.1 : 1.
  * Text links and status labels use the darker tone of the same green family.
  */
-export function DiscountBadge({ pct, className = '' }: { pct: number; className?: string }) {
+export function DiscountBadge({
+  pct,
+  size = 'sm',
+  className = '',
+}: {
+  pct: number;
+  /** `lg` is the pill that sits in the corner of a photograph, beside the time. */
+  size?: 'sm' | 'lg';
+  className?: string;
+}) {
   if (pct <= 0) return null;
   return (
     <span
-      className={`tnum inline-flex items-center rounded-lg bg-brand px-2 py-0.5 text-xs font-extrabold text-brand-ink ${className}`}
+      className={`tnum inline-flex items-center bg-brand font-extrabold text-brand-ink ${size === 'lg' ? 'rounded-full px-2.5 py-1.5 text-sm leading-none' : 'rounded-lg px-2 py-0.5 text-xs'} ${className}`}
     >
       −{pct} %
     </span>

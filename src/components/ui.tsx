@@ -243,7 +243,9 @@ export function EmptyState({
 }) {
   if (tone === 'promo') {
     return (
-      <PromoCard tone="promo" className="px-6 py-8 text-center">
+      // One height for every promo block, whether its text runs to one line or three: the
+      // customer's tabs (Oblíbené, Rezervace) used to jump by the height of a wrapped line.
+      <PromoCard tone="promo" className="flex min-h-80 flex-col justify-center px-6 py-8 text-center">
         {icon ? (
           <span aria-hidden="true" className="mx-auto mb-4 grid size-14 place-items-center rounded-full bg-card text-ink shadow-card">
             {icon}
@@ -456,18 +458,24 @@ export function FilterPill({ label, onRemove }: { label: string; onRemove: () =>
 }
 
 /** Skeleton shaped like an offer card, so loading does not reflow into content. */
-export function CardSkeleton() {
+export function CardSkeleton({ tall = false }: { tall?: boolean }) {
   return (
-    <div className="overflow-hidden rounded-2xl bg-card shadow-card" role="status" aria-label="Načítáme nabídku">
-      {/* Same aspect ratio as the card's photo, so the grid does not jump when it lands. */}
-      <div className="aspect-[8/5] w-full animate-pulse bg-line/60" />
-      <div className="flex flex-col gap-3 p-4">
-        <Skeleton className="h-5 w-2/3" />
-        <Skeleton className="h-4 w-1/2" />
-        <div className="flex items-end justify-between pt-1">
-          <Skeleton className="h-9 w-28" />
-          <Skeleton className="h-7 w-20" />
+    <div
+      // Same shape as the card, so the grid does not jump when the offers land.
+      className={cx('relative w-full overflow-hidden rounded-3xl bg-card shadow-card', tall ? 'aspect-[4/5]' : 'aspect-square')}
+      role="status"
+      aria-label="Načítáme nabídku"
+    >
+      <div className="absolute inset-0 animate-pulse bg-line/60" />
+      <div className="absolute inset-x-2.5 bottom-2.5 rounded-[1.375rem] bg-card p-3.5">
+        <div className="flex items-start gap-3">
+          <div className="min-w-0 flex-1">
+            <Skeleton className="h-5 w-2/3" />
+            <Skeleton className="mt-2 h-4 w-1/2" />
+          </div>
+          <Skeleton className="h-8 w-20 shrink-0 rounded-full" />
         </div>
+        <Skeleton className="mt-3 h-3 w-1/2" />
       </div>
     </div>
   );

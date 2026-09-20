@@ -5,6 +5,7 @@ import { listCategories } from '../../lib/api';
 import { useServerNow } from '../../lib/clock';
 import { Button, CardSkeleton, EmptyState, ErrorState } from '../../components/ui';
 import { OfferCard } from './OfferCard';
+import { OfferRail } from './OfferRail';
 import { buildSections } from './sections';
 import { DEFAULT_FILTERS, SORT_LABELS, activeCount } from './filters';
 import { useDiscovery } from './useDiscovery';
@@ -30,8 +31,16 @@ export function DiscoveryPage() {
     : buildSections(rows, now), [rows, now, customized]);
   return (
     <main className="page-container py-5 sm:py-8">
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-        <h1 className="text-xl leading-tight font-extrabold tracking-tight sm:text-2xl">Volné FLEKy</h1>
+      {/*
+        Two lines, the second in the brand colour: what this screen is, and the one thing that
+        makes it worth opening. It is the only decoration on the page — everything below is
+        offers.
+      */}
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
+        <h1 className="text-xl leading-[1.1] font-extrabold tracking-tight sm:text-2xl">
+          Volné FLEKy.
+          <span className="block text-brand">Se slevou.</span>
+        </h1>
         <LocationChip point={point} onChange={setPoint} />
       </div>
       <div className="mt-3"><FilterBar filters={filters} onChange={setFilters} categories={categories.data ?? []} resultCount={rows.length} pending={discovery.isFetching} applied={discovery.data?.applied} note={discovery.data?.note} /></div>
@@ -49,32 +58,50 @@ export function DiscoveryPage() {
           {Array.from({ length: 6 }, (_, i) => <CardSkeleton key={i} />)}
         </div>
       ) : null}
-      {sections.map((section, sectionIndex) => (
-        <section key={section.key} className={sectionIndex === 0 ? 'mt-5' : 'mt-7'} aria-labelledby={`sekce-${section.key}`}>
-          <div className="mb-3 flex items-baseline justify-between gap-3">
-            <h2 id={`sekce-${section.key}`} className="text-lg font-extrabold tracking-tight">
-              {section.title}
-              <span className="tnum ml-2 text-sm font-normal text-muted">
-                {section.note ?? `${section.rows.length} ${plural(section.rows.length)}`}
-              </span>
-            </h2>
-            {sectionIndex === 0 ? (
-              <Link
-                to={`/mapa${search.size ? `?${search}` : ''}`}
-                className="-my-3 inline-flex min-h-11 shrink-0 items-center gap-1.5 text-sm font-bold text-accent"
-              >
-                <Map size={17} aria-hidden="true" />
-                Na mapě
-              </Link>
-            ) : null}
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {section.rows.map((offer, index) => (
-              <OfferCard key={offer.id} offer={offer} slots={slotsFor[offer.id]} now={now} priority={sectionIndex === 0 && index === 0} />
-            ))}
-          </div>
-        </section>
-      ))}
+      {sections.map((section, sectionIndex) => {
+        const note = section.note ?? `${section.rows.length} ${plural(section.rows.length)}`;
+        const onMap = sectionIndex === 0 ? (
+          <Link
+            to={`/mapa${search.size ? `?${search}` : ''}`}
+            className="-my-3 inline-flex min-h-11 shrink-0 items-center gap-1.5 text-sm font-bold text-accent"
+          >
+            <Map size={17} aria-hidden="true" />
+            Na mapě
+          </Link>
+        ) : null;
+        // The first section is the one that changes by the hour, so it swipes; the rest is a
+        // grid. With a single section there is nothing to swipe past — it stays a grid too.
+        if (sectionIndex === 0 && sections.length > 1) {
+          return (
+            <OfferRail
+              key={section.key}
+              id={`sekce-${section.key}`}
+              title={section.title}
+              note={note}
+              action={onMap}
+              rows={section.rows}
+              slotsFor={slotsFor}
+              now={now}
+            />
+          );
+        }
+        return (
+          <section key={section.key} className={sectionIndex === 0 ? 'mt-5' : 'mt-7'} aria-labelledby={`sekce-${section.key}`}>
+            <div className="mb-3 flex items-baseline justify-between gap-3">
+              <h2 id={`sekce-${section.key}`} className="text-lg font-extrabold tracking-tight">
+                {section.title}
+                <span className="tnum ml-2 text-sm font-normal text-muted">{note}</span>
+              </h2>
+              {onMap}
+            </div>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {section.rows.map((offer, index) => (
+                <OfferCard key={offer.id} offer={offer} slots={slotsFor[offer.id]} now={now} priority={sectionIndex === 0 && index === 0} />
+              ))}
+            </div>
+          </section>
+        );
+      })}
     </main>
   );
 }

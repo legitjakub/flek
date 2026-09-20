@@ -235,3 +235,10 @@ Lokální Docker integrační sada, fyzický iPhone/Safari, skutečná kamera, n
 - Vercel: po odpojení uspané databáze od projektu (Storage → Projects → Remove Project Connection, Jakubův souhlas) hlásí GitHub status u commitu 060491e „Deployment has completed“. 19. 9. znovu ověřeno na www.app-flek.eu: načtený soubor `App-*.js` obsahuje novou větu „i když je to do 14 dnů“ z rezervačního okna.
 - Meta (Jakubův souhlas): v aplikaci FLEK odsouhlasené Facebook Terms for WhatsApp Business a Meta Hosting Terms for Cloud API; přes hlášku „Onboarding failure“ vznikl testovací WhatsApp účet a testovací číslo (krok 1 „Completed“), ve WhatsApp Manageru jsou jen ukázkové šablony Meta.
 - Neověřeno: šablony WhatsApp (WhatsApp Manager v Chromu po kliknutí opakovaně na minuty zamrzl, žádná šablona se neuložila), webhook a zprávy na telefon.
+
+## Úvodní stránka v duchu move+ — 20. 9. 2026
+
+- `npm run build` a `npm run test:unit`: 131 testů, bez chyb.
+- Prohlížeč (lokální server nad hostovanou DB) na 375, 390 a desktopu: Objevit s lištou „Začíná brzy“ a mřížkami pod ní, detail nabídky s karuselem „Mohlo by se ti líbit“, stránka podniku (karta bez fotky), mapa beze změny, kostra při načítání ve tvaru karty. Bez horizontálního přetečení a bez chyb v konzoli.
+- Promo blok pro nepřihlášené měří na `/oblibene` i `/rezervace` 320 px (měřeno v prohlížeči na 375 px i na desktopu).
+- Neověřeno: přihlášená Oblíbená a Rezervace se skutečnými daty (karta je stejná jako na Objevit).

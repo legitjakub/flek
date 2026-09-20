@@ -1,6 +1,6 @@
 # FLEK — přehled projektu
 
-> Aktualizováno 19. 9. 2026. Zdroj pravdy je repozitář (`docs/NOTION.md`). Stránku aktualizuje Claude na požádání; ruční úpravy tady se při další aktualizaci přepíšou.
+> Aktualizováno 20. 9. 2026. Zdroj pravdy je repozitář (`docs/NOTION.md`). Stránku aktualizuje Claude na požádání; ruční úpravy tady se při další aktualizaci přepíšou.
 
 ## Ve zkratce
 
@@ -313,6 +313,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 20. 9. 2026 | Nová úvodní stránka v duchu aplikace move+: fotka je celá karta, fakta na matném panelu přes její spodní okraj, na fotce jen čas a sleva; „Začíná brzy“ se listuje do strany a nadpis je dvouřádkový. Promo bloky pro nepřihlášené mají jednu výšku. |
 | 18. 9. 2026 | Kontrola kvality právních textů (odstoupení u kadeřnictví a kosmetiky, tlačítko „Zaplatit“ u Stripe, přesné lhůty, doplněné podmínky pro podniky a zásady); uspaná databáze odpojená od projektu ve Vercelu a web znovu nasazený; u Meta odsouhlasené podmínky WhatsAppu a založené testovací číslo, šablony zatím ne (WhatsApp Manager v Chromu zamrzá) |
 | 18. 9. 2026 | Povinné potvrzení rezervace e-mailem, zprávy podnikům a zákazníkům s důvodem, smazání účtu v Profilu a noční mazání starých dat; přihlášení přes Google a Apple (čeká na klíče); právní texty porovnané s Too Good To Go, TasteTown, Fresha a Reservio a zjednodušené; web čeká na odpojení uspané databáze ve Vercelu |
 | 18. 9. 2026 | Právní minimum: obchodní podmínky pro zákazníky a pro podniky, zásady ochrany osobních údajů a pravidla obsahu (verze 1.0, zveřejní se s údaji provozovatele, pak je zkontroluje právník), souhlas s verzí při platbě i u podniku, kdo službu poskytuje, ověření IČO v ARES, nahlášení obsahu, export dat, podklad DAC7, analytika bez ukládání do prohlížeče, texty v režimu potvrzování |
