@@ -109,3 +109,7 @@ Více provozoven na účet je podporováno přepínačem v partnerské části. 
 ## Nasazení webu (18. 9. 2026)
 
 - K projektu flek ve Vercelu nesmí být připojené úložiště z Vercel Marketplace. Uspané úložiště (18. 9. `supabase-cerulean-village`) shodí každé nasazení na kroku „Provisioning Integrations“; vyřešené odpojením s Jakubovým souhlasem, web se od té doby nasazuje zase sám.
+
+## Schvalování provozoven (20. 9. 2026)
+
+- Provozovnu, která není demo a nemá v `business_billing` vyplněné IČO, nejde schválit — server vrátí `PROVIDER_DETAILS_REQUIRED`. Je to záměr z 18. 9.: zákazník musí vidět, kdo mu službu poskytuje. Podnik IČO doplní v Provozovně ve fakturačních údajích (ověří se proti ARES), teprve pak ho admin schválí.

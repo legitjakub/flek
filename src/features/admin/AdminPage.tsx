@@ -123,6 +123,13 @@ export function AdminBusinessesPage() {
   return (
     <AdminFrame>
       <h1 className="text-2xl font-extrabold tracking-tight text-ink">Provozovny</h1>
+      {/* Schválení se děje rovnou z karty, bez panelu — než tohle přibylo, odmítnuté schválení
+          (třeba podnik bez IČO) jen zhaslo tlačítko a vypadalo to, že se nestalo nic. */}
+      {failure && !action ? (
+        <div className="mt-3">
+          <Banner tone="warning">{failure}</Banner>
+        </div>
+      ) : null}
       {query.isPending ? <LoadingList /> : null}
       {query.isError ? <ErrorState error={query.error} onRetry={() => query.refetch()} /> : null}
 
@@ -174,18 +181,21 @@ export function AdminBusinessesPage() {
               {business.status !== 'approved' ? (
                 <Button
                   loading={setStatus.isPending && setStatus.variables?.id === business.id}
-                  onClick={() => setStatus.mutate({ id: business.id, status: 'approved', reason: null })}
+                  onClick={() => {
+                    setFailure(null);
+                    setStatus.mutate({ id: business.id, status: 'approved', reason: null });
+                  }}
                 >
                   Schválit
                 </Button>
               ) : null}
               {business.status !== 'rejected' ? (
-                <Button variant="secondary" onClick={() => setAction({ business, status: 'rejected' })}>
+                <Button variant="secondary" onClick={() => { setFailure(null); setAction({ business, status: 'rejected' }); }}>
                   Zamítnout
                 </Button>
               ) : null}
               {business.status === 'approved' ? (
-                <Button variant="danger" onClick={() => setAction({ business, status: 'suspended' })}>
+                <Button variant="danger" onClick={() => { setFailure(null); setAction({ business, status: 'suspended' }); }}>
                   Pozastavit
                 </Button>
               ) : null}
@@ -220,7 +230,7 @@ export function AdminBusinessesPage() {
             <Input id="admin-reason" data-autofocus value={reason} onChange={(event) => setReason(event.target.value)} />
           </Field>
         </div>
-        {failure ? (
+        {failure && action ? (
           <div className="mt-3">
             <Banner tone="warning">{failure}</Banner>
           </div>
