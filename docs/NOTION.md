@@ -16,7 +16,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 | Potvrzování rezervací podnikem | **zapnuté pro všechny podniky** od 15. 9. 15:54 (předtím demo: akceptace 106/106 a průchod se skutečnými testovacími platbami) |
 | WhatsApp | pro podniky i zákazníky, výchozí zapnutý a vypínatelný v nastavení upozornění, ověření čísla jedním klepnutím; u Meta je aplikace FLEK s odsouhlasenými podmínkami a testovacím číslem (18. 9.), chybí pět šablon, webhook a klíče v Supabase (úkol pro Jakuba níže) |
 | Právní texty | obchodní podmínky pro zákazníky a pro podniky a zásady ochrany osobních údajů ve verzi 1.0 jsou v aplikaci (nahlášení obsahu je oddílem podmínek jako u Too Good To Go nebo Reservia); zveřejní se, až Jakub pošle údaje provozovatele, a před ostrým provozem je zkontroluje právník |
-| Přihlášení | e-mail a heslo; tlačítka „Pokračovat přes Google“ a „Pokračovat přes Apple“ jsou v aplikaci a objeví se, až je Jakub zapne v Supabase (postup níže, ověřeno 20. 9. — obojí je zatím vypnuté) |
+| Přihlášení | e-mail a heslo; **Google od 20. 9. funguje** (v Google Cloud zatím režim Testing, přihlásí se jen účty v seznamu test users); Apple čeká na placené členství v Apple Developer Program |
 | Data v produkci (13. 9.) | 18 schválených podniků, 330 nabídek, 321 rezervací, 16 účtů (12 demo, 4 ostatní), od 13. 9. platby jen přes Stripe (test), 16 demo podniků s testovacím Stripe účtem |
 | Pro AI agenty | `AGENTS.md` v kořeni repozitáře (Claude Code ho načítá přes `CLAUDE.md`) |
 
@@ -241,7 +241,7 @@ Schvaluje provozovny (skutečný podnik jen s IČO), kontroluje nabídky a rezer
 | Analytika | vlastní tabulka přes RPC `record_event` | vyhledávání, zobrazení, rezervace, oblíbené, sdílení, pozvánky; v prohlížeči nic neukládá (bez cookie lišty) |
 | Právní texty | `src/content/pravni/*.md` (podmínky pro zákazníky, pro podniky a zásady), verze v `public.legal_documents`, údaje provozovatele v `private.settings` | zveřejní se až s údaji provozovatele a platnou verzí; souhlasy v `private.legal_acceptances` |
 | Mazání starých dat | `pg_cron`, job `flek-retention` (každou noc ve 3:40) | doručování a zprávy WhatsApp po 90 dnech, upozornění po 12 měsících, vyřízená nahlášení po 3 letech, záznamy cronu po 14 dnech |
-| Přihlášení přes Google a Apple | Supabase Auth → Sign In / Providers | zatím vypnuté (ověřeno 20. 9. na `/auth/v1/settings`); tlačítka se ukážou, až je Jakub zapne s klíči. Stav vypíše `npm run check:oauth` |
+| Přihlášení přes Google a Apple | Supabase Auth → Sign In / Providers | Google zapnutý 20. 9. (klient v Google Cloud, Redirect URLs `https://www.app-flek.eu/**`), Apple zatím ne. Stav vypíše `npm run check:oauth` |
 | Ověření IČO | Edge Function `ares-lookup` nad veřejným API ARES | název a sídlo podniku z registru, bez klíče |
 | Ilustrační fotky | složka `public/images/services` + Unsplash | náhledy pro špendlíky v `thumbs/` |
 | Kód | GitHub `legitjakub/flek` | — |
