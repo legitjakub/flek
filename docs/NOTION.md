@@ -86,7 +86,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 ## Todolist
 
 - [x] Nahradit nevhodnou resortovou fotografii wellness služeb neutrálním spa snímkem; jednorázová migrace opravuje katalog i existující služby a obálky (14. 9. 2026)
-- [ ] Dokončit originální fotografickou knihovnu pro každou připravenou aktivitu; 28 originálů pro vlasy, masáže, manikúru a gel lak je hotových a responsivně napojených (20. 9.), další čekají na reset limitu generování
+- [x] Dokončit originální fotografickou knihovnu pro každou připravenou aktivitu; 74 originálů, dvě varianty pro všech 37 aktivit včetně půjčení kola, responsivně napojené (20. 9. 2026)
 
 Rozdělení vychází z auditu 13. 9. 2026 (bezpečnostní audit ChatGPT ověřený proti kódu a produkční databázi a doplněný o chybějící oblasti).
 
@@ -246,7 +246,7 @@ Schvaluje provozovny (skutečný podnik jen s IČO), kontroluje nabídky a rezer
 | Mazání starých dat | `pg_cron`, job `flek-retention` (každou noc ve 3:40) | doručování a zprávy WhatsApp po 90 dnech, upozornění po 12 měsících, vyřízená nahlášení po 3 letech, záznamy cronu po 14 dnech |
 | Přihlášení přes Google a Apple | Supabase Auth → Sign In / Providers | Google zapnutý 20. 9. (klient v Google Cloud, Redirect URLs `https://www.app-flek.eu/**`), Apple zatím ne. Stav vypíše `npm run check:oauth` |
 | Ověření IČO | Edge Function `ares-lookup` nad veřejným API ARES | název a sídlo podniku z registru, bez klíče |
-| Ilustrační fotky | `public/images/activities` (originály 1254 px, deriváty 800/176 px), původní `public/images/services` a katalog Unsplash | vlastní fotka podniku má přednost; originální sada se doplňuje po aktivitách, mapové body nestahují velké soubory |
+| Ilustrační fotky | `public/images/activities` (74 originálů 1254 px, deriváty 800/176 px), původní `public/images/services` a katalog Unsplash | dvě varianty pro všech 37 aktivit; vlastní fotka podniku má přednost a mapové body nestahují velké soubory |
 | Kód | GitHub `legitjakub/flek` | — |
 | Instalace na telefon | PWA (`public/sw.js`, manifest) | cachuje jen skořápku aplikace, nabídky nikdy |
 | Notion | stránka „FLEK — přehled projektu“ | kopie `docs/NOTION.md` |
@@ -323,7 +323,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 | 20. 9. 2026 | Registrace provozovny dá vědět majiteli i adminovi (dřív se o nové provozovně nedozvěděl nikdo a ležela v administraci). Ověřeno, že e-maily z aplikace odcházejí — demo účty je schválně nedostávají. |
 | 20. 9. 2026 | Fotky demo služeb a obálek srovnané s katalogem v kódu (padel, tenis, sauna, masáže) a víc demo FLEKů: tři termíny na službu a den místo jednoho, takže v aplikaci je co rezervovat i odpoledne. |
 | 20. 9. 2026 | Mapa: špendlík ukazuje ikonu oboru (nůžky, ruka, jiskry, činka, květ, vlny) místo fotky služby, neznámá kategorie značku FLEK. Detail nabídky: časy téže služby jsou karty s cenou, slevou, délkou a posledním místem místo pilulek; rezervuje se jedním tlačítkem u vybraného času, nad pět časů se zbytek schová. Přihlášení přes Google a Apple prověřené do posledního kroku (nový test profilu, skript `npm run check:oauth`, opravený postup s Redirect URLs); zapnout ho může jen Jakub. |
-| 20. 9. 2026 | První série 28 originálních fotek pro vlasy, masáže, manikúru a gel lak připravená pro ořez 4:5, 1:1 i 2:1 a napojená s menšími variantami pro mobil a mapu; zbytek série čeká na reset imagegen limitu |
+| 20. 9. 2026 | Dokončená knihovna 74 originálních fotek: dvě varianty pro všech 37 aktivit, připravené pro ořez 4:5, 1:1 i 2:1 a napojené s 800px a 176px verzemi pro mobil a mapu |
 | 20. 9. 2026 | Nová úvodní stránka v duchu aplikace move+: fotka je celá karta, fakta na matném panelu přes její spodní okraj, na fotce jen čas a sleva; „Začíná brzy“ se listuje do strany a nadpis je dvouřádkový. Promo bloky pro nepřihlášené mají jednu výšku. |
 | 18. 9. 2026 | Kontrola kvality právních textů (odstoupení u kadeřnictví a kosmetiky, tlačítko „Zaplatit“ u Stripe, přesné lhůty, doplněné podmínky pro podniky a zásady); uspaná databáze odpojená od projektu ve Vercelu a web znovu nasazený; u Meta odsouhlasené podmínky WhatsAppu a založené testovací číslo, šablony zatím ne (WhatsApp Manager v Chromu zamrzá) |
 | 18. 9. 2026 | Povinné potvrzení rezervace e-mailem, zprávy podnikům a zákazníkům s důvodem, smazání účtu v Profilu a noční mazání starých dat; přihlášení přes Google a Apple (čeká na klíče); právní texty porovnané s Too Good To Go, TasteTown, Fresha a Reservio a zjednodušené; web čeká na odpojení uspané databáze ve Vercelu |

@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { ACTIVITY_GALLERIES, ACTIVITY_LABELS } from '../src/lib/activityGalleries';
 import { SERVICE_PLACEHOLDER, serviceIllustration } from '../src/lib/serviceIllustrations';
 
 /**
@@ -11,13 +14,13 @@ describe('serviceIllustration', () => {
   });
 
   it('falls back to the prepared picture of the activity, matched without diacritics', () => {
-    expect(serviceIllustration('Padel 60 min')).toBe('/images/services/padel-prague.jpg');
-    expect(serviceIllustration('Osobní trénink')).toBe('/images/services/personal-training-prague.jpg');
+    expect(serviceIllustration('Padel 60 min')).toBe('/images/activities/sport-padel-1.jpg');
+    expect(serviceIllustration('Osobní trénink')).toBe('/images/activities/sport-osobni-trenink-1.jpg');
   });
 
   it('matches the other kinds of service by name, and not on fragments of unrelated words', () => {
-    expect(serviceIllustration('Ranní jóga')).toBe('/images/services/yoga-prague.jpg');
-    expect(serviceIllustration('Privátní sauna')).toBe('/images/services/sauna-prague.jpg');
+    expect(serviceIllustration('Vinyasa jóga')).toBe('/images/activities/joga-vinyasa-1.jpg');
+    expect(serviceIllustration('Privátní sauna')).toBe('/images/activities/wellness-privatni-sauna-1.jpg');
     expect(serviceIllustration('Relaxační masáž')).toBe('/images/activities/masaze-relaxacni-1.jpg');
     // "vlastní" is not "vlasy", and "trasa" is not "řasy".
     expect(serviceIllustration('Vlastní lekce na trase', null, null)).toBe(SERVICE_PLACEHOLDER);
@@ -27,6 +30,19 @@ describe('serviceIllustration', () => {
     expect(serviceIllustration('Kurz lukostřelby', null, 'sport')).toBe('/images/services/group-class-prague.jpg');
     expect(serviceIllustration('Speciální balíček', null, 'krasa')).toMatch(/images\.unsplash\.com/);
     expect(serviceIllustration('Půjčení kola', null, 'neznama-kategorie')).toBe(SERVICE_PLACEHOLDER);
-    expect(serviceIllustration('Půjčení kola')).toBe(SERVICE_PLACEHOLDER);
+    expect(serviceIllustration('Půjčení kola')).toBe('/images/activities/sport-pujceni-kola-1.jpg');
+  });
+
+  it('has two real local pictures for every prepared activity', () => {
+    expect(Object.keys(ACTIVITY_GALLERIES).sort()).toEqual(Object.keys(ACTIVITY_LABELS).sort());
+    for (const photos of Object.values(ACTIVITY_GALLERIES)) {
+      expect(photos).toHaveLength(2);
+      for (const photo of photos) {
+        expect(photo).toMatch(/^\/images\/activities\/[a-z0-9-]+-[12]\.jpg$/);
+        expect(existsSync(join(process.cwd(), 'public', photo))).toBe(true);
+        expect(existsSync(join(process.cwd(), 'public', photo.replace(/\.jpg$/, '-800.jpg')))).toBe(true);
+        expect(existsSync(join(process.cwd(), 'public', photo.replace(/\.jpg$/, '-176.jpg')))).toBe(true);
+      }
+    }
   });
 });
