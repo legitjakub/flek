@@ -260,3 +260,10 @@ Lokální Docker integrační sada, fyzický iPhone/Safari, skutečná kamera, n
 - Demo nabídky před změnou: 29–30 publikovaných na den, ale dnes v 16:00 jen **3 rezervovatelné** — funkce `flek_demo_refresh` dělala jeden termín na službu a den. Po migraci `20260920170821` a jednom spuštění: **141 nových nabídek**, dnes 43 publikovaných a 17 rezervovatelných, zítra a pozítří po 93. Termíny jsou po půlhodinách mezi 8:00 a 20:00.
 - Pravidla zůstala: jen demo podniky (`@flek.test`) se zapnutým Stripe, žádné dvě nabídky jedné provozovny se nepřekrývají, cenu a poplatek počítá `private.validate_flek`, jóga má 4 místa.
 - Neověřeno: jak to vypadá v aplikaci nad živými daty — z prostředí agenta není přístup na web ani na Supabase z prohlížeče.
+
+## Upozornění na novou provozovnu a kontrola e-mailů — 20. 9. 2026
+
+- Fronta `private.notification_delivery` byla prázdná při 420 upozorněních. Příčina není porucha: e-mail se zařadí jen pro potvrzenou adresu, která není `@flek.test` (demo účty e-maily schválně nedostávají), a všechna upozornění patřila demo účtům. Účty jakub.hrncir24@gmail.com, jakub@app-flek.eu, jakub.hrncir@post.cz a sejmencz@post.cz měly shodně 0 upozornění, poslední rezervace v databázi je z 18. 9. a byla demo.
+- Zkušební zpráva přes `private.account_notice` na jakub.hrncir24@gmail.com: řádek ve frontě má `status = sent`, `attempts = 1`, bez chyby. Resend i `notification-delivery` tedy fungují.
+- Skutečná mezera: registrace provozovny neposílala nic. Migrace `20260920175100` přidává trigger na `business_members` (ne na `businesses` — `create_business` vkládá vlastníka až po provozovně), který pošle majiteli potvrzení a adminům „Nová provozovna ke schválení“. Admin, který si provozovnu zakládá sám, dostane jen zprávu majitele; demo podniky ze seedu jsou vynechané, aby při seedu nenaskákalo osmnáct zpráv.
+- Neověřeno: skutečné doručení do schránky (Resend hlásí přijetí, ne otevření) a průchod registrací nové provozovny v prohlížeči — trigger je ověřený jen logikou a zkušební zprávou toutéž cestou.
