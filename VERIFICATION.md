@@ -1,5 +1,11 @@
 # Ověření FLEK
 
+## Aktivní fotky a rozšířený demo katalog — 20. 9. 2026
+
+- Migrace `refresh_activity_photos_and_demo_services` proběhla před nasazením celá v transakci s rollbackem proti hostované databázi. Kontroly uvnitř stejné transakce potvrdily 37 katalogových aktivit, 24 nových služeb jen u provozoven vlastněných výhradně účty `@flek.test` a žádnou aktivní službu s chybějícím, Unsplash nebo starým `/images/services` obrázkem.
+- Reálné obrázky nahrané podnikem do Supabase Storage se nemění. Ukázkové provozovny dostávají odpovídající obálku a `private.flek_demo_refresh(3)` připraví nabídky nových služeb na tři dny dopředu.
+- Statická kontrola knihovny: 74 originálů 1254 × 1254 px, ke každému 800px a 176px derivát; celkem 222 JPG souborů. `npm run build` a `npm run test:unit` proběhly před commitem knihovny (133 testů).
+
 > Aktuální ověření pilotu z 13. 9. 2026 je v poslední sekci tohoto dokumentu. Starší sekce zachycují tehdejší stav, nikoliv aktuální omezení.
 Stav k 8. 9. 2026. Každý řádek říká, čím je doložený.
 

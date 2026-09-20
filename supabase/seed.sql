@@ -18,6 +18,46 @@ begin
  insert into public.user_roles values(md5('flek-user-4')::uuid,'admin');
 end $$;
 
+-- A broad demo catalogue exercises every prepared activity and both service/photo pickers.
+-- These rows belong only to the fictional demo venues above.
+with additions(service_key, business_key, template_slug, name, duration_minutes,
+               normal_price_cents, merchant_price_cents, default_capacity, image_variant) as (values
+ ('barveni','demo-1','vlasy-barveni','Barvení vlasů',90,120000,78000,1,1),
+ ('myti-foukana','demo-7','vlasy-myti-foukana','Mytí a foukaná',45,65000,42000,1,2),
+ ('detsky-strih','demo-13','vlasy-detsky-strih','Dětský střih',30,45000,30000,1,1),
+ ('damsky-strih','demo-15','vlasy-damsky-strih','Dámský střih',60,85000,55000,1,2),
+ ('lavove-kameny','demo-2','masaze-lavove-kameny','Masáž lávovými kameny',75,130000,85000,1,2),
+ ('masaz-chodidel','demo-8','masaze-chodidla','Masáž chodidel',45,65000,42000,1,1),
+ ('thajska-masaz','demo-14','masaze-thajska','Thajská masáž',60,110000,72000,1,2),
+ ('gel-lak','demo-3','krasa-gel-lak','Gel lak',45,65000,42000,1,2),
+ ('uprava-oboci','demo-3','krasa-oboci','Úprava obočí',30,50000,33000,1,1),
+ ('pedikura','demo-9','krasa-pedikura','Pedikúra',60,80000,52000,1,1),
+ ('prodlouzeni-ras','demo-9','krasa-rasy','Prodloužení řas',90,120000,78000,1,2),
+ ('tenisovy-kurt','demo-4','sport-tenis','Tenisový kurt',60,70000,46000,4,1),
+ ('squashovy-kurt','demo-4','sport-squash','Squashový kurt',60,65000,42000,2,2),
+ ('badminton','demo-10','sport-badminton','Badminton',60,50000,33000,4,1),
+ ('skupinova-lekce','demo-10','sport-skupinova-lekce','Skupinová lekce',60,45000,30000,12,2),
+ ('meditace','demo-5','joga-meditace','Meditace',45,25000,17000,10,1),
+ ('joga-zacatecnici','demo-5','joga-zacatecnici','Jóga pro začátečníky',60,32000,21000,10,2),
+ ('power-joga','demo-11','joga-power','Power jóga',60,38000,25000,10,2),
+ ('finska-sauna','demo-6','wellness-finska-sauna','Finská sauna',60,80000,52000,4,1),
+ ('parni-lazen','demo-6','wellness-parni-lazen','Parní lázeň',45,65000,42000,4,2),
+ ('solna-jeskyne','demo-12','wellness-solna-jeskyne','Solná jeskyně',45,50000,33000,6,1),
+ ('virivka','demo-12','wellness-virivka','Vířivka',60,70000,46000,4,2)
+), targets as (
+ select a.*, b.id as business_id
+ from additions a join public.businesses b on b.slug = a.business_key
+)
+insert into public.services(
+ id,business_id,name,description,category_slug,duration_minutes,normal_price_cents,
+ image_url,is_active,template_slug,default_merchant_price_cents,default_capacity
+)
+select md5('flek-demo-extra:'||business_id::text||':'||service_key)::uuid,business_id,name,
+ 'Ukázková služba této demo provozovny.',split_part(template_slug,'-',1),duration_minutes,
+ normal_price_cents,'/images/activities/'||template_slug||'-'||image_variant||'.jpg',true,
+ template_slug,merchant_price_cents,default_capacity
+from targets;
+
 do $$
 declare item jsonb; i integer:=0; bid uuid; cat text; price integer; dur integer; service_name text;
 begin
@@ -75,30 +115,73 @@ begin
  end loop;
 end $$;
 
--- Demo photography: fictional venues illustrated with stock images. In production a
--- business uploads its own into Storage; see LIMITATIONS.md.
---
--- Photographs come from public.service_photos (migration 202609090016), where each one is
--- filed by what is actually in the picture. The previous mapping here picked by md5 of the
--- service id from a per-category pair, and three of the twelve images had been filed under
--- the wrong category — a yoga class could be illustrated with a facial treatment, a sauna
--- with a gym floor. Matching on the service name keeps it honest inside a category too.
--- An activity with no honest photograph carries NULL, so the fallback must skip those or a
--- service would silently inherit "no picture" from an unrelated entry.
+-- Demo photography uses the same activity mapping as production. A real merchant upload
+-- still wins in the application; these generated illustrations only belong to seed rows.
+with matched as (
+ select s.id,
+  coalesce(
+   case when exists (select 1 from public.service_photos p where p.slug=s.template_slug)
+    then s.template_slug end,
+   case
+    when s.category_slug='vlasy' and lower(s.name) like '%dětsk%' then 'vlasy-detsky-strih'
+    when s.category_slug='vlasy' and lower(s.name) like '%dámsk%' then 'vlasy-damsky-strih'
+    when s.category_slug='vlasy' and lower(s.name) like '%barven%' then 'vlasy-barveni'
+    when s.category_slug='vlasy' and (lower(s.name) like '%mytí%' or lower(s.name) like '%foukan%') then 'vlasy-myti-foukana'
+    when s.category_slug='vlasy' and lower(s.name) like '%střih%' then 'vlasy-pansky-strih'
+    when s.category_slug='vlasy' and lower(s.name) like '%vous%' then 'vlasy-uprava-vousu'
+    when s.category_slug='masaze' and lower(s.name) like '%sportovní%' then 'masaze-sportovni'
+    when s.category_slug='masaze' and lower(s.name) like '%thajsk%' then 'masaze-thajska'
+    when s.category_slug='masaze' and lower(s.name) like '%chodidel%' then 'masaze-chodidla'
+    when s.category_slug='masaze' and lower(s.name) like '%lávov%' then 'masaze-lavove-kameny'
+    when s.category_slug='masaze' and (lower(s.name) like '%zad%' or lower(s.name) like '%šíj%') then 'masaze-zada-sije'
+    when s.category_slug='masaze' and lower(s.name) like '%relaxační%' then 'masaze-relaxacni'
+    when s.category_slug='krasa' and lower(s.name) like '%gel lak%' then 'krasa-gel-lak'
+    when s.category_slug='krasa' and lower(s.name) like '%pedik%' then 'krasa-pedikura'
+    when s.category_slug='krasa' and lower(s.name) like '%kosmet%' then 'krasa-kosmeticke-osetreni'
+    when s.category_slug='krasa' and lower(s.name) like '%obočí%' then 'krasa-oboci'
+    when s.category_slug='krasa' and lower(s.name) like '%řas%' then 'krasa-rasy'
+    when s.category_slug='krasa' and (lower(s.name) like '%manik%' or lower(s.name) like '%ruce%') then 'krasa-manikura'
+    when s.category_slug='sport' and (lower(s.name) like '%padel%' or (lower(b.display_name) like '%padel%' and lower(s.name) like '%individuální%')) then 'sport-padel'
+    when s.category_slug='sport' and lower(s.name) like '%tenis%' then 'sport-tenis'
+    when s.category_slug='sport' and lower(s.name) like '%squash%' then 'sport-squash'
+    when s.category_slug='sport' and lower(s.name) like '%badminton%' then 'sport-badminton'
+    when s.category_slug='sport' and lower(s.name) like '%skupinov%' then 'sport-skupinova-lekce'
+    when s.category_slug='sport' and (lower(s.name) like '%osobní%' or lower(s.name) like '%individuální%') then 'sport-osobni-trenink'
+    when s.category_slug='joga' and lower(s.name) like '%vinyasa%' then 'joga-vinyasa'
+    when s.category_slug='joga' and lower(s.name) like '%jemná%' then 'joga-jemna'
+    when s.category_slug='joga' and lower(s.name) like '%power%' then 'joga-power'
+    when s.category_slug='joga' and lower(s.name) like '%protažení%' then 'joga-rani-protazeni'
+    when s.category_slug='joga' and lower(s.name) like '%začáteční%' then 'joga-zacatecnici'
+    when s.category_slug='joga' and lower(s.name) like '%meditac%' then 'joga-meditace'
+    when s.category_slug='wellness' and lower(s.name) like '%privátní sauna%' then 'wellness-privatni-sauna'
+    when s.category_slug='wellness' and lower(s.name) like '%finská sauna%' then 'wellness-finska-sauna'
+    when s.category_slug='wellness' and lower(s.name) like '%solná%' then 'wellness-solna-jeskyne'
+    when s.category_slug='wellness' and lower(s.name) like '%vířiv%' then 'wellness-virivka'
+    when s.category_slug='wellness' and lower(s.name) like '%parní%' then 'wellness-parni-lazen'
+    when s.category_slug='wellness' and (lower(s.name) like '%odpoč%' or lower(s.name) like '%sauna a%') then 'wellness-odpocinek'
+   end
+  ) activity_slug
+ from public.services s join public.businesses b on b.id=s.business_id
+)
 update public.services s
-set image_url = coalesce(
- (select p.image_url from public.service_photos p
-  where p.category_slug=s.category_slug and p.image_url is not null
-    and lower(s.name) like '%'||lower(p.label_cs)||'%'
-  order by length(p.label_cs) desc, p.sort_order limit 1),
- (select p.image_url from public.service_photos p
-  where p.category_slug=s.category_slug and p.image_url is not null
-  order by p.sort_order limit 1));
+set template_slug=m.activity_slug,
+ image_url='/images/activities/'||m.activity_slug||'-'||
+  (1+mod(get_byte(decode(md5(s.id::text),'hex'),0),2))||'.jpg'
+from matched m where m.id=s.id and m.activity_slug is not null;
 
+with covers(business_key,activity_slug,image_variant) as (values
+ ('demo-1','vlasy-pansky-strih',2),('demo-2','masaze-relaxacni',2),
+ ('demo-3','krasa-manikura',2),('demo-4','sport-padel',2),
+ ('demo-5','joga-jemna',2),('demo-6','wellness-privatni-sauna',2),
+ ('demo-7','vlasy-uprava-vousu',2),('demo-8','masaze-sportovni',2),
+ ('demo-9','krasa-kosmeticke-osetreni',2),('demo-10','sport-osobni-trenink',2),
+ ('demo-11','joga-vinyasa',2),('demo-12','wellness-odpocinek',2),
+ ('demo-13','vlasy-pansky-strih',1),('demo-14','masaze-zada-sije',2),
+ ('demo-15','vlasy-damsky-strih',2)
+)
 update public.businesses b
-set cover_url=(select p.image_url from public.service_photos p
- where p.category_slug=b.category_slug and p.image_url is not null
- order by p.sort_order desc limit 1);
+set cover_url='/images/activities/'||c.activity_slug||'-'||c.image_variant||'.jpg'
+from covers c where b.slug=c.business_key;
 
 -- Ratings come from attendance, so the demo needs past bookings that were actually
 -- completed. Venues 9-15 stay unrated, which is what a new venue looks like.
