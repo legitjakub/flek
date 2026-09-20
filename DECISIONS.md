@@ -238,3 +238,10 @@ Jakub ukázal aplikaci s mapou, kde má každý špendlík značku aplikace, a s
 - **Bez podpory `backdrop-filter`** se sklo přepne na skoro bílou (97 %). Průhledná deska bez rozostření je špinavá skvrna, ne sklo.
 - **Karta nad mapou je sklo celá.** Mapa pod ní prosvítá, takže náhled působí jako vrstva nad mapou, ne jako vytržený obdélník.
 - **V e-mailech je logo PNG,** vyrenderované ze stejného tvaru, jaký kreslí `components/ui.tsx`. SVG do e-mailu nepatří (většina klientů ho zahodí) a dosavadní „flek′“ — slovo s apostrofem — nebylo logo FLEKu. Když příjemce blokuje obrázky, zůstane alt „FLEK“.
+
+## Zásady zveřejněné bez IČO — 20. 9. 2026
+
+- **Zásady mají vlastní, nižší práh než obchodní podmínky.** GDPR chce vědět, kdo údaje zpracovává a kam se na něj obrátit — správcem může být fyzická osoba a IČO k tomu není potřeba. Obchodní podmínky naopak předpokládají podnikatele, takže ty čekají na IČO dál. V kódu jsou to dvě funkce: `privacyPublished` a `legalPublished`.
+- **Proč to nepočkalo na firmu:** aplikace už veřejně běží a sbírá e-mail, jméno, telefon a přibližnou polohu. Informační povinnost se váže na okamžik sběru, ne na založení živnosti. Nechat veřejnou aplikaci sbírat údaje úplně bez zásad je horší než je zveřejnit na fyzickou osobu a po založení firmy je překlopit na novou verzi.
+- **Jedna věta o správci místo tří polí.** Text měl natvrdo „IČO {{ico}}, místo podnikání {{sidlo}}“, což by bez IČO vykreslilo „IČO —“. Nově je to jeden údaj `{{spravce}}`, který IČO vynechá, dokud žádné není. Verze textu zůstává 1.0, protože pravidlo o nové verzi platí pro změnu **zveřejněného** textu a tenhle zveřejněný nikdy nebyl.
+- **Patička odkazuje jen na to, co platí.** Dřív vypisovala všechny tři dokumenty; teď jen ty s účinnou verzí, aby odkaz nevedl na „Tento dokument právě připravujeme“. Řádek o živnostenském rejstříku se ukáže až s IČO.
