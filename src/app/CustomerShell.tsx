@@ -85,7 +85,7 @@ export function CustomerShell({ children }: { children: ReactNode }) {
       {!detail ? (
         <nav
           aria-label="Hlavní"
-          className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 rounded-[1.75rem] bg-card/95 px-1.5 py-1 shadow-[0_2px_6px_rgb(16_18_31/0.08),0_16px_36px_-12px_rgb(16_18_31/0.35)] backdrop-blur-md md:hidden"
+          className="glass glass-lift fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 rounded-[1.75rem] px-1.5 py-1 md:hidden"
         >
           <ul className="flex">{navItems(true)}</ul>
         </nav>

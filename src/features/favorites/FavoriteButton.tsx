@@ -72,7 +72,7 @@ export function FavoriteButton({
           variant === 'overlay' &&
             // On a photo the control cannot rely on the page background: it brings its own
             // opaque disc, so the heart stays legible over a bright image or a dark one.
-            'size-11 justify-center rounded-full bg-card/90 text-ink shadow-card backdrop-blur-sm hover:bg-card',
+            'glass size-11 justify-center rounded-full text-ink hover:bg-card',
           variant === 'cta' &&
             cx(
               'min-h-13 w-full justify-center gap-2 rounded-xl px-5 text-base',

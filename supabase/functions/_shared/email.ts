@@ -3,6 +3,11 @@
  * news of what happened to it), so when the database sends the booking details it spells out the
  * service, the provider, the price, the code and the cancellation terms. Every e-mail ends with who
  * runs FLEK. Pure functions: the unit tests render the same text the worker sends.
+ *
+ * V hlavičce je skutečná značka FLEK jako PNG (`public/images/email-logo.png`, vykreslené ze
+ * stejného tvaru, jaký kreslí `components/ui.tsx`). Dřív tu stálo „flek′“ — slovo s apostrofem,
+ * které se značkou nemá nic společného. SVG do e-mailu nepatří, většina poštovních klientů ho
+ * zahodí; když příjemce obrázky blokuje, zůstane alt „FLEK“.
  */
 
 export type Operator = { name: string | null; ico: string | null; address: string | null; email: string | null };
@@ -113,7 +118,7 @@ export function composeEmail(job: EmailJob, operator: Operator | null): { subjec
     ? `<tr><td style="padding:20px 8px 0;font-size:12px;line-height:1.5;color:#545970;text-align:center">${escapeHtml(footer)}</td></tr>`
     : '';
 
-  const html = `<!doctype html><html lang="cs"><body style="margin:0;background:#f3f4f8;color:#10121f;font-family:Arial,sans-serif"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:32px 16px"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:520px;background:#fff;border-radius:24px;padding:32px"><tr><td style="font-size:34px;font-weight:800;letter-spacing:-1.5px">flek<span style="color:#4d67fb">′</span></td></tr><tr><td style="padding-top:28px;font-size:24px;font-weight:800">${escapeHtml(job.title)}</td></tr><tr><td style="padding-top:12px;font-size:16px;line-height:1.55;color:#545970">${escapeHtml(job.body)}</td></tr>${rowsHtml}<tr><td style="padding-top:24px"><a href="${escapeHtml(link)}" style="display:block;border-radius:14px;background:#2c26d2;padding:15px 20px;color:#fff;text-align:center;font-size:16px;font-weight:700;text-decoration:none">${buttonLabel(job.href)}</a></td></tr></table></td></tr>${footerHtml}</table></body></html>`;
+  const html = `<!doctype html><html lang="cs"><body style="margin:0;background:#f3f4f8;color:#10121f;font-family:Arial,sans-serif"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:32px 16px"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:520px;background:#fff;border-radius:24px;padding:32px"><tr><td style="padding-bottom:4px"><img src="https://www.app-flek.eu/images/email-logo.png" alt="FLEK" width="135" height="54" style="display:block;border:0;outline:none;text-decoration:none;height:auto;width:135px;max-width:100%"></td></tr><tr><td style="padding-top:28px;font-size:24px;font-weight:800">${escapeHtml(job.title)}</td></tr><tr><td style="padding-top:12px;font-size:16px;line-height:1.55;color:#545970">${escapeHtml(job.body)}</td></tr>${rowsHtml}<tr><td style="padding-top:24px"><a href="${escapeHtml(link)}" style="display:block;border-radius:14px;background:#2c26d2;padding:15px 20px;color:#fff;text-align:center;font-size:16px;font-weight:700;text-decoration:none">${buttonLabel(job.href)}</a></td></tr></table></td></tr>${footerHtml}</table></body></html>`;
 
   return { subject: `${job.title} — FLEK`, text, html };
 }

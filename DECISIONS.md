@@ -230,3 +230,11 @@ Jakub ukázal aplikaci s mapou, kde má každý špendlík značku aplikace, a s
 - **„Navigovat“ z karty pryč.** Na mapě člověk řeší, jestli se mu termín vyplatí, ne jak se tam dostane; čtvrť i vzdálenost má na kartě a trasu si hledá, až je FLEK jeho. Navigace zůstává na detailu a na voucheru po zaplacení.
 - **Místo ní „Chytit FLEK“** se stejným slovesem jako na detailu, aby se stejná akce neučila dvakrát. Otevře detail s `?rezervovat=1`, což je parametr, který aplikace uměla už kvůli návratu z přihlášení — nevznikla druhá cesta do rezervace.
 - **„Detail“ zůstává vedle** jako vedlejší akce pro toho, kdo si chce nejdřív přečíst popis a zrušení. U termínu, který se mezitím vyprodal, je tlačítko jediné a vede na záchrannou nabídku podobných termínů.
+
+## Sklo a logo v e-mailech — 20. 9. 2026
+
+- **Jedno sklo pro celou aplikaci** (`.glass` ve `styles.css`) místo šesti různých kombinací `bg-card/9x` s rozostřením. Sklo dělají tři věci dohromady: rozostření 20 px se zvýšenou sytostí (barvy fotky nebo mapy prosvítají), vlasová linka nahoře jako odlesk na hraně a měkký stín s náznakem barvy značky.
+- **Průhlednost má strop 86 %,** protože pod panelem je fotka, o které nic nevíme. Nad černou fotkou má text `--color-muted` na 86% bílé 5,0 : 1 — nad AA pro malý text. Při 80 % je to 4,4 : 1, tedy pod normou: řádek se čtvrtí a vzdáleností by nad tmavou fotkou přestal být čitelný. Sklo je tedy tak průhledné, jak jde bez ztráty čitelnosti, ne tak průhledné, jak by vypadalo nejlíp na screenshotu.
+- **Bez podpory `backdrop-filter`** se sklo přepne na skoro bílou (97 %). Průhledná deska bez rozostření je špinavá skvrna, ne sklo.
+- **Karta nad mapou je sklo celá.** Mapa pod ní prosvítá, takže náhled působí jako vrstva nad mapou, ne jako vytržený obdélník.
+- **V e-mailech je logo PNG,** vyrenderované ze stejného tvaru, jaký kreslí `components/ui.tsx`. SVG do e-mailu nepatří (většina klientů ho zahodí) a dosavadní „flek′“ — slovo s apostrofem — nebylo logo FLEKu. Když příjemce blokuje obrázky, zůstane alt „FLEK“.

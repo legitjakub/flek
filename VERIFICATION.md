@@ -274,3 +274,10 @@ Lokální Docker integrační sada, fyzický iPhone/Safari, skutečná kamera, n
 - `approvalChecklist` počítá totéž, na čem schválení odmítne server: skutečný podnik musí mít IČO, ukázkový ne. Pokryto pěti testy (`tests/approvalChecklist.test.ts`), celkem 141 unit testů.
 - Vykresleno v Chromiu na 390 a 1280 px nad dvěma případy (podnik bez IČO a kompletní podnik): bez horizontálního přetečení, zakázané „Schválit“ má důvod hned nad sebou, řádky seznamu mají ikonu podle stavu (zelená hotovo, červená blokuje, žlutá jen upozorňuje).
 - Neověřeno: průchod administrací nad živými daty v prohlížeči — z prostředí agenta není přístup na web.
+
+## Matné sklo a logo v e-mailech — 20. 9. 2026
+
+- Sklo změřené na nejhorším podkladu, jaký může nastat (čistě černá fotka): 86% bílá nad černou dává #DBDBDB, text `--color-muted` (#545970) na něm má kontrast 5,0 : 1 — nad AA 4,5 : 1 pro malý text. Pro porovnání: při 80 % je to 4,4 : 1, tedy pod normou. Proto ten strop.
+- Vykresleno v Chromiu (400 px, 2× DPI) nad fotografií kurtu, nad čistě černým podkladem a nad barevným podkladem imitujícím mapu: panel s fakty, pilulka s časem i karta nad mapou zůstávají čitelné, fotka a mapa pod nimi prosvítají. Vypočtené hodnoty odpovídají tomu, co prohlížeč skutečně použil (`color(srgb 1 1 1 / 0.86)`, `blur(20px) saturate(1.65)`).
+- Logo do e-mailů vyrenderované z tvaru, který kreslí `components/ui.tsx` (slovo „flek“ v Instrument Sans + špendlík s hodinami a třemi čárkami), do `public/images/email-logo.png` 540 × 216 px s průhledným pozadím; v e-mailu je vloženo na 135 × 54 px, tedy v poměru 2,5 : 1 bez deformace. Hlavička zkontrolovaná v náhledu potvrzovacího e-mailu.
+- Neověřeno: jak se sklo a logo chovají ve skutečných poštovních klientech a na skutečném telefonu — z prostředí agenta není přístup na web ani do schránky.

@@ -180,7 +180,7 @@ export function ServicePhotoPicker({
         ) : (
           <span className="flex aspect-[16/9] max-h-52 items-center justify-center text-muted">{selected?.fallback ?? <Image size={28} aria-hidden="true" />}</span>
         )}
-        <span className="absolute right-2 bottom-2 rounded-lg bg-ink/85 px-2 py-1 text-xs font-bold text-card backdrop-blur-sm">{selected?.label}</span>
+        <span className="glass-ink absolute right-2 bottom-2 rounded-lg px-2 py-1 text-xs font-bold text-card">{selected?.label}</span>
       </div>
 
       <div

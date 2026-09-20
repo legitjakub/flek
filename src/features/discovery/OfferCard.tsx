@@ -169,7 +169,7 @@ export function OfferCard({
         spare: when it starts, and how much is off. Everything else waits on the panel below.
       */}
       <div className="absolute inset-x-3 top-3 flex items-start justify-between gap-2">
-        <span className="tnum inline-flex min-w-0 items-center gap-1.5 rounded-full bg-card/95 py-1.5 pr-3 pl-2.5 text-sm leading-none font-extrabold text-ink shadow-card backdrop-blur-sm">
+        <span className="glass tnum inline-flex min-w-0 items-center gap-1.5 rounded-full py-1.5 pr-3 pl-2.5 text-sm leading-none font-extrabold text-ink">
           <Clock3 size={14} aria-hidden="true" className="shrink-0 text-muted" />
           <span className="truncate">
             {startingSoon
@@ -185,7 +185,7 @@ export function OfferCard({
       ) : null}
 
       {/* The facts, on a frosted panel over the lower edge of the picture. */}
-      <div className="absolute inset-x-2.5 bottom-2.5 rounded-[1.375rem] bg-card/95 p-3.5 shadow-card backdrop-blur-md">
+      <div className="glass absolute inset-x-2.5 bottom-2.5 rounded-[1.375rem] p-3.5">
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
             <h3 className="line-clamp-2 text-base leading-snug font-extrabold text-ink [overflow-wrap:anywhere]">
