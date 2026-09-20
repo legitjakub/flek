@@ -17,7 +17,7 @@ Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B). Úkoly na 
   - FLEK si ponechá servisní poplatek, zbytek jde podniku,
   - vratky i obsazení místa řeší webhook.
   - Skutečné peníze se nestrhávají.
-- 16 demo podniků má testovací účet Stripe. Demo FLEKy se každé ráno doplní na 3 dny dopředu.
+- 16 demo podniků má testovací účet Stripe. Demo FLEKy se každé ráno doplní na 3 dny dopředu, od 20. 9. tři termíny na službu a den.
 - **Potvrzování rezervací podnikem** (hold před Checkoutem, autorizace, potvrzení do 10/5/3 minut, stržení až potom) je od 15. 9. 15:54 zapnuté pro všechny podniky (`manual_confirmation_enabled = 'true'`), po zelených testech v režimu `demo` (akceptace 106/106, průchod se skutečnými testovacími platbami).
 - **WhatsApp** pro podniky i zákazníky (výchozí zapnutý, ověření čísla jedním klepnutím, vypínatelný v nastavení upozornění) je v kódu a databázi. U Meta je od 18. 9. aplikace FLEK s odsouhlasenými podmínkami a testovacím číslem; čeká na pět šablon, webhook a secrets.
 - **Právní texty** verze 1.0 (podmínky pro zákazníky s oddílem o nahlášení obsahu, podmínky pro podniky a zásady ochrany osobních údajů) jsou v aplikaci, ale zobrazí se až s údaji provozovatele. Souhlas s verzí zapisuje server, analytika nic neukládá do prohlížeče, e-mail o rezervaci chodí zákazníkovi vždy a účet jde smazat v Profilu.
