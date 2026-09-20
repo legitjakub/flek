@@ -60,6 +60,9 @@ const AdminMetricsPage = lazy(() =>
 const AdminReportsPage = lazy(() =>
   import('../features/admin/AdminReports').then((m) => ({ default: m.AdminReportsPage })),
 );
+const AdminSettingsPage = lazy(() =>
+  import('../features/admin/AdminPage').then((m) => ({ default: m.AdminSettingsPage })),
+);
 import { errorMessage } from '../lib/errors';
 import { Button, LoadingList } from '../components/ui';
 import { inventoryVersion } from '../lib/api';
@@ -125,6 +128,7 @@ const ROUTES: { path: string; render: (params: Record<string, string>) => ReactN
   { path: '/admin/metriky', render: () => <AdminMetricsPage />, shell: false },
   { path: '/admin/audit', render: () => <AdminAuditPage />, shell: false },
   { path: '/admin/nahlaseni', render: () => <AdminReportsPage />, shell: false },
+  { path: '/admin/nastaveni', render: () => <AdminSettingsPage />, shell: false },
 ];
 
 function RouteLoading() {

@@ -489,6 +489,52 @@ export async function adminDac7Report(year: number): Promise<Dac7Row[]> {
   return await result<Dac7Row[]>(supabase.rpc('admin_dac7_report', { p_year: year }));
 }
 
+/** Jedna šablona zprávy tak, jak ji u Mety našla nebo založila `whatsapp-templates-setup`. */
+export type WhatsAppTemplateRow = {
+  template: string;
+  name: string;
+  secret: string;
+  action: 'exists' | 'would_create' | 'created' | 'failed';
+  status?: string | null;
+  detail?: string | null;
+};
+
+export type WhatsAppTemplateSetup = {
+  language: string;
+  graph_version: string;
+  dry_run: boolean;
+  created: number;
+  failed: number;
+  templates: WhatsAppTemplateRow[];
+};
+
+/** Chybějící tajné klíče nejsou porucha, ale seznam toho, co doplnit — proto je chyba nese s sebou. */
+export class WhatsAppNotConfigured extends Error {
+  constructor(readonly missing: string[]) {
+    super('WHATSAPP_NOT_CONFIGURED');
+    this.name = 'WhatsAppNotConfigured';
+  }
+}
+
+/**
+ * Založí u Mety chybějící šablony zpráv (`dryRun` jen vypíše, co by udělala). Token zůstává
+ * v Supabase secrets, prohlížeč ho nikdy nevidí — funkce vrací jen názvy šablon a jejich stav.
+ */
+export async function whatsappTemplatesSetup(dryRun: boolean): Promise<WhatsAppTemplateSetup> {
+  const { data, error } = await supabase.functions.invoke<WhatsAppTemplateSetup>('whatsapp-templates-setup', {
+    body: { dry_run: dryRun },
+  });
+  if (error) {
+    if (error instanceof FunctionsHttpError) {
+      const payload = (await error.context.json().catch(() => null)) as { error?: string; missing?: string[] } | null;
+      if (payload?.error === 'WHATSAPP_NOT_CONFIGURED') throw new WhatsAppNotConfigured(payload.missing ?? []);
+      throw new Error(payload?.error ?? 'META_REQUEST_FAILED');
+    }
+    throw error;
+  }
+  return data as WhatsAppTemplateSetup;
+}
+
 export async function adminAuditLog(limit = 100): Promise<AdminAuditEntry[]> {
   return (await result<AdminAuditEntry[]>(supabase.rpc('admin_audit_log', { p_limit: limit }))) ?? [];
 }

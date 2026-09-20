@@ -25,6 +25,7 @@ import { LazyMap } from '../offers/LazyMap';
 import { StatusBadge } from '../../components/StatusBadge';
 import type { AdminAuditEntry, AdminBusiness } from '../../types/database';
 import { Dac7Export } from './Dac7Export';
+import { WhatsAppTemplates } from './WhatsAppTemplates';
 
 const NAV = [
   { to: '/admin', label: 'Provozovny' },
@@ -34,6 +35,7 @@ const NAV = [
   { to: '/admin/metriky', label: 'Metriky' },
   { to: '/admin/audit', label: 'Audit' },
   { to: '/admin/nahlaseni', label: 'Nahlášení' },
+  { to: '/admin/nastaveni', label: 'Nastavení' },
 ];
 
 /** Routing-only guard. Every admin RPC re-checks `is_admin()` in SQL. */
@@ -631,6 +633,16 @@ export function AdminMetricsPage() {
       {metrics.isError ? <ErrorState error={metrics.error} onRetry={() => metrics.refetch()} /> : null}
       {metrics.data ? <MetricsBody data={metrics.data} /> : null}
       <Dac7Export />
+    </AdminFrame>
+  );
+}
+
+/** Jednorázová nastavení provozu, která nepatří k žádné provozovně ani rezervaci. */
+export function AdminSettingsPage() {
+  return (
+    <AdminFrame>
+      <h1 className="text-2xl font-extrabold tracking-tight text-ink">Nastavení</h1>
+      <WhatsAppTemplates />
     </AdminFrame>
   );
 }
