@@ -1,7 +1,7 @@
-import { ArrowLeft, CalendarDays, CalendarPlus, ChevronDown, Clock3, MapPin, Banknote, Check } from 'lucide-react';
+import { ArrowLeft, CalendarDays, CalendarPlus, ChevronDown, Clock3, Info, MapPin, Banknote, Check, PiggyBank, ShieldCheck } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { activityPhotoSrcSet } from '../../lib/activityGalleries';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { businessOffers, confirmationQuote, getOfferDetail, setFavorite } from '../../lib/api';
 import { track } from '../../lib/analytics';
 import { relativeTime, useServerNow } from '../../lib/clock';
@@ -226,6 +226,23 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
                 />
               </div>
               {isIllustrativeServiceImage(image) ? <IllustrativePhotoLabel className="right-3 bottom-3" /> : null}
+              {/*
+                The two facts that make this a FLEK — when it is and how much is off — said on the
+                photograph, in the brand's colour, before the fold. They were both further down the
+                page in grey: on a phone the first screen carried a photograph and a title and
+                nothing that says this is a discounted last-minute slot at all.
+              */}
+              <div className="absolute inset-x-3 bottom-3 flex flex-wrap items-center gap-2">
+                <span className="glass tnum inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-sm leading-none font-extrabold text-ink">
+                  <Clock3 size={14} aria-hidden="true" className="text-brand" />
+                  {/* A slot within two hours says how long is left — that is the product. Further
+                      out the hour means more than a countdown, and the card below repeats it. */}
+                  {minutesAway > 0 && minutesAway <= 120
+                    ? `Začíná ${relativeTime(offer.start_at, now)}`
+                    : `${dayLabel(offer.start_at, now)} ${clockTime(offer.start_at)}`}
+                </span>
+                <DiscountBadge pct={offer.discount_pct} size="lg" className="shadow-card" />
+              </div>
             </div>
           ) : null}
           {/*
@@ -310,25 +327,24 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             right one — six stacked rows in the left third of a full-width box, with the
             other two thirds empty. Two facts, two ends of one line.
           */}
-          <div className="flex items-center gap-3">
-            <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
-              <CalendarDays size={18} aria-hidden="true" />
+          {/*
+            The day carries the brand fill and the hours are the biggest thing in the row. Both
+            used to be one grey-black sentence beside a pale icon tile — the single most important
+            line of the page ("is this today?") read like a caption.
+          */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-brand px-2.5 py-1 text-xs leading-none font-extrabold text-brand-ink">
+              <CalendarDays size={13} aria-hidden="true" />
+              {dayLabel(offer.start_at, now)}
             </span>
-            <p className="tnum min-w-0 flex-1 text-base leading-5 font-bold">
-              {dayLabel(offer.start_at, now)} · {clockTime(offer.start_at)}–{clockTime(offer.end_at)}
+            <p className="tnum text-lg leading-none font-extrabold text-ink">
+              {clockTime(offer.start_at)}–{clockTime(offer.end_at)}
             </p>
-            <span className="tnum inline-flex shrink-0 items-center gap-1.5 text-sm text-muted">
+            <span className="tnum ml-auto inline-flex shrink-0 items-center gap-1.5 text-sm text-muted">
               <Clock3 size={14} aria-hidden="true" />
               {duration(offer.start_at, offer.end_at)} min
             </span>
           </div>
-          <TimePicker
-            offer={offer}
-            slots={(venueOffers.data ?? []).filter((row) => row.service_id === offer.service_id)}
-            now={now}
-            pendingId={switchingTo}
-            onPick={(id) => void pickTime(id)}
-          />
           {/*
             One row, two ends. The two numbers a person compares stay together on the left
             and the percentage goes to the right edge, so the row spans the card instead of
@@ -347,6 +363,15 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
               {savings > 0 ? <OriginalPrice cents={offer.original_price_cents} className="text-sm" /> : null}
               {savings > 0 ? <DiscountBadge pct={offer.discount_pct} className="ml-auto" /> : null}
             </div>
+            {/* What the customer keeps, in crowns and in the money green — the product's whole
+                argument. It was a 12 px line inside the fixed bar on a phone and nowhere at all
+                on a desktop, where this card is the only place the price is shown. */}
+            {savings > 0 ? (
+              <p className="tnum mt-2 inline-flex items-center gap-1.5 rounded-lg bg-positive/10 px-2 py-1 text-sm font-extrabold text-positive">
+                <PiggyBank size={15} aria-hidden="true" />
+                Ušetříš {money(savings)}
+              </p>
+            ) : null}
           </div>
 
           {(minutesAway > 0 && minutesAway <= 120) || (offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60) || showCapacity ? (
@@ -357,6 +382,19 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
               {showCapacity ? <CapacityLabel remaining={offer.capacity_remaining} total={offer.capacity_total} /> : null}
             </p>
           ) : null}
+
+          {/*
+            The list of other times comes after the price of the chosen one, not before it. With
+            five time cards in between, the price and the saving of what you are actually booking
+            started below the fold on a phone: the card opened on a list and buried its own answer.
+          */}
+          <TimePicker
+            offer={offer}
+            slots={(venueOffers.data ?? []).filter((row) => row.service_id === offer.service_id)}
+            now={now}
+            pendingId={switchingTo}
+            onPick={(id) => void pickTime(id)}
+          />
 
           {/* No sticky bar when there is nothing to book: a permanently disabled button is a
               dead end, and the recovery block below offers what is actually still possible. */}
@@ -370,16 +408,13 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
               price, so only the button remains.
             */}
             <div className="flex items-center gap-4">
-              {/* The bar is the last thing read before paying, so the saving belongs here
-                  too — it was the one screen that showed a struck price with no number
-                  attached to what it saves. */}
-              <div className="min-w-0 md:hidden">
-                <p className="tnum text-lg leading-none font-extrabold">{money(offer.deal_price_cents)}</p>
-                <p className="tnum mt-1 flex flex-wrap items-center gap-x-1.5 text-xs">
-                  <OriginalPrice cents={offer.original_price_cents} className="text-xs" />
-                  <span className="font-bold text-positive">ušetříš {money(savings)}</span>
-                </p>
-              </div>
+              {/* One line, not three. The saving now sits in the card above as a green pill, so
+                  repeating it here only made the bar 20 px taller on the screen with the least
+                  room to spare — and put the same three numbers twice in one viewport. */}
+              <p className="tnum flex min-w-0 flex-wrap items-baseline gap-x-1.5 md:hidden">
+                <span className="text-lg leading-none font-extrabold">{money(offer.deal_price_cents)}</span>
+                {savings > 0 ? <OriginalPrice cents={offer.original_price_cents} className="text-xs" /> : null}
+              </p>
               <Button size="lg" className="flex-1" onClick={() => setSheetOpen(true)}>
                 Chytit FLEK
               </Button>
@@ -406,7 +441,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           ) : null}
         </aside>
         <div className="min-w-0 md:col-start-1">
-          <details className="group mb-5 rounded-xl border border-line bg-card px-3">
+          <details className="group mt-4 rounded-2xl bg-card px-4 shadow-card">
             <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-sm font-bold text-muted hover:text-accent">
               Proč je to levnější?
               <ChevronDown size={15} aria-hidden="true" className="transition-transform group-open:rotate-180" />
@@ -421,29 +456,39 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
               <UnavailableOfferRecovery offer={offer} reason={reason} now={now} point={point} />
             </div>
           ) : null}
-          <div className="mb-8 border-t border-line pt-6">
-            <h2 className="text-lg font-extrabold">O službě</h2>
-            <p className="mt-3 text-base leading-relaxed">{offer.description || `${offer.service_name} v podniku ${offer.business_name}. Délka služby ${duration(offer.start_at, offer.end_at)} minut.`}</p>
+          {/*
+            Each block is a card with a coloured glyph instead of a bare heading over a hairline.
+            On a phone the lower half of this page was six paragraphs and three 20 px headings on
+            one flat ground: nothing told the eye where a subject ended, so everything was read at
+            the same volume — or skipped. The glyph colours also carry the one thing the block is
+            about: the venue (brand), the way there (brand) and the money back (green).
+          */}
+          <Section title="O službě" tone="accent" icon={<Info size={18} aria-hidden="true" />}>
+            <p className="text-base leading-relaxed">{offer.description || `${offer.service_name} v podniku ${offer.business_name}. Délka služby ${duration(offer.start_at, offer.end_at)} minut.`}</p>
             {offer.business_description ? <p className="mt-3 text-base leading-relaxed">{offer.business_description}</p> : null}
-          </div>
-          <h2 id="kde-to-je" className="scroll-mt-24 text-lg font-extrabold">Kde to je</h2>
-          <LazyMap className="mt-4 h-56 w-full overflow-hidden rounded-2xl border border-line" center={{ lat: offer.latitude, lng: offer.longitude }} zoom={14} interactive={false} markers={[{ id: offer.id, lat: offer.latitude, lng: offer.longitude, label: offer.business_name }]} ariaLabel={`Mapa: ${offer.business_name}, ${offer.address_line}`} />
-          <div className="mt-2 flex flex-wrap gap-x-6">
-            <a className="inline-flex min-h-11 items-center gap-2 text-base font-bold text-accent" href={navigationHref(offer)} target="_blank" rel="noreferrer"><MapPin size={17} aria-hidden="true" />Navigovat</a>
-            <Link
-              to={`/podnik/${offer.business_id}?from=${encodeURIComponent(`/nabidka/${offer.id}`)}`}
-              className="inline-flex min-h-11 items-center text-base font-bold text-accent"
-            >
-              Další volné FLEKy v podniku
-            </Link>
-          </div>
+          </Section>
+          <Section id="kde-to-je" title="Kde to je" tone="brand" icon={<MapPin size={18} aria-hidden="true" />}>
+            <p className="text-base leading-relaxed">
+              {offer.address_line}, {offer.district || offer.city}
+              {offer.distance_m != null ? <span className="tnum text-muted"> · {formatDistance(offer.distance_m)}</span> : null}
+            </p>
+            <LazyMap className="mt-3 h-56 w-full overflow-hidden rounded-2xl border border-line" center={{ lat: offer.latitude, lng: offer.longitude }} zoom={14} interactive={false} markers={[{ id: offer.id, lat: offer.latitude, lng: offer.longitude, label: offer.business_name }]} ariaLabel={`Mapa: ${offer.business_name}, ${offer.address_line}`} />
+            <div className="mt-1 flex flex-wrap gap-x-6">
+              <a className="inline-flex min-h-11 items-center gap-2 text-base font-bold text-accent" href={navigationHref(offer)} target="_blank" rel="noreferrer"><MapPin size={17} aria-hidden="true" />Navigovat</a>
+              <Link
+                to={`/podnik/${offer.business_id}?from=${encodeURIComponent(`/nabidka/${offer.id}`)}`}
+                className="inline-flex min-h-11 items-center text-base font-bold text-accent"
+              >
+                Další volné FLEKy v podniku
+              </Link>
+            </div>
+          </Section>
           {/* Terms for a booking that can still be made. On a slot nobody can book any more
               they described a deadline that cannot be used — noise at best, misleading at worst. */}
           {offer.bookable ? (
-            <>
-              <h2 className="mt-6 text-lg font-extrabold">Zrušení</h2>
-              <p className="mt-2 text-base leading-relaxed text-muted">Zrušit můžeš zdarma {cancellationCopy} a vrátíme ti celou částku.{Date.parse(cancellationAt) > Date.parse(now) ? ` Když rezervuješ později, máš na zrušení ${graceCopy}.` : ''}</p>
-            </>
+            <Section title="Zrušení zdarma" tone="positive" icon={<ShieldCheck size={18} aria-hidden="true" />}>
+              <p className="text-base leading-relaxed">Zrušit můžeš zdarma {cancellationCopy} a vrátíme ti celou částku.{Date.parse(cancellationAt) > Date.parse(now) ? ` Když rezervuješ později, máš na zrušení ${graceCopy}.` : ''}</p>
+            </Section>
           ) : null}
           {/* A slot that can no longer be booked already offers alternatives in the recovery block above. */}
           {offer.bookable || !reason ? (
@@ -470,6 +515,40 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
         }}
       />
     </main>
+  );
+}
+
+/** A block of the page below the booking card: a white card, a coloured glyph and a heading. */
+function Section({
+  id,
+  title,
+  icon,
+  tone,
+  children,
+}: {
+  id?: string;
+  title: string;
+  icon: ReactNode;
+  tone: 'accent' | 'brand' | 'positive';
+  children: ReactNode;
+}) {
+  return (
+    <section id={id} className="mt-4 scroll-mt-24 rounded-2xl bg-card p-4 shadow-card sm:p-5">
+      <h2 className="flex items-center gap-2.5 text-lg font-extrabold">
+        <span
+          className={cx(
+            'grid size-9 shrink-0 place-items-center rounded-xl',
+            tone === 'accent' && 'bg-accent-soft text-accent',
+            tone === 'brand' && 'bg-brand-soft text-brand',
+            tone === 'positive' && 'bg-positive/10 text-positive',
+          )}
+        >
+          {icon}
+        </span>
+        {title}
+      </h2>
+      <div className="mt-3">{children}</div>
+    </section>
   );
 }
 

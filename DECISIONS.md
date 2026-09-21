@@ -254,3 +254,12 @@ Jakub ukázal aplikaci s mapou, kde má každý špendlík značku aplikace, a s
 - Šablonu, která už u Mety je, funkce nepřepisuje, jen vrátí její stav (APPROVED, PENDING, REJECTED). Přepsání schválené šablony znamená nové schvalování, a to není nic, co by měl spustit omylem jeden dotaz.
 - Spouští se z administrace (**Nastavení**, `/admin/nastaveni`), ne z příkazové řádky. Funkce běží pod přihlášením admina, takže jinak by ji nešlo zavolat bez ručně vyrobeného tokenu — a token od Mety by musel někdo přenášet. Takhle zůstává v Supabase secrets a v prohlížeči se objeví jen názvy šablon a jejich stav.
 - Název šablony si může přebít tajný klíč z `TEMPLATE_SECRETS`. Kdyby Meta nějaký název zamítla, založí se pod jiným a odesílání se přenastaví změnou secretu, bez zásahu do kódu.
+
+## Detail nabídky: barva nese význam — 21. 9. 2026
+
+- Den termínu (**Dnes**, **Zítra**) je pilulka v barvě značky, ne šedý text. Je to první otázka, kterou si člověk u FLEKu klade, a jako 12px metadata vedle bledé ikony se ztrácela.
+- Barvy na stránce něco znamenají, nejsou dekorace: ultramarín = kdy a kde (den, špendlík, mapa), zelená = peníze, které zákazníkovi zůstanou (sleva, úspora, zrušení zdarma), jantarová = poslední místo. Proto je sleva u času zelený čip a ne šedý.
+- V kartě času je hodina vlevo a cena vpravo. Jako první čip řádku stála cena na každé kartě jinde, takže porovnat dva časy znamenalo číst dva řádky čipů místo jednoho sloupce.
+- Pořadí v kartě „Tvůj termín“: kdy → kolik → jak naspěch → jiné časy. Seznam časů byl nad cenou, takže cena a úspora vybraného termínu začínaly na mobilu pod ohybem.
+- Bloky pod kartou („O službě“, „Kde to je“, „Zrušení zdarma“) jsou karty s barevnou ikonou. Holé nadpisy nad vlasovou linkou na šedé ploše nedávaly oku kde skončil jeden předmět a začal druhý.
+- Spodní lišta na mobilu nese jen cenu a tlačítko. Úsporu říká karta nad ní; v liště byla potřetí v jednom výřezu obrazovky a stála 20 px výšky tam, kde jich je nejmíň.
