@@ -12,7 +12,7 @@ import { LazyMap } from '../offers/LazyMap';
 import { LocationChip } from './LocationChip';
 import { FilterBar, plural } from './FilterBar';
 import { useDiscoveryState } from './useDiscoveryState';
-import { useDiscovery } from './useDiscovery';
+import { MAP_LIMIT, useDiscovery } from './useDiscovery';
 import { groupMapOffers } from './mapOffers';
 import { groupSlots, slotLabels } from './slots';
 import { MapPreviewCard } from './MapPreviewCard';
@@ -63,7 +63,7 @@ export function MapPage() {
   const [locateError, setLocateError] = useState(false);
   const [phone, setPhone] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
   const now = useServerNow();
-  const discovery = useDiscovery(point, filters);
+  const discovery = useDiscovery(point, filters, MAP_LIMIT);
   const categories = useQuery({ queryKey: ['categories'], queryFn: listCategories, staleTime: 3_600_000 });
   const rows = discovery.data?.rows;
   const groups = useMemo(() => groupMapOffers(rows ?? []), [rows]);

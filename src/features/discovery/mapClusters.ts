@@ -1,5 +1,6 @@
-export type ProjectedPin = { x: number; y: number; width: number; indexes: number[] };
-export type PositionedPin = ProjectedPin & { offsetX: number; offsetY: number };
+export type ProjectedPin = { x: number; y: number; width: number; indexes: number[]; height?: number };
+/** `crowded` means the layout ran out of free room and had to let this marker overlap another. */
+export type PositionedPin = ProjectedPin & { offsetX: number; offsetY: number; crowded: boolean };
 
 /*
  * Rendered marker heights, centred on the map point (styles.css). A pin is the 48 px photo
@@ -11,7 +12,14 @@ export const PIN_HEIGHT = 64;
 /** Air between two markers, so a shadow or the selected pin's scale-up does not touch the next one. */
 const GAP = 8;
 
-const heightOf = (_pin?: ProjectedPin) => PIN_HEIGHT;
+/*
+ * A venue drawn as a dot at a wide view. The circle itself is 22 px, but the marker keeps a
+ * 44 px touch target, and it is the target that must not overlap the neighbour's — tapping a
+ * dot has to open that dot. So the layout reserves the target, not the drawing.
+ */
+export const DOT_SIZE = 44;
+
+const heightOf = (pin?: ProjectedPin) => pin?.height ?? PIN_HEIGHT;
 
 /** Whether two markers drawn at these points would touch. */
 export function markersCollide(a: ProjectedPin, b: ProjectedPin): boolean {
@@ -49,10 +57,12 @@ export function spreadPins(points: ProjectedPin[]): PositionedPin[] {
         y: point.y + offsetY,
         offsetX,
         offsetY,
+        crowded: false,
       };
       const overlap = placed.reduce((sum, other) => sum + (markersCollide(candidate, other) ? 1 : 0), 0);
       if (overlap === 0) {
         best = candidate;
+        bestOverlap = 0;
         break;
       }
       if (overlap < bestOverlap) {
@@ -60,7 +70,7 @@ export function spreadPins(points: ProjectedPin[]): PositionedPin[] {
         bestOverlap = overlap;
       }
     }
-    placed.push(best ?? { ...point, indexes: [...point.indexes], offsetX: 0, offsetY: 0 });
+    placed.push(best ? { ...best, crowded: bestOverlap > 0 } : { ...point, indexes: [...point.indexes], offsetX: 0, offsetY: 0, crowded: true });
   });
   return placed;
 }

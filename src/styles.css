@@ -242,7 +242,7 @@
     border-radius: 15px;
     background: var(--color-ink);
     box-shadow: 0 5px 12px -3px rgb(16 18 31 / 0.36);
-    transition: border-color 150ms;
+    transition: border-color 150ms, box-shadow 150ms, transform 150ms;
   }
   /* The trade, drawn the way the app icon draws the mark: bright brand on the night tile (4.1:1,
      AA for graphics). A photo used to sit here and at 48 px every treatment room looked alike. */
@@ -290,6 +290,26 @@
     font-size: 0.75rem;
     box-shadow: 0 0 0 2px var(--color-card);
   }
+  /* Over a whole city a pin with its price ticket has nowhere to sit and venues end up stacked,
+     so every venue drops to a dot: a quarter of the footprint, none of them hidden, and the
+     44 px touch target kept. The price comes back on the next zoom, or on the selected one. */
+  .map-pin--dot { justify-content: center; }
+  .map-pin--dot .map-pin-tile {
+    width: 20px;
+    height: 20px;
+    border-radius: 9999px;
+    background: var(--color-brand);
+    box-shadow: 0 0 0 1px rgb(16 18 31 / 0.2), 0 2px 5px -1px rgb(16 18 31 / 0.35);
+  }
+  /* The trade's glyph is unreadable at 20 px, and a price ticket would defeat the point. */
+  .map-pin--dot .map-pin-tile > *,
+  .map-pin--dot .map-pin-price,
+  .map-pin--dot .map-pin-count { display: none; }
+  /* More than one FLEK at this address gets a halo, so density still reads without a number. */
+  .map-pin--dot-many .map-pin-tile {
+    box-shadow: 0 0 0 1px rgb(16 18 31 / 0.2), 0 0 0 5px color-mix(in srgb, var(--color-brand) 30%, transparent), 0 2px 5px -1px rgb(16 18 31 / 0.35);
+  }
+  .map-pin--dot:hover .map-pin-tile { transform: scale(1.2); }
   .map-pin.is-selected { z-index: 2; transform: translateY(-3px) scale(1.12); }
   .map-pin.is-selected .map-pin-tile { border-color: var(--color-brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand) 35%, transparent), 0 6px 14px -3px rgb(16 18 31 / 0.4); }
   .map-pin.is-selected .map-pin-price { background: var(--color-brand); color: var(--color-brand-ink); }

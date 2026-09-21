@@ -22,11 +22,23 @@ export type DiscoveryResult = {
 
 const MIN_RESULTS = 3;
 
+/** Rows the feed asks for; several times of one service collapse into one card. */
+const FEED_LIMIT = 50;
+
+/*
+ * The map asks for the whole answer. It draws one point per venue rather than a list of cards,
+ * and a cap that is comfortable for a scrolling feed left whole streets without a point: at the
+ * default filter (5 km, sorted by distance) fifty rows all came from three venues out of sixteen,
+ * because one venue publishes dozens of times. The points were never missing from the drawing,
+ * the rows were missing from the answer. Three hundred is the server's ceiling too.
+ */
+export const MAP_LIMIT = 300;
+
 /**
  * One server-side search; if the current filter is too thin, walk the cold-start ladder
  * and label the widening honestly. All filtering stays in Postgres.
  */
-export async function discover(point: Point, filters: Filters): Promise<DiscoveryResult> {
+export async function discover(point: Point, filters: Filters, limit = FEED_LIMIT): Promise<DiscoveryResult> {
   const steps = wideningSteps(filters, serverNow());
   let best: DiscoveryResult = { rows: [], note: null, applied: { when: filters.when, radius_m: filters.radius_m } };
   for (const step of steps) {
@@ -43,7 +55,7 @@ export async function discover(point: Point, filters: Filters): Promise<Discover
       sort: filters.sort,
       daypart: filters.daypart,
       // Several times of one service become one card, so ask for more rows than cards are shown.
-      limit: 50,
+      limit,
     });
     // What counts is how many different FLEKs the customer gets, not how many times they have.
     const cards = groupSlots(rows).length;
@@ -53,13 +65,13 @@ export async function discover(point: Point, filters: Filters): Promise<Discover
   return best;
 }
 
-export function useDiscovery(point: Point, filters: Filters) {
+export function useDiscovery(point: Point, filters: Filters, limit = FEED_LIMIT) {
   // The epoch is part of the key so a late clock correction re-runs the search with the
   // right Prague day window instead of leaving a wrong „Dnes" on screen.
   const epoch = useClockEpoch();
   const query = useQuery({
-    queryKey: ['discovery', point.lat.toFixed(4), point.lng.toFixed(4), filters, epoch],
-    queryFn: () => discover(point, filters),
+    queryKey: ['discovery', point.lat.toFixed(4), point.lng.toFixed(4), filters, epoch, limit],
+    queryFn: () => discover(point, filters, limit),
     // Inventory decays by the minute: never show a card that stopped being bookable.
     staleTime: 30_000,
     refetchInterval: 60_000,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { markersCollide, spreadPins } from '../src/features/discovery/mapClusters';
+import { DOT_SIZE, markersCollide, spreadPins } from '../src/features/discovery/mapClusters';
 import { groupMapOffers } from '../src/features/discovery/mapOffers';
 import type { SearchRow } from '../src/types/database';
 
@@ -40,6 +40,26 @@ describe('Map selection regressions', () => {
     for (let i = 0; i < pins.length; i++) for (let j = i + 1; j < pins.length; j++) {
       expect(markersCollide(pins[i], pins[j])).toBe(false);
     }
+  });
+
+  it('says when a pin had nowhere free to sit, which is what makes the map fall back to dots', () => {
+    // A city block at a wide view: twelve venues 50 px apart, where a pin needs about 100.
+    const block = Array.from({ length: 12 }, (_, i) => ({ x: 300 + (i % 4) * 50, y: 300 + Math.floor(i / 4) * 50, width: 90, indexes: [i] }));
+    expect(spreadPins(block).some((pin) => pin.crowded)).toBe(true);
+
+    const dots = spreadPins(block.map((pin) => ({ ...pin, width: DOT_SIZE, height: DOT_SIZE })));
+    expect(dots.some((pin) => pin.crowded)).toBe(false);
+    expect(dots.flatMap((pin) => pin.indexes).sort((a, b) => a - b)).toEqual(Array.from({ length: 12 }, (_, i) => i));
+    for (let i = 0; i < dots.length; i++) for (let j = i + 1; j < dots.length; j++) {
+      expect(markersCollide(dots[i], dots[j])).toBe(false);
+    }
+  });
+
+  it('never drops a venue even where not even a dot fits, so nothing is hidden', () => {
+    const pileUp = Array.from({ length: 24 }, (_, i) => ({ x: 300 + (i % 4) * 9, y: 300 + Math.floor(i / 4) * 9, width: DOT_SIZE, height: DOT_SIZE, indexes: [i] }));
+    const dots = spreadPins(pileUp);
+    expect(dots).toHaveLength(24);
+    expect(dots.flatMap((pin) => pin.indexes).sort((a, b) => a - b)).toEqual(Array.from({ length: 24 }, (_, i) => i));
   });
 
   it('is deterministic so pins do not jump after a pan redraw', () => {
