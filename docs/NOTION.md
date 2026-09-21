@@ -11,7 +11,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 | Fáze | Fáze 1 — demo pilot (běží veřejně, platby přes Stripe v testovacím režimu) |
 | Web | https://www.app-flek.eu (původní https://flek-nine.vercel.app funguje dál) |
 | Kód | https://github.com/legitjakub/flek (větev `main`) |
-| Poslední nasazení | databáze a `content-moderation` 21. 9. 2026; web nasazuje Vercel automaticky z posledního commitu ve větvi `main` |
+| Poslední nasazení | databáze, `content-moderation` a web 21. 9. 2026; frontend commit `2781d58`, Vercel úspěšně dokončený na `www.app-flek.eu` |
 | Testy | 152 unit testů a build, SQL testy potvrzování, WhatsAppu, právního minima a nově ověřených recenzí/moderace; změny v hostované DB se při SQL testech celé vracejí rollbackem |
 | Potvrzování rezervací podnikem | **zapnuté pro všechny podniky** od 15. 9. 15:54 (předtím demo: akceptace 106/106 a průchod se skutečnými testovacími platbami) |
 | WhatsApp | backend, párování, fronta, webhook a šablony v kódu hotové; kanál je serverově vypnutý a v UI skrytý, dokud nebudou úplné Meta secrets, webhook, schválené šablony, zobrazované číslo a úspěšná testovací zpráva |
