@@ -290,6 +290,90 @@
     font-size: 0.75rem;
     box-shadow: 0 0 0 2px var(--color-card);
   }
+  /*
+   * City-wide view: every venue remains its own button, but the 48px tile and price ticket
+   * become a small FLEK beacon. It is deliberately circular rather than a miniature card, so
+   * the map reads as our network of available places instead of an Airbnb price cloud. The
+   * transparent button remains 44px for touch; the chosen beacon expands back to the full pin.
+   */
+  .map-pin.is-compact {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    justify-content: center;
+  }
+  .map-pin.is-compact .map-pin-tile {
+    width: 24px;
+    height: 24px;
+    border-color: var(--color-card);
+    border-radius: 9999px;
+    background: var(--color-brand);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-brand) 18%, transparent), 0 5px 12px -4px rgb(16 18 31 / 0.42);
+  }
+  .map-pin.is-compact .map-pin-icon {
+    width: 13px;
+    height: 13px;
+    stroke: var(--color-brand-ink);
+    stroke-width: 2.35;
+  }
+  .map-pin.is-compact .map-pin-tile--mark svg {
+    width: 15px;
+    height: 15px;
+    margin-left: 4px;
+  }
+  .map-pin.is-compact .map-pin-shape { fill: var(--color-brand-ink); }
+  .map-pin.is-compact .map-pin-face { fill: var(--color-brand); }
+  .map-pin.is-compact .map-pin-hands { stroke: var(--color-brand-ink); }
+  .map-pin.is-compact .map-pin-price { display: none; }
+  .map-pin.is-compact .map-pin-count {
+    top: 2px;
+    right: 1px;
+    margin: 0;
+    min-width: 17px;
+    height: 17px;
+    padding-inline: 4px;
+    background: var(--color-ink);
+    font-size: 0.625rem;
+  }
+  .map-pin.is-compact:hover .map-pin-tile {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-brand) 20%, transparent), 0 6px 14px -4px rgb(16 18 31 / 0.5);
+  }
+  .map-pin.is-compact.is-selected {
+    height: auto;
+    min-height: 64px;
+  }
+  .map-pin.is-compact.is-selected .map-pin-tile {
+    width: 48px;
+    height: 48px;
+    border-radius: 15px;
+    background: var(--color-ink);
+  }
+  .map-pin.is-compact.is-selected .map-pin-icon {
+    width: 26px;
+    height: 26px;
+    stroke: var(--color-brand-bright);
+    stroke-width: 2;
+  }
+  .map-pin.is-compact.is-selected .map-pin-tile--mark svg {
+    width: 26px;
+    height: 26px;
+    margin-left: 7px;
+  }
+  .map-pin.is-compact.is-selected .map-pin-shape { fill: var(--color-brand-bright); }
+  .map-pin.is-compact.is-selected .map-pin-face { fill: var(--color-card); }
+  .map-pin.is-compact.is-selected .map-pin-hands { stroke: var(--color-ink); }
+  .map-pin.is-compact.is-selected .map-pin-price { display: inline-flex; }
+  .map-pin.is-compact.is-selected .map-pin-count {
+    top: -4px;
+    right: 50%;
+    margin-right: -34px;
+    min-width: 22px;
+    height: 22px;
+    padding-inline: 5px;
+    background: var(--color-brand);
+    font-size: 0.75rem;
+  }
   .map-pin.is-selected { z-index: 2; transform: translateY(-3px) scale(1.12); }
   .map-pin.is-selected .map-pin-tile { border-color: var(--color-brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand) 35%, transparent), 0 6px 14px -3px rgb(16 18 31 / 0.4); }
   .map-pin.is-selected .map-pin-price { background: var(--color-brand); color: var(--color-brand-ink); }

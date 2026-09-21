@@ -319,3 +319,9 @@ Lokální Docker integrační sada, fyzický iPhone/Safari, skutečná kamera, n
 
 - `npm run build` a `npm run test:unit`: PASS, **152/152**.
 - Lokální Objevování v prohlížeči na 375, 390 a 1280 px: jemně ultramarínový panel, brandová cena, ikony i čipy dalších časů; žádné horizontální přetečení ani chyba či varování v konzoli. Na 375 px měří karta 302 × 377 px a panel 282 × 104 px.
+
+## Kompaktní body oddálené mapy — 21. 9. 2026
+
+- `npm run build`: PASS; zůstává jen známé upozornění na velikost samostatného mapového balíčku. `npm run test:unit`: PASS, **154/154** v 19 souborech. Nové testy hlídají přepnutí městský pohled / detail čtvrti a zachování každého bodu při těsnějším rozložení 44px dotykových ploch.
+- Lokální mapa nad živými demo daty při 390 × 844 a 375 × 812 px: 15 samostatných kruhových bodů, žádný číselný čtvercový shluk, stránka má přesně šířku viewportu. Vybraný bod se rozbalil na ikonu s cenou a otevřel 136px kartu se třemi službami.
+- Desktop 1280 × 720 px po trojím přiblížení: všech 15 markerů zůstává v DOM, kompaktních je 0 a každý má plnou cenu; horizontální přetečení 0 px. Informační stav „Na dnešek nic není, ukazujeme celý týden“ měří na mobilu 330 × 40 px, používá značkové barvy a zůstává celý viditelný. Bez aplikační chyby; vývojový server zachytil jen známá varování cizího stylu OpenFreeMap o filtrech a chybějících sprite ikonách.

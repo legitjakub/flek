@@ -11,8 +11,8 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 | Fáze | Fáze 1 — demo pilot (běží veřejně, platby přes Stripe v testovacím režimu) |
 | Web | https://www.app-flek.eu (původní https://flek-nine.vercel.app funguje dál) |
 | Kód | https://github.com/legitjakub/flek (větev `main`) |
-| Poslední nasazení | databáze, `content-moderation` a web 21. 9. 2026; frontend commit `2781d58`, Vercel úspěšně dokončený na `www.app-flek.eu` |
-| Testy | 152 unit testů a build, SQL testy potvrzování, WhatsAppu, právního minima a nově ověřených recenzí/moderace; změny v hostované DB se při SQL testech celé vracejí rollbackem |
+| Poslední nasazení | databáze, `content-moderation` a web 21. 9. 2026; frontend z `main`, Vercel na `www.app-flek.eu` |
+| Testy | 154 unit testů a build, SQL testy potvrzování, WhatsAppu, právního minima a nově ověřených recenzí/moderace; změny v hostované DB se při SQL testech celé vracejí rollbackem |
 | Potvrzování rezervací podnikem | **zapnuté pro všechny podniky** od 15. 9. 15:54 (předtím demo: akceptace 106/106 a průchod se skutečnými testovacími platbami) |
 | WhatsApp | backend, párování, fronta, webhook a šablony v kódu hotové; kanál je serverově vypnutý a v UI skrytý, dokud nebudou úplné Meta secrets, webhook, schválené šablony, zobrazované číslo a úspěšná testovací zpráva |
 | Recenze a moderace | ověřené anonymní hvězdičky a komentáře po dokončené rezervaci; komentáře, vlastní veřejné texty a fotografie čekají na kontrolu. Funkce je nasazená, ale OpenAI 21. 9. vrací HTTP 429, takže nové podklady zatím bezpečně zůstávají neveřejné v admin frontě |
@@ -327,6 +327,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 21. 9. 2026 | Městský pohled mapy ukazuje všechny provozovny jako malé kruhové FLEK body; po přiblížení se rozbalí na plné špendlíky s oborem a cenou a vybraný bod se rozbalí vždy. Mapa využije plný bezpečný limit 100 výsledků a hláška o rozšířeném hledání má kompaktní ultramarínový štítek. |
 | 21. 9. 2026 | Karty v Objevování dostaly jemně ultramarínový skleněný panel: cena je v hlavní barvě FLEKu, ikony a další časy používají brandový odstín a původní cena už není červená. |
 | 21. 9. 2026 | Mapa ukazuje skutečné FLEK špendlíky místo číselných shluků; mobilní náhled má 136 px a carousel se posouvá po jedné službě. Přibyly ověřené anonymní recenze, upozornění po dokončení, privátní fail-closed moderace textů a fotografií, admin fronta s auditem, RLS na citlivých privátních tabulkách a bezpečný příznak dostupnosti WhatsAppu. Databáze i funkce jsou nasazené; OpenAI moderace zatím vrací HTTP 429 a WhatsApp čeká na dokončení Meta. |
 | 21. 9. 2026 | Detail nabídky na mobilu: odznak slevy a „Začíná za…“ na fotce, den termínu v barvě značky, cena a úspora nad seznamem časů, hodina vlevo a cena vpravo u každého času, bloky pod kartou jako karty s barevnou ikonou |

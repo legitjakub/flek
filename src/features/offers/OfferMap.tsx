@@ -1,7 +1,7 @@
 // Side effect only, and it must run before any map is constructed: it tells MapLibre where
 // its tile-decoding worker lives. Without it vector tiles are never requested at all.
 import './mapWorker';
-import { spreadPins } from '../discovery/mapClusters';
+import { COMPACT_PIN_SIZE, PIN_HEIGHT, shouldCompactPins, spreadPins } from '../discovery/mapClusters';
 import { categoryGlyph } from '../../lib/categoryGlyphs';
 import { useEffect, useRef } from 'react';
 import { LngLatBounds, Map as MapLibreMap, Marker, NavigationControl, type MapOptions, type StyleSpecification } from 'maplibre-gl';
@@ -231,11 +231,15 @@ export function MapCanvas({
       if (!instance) return;
       const focused = document.activeElement instanceof HTMLElement ? document.activeElement.dataset.mapIds : undefined;
       drawn.current.forEach((marker) => marker.remove());
-      const projected = markers.map((marker, index) => {
+      const fullPins = markers.map((marker, index) => {
         const point = instance.project([marker.lng, marker.lat]);
         // A glyph tile over a price ticket: as wide as the ticket, never narrower than the tile.
-        return { x: point.x, y: point.y, width: Math.max(56, marker.label.length * 7.5 + 24), indexes: [index] };
+        return { x: point.x, y: point.y, width: Math.max(56, marker.label.length * 7.5 + 24), height: PIN_HEIGHT, indexes: [index] };
       });
+      const compact = selectable && shouldCompactPins(fullPins, instance.getZoom());
+      const projected = compact
+        ? fullPins.map((point) => ({ ...point, width: COMPACT_PIN_SIZE, height: COMPACT_PIN_SIZE }))
+        : fullPins;
       const positions = selectable ? spreadPins(projected) : projected.map((point) => ({ ...point, offsetX: 0, offsetY: 0 }));
       drawn.current = positions.map((position) => {
         const entry = markers[position.indexes[0]];
@@ -249,6 +253,7 @@ export function MapCanvas({
         price.textContent = label;
 
         el.className = 'map-pin';
+        if (compact) el.classList.add('is-compact');
         if (position.offsetX || position.offsetY) el.classList.add('is-displaced');
         el.setAttribute('aria-label', entry.description ?? label);
         const glyph = categoryGlyph(entry.category);

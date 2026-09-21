@@ -169,9 +169,11 @@ export function FilterBar({
             </button>
           ))}
           {widened ? (
-            <span role="status" className={`inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-2xl bg-brand-soft px-3 py-1.5 font-bold text-accent ring-1 ring-brand/15 ${floating ? 'shadow-card' : ''}`}>
-              <Info size={15} aria-hidden="true" className="shrink-0 text-brand" />
-              <span className="min-w-0">{widened}</span>
+            <span role="status" className={`inline-flex min-h-10 max-w-full items-center gap-2 rounded-[1.25rem] border border-brand/15 bg-card/95 py-1 pr-3 pl-1.5 font-bold text-accent backdrop-blur-sm ${floating ? 'shadow-card' : ''}`}>
+              <span className="grid size-7 shrink-0 place-items-center rounded-xl bg-brand text-brand-ink shadow-sm">
+                <Info size={14} aria-hidden="true" />
+              </span>
+              <span className="min-w-0 leading-snug">{widened}</span>
             </span>
           ) : null}
           {chips.length ? (

@@ -1,4 +1,4 @@
-export type ProjectedPin = { x: number; y: number; width: number; indexes: number[] };
+export type ProjectedPin = { x: number; y: number; width: number; height?: number; indexes: number[] };
 export type PositionedPin = ProjectedPin & { offsetX: number; offsetY: number };
 
 /*
@@ -8,14 +8,35 @@ export type PositionedPin = ProjectedPin & { offsetX: number; offsetY: number };
  * shorter than either, so a pin's ticket landed on the ring of the cluster under it.
  */
 export const PIN_HEIGHT = 64;
+/** A compact marker still keeps a 44 px hit area; only the branded tile inside gets smaller. */
+export const COMPACT_PIN_SIZE = 44;
 /** Air between two markers, so a shadow or the selected pin's scale-up does not touch the next one. */
 const GAP = 8;
 
-const heightOf = (_pin?: ProjectedPin) => PIN_HEIGHT;
+const heightOf = (pin?: ProjectedPin) => pin?.height ?? PIN_HEIGHT;
 
 /** Whether two markers drawn at these points would touch. */
 export function markersCollide(a: ProjectedPin, b: ProjectedPin): boolean {
   return Math.abs(a.x - b.x) < (a.width + b.width) / 2 + 10 && Math.abs(a.y - b.y) < (heightOf(a) + heightOf(b)) / 2 + GAP;
+}
+
+/**
+ * Price tickets are useful after zooming into a neighbourhood, but at a city-wide view they
+ * cover the very choices the map should reveal. Switch every venue to a small FLEK beacon when
+ * the camera is far out, or while an intermediate view is still too crowded for full tickets.
+ * The decision uses only projected points and zoom, so a pan cannot make markers flicker.
+ */
+export function shouldCompactPins(points: ProjectedPin[], zoom: number): boolean {
+  if (points.length < 2 || zoom >= 14) return false;
+  if (zoom < 12.5) return true;
+
+  let collisions = 0;
+  for (let i = 0; i < points.length; i += 1) {
+    for (let j = i + 1; j < points.length; j += 1) {
+      if (markersCollide(points[i], points[j])) collisions += 1;
+    }
+  }
+  return collisions >= Math.max(2, Math.ceil(points.length / 4));
 }
 
 /**

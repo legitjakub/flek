@@ -284,3 +284,10 @@ Jakub ukázal aplikaci s mapou, kde má každý špendlík značku aplikace, a s
 - Spodní panel na fotografii má vlastní jemně ultramarínové sklo místo neutrální bílé desky. Vysoký podíl bílé drží kontrast malých metadat, modrý nádech a horní světelná linka ho vizuálně spojují se značkou FLEK.
 - Konečná cena je jediný plný prvek panelu a používá hlavní ultramarín. Červené přeškrtnutí původní ceny zmizelo: červená v aplikaci patří chybě a zamítnutí, ne běžné cenové informaci.
 - Ikony polohy a délky i čipy dalších časů používají tlumenou brandovou modrou. Panel tak má jednu barevnou logiku a nepřidává další soutěžící barvu ke slevě v horním rohu fotografie.
+
+## Kompaktní FLEK body při oddálení — 21. 9. 2026
+
+- **Každá provozovna zůstává samostatná.** Městský pohled neslučuje podniky do číselného čtverce. Termíny na úplně stejné adrese dál sdílejí jeden bod s malým počtem a po klepnutí se zpřístupní v carouselu.
+- **Oddálení mění množství detailu, ne množství nabídky.** Pod úrovní čtvrti je marker kruhový 24px FLEK bod uvnitř 44px dotykové plochy; po přiblížení má 48px ikonu oboru a cenu. Vybraný kompaktní bod se rozbalí hned, aby klepnutí mělo jasnou odezvu.
+- **Kompaktní režim je adaptivní.** Zapne se pod zoomem 12,5 a také v přechodném pohledu, kde se příliš mnoho plných cenových lístků střetává. Nad zoomem 14 se vždy vrátí plné špendlíky. Rozložení zůstává deterministické, takže body při posunu mapy neposkakují.
+- **Sto je skutečný strop mapy.** Veřejné `search_offers` přijímá nejvýš 100 řádků; mapa proto žádá právě o 100 a klient limit bezpečně ořízne. Feed zůstává na 50, protože tam se výsledky čtou postupně a víc řádků by jen prodloužilo stránku.

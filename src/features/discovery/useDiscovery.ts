@@ -21,13 +21,22 @@ export type DiscoveryResult = {
 };
 
 const MIN_RESULTS = 3;
+const DEFAULT_RESULT_LIMIT = 50;
+export const MAP_RESULT_LIMIT = 100;
+
+function safeResultLimit(limit: number) {
+  // `search_offers` rejects anything above 100. Keep the contract here so a future screen
+  // cannot accidentally turn a larger visual target into a broken request.
+  return Math.min(MAP_RESULT_LIMIT, Math.max(1, Math.trunc(limit)));
+}
 
 /**
  * One server-side search; if the current filter is too thin, walk the cold-start ladder
  * and label the widening honestly. All filtering stays in Postgres.
  */
-export async function discover(point: Point, filters: Filters): Promise<DiscoveryResult> {
+export async function discover(point: Point, filters: Filters, limit = DEFAULT_RESULT_LIMIT): Promise<DiscoveryResult> {
   const steps = wideningSteps(filters, serverNow());
+  const resultLimit = safeResultLimit(limit);
   let best: DiscoveryResult = { rows: [], note: null, applied: { when: filters.when, radius_m: filters.radius_m } };
   for (const step of steps) {
     const range = windowFor(step.when, serverNow());
@@ -43,7 +52,7 @@ export async function discover(point: Point, filters: Filters): Promise<Discover
       sort: filters.sort,
       daypart: filters.daypart,
       // Several times of one service become one card, so ask for more rows than cards are shown.
-      limit: 50,
+      limit: resultLimit,
     });
     // What counts is how many different FLEKs the customer gets, not how many times they have.
     const cards = groupSlots(rows).length;
@@ -53,13 +62,13 @@ export async function discover(point: Point, filters: Filters): Promise<Discover
   return best;
 }
 
-export function useDiscovery(point: Point, filters: Filters) {
+export function useDiscovery(point: Point, filters: Filters, limit = DEFAULT_RESULT_LIMIT) {
   // The epoch is part of the key so a late clock correction re-runs the search with the
   // right Prague day window instead of leaving a wrong „Dnes" on screen.
   const epoch = useClockEpoch();
   const query = useQuery({
-    queryKey: ['discovery', point.lat.toFixed(4), point.lng.toFixed(4), filters, epoch],
-    queryFn: () => discover(point, filters),
+    queryKey: ['discovery', point.lat.toFixed(4), point.lng.toFixed(4), filters, limit, epoch],
+    queryFn: () => discover(point, filters, limit),
     // Inventory decays by the minute: never show a card that stopped being bookable.
     staleTime: 30_000,
     refetchInterval: 60_000,

@@ -12,7 +12,7 @@ import { LazyMap } from '../offers/LazyMap';
 import { LocationChip } from './LocationChip';
 import { FilterBar, plural } from './FilterBar';
 import { useDiscoveryState } from './useDiscoveryState';
-import { useDiscovery } from './useDiscovery';
+import { MAP_RESULT_LIMIT, useDiscovery } from './useDiscovery';
 import { groupMapOffers } from './mapOffers';
 import { groupSlots, slotLabels } from './slots';
 import { MapPreviewCard } from './MapPreviewCard';
@@ -27,6 +27,8 @@ const markerTime = new Intl.DateTimeFormat('cs-CZ', {
   minute: '2-digit',
   timeZone: 'Europe/Prague',
 });
+
+const appointmentWord = (count: number) => count === 1 ? 'termín' : count < 5 ? 'termíny' : 'termínů';
 
 /*
  * Free space the camera keeps around the results. On a phone the search controls float over
@@ -63,7 +65,9 @@ export function MapPage() {
   const [locateError, setLocateError] = useState(false);
   const [phone, setPhone] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
   const now = useServerNow();
-  const discovery = useDiscovery(point, filters);
+  // The map should reveal the whole filtered market. The public RPC deliberately caps a
+  // request at 100 rows, so this is the largest valid page rather than an arbitrary 200.
+  const discovery = useDiscovery(point, filters, MAP_RESULT_LIMIT);
   const categories = useQuery({ queryKey: ['categories'], queryFn: listCategories, staleTime: 3_600_000 });
   const rows = discovery.data?.rows;
   const groups = useMemo(() => groupMapOffers(rows ?? []), [rows]);
@@ -84,7 +88,7 @@ export function MapPage() {
       category: first.category_slug,
       description: group.offers.length === 1
         ? `${first.service_name}, ${first.business_name}, ${markerTime.format(new Date(first.start_at))}, ${money(group.minPrice)}. Zobrazit náhled.`
-        : `${first.business_name}: ${group.offers.length} termíny, od ${money(group.minPrice)}. Zobrazit termíny.`,
+        : `${first.business_name}: ${group.offers.length} ${appointmentWord(group.offers.length)}, od ${money(group.minPrice)}. Zobrazit termíny.`,
     };
   }), [groups]);
 
