@@ -319,6 +319,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 21. 9. 2026 | Detail nabídky na mobilu: odznak slevy a „Začíná za…“ na fotce, den termínu v barvě značky, cena a úspora nad seznamem časů, hodina vlevo a cena vpravo u každého času, bloky pod kartou jako karty s barevnou ikonou |
 | 20. 9. 2026 | Podnik může u služby nahrát vlastní fotografii; ta má před ilustračním katalogem přednost na kartách, mapě, detailu i v partnerské části a nenese označení „ilustrační foto“. |
 | 20. 9. 2026 | Zásady ochrany osobních údajů jsou v aplikaci zveřejněné na Jakuba jako fyzickou osobu; obchodní podmínky čekají na IČO. |
 | 20. 9. 2026 | Karty a navigace dostaly matné sklo (fotka a mapa pod nimi prosvítají) a e-maily konečně nesou skutečné logo FLEK místo textu „flek′“. |

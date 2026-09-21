@@ -13,18 +13,22 @@ const SHOWN_AT_ONCE = 5;
 /** A time is "starting soon" by the same rule as a card in the feed. */
 const SOON_MINUTES = 120;
 
-/** One fact about a time: what it costs, how much is off, how long it lasts, what is left of it. */
-function Fact({ children, selected, tone }: { children: ReactNode; selected: boolean; tone?: 'price' | 'warning' }) {
+/** One fact about a time: how much is off, how long it lasts, what is left of it. */
+function Fact({ children, selected, tone }: { children: ReactNode; selected: boolean; tone?: 'discount' | 'warning' }) {
   if (tone === 'warning') {
     return <span className="inline-flex items-center rounded-lg bg-warning-soft px-2 py-0.5 text-xs font-bold text-warning">{children}</span>;
+  }
+  // The discount is the argument for this time, so it wears the money green the rest of the app
+  // uses for what the customer keeps; duration and seats stay quiet metadata beside it.
+  if (tone === 'discount') {
+    return <span className="tnum inline-flex items-center rounded-lg bg-positive/10 px-2 py-0.5 text-xs font-extrabold text-positive">{children}</span>;
   }
   return (
     <span
       className={cx(
-        'tnum inline-flex items-center rounded-lg px-2 py-0.5 text-xs',
+        'tnum inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-bold text-muted',
         // The chosen card is already tinted, so its facts sit on white; the others on the ground.
         selected ? 'bg-card' : 'bg-surface',
-        tone === 'price' ? 'font-extrabold text-ink' : 'font-bold text-muted',
       )}
     >
       {children}
@@ -85,7 +89,13 @@ export function TimePicker({
       <div className="md:max-h-96 md:overflow-y-auto md:pr-1">
       {days.map((day) => (
         <div key={day.key} className="mt-2">
-          {day.title ? <p className="text-xs font-bold text-muted">{day.title}</p> : null}
+          {/* The day is the one label that orders the whole list, so it wears the brand rather than
+              the grey of metadata: at 12 px muted it read as a caption of the card above it. */}
+          {day.title ? (
+            <p className="inline-flex items-center rounded-full bg-brand-soft px-2.5 py-1 text-xs font-extrabold text-accent">
+              {day.title}
+            </p>
+          ) : null}
           <div role="group" aria-labelledby="vyber-casu" className="mt-1.5 flex flex-col gap-2">
             {day.slots.map((slot) => {
               const selected = slot.id === offer.id;
@@ -110,22 +120,33 @@ export function TimePicker({
                   }}
                   className={cx(
                     'w-full rounded-2xl border p-3 text-left transition-colors disabled:opacity-55',
-                    selected ? 'border-brand bg-brand-soft' : 'border-line bg-card hover:bg-surface',
+                    selected ? 'border-brand bg-brand-soft ring-1 ring-brand' : 'border-line bg-card hover:bg-surface',
                     pending && 'animate-pulse',
                   )}
                 >
-                  <span className="flex items-center gap-2">
+                  {/*
+                    Hour on the left, price on the right end of the same line. As the first chip of
+                    the row below, the price sat in a different column on every card, so comparing
+                    two times meant reading two chip rows instead of running an eye down one column.
+                  */}
+                  <span className="flex items-baseline gap-2">
                     <span className="tnum text-lg leading-tight font-extrabold text-ink">
                       {sectioned ? clockTime(slot.start_at) : `${dayLabel(slot.start_at, now)} ${clockTime(slot.start_at)}`}
                     </span>
                     {soon ? <span className="text-sm font-bold text-accent">{relativeTime(slot.start_at, now)}</span> : null}
-                    {selected ? <Check size={18} aria-hidden="true" className="ml-auto shrink-0 text-brand" /> : null}
+                    <span className="tnum ml-auto shrink-0 text-lg leading-tight font-extrabold text-ink">
+                      {money(slot.deal_price_cents)}
+                    </span>
                   </span>
-                  <span className="mt-2 flex flex-wrap items-center gap-1.5">
-                    <Fact selected={selected} tone="price">{money(slot.deal_price_cents)}</Fact>
-                    {slot.discount_pct > 0 ? <Fact selected={selected}>−{slot.discount_pct} %</Fact> : null}
+                  <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    {slot.discount_pct > 0 ? <Fact selected={selected} tone="discount">−{slot.discount_pct} %</Fact> : null}
                     <Fact selected={selected}>{duration(slot.start_at, slot.end_at)} min</Fact>
                     {lastSeat ? <Fact selected={selected} tone="warning">poslední místo</Fact> : null}
+                    {selected ? (
+                      <span className="ml-auto inline-flex items-center gap-1 text-xs font-extrabold text-accent">
+                        <Check size={14} aria-hidden="true" />Vybráno
+                      </span>
+                    ) : null}
                   </span>
                 </button>
               );
