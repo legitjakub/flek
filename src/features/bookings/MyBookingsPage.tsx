@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
-import { Phone, QrCode, Ticket, X } from 'lucide-react';
-import { cancelBooking, cancelPendingBooking, myBookings } from '../../lib/api';
+import { useEffect, useState } from 'react';
+import { CheckCircle2, Phone, QrCode, Star, Ticket, X } from 'lucide-react';
+import { cancelBooking, cancelPendingBooking, myBookings, submitBookingReview } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
 import { clockTime, dayLabel } from '../../lib/time';
 import { useServerNow } from '../../lib/clock';
-import { Banner, Button, EmptyState, ErrorState, LoadingList, Sheet, Tabs, buttonClass, cx } from '../../components/ui';
-import { Link } from '../../app/router';
+import { Banner, Button, EmptyState, ErrorState, LoadingList, Sheet, Tabs, Textarea, buttonClass, cx } from '../../components/ui';
+import { Link, useRouter } from '../../app/router';
 import { useSession } from '../auth/session';
 import { Voucher } from './Voucher';
 import { StatusBadge } from '../../components/StatusBadge';
@@ -16,12 +16,16 @@ import { confirmationView, waitingLine } from './confirmationView';
 
 export function MyBookingsPage() {
   const { userId } = useSession();
+  const { search, navigate } = useRouter();
   const [tab, setTab] = useState<'upcoming' | 'history'>('upcoming');
   const now = useServerNow(1_000);
   const queryClient = useQueryClient();
   const [toCancel, setToCancel] = useState<CustomerBooking | null>(null);
   const [voucherFor, setVoucherFor] = useState<CustomerBooking | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
+  const [reviewFor, setReviewFor] = useState<CustomerBooking | null>(null);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewBody, setReviewBody] = useState('');
 
   const query = useQuery({
     queryKey: ['my-bookings', userId],
@@ -42,6 +46,43 @@ export function MyBookingsPage() {
     },
     onError: (error) => setFailure(errorMessage(error)),
   });
+
+  const review = useMutation({
+    mutationFn: () => submitBookingReview(reviewFor!.id, reviewRating, reviewBody),
+    onSuccess: async () => {
+      closeReview();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['my-bookings', userId] }),
+        queryClient.invalidateQueries({ queryKey: ['business-reviews'] }),
+        queryClient.invalidateQueries({ queryKey: ['notifications', userId] }),
+      ]);
+    },
+  });
+
+  function openReview(booking: CustomerBooking) {
+    setReviewFor(booking);
+    setReviewRating(booking.rating ?? 0);
+    setReviewBody(booking.review_body ?? '');
+    setTab('history');
+  }
+
+  function closeReview() {
+    setReviewFor(null);
+    setReviewRating(0);
+    setReviewBody('');
+    if (search.has('ohodnotit')) {
+      const next = new URLSearchParams(search);
+      next.delete('ohodnotit');
+      navigate(`/rezervace${next.size ? `?${next}` : ''}`, { replace: true, scroll: false });
+    }
+  }
+
+  useEffect(() => {
+    const target = search.get('ohodnotit');
+    if (!target || !query.data || reviewFor) return;
+    const booking = query.data.find((row) => row.id === target && row.status === 'completed');
+    if (booking) openReview(booking);
+  }, [search, query.data, reviewFor]);
 
   if (!userId) {
     return (
@@ -165,6 +206,29 @@ export function MyBookingsPage() {
                   </p>
                 ) : null}
 
+                {booking.status === 'completed' ? (
+                  <div className="mt-4 border-t border-line pt-3">
+                    {booking.rating ? (
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="inline-flex items-center gap-1 text-sm font-bold text-ink" aria-label={`${booking.rating} z 5 hvězd`}>
+                          {Array.from({ length: 5 }, (_, index) => (
+                            <Star key={index} size={16} aria-hidden="true" className={index < booking.rating! ? 'fill-brand text-brand' : 'text-line'} />
+                          ))}
+                          <span className="ml-1">{booking.rating}/5</span>
+                        </span>
+                        <Button variant="ghost" size="sm" onClick={() => openReview(booking)}>Upravit hodnocení</Button>
+                      </div>
+                    ) : (
+                      <Button variant="soft" size="sm" onClick={() => openReview(booking)}>
+                        <Star size={16} aria-hidden="true" /> Ohodnotit návštěvu
+                      </Button>
+                    )}
+                    {booking.review_status === 'pending' ? <p className="mt-1 text-xs font-medium text-accent">Text čeká na bezpečnostní kontrolu.</p> : null}
+                    {booking.review_status === 'rejected' ? <p className="mt-1 text-xs font-medium text-danger">Text nebyl zveřejněn. Můžeš ho upravit.</p> : null}
+                    {booking.review_status === 'approved' && booking.review_body ? <p className="mt-2 text-sm leading-relaxed text-muted">„{booking.review_body}“</p> : null}
+                  </div>
+                ) : null}
+
                 {booking.confirmation_version === 1 && !booking.confirmed_at ? (
                   <RequestState booking={booking} now={now} onCancel={() => setToCancel(booking)} />
                 ) : booking.cancellation_reason ? (
@@ -226,6 +290,58 @@ export function MyBookingsPage() {
           );
         })}
       </div>
+
+      <Sheet
+        open={Boolean(reviewFor)}
+        onClose={closeReview}
+        title="Ohodnotit návštěvu"
+        footer={
+          <Button className="w-full" size="lg" disabled={reviewRating === 0} loading={review.isPending} onClick={() => review.mutate()}>
+            Uložit hodnocení
+          </Button>
+        }
+      >
+        <p className="text-sm leading-relaxed text-muted">
+          Hodnocení zveřejníme bez tvého jména jako ověřenou návštěvu.
+        </p>
+        {reviewFor ? (
+          <div className="mt-4 rounded-2xl bg-surface p-3">
+            <p className="font-bold text-ink">{reviewFor.service_name_snapshot}</p>
+            <p className="text-sm text-muted">{reviewFor.business_name_snapshot}</p>
+          </div>
+        ) : null}
+        <fieldset className="mt-5">
+          <legend className="font-bold text-ink">Kolik hvězd dáváš?</legend>
+          <div className="mt-2 flex gap-1" role="radiogroup" aria-label="Hodnocení od jedné do pěti hvězd">
+            {Array.from({ length: 5 }, (_, index) => index + 1).map((value) => (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={reviewRating === value}
+                aria-label={`${value} ${value === 1 ? 'hvězda' : value < 5 ? 'hvězdy' : 'hvězd'}`}
+                onClick={() => setReviewRating(value)}
+                className="grid size-11 place-items-center rounded-xl hover:bg-brand-soft"
+              >
+                <Star size={28} aria-hidden="true" className={value <= reviewRating ? 'fill-brand text-brand' : 'text-line'} />
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        <label htmlFor="review-body" className="mt-5 block font-bold text-ink">Co by měli ostatní vědět? <span className="font-normal text-muted">(nepovinné)</span></label>
+        <Textarea
+          id="review-body"
+          className="mt-2"
+          maxLength={800}
+          rows={5}
+          value={reviewBody}
+          onChange={(event) => setReviewBody(event.target.value)}
+          placeholder="Třeba jak služba probíhala a co se ti líbilo. Neuváděj osobní údaje."
+        />
+        <p className="tnum mt-1 text-right text-xs text-muted">{reviewBody.length}/800</p>
+        {review.isError ? <div className="mt-3"><Banner tone="warning">{errorMessage(review.error)}</Banner></div> : null}
+        {review.isSuccess ? <p className="mt-3 inline-flex items-center gap-2 text-sm font-bold text-positive"><CheckCircle2 size={17} />Hodnocení je uložené.</p> : null}
+      </Sheet>
 
       <Sheet
         open={Boolean(voucherFor)}

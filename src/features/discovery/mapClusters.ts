@@ -1,4 +1,5 @@
 export type ProjectedPin = { x: number; y: number; width: number; indexes: number[] };
+export type PositionedPin = ProjectedPin & { offsetX: number; offsetY: number };
 
 /*
  * Rendered marker heights, centred on the map point (styles.css). A pin is the 48 px photo
@@ -7,39 +8,59 @@ export type ProjectedPin = { x: number; y: number; width: number; indexes: numbe
  * shorter than either, so a pin's ticket landed on the ring of the cluster under it.
  */
 export const PIN_HEIGHT = 64;
-export const CLUSTER_HEIGHT = 86;
 /** Air between two markers, so a shadow or the selected pin's scale-up does not touch the next one. */
 const GAP = 8;
 
-const heightOf = (pin: ProjectedPin) => (pin.indexes.length > 1 ? CLUSTER_HEIGHT : PIN_HEIGHT);
+const heightOf = (_pin?: ProjectedPin) => PIN_HEIGHT;
 
 /** Whether two markers drawn at these points would touch. */
 export function markersCollide(a: ProjectedPin, b: ProjectedPin): boolean {
   return Math.abs(a.x - b.x) < (a.width + b.width) / 2 + 10 && Math.abs(a.y - b.y) < (heightOf(a) + heightOf(b)) / 2 + GAP;
 }
 
-/** Merge intersecting touch targets at the current zoom; never hide a cheaper offer behind another pin. */
-export function clusterPins(points: ProjectedPin[]): ProjectedPin[] {
-  const groups = points.map((point) => ({ ...point, indexes: [...point.indexes] }));
-  let merged = true;
-  while (merged) {
-    merged = false;
-    outer: for (let i = 0; i < groups.length; i++) {
-      for (let j = i + 1; j < groups.length; j++) {
-        const a = groups[i], b = groups[j];
-        if (!markersCollide(a, b)) continue;
-        const total = a.indexes.length + b.indexes.length;
-        groups[i] = {
-          x: (a.x * a.indexes.length + b.x * b.indexes.length) / total,
-          y: (a.y * a.indexes.length + b.y * b.indexes.length) / total,
-          width: Math.max(148, a.width, b.width),
-          indexes: [...a.indexes, ...b.indexes],
-        };
-        groups.splice(j, 1);
-        merged = true;
-        break outer;
-      }
+/**
+ * Keep every venue visible. Nearby places are nudged around their real screen position instead
+ * of being replaced by a count that makes the customer zoom before seeing a single offer.
+ *
+ * Candidate order is fixed, so the same viewport always produces the same layout. Four compact
+ * rings handle ordinary city-centre density without moving a pin so far that it appears to belong
+ * to another neighbourhood. If an exceptionally dense view has no free candidate, the position
+ * with the least overlap wins; the pin still exists and remains keyboard reachable.
+ */
+export function spreadPins(points: ProjectedPin[]): PositionedPin[] {
+  const placed: PositionedPin[] = [];
+  const candidates: Array<[number, number]> = [[0, 0]];
+  for (const radius of [28, 48, 68, 88]) {
+    const steps = radius < 48 ? 8 : 12;
+    for (let step = 0; step < steps; step += 1) {
+      const angle = -Math.PI / 2 + step * Math.PI * 2 / steps;
+      candidates.push([Math.round(Math.cos(angle) * radius), Math.round(Math.sin(angle) * radius)]);
     }
   }
-  return groups;
+
+  points.forEach((point) => {
+    let best: PositionedPin | null = null;
+    let bestOverlap = Number.POSITIVE_INFINITY;
+    for (const [offsetX, offsetY] of candidates) {
+      const candidate: PositionedPin = {
+        ...point,
+        indexes: [...point.indexes],
+        x: point.x + offsetX,
+        y: point.y + offsetY,
+        offsetX,
+        offsetY,
+      };
+      const overlap = placed.reduce((sum, other) => sum + (markersCollide(candidate, other) ? 1 : 0), 0);
+      if (overlap === 0) {
+        best = candidate;
+        break;
+      }
+      if (overlap < bestOverlap) {
+        best = candidate;
+        bestOverlap = overlap;
+      }
+    }
+    placed.push(best ?? { ...point, indexes: [...point.indexes], offsetX: 0, offsetY: 0 });
+  });
+  return placed;
 }

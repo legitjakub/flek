@@ -113,6 +113,7 @@ export function ServicePhotoPicker({
   const uploadId = useId();
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [pendingPreview, setPendingPreview] = useState<string | null>(null);
   const choices = useMemo<PhotoOption[]>(() => {
     const catalogue = photos.data ?? [];
     const inferred = [...catalogue]
@@ -134,10 +135,16 @@ export function ServicePhotoPicker({
       value: imageUrl,
     }));
     if (value && !gallery.includes(value)) {
-      options.push({ key: 'current', label: 'Současná fotka', imageUrl: value, value });
+      const pending = value.startsWith('moderation-pending://');
+      options.push({
+        key: 'current',
+        label: pending ? 'Nová fotografie · čeká na kontrolu' : 'Současná fotka',
+        imageUrl: pending ? pendingPreview : value,
+        value,
+      });
     }
     return options;
-  }, [photos.data, categorySlug, serviceName, templateSlug, value, venueCover]);
+  }, [photos.data, categorySlug, serviceName, templateSlug, value, venueCover, pendingPreview]);
   const selectedIndex = Math.max(0, choices.findIndex((choice) => choice.value === value));
   const selected = choices[selectedIndex] ?? choices[0];
   const carousel = useSnapCarousel<HTMLDivElement>(choices.length, `${categorySlug}:${templateSlug ?? serviceName}`, (nextIndex) => {
@@ -149,14 +156,22 @@ export function ServicePhotoPicker({
     carousel.goTo(selectedIndex, 'auto');
   }, [selectedIndex]);
 
+  useEffect(() => () => {
+    if (pendingPreview) URL.revokeObjectURL(pendingPreview);
+  }, [pendingPreview]);
+
   async function upload(file: File | undefined) {
     if (!file || uploading) return;
     setUploadError(null);
     setUploading(true);
     onUploadingChange?.(true);
+    const preview = URL.createObjectURL(file);
     try {
-      onPick(await uploadServicePhoto(businessId, file));
+      const uploaded = await uploadServicePhoto(businessId, file);
+      setPendingPreview(preview);
+      onPick(uploaded);
     } catch (error) {
+      URL.revokeObjectURL(preview);
       setUploadError(error instanceof Error ? error.message : 'Fotku se nepodařilo nahrát. Zkuste to znovu.');
     } finally {
       setUploading(false);
@@ -188,7 +203,7 @@ export function ServicePhotoPicker({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <span className="min-w-0 flex-1">
             <span className="block text-sm font-bold text-ink">Vlastní fotografie</span>
-            <span className="mt-0.5 block text-xs text-muted">Má vždy přednost před ilustračními fotkami. JPG, PNG nebo WebP, nejvýše 5 MB.</span>
+            <span className="mt-0.5 block text-xs text-muted">Po bezpečnostní kontrole má vždy přednost před ilustračními fotkami. JPG, PNG nebo WebP, nejvýše 5 MB.</span>
           </span>
           <label
             htmlFor={uploadId}

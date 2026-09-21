@@ -116,6 +116,7 @@ Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B). Úkoly na 
 - [x] **E-maily:** účet Resend, doména `mail.app-flek.eu` (DKIM a dva CNAME v Endoře), SMTP v Supabase Auth (13. 9.). Resend doménu ověřil (Verified).
 - [x] **`NOTIFICATION_FROM` a `VAPID_PUBLIC_KEY`** v Supabase → Edge Functions → Secrets (13. 9.). E-mailová upozornění fungují.
 - [x] **`VAPID_PRIVATE_KEY`** v Supabase → Edge Functions → Secrets (13. 9., otisk ověřený proti souboru).
+- [ ] **Zprovoznit poskytovatele automatické moderace.** Funkce `content-moderation` a `OPENAI_API_KEY` jsou v Supabase, ale skutečný požadavek na `omni-moderation-latest` vrací HTTP 429. V OpenAI projektu ověřit aktivní API projekt a jeho limity/billing, klíč preventivně otočit, nový vložit jen do Supabase secrets a potvrdit bezpečný i označený text a obrázek. Do té doby obsah bezpečně zůstává v admin frontě neveřejný.
 - [ ] **Resend klíč:** vytvořit nový API klíč (Sending access, doména `mail.app-flek.eu`), vložit ho jako `RESEND_API_KEY` do Edge Function secrets i jako heslo SMTP v Supabase Auth a smazat oba staré klíče („FLEK production“ a „FLEK production rotated“), které se objevily v záznamu Codexu.
 - [x] **VAPID klíče** uložené ve správci hesel, dočasný soubor s klíči smazaný (15. 9.).
 - [x] **Skutečné e-maily:** obnova hesla a upozornění doručené na jakub.hrncir24@gmail.com (Resend: Delivered, 13. 9.). Zbývá zkouška s rezervací kartou 4242 a push.
@@ -138,6 +139,7 @@ Texty napsal agent podle skutečného chování FLEKu (18. 9. 2026): `src/conten
   - **P2B a DSA:** podmínky pro podniky (řazení, poplatky, pozastavení s odůvodněním, ukončení 30 dní předem, změny oznámené 15 dní předem a platné pokračováním ve spolupráci), nahlášení obsahu a odůvodnění jako oddíl podmínek. Formální vnitřní odvolání (čl. 20 DSA) mikropodnik mít nemusí, podmínky proto nabízejí jen nové posouzení na e-mailu.
   - **DAC7:** registrace provozovatele a roční oznámení; podklad stáhne admin v Administraci → Metriky.
   - **Zásady ochrany osobních údajů:** právní základy, doby uchování, zpracovatelé a předávání mimo EU.
+  - **Automatická moderace a recenze:** verze zásad 1.1 popisuje anonymní ověřené recenze a odeslání veřejných textů a fotografií do OpenAI k bezpečnostní kontrole; potvrdit oprávněný zájem, dobu uchování a předávání mimo EU.
   - Po kontrole: každá změna textu zvedne verzi (viz `AGENTS.md`).
 - [ ] **Obory živnosti.** Ověřit v živnostenském rejstříku, že živnost pokrývá zprostředkování obchodu a služeb, případně obor doplnit.
 - [ ] **DAC7** (s daňovým poradcem): registrace u Specializovaného finančního úřadu a oznámení do konce ledna za předchozí rok. Podniky zadávají datum narození (OSVČ), stát a adresu sídla ve fakturačních údajích.

@@ -12,6 +12,7 @@ function business(overrides: Partial<AdminBusiness> = {}): AdminBusiness {
     category_slug: 'vlasy', phone: '+420777123456', public_email: 'studio@example.com', website: null,
     address_line: 'Sinkulova 25', city: 'Praha', district: 'Podolí', postal_code: '14000', country: 'CZ',
     logo_url: null, cover_url: null, google_place_id: null, status: 'pending', status_reason: null,
+    content_status: 'approved', pending_moderation_id: null,
     commission_rate: 0, cancellation_window_minutes: 60, latitude: 50, longitude: 14,
     owner_email: 'majitel@example.com', upcoming_offers: 3, is_demo: false,
     stripe_account_id: 'acct_1', stripe_charges_enabled: true,
@@ -58,6 +59,12 @@ describe('approvalChecklist', () => {
     const empty = business({ billing: null });
     expect(approvalBlocker(empty)).toContain('IČO');
     expect(approvalChecklist(empty).find((item) => item.key === 'ico')?.detail).toContain('Fakturační údaje');
-    expect(approvalChecklist(empty)).toHaveLength(6);
+    expect(approvalChecklist(empty)).toHaveLength(7);
+  });
+
+  it('neschválí podnik, jehož veřejný obsah ještě čeká na kontrolu', () => {
+    const pending = business({ content_status: 'pending', pending_moderation_id: 'm1' });
+    expect(approvalBlocker(pending)).toContain('neprošel kontrolou');
+    expect(approvalChecklist(pending).find((item) => item.key === 'content')?.blocking).toBe(true);
   });
 });

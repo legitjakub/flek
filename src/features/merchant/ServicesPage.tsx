@@ -10,7 +10,7 @@ import { ActivitySuggestions, ServicePhotoPicker } from './ActivityPicker';
 import { useServices } from './useBusiness';
 import type { Business, Service } from '../../types/database';
 import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
-import { isIllustrativeServiceImage, serviceIllustration } from '../../lib/serviceIllustrations';
+import { isIllustrativeServiceImage, SERVICE_PLACEHOLDER, serviceIllustration } from '../../lib/serviceIllustrations';
 
 const DURATION_PRESETS = [15, 30, 45, 60, 90, 120] as const;
 
@@ -75,8 +75,15 @@ function Services({ business }: { business: Business }) {
                   <span className="tnum mt-1 block text-sm text-muted">
                     {service.duration_minutes} min · {money(service.normal_price_cents)}
                   </span>
-                  <span className={cx('mt-2 inline-flex rounded-md px-2 py-0.5 text-xs font-bold', service.is_active ? 'bg-positive/10 text-positive' : 'bg-danger-soft text-danger')}>
-                    {service.is_active ? 'Aktivní' : 'Neaktivní'}
+                  <span className={cx(
+                    'mt-2 inline-flex rounded-md px-2 py-0.5 text-xs font-bold',
+                    service.content_status === 'pending' ? 'bg-brand-soft text-accent'
+                      : service.content_status === 'rejected' ? 'bg-danger-soft text-danger'
+                        : service.is_active ? 'bg-positive/10 text-positive' : 'bg-surface text-muted',
+                  )}>
+                    {service.content_status === 'pending' ? 'Čeká na kontrolu'
+                      : service.content_status === 'rejected' ? 'Upravte obsah'
+                        : service.is_active ? 'Aktivní' : 'Neaktivní'}
                   </span>
                 </span>
                 <span className="text-sm font-bold text-accent">Upravit</span>
@@ -173,7 +180,9 @@ function ServiceSheet({
     save.mutate();
   }
 
-  const previewImage = serviceIllustration(trimmedName, imageUrl, category);
+  const previewImage = imageUrl?.startsWith('moderation-pending://')
+    ? SERVICE_PLACEHOLDER
+    : serviceIllustration(trimmedName, imageUrl, category);
 
   return (
     <Sheet

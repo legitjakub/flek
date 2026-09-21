@@ -24,6 +24,7 @@ import { ShareOfferButton } from './ShareOfferButton';
 import { UnavailableOfferRecovery } from './UnavailableOfferRecovery';
 import { unavailableReason } from './unavailable';
 import { GooglePlaceRating } from '../ratings/GooglePlaceRating';
+import { FlekRatingSummary } from '../ratings/FlekReviews';
 import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
 import { isIllustrativeServiceImage, SERVICE_PLACEHOLDER, serviceIllustration } from '../../lib/serviceIllustrations';
 import { CapacityLabel } from '../../components/CapacityLabel';
@@ -273,6 +274,13 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
               placeId={offer.google_place_id}
               mapsUri
               withSeparator
+            />
+            {offer.rating_count > 0 ? <span aria-hidden="true">·</span> : null}
+            <FlekRatingSummary
+              businessId={offer.business_id}
+              average={offer.rating_avg}
+              count={offer.rating_count}
+              href={`/podnik/${offer.business_id}?from=${encodeURIComponent(`/nabidka/${offer.id}`)}#hodnoceni-flek`}
             />
           </p>
 

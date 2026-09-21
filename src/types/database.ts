@@ -56,6 +56,8 @@ export type Business = {
   latitude: number;
   longitude: number;
   created_at: string;
+  content_status?: 'approved' | 'pending' | 'rejected';
+  pending_moderation_id?: string | null;
 };
 
 export type Service = {
@@ -74,6 +76,8 @@ export type Service = {
   default_capacity: number | null;
   is_active: boolean;
   created_at: string;
+  content_status?: 'approved' | 'pending' | 'rejected';
+  pending_moderation_id?: string | null;
 };
 
 /** One row of `search_offers`. `server_now` is the only trusted clock. */
@@ -145,6 +149,10 @@ export type CustomerBooking = {
   cancellation_reason: string | null;
   rating: number | null;
   rated_at: string | null;
+  /** Approved anonymous copy; pending or rejected text is never returned publicly. */
+  review_body: string | null;
+  review_status: 'pending' | 'approved' | 'rejected' | null;
+  review_moderated_at: string | null;
   /** Snapshotted at booking time: a later policy change must not move the goalposts. */
   cancellation_window_minutes: number;
   payment_status: PaymentStatus | null;
@@ -450,6 +458,8 @@ export type PublicBusiness = {
   latitude: number;
   longitude: number;
   open_offers: number;
+  rating_avg: number | null;
+  rating_count: number;
 };
 
 /** business_billing_get returns `{}` before anything has been entered, so every field is optional. */
@@ -517,6 +527,41 @@ export type AdminContentReport = {
   offer_start_at: string | null;
   offer_status: string | null;
   reporter_email: string | null;
+};
+
+export type BusinessReview = {
+  review_id: string;
+  service_name: string;
+  visited_at: string;
+  rating: number;
+  comment: string | null;
+  rated_at: string;
+  verified: true;
+};
+
+export type ContentModerationStatus =
+  | 'pending'
+  | 'processing'
+  | 'manual_review'
+  | 'approved'
+  | 'rejected'
+  | 'superseded'
+  | 'failed';
+
+export type AdminContentModeration = {
+  id: string;
+  entity_type: 'service' | 'business' | 'review';
+  entity_id: string;
+  business_id: string | null;
+  business_name: string | null;
+  payload: Record<string, unknown>;
+  image_paths: Record<string, string>;
+  status: ContentModerationStatus;
+  attempts: number;
+  last_error: string | null;
+  provider_result: Record<string, unknown> | null;
+  created_at: string;
+  resolved_at: string | null;
 };
 
 export type Dac7Row = {

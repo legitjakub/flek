@@ -161,8 +161,7 @@ export function MapPage() {
           focusId={openGroup.length === 1 ? openGroup[0] : undefined}
           focusArea={phone ? { ...PHONE_FOCUS, bottom: previewHeight + 110 } : WIDE_FOCUS}
           onSelect={(id) => setOpenGroup([id])}
-          onSelectGroup={setOpenGroup}
-          ariaLabel="Mapa volných FLEKů. Fotka s cenou ukáže náhled, číslo přiblíží mapu."
+          ariaLabel="Mapa volných FLEKů. Každý špendlík s cenou otevře náhled nabídky."
         />
 
         {/* Search floats over the map. The wrapper lets taps through to the map between controls. */}

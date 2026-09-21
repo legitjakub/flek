@@ -18,7 +18,7 @@ type Notice = {
 };
 
 type Preference = {
-  event: 'requested' | 'confirmed' | 'cancelled';
+  event: 'requested' | 'confirmed' | 'cancelled' | 'review_requested';
   email: boolean;
   push: boolean;
   /** On unless switched off; messages go only to a verified number. */
@@ -212,13 +212,19 @@ export function NotificationSettings({ businessId }: { businessId?: string }) {
           <Button variant="ghost" className="mt-2" onClick={() => void query.refetch()}>Zkusit znovu</Button>
         </div>
       ) : (
-        (formal ? ['requested', 'confirmed', 'cancelled'] as const : ['confirmed', 'cancelled'] as const).map((event) => {
+        (formal ? ['requested', 'confirmed', 'cancelled'] as const : ['confirmed', 'cancelled', 'review_requested'] as const).map((event) => {
           const current = query.data?.find((preference) => preference.event === event);
+          const eventChannels: Channel[] = event === 'review_requested' ? ['push'] : channels;
           return (
             <fieldset key={event} className="mt-4 border-t border-line pt-3">
-              <legend className="font-bold text-ink">{event === 'requested' ? 'Nová žádost o rezervaci' : event === 'confirmed' ? 'Potvrzená rezervace' : 'Zrušená rezervace'}</legend>
+              <legend className="font-bold text-ink">
+                {event === 'requested' ? 'Nová žádost o rezervaci'
+                  : event === 'confirmed' ? 'Potvrzená rezervace'
+                    : event === 'cancelled' ? 'Zrušená rezervace' : 'Připomenutí hodnocení'}
+              </legend>
+              {event === 'review_requested' ? <p className="mt-1 text-xs text-muted">V aplikaci se připomenutí ukáže vždy. E-mail ani WhatsApp neposíláme.</p> : null}
               <div className="mt-1 flex flex-wrap gap-x-5">
-                {channels.map((channel) => {
+                {eventChannels.map((channel) => {
                   const locked = channel === 'email' && emailLocked;
                   return (
                     <label key={channel} className={`flex min-h-11 items-center gap-2 text-sm font-medium text-ink ${locked ? '' : 'cursor-pointer'}`}>

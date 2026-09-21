@@ -95,7 +95,7 @@ describe('legal documents', () => {
   });
 
   it('shows the version of the text itself and the effective date in Prague', () => {
-    expect(documentValues(info, 'privacy')).toMatchObject({ verze: '1.0', ucinnost: '16. 9. 2026', email: 'podpora@example.cz' });
+    expect(documentValues(info, 'privacy')).toMatchObject({ verze: '1.1', ucinnost: '16. 9. 2026', email: 'podpora@example.cz' });
   });
 });
 

@@ -169,8 +169,8 @@ export function FilterBar({
             </button>
           ))}
           {widened ? (
-            <span role="status" className={`inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-2xl bg-warning-soft px-3 py-1.5 font-bold text-warning ${floating ? 'shadow-card' : ''}`}>
-              <Info size={15} aria-hidden="true" className="shrink-0" />
+            <span role="status" className={`inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-2xl bg-brand-soft px-3 py-1.5 font-bold text-accent ring-1 ring-brand/15 ${floating ? 'shadow-card' : ''}`}>
+              <Info size={15} aria-hidden="true" className="shrink-0 text-brand" />
               <span className="min-w-0">{widened}</span>
             </span>
           ) : null}

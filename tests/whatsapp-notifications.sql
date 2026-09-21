@@ -128,6 +128,8 @@ begin
   assert pg_temp.raises(format('select public.whatsapp_start_pairing(%L, %L, %L)', venue.id, '777123456', version)) = 'WHATSAPP_UNAVAILABLE',
     'Pairing without a FLEK number';
   insert into private.settings (key, value) values ('whatsapp_display_number', '+420222333444');
+  insert into private.settings (key, value) values ('whatsapp_enabled', 'true')
+    on conflict (key) do update set value = excluded.value;
   assert pg_temp.raises(format('select public.whatsapp_start_pairing(%L, %L, %L)', venue.id, '777123456', 'outdated')) = 'CONSENT_REQUIRED',
     'Pairing without the current consent';
   assert pg_temp.raises(format('select public.whatsapp_start_pairing(%L, %L, %L)', venue.id, '12345', version)) = 'INVALID_PHONE',

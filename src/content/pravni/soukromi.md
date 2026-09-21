@@ -23,6 +23,8 @@ Správcem je **{{spravce}}**. S čímkoli ohledně osobních údajů piš na {{e
 | Analytika: hledání, zobrazené nabídky, průběh rezervace, oblíbené, sdílení; u přihlášených s ID účtu | zlepšování služby a rozšiřování nabídky | oprávněný zájem | 180 dní |
 | Pozvánky: tvůj kód, kdo koho pozval, první dokončená rezervace | program pozvánek | oprávněný zájem | do smazání účtu |
 | Nahlášení obsahu a jeho vyřízení | povinnosti podle nařízení o digitálních službách | právní povinnost | 3 roky od vyřízení |
+| Hodnocení po dokončené návštěvě: počet hvězd a nepovinný text recenze | ověřené anonymní hodnocení podniku a služby | oprávněný zájem | do smazání účtu; po smazání účtu se text a vazba na účet odstraní |
+| Obsah určený ke zveřejnění: názvy a popisy podniků a služeb, fotografie a text recenze | kontrola, aby se ve FLEKu nezobrazoval nezákonný, explicitní nebo jinak závadný obsah | oprávněný zájem | čekající podklady do rozhodnutí; výsledek kontroly a zásah administrátora po dobu provozu FLEKu |
 | Podniky: údaje o podnikateli (název nebo jméno, IČO, DIČ, sídlo, u fyzické osoby datum narození), kontaktní osoba a telefon, účet u Stripe | spolupráce, výplaty, oznamování podle DAC7 | plnění smlouvy, právní povinnost | po dobu spolupráce a 10 let kvůli daňovým předpisům |
 | Technické záznamy (IP adresa, prohlížeč, čas požadavku) u poskytovatelů hostingu | bezpečnost a řešení chyb | oprávněný zájem | podle poskytovatele, obvykle dny až týdny |
 | Záznamy o zásazích administrátorů | kontrola a doložení zásahů do účtů a nabídek | oprávněný zájem | po dobu provozu FLEKu |
@@ -45,6 +47,7 @@ Provoz nám zajišťují tito zpracovatelé:
 - Stripe Payments Europe, Ltd. (platby; pro platby a prevenci podvodů je i samostatným správcem)
 - Resend (odesílání e-mailů)
 - Meta Platforms Ireland Ltd. (WhatsApp, jen když ho používáš)
+- OpenAI Ireland Ltd. (automatická bezpečnostní kontrola textu a fotografií určených ke zveřejnění; neposíláme kontaktní, platební ani fakturační údaje)
 - komoot GmbH (vyhledávání adres)
 - OpenFreeMap a Esri (mapové podklady)
 - Unsplash (ilustrační fotografie)
@@ -70,6 +73,8 @@ Na to souhlas potřeba není. Platební stránka Stripe používá vlastní nezb
 ## 5. Automatické rozhodování
 
 Po 2 nedostaveních za 60 dní systém automaticky zablokuje další rezervace, dokud starší z nich není víc než 60 dní staré. Kdo za hodinu nechá 5 podržených termínů propadnout bez zaplacení, nemůže až hodinu rezervovat. O přezkoumání člověkem můžeš požádat na {{email}}.
+
+Texty a fotografie určené ke zveřejnění kontroluje automatický systém. Bezpečný obsah zveřejní; označený, nejasný nebo při výpadku nezkontrolovaný obsah zůstane neveřejný a posoudí ho administrátor. Proti zamítnutí můžeš požádat o lidské přezkoumání na {{email}}. Hvězdičkové hodnocení ověřené návštěvy se zobrazí hned, text recenze až po schválení.
 
 ## 6. Tvoje práva
 

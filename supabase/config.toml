@@ -447,3 +447,7 @@ verify_jwt = true
 # Zakládá šablony zpráv u Mety; jen pro adminy, kontrola je uvnitř funkce.
 [functions.whatsapp-templates-setup]
 verify_jwt = true
+
+# Volá ji jen databáze s worker secretem; ten se ověřuje uvnitř funkce.
+[functions.content-moderation]
+verify_jwt = false

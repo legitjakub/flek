@@ -10,6 +10,7 @@ import { OfferCard } from '../discovery/OfferCard';
 import { groupSlots } from '../discovery/slots';
 import { FavoriteButton } from '../favorites/FavoriteButton';
 import { GooglePlaceRating } from '../ratings/GooglePlaceRating';
+import { BusinessReviews, FlekRatingSummary } from '../ratings/FlekReviews';
 import { ProviderLine } from '../legal/ProviderLine';
 import { ReportContent } from '../legal/ReportContent';
 
@@ -107,6 +108,8 @@ export function VenuePage({ businessId }: { businessId: string }) {
           {business.district ? `, ${business.district}` : `, ${business.city}`}
         </a>
         <GooglePlaceRating businessId={business.id} placeId={business.google_place_id} withSeparator />
+        {business.rating_count > 0 ? <span aria-hidden="true">·</span> : null}
+        <FlekRatingSummary businessId={business.id} average={business.rating_avg} count={business.rating_count} />
       </p>
 
       {business.description ? (
@@ -151,6 +154,12 @@ export function VenuePage({ businessId }: { businessId: string }) {
           </div>
         ) : null}
       </section>
+
+      <BusinessReviews
+        businessId={business.id}
+        average={business.rating_avg}
+        count={business.rating_count}
+      />
 
       <div className="mt-8 border-t border-line pt-2">
         <ReportContent businessId={business.id} />

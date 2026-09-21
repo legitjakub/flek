@@ -30,7 +30,7 @@ Jeden řádek na rozhodnutí, chronologicky. Kde bylo zadání nejednoznačné, 
 - Denní doba je serverový parametr `search_offers`, ne klientský filtr. Řeže se podle pražských hodin; kdyby to dělal prohlížeč, uživatel v jiné zóně by dostal jiný „večer" a stránkování by přestalo dávat smysl.
 - Použité filtry zůstávají viditelné jako odebratelné pilulky. Tichý filtr, který uživatel nevidí, je nejrychlejší způsob, jak vypadat prázdně.
 - Objevování má rytmus: co začíná do tří hodin jde do vodorovného pásu nahoře, nejhlubší slevy do druhého, zbytek je seznam. Žádná nabídka není ve dvou sekcích zároveň.
-- Hodnocení stojí na `bookings.rating`, ne na samostatné tabulce recenzí. Hodnotit tak může jen ten, kdo má vlastní dokončenou rezervaci — omezení vynucuje datový model, ne aplikace. Průměr se počítá v dotazu; denormalizovaný čítač je jen další věc, která se může rozejít s pravdou.
+- Hodnocení stojí na dokončené rezervaci (`bookings.rating` a moderovaný `review_body`), ne na samostatné tabulce recenzí. Hodnotit tak může jen vlastník dokončené rezervace — omezení vynucuje datový model, ne aplikace. Průměr se počítá v dotazu; denormalizovaný čítač je jen další věc, která se může rozejít s pravdou.
 - Veřejná důvěryhodnost provozovny se bere z Google Places, ne z interních demo hodnocení. Ukládá se jen `google_place_id`; aktuální průměr a počet se načtou serverově bez cache a vždy se označí atribucí `Google Maps`. Staré sloupce hodnocení zůstávají kvůli kompatibilitě databáze, ale veřejné rozhraní je nepoužívá.
 - Hranice tří kusů platila pro původní interní hodnocení. Veřejné rozhraní je už nepoužívá; Google průměr vždy doprovází skutečný počet hodnocení a atribuce zdroje.
 - Sekce na objevování se musí zasloužit: až od šesti nabídek celkem a jen se dvěma a více položkami. Prázdný karusel je horší než poctivý seznam a pilot začíná s hrstkou termínů.
@@ -65,7 +65,7 @@ Jeden řádek na rozhodnutí, chronologicky. Kde bylo zadání nejednoznačné, 
 - Fotku služby vybírá partner ze seznamu činností, ne algoritmus z kategorie. Do teď `services.image_url` nenastavovala **žádná** partnerská obrazovka — sloupec existoval a `save_service` ho přijímal, ale nebylo ho čím naplnit, takže se fotka dědila podle otisku ID. Navíc tři z dvanácti ukázkových snímků byly zařazené ve špatné kategorii: jóga mohla ukazovat kosmetiku, sauna posilovnu, manikúra bazén resortu. Katalog je pojmenovaný podle toho, co na fotce **je**, ne podle kategorie, do které byla založená.
 - Několik činností v kategorii sdílí jeden snímek záměrně. Jedna pravdivá fotografie je lepší než dvě, z nichž jedna je špatně.
 - Wellness služby sdílí neutrální spa snímek, který nenaznačuje konkrétní resort ani bazén. Tím zůstává fotografie použitelná pro vířivku, páru i odpočinkovou proceduru a nepřisuzuje podniku vybavení, které nemusí mít.
-- Nahrávání vlastních fotek partnerem zamítnuto z bezpečnostních důvodů: neomoderovaný obsah ve veřejném bucketu. Politika úložiště v databázi zůstává z dřívější migrace, aplikace ji nepoužívá.
+- Vlastní fotografie partnera se nahrává jen do privátního `moderation-pending`; do veřejného bucketu ji přesune server až po schválení. Tím má vlastní fotka přednost před placeholderem bez toho, aby nezkontrolovaný obsah získal veřejnou URL.
 - Výběr se sleduje podle činnosti, ne podle fotky. Porovnávání přes `image_url` rozsvítilo všechny dlaždice, které snímek sdílejí — výběr „Dámský střih" vypadal, jako by bylo vybráno čtvero.
 - Název doplněný výběrem jde opravit dalším výběrem, název napsaný rukou ne. Partner, který se překlikne, potřebuje opravit obojí; partner, který prodává „Pánský střih s mytím", chce jen tu fotku.
 - QR kód rezervace je dostupný i po zavření potvrzovací obrazovky. Do teď existoval jen tam a pak zbyl holý šestiznakový kód k přečtení nahlas; přitom právě QR je to, co člověk u pultu ukazuje. Otevírá se v panelu, ne inline v seznamu — kodér se načítá až na vyžádání a jeden náhled na řádek by ho stáhl pro každou rezervaci.
@@ -263,3 +263,18 @@ Jakub ukázal aplikaci s mapou, kde má každý špendlík značku aplikace, a s
 - Pořadí v kartě „Tvůj termín“: kdy → kolik → jak naspěch → jiné časy. Seznam časů byl nad cenou, takže cena a úspora vybraného termínu začínaly na mobilu pod ohybem.
 - Bloky pod kartou („O službě“, „Kde to je“, „Zrušení zdarma“) jsou karty s barevnou ikonou. Holé nadpisy nad vlasovou linkou na šedé ploše nedávaly oku kde skončil jeden předmět a začal druhý.
 - Spodní lišta na mobilu nese jen cenu a tlačítko. Úsporu říká karta nad ní; v liště byla potřetí v jednom výřezu obrazovky a stála 20 px výšky tam, kde jich je nejmíň.
+
+## Mapa bez shluků a kompaktní náhled — 21. 9. 2026
+
+- Oddálená mapa nezamění nabídky za čtverec s číslem. Každá provozovna zůstane samostatným FLEK špendlíkem; blízké body se deterministicky rozestoupí kolem skutečné polohy. Jen termíny na přesně stejné adrese sdílejí bod a malý počet.
+- Náhled na telefonu má pevnou výšku 136 px a ukazuje jen fotografii, službu, podnik, nejbližší čas a konečnou cenu. Celá karta vede na detail. Toto rozhodnutí nahrazuje plnou rezervační kartu z 20. 9.; ta zakrývala příliš velkou část mapy a opakovala údaje z detailu.
+- Krátký vodorovný pohyb nad 32 px posune carousel přesně o jednu službu. CSS snap a šipky klávesnice zůstávají jako stejné ovládání pro dotyk, myš i klávesnici.
+
+## Ověřené recenze a fail-closed moderace — 21. 9. 2026
+
+- Hvězdičky z dokončené rezervace se zveřejní hned a průměr se dál počítá z rezervací. Nepovinný komentář se veřejně ukáže až po schválení a nikdy s identitou zákazníka; veřejný záznam nese jen službu, datum a „Ověřená návštěva“.
+- Žádost o hodnocení je jedna idempotentní událost `review_requested`: vždy v aplikaci, push jen podle preference, bez e-mailu a WhatsAppu. Upozornění vede přímo na formulář konkrétní rezervace.
+- Názvy a popisy podniků a služeb, jejich vlastní fotografie a text recenze jsou fail-closed. Bezpečný výsledek se aplikuje serverově; označený, nejasný nebo nedostupný zůstane neveřejný v admin frontě. Poslední schválená verze se při čekání nemění.
+- Automatická kontrola používá `omni-moderation-latest`; OpenAI dostane jen obsah určený ke zveřejnění, ne adresu, kontakt, cenu ani fakturační údaje. Adminské rozhodnutí se auditovaně aplikuje nebo zamítne.
+- `private.settings` a `private.stripe_events` mají RLS bez klientských politik a odebrané klientské granty. Serverové funkce s pevnou autorizací zůstávají jedinou cestou.
+- WhatsApp má samostatný serverový příznak dostupnosti. Ovládání se nezobrazí jen proto, že v prostředí existuje část klíčů; aktivuje se až po webhooku, schválených šablonách a úspěšné testovací zprávě.

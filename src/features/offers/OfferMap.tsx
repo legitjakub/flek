@@ -1,8 +1,7 @@
 // Side effect only, and it must run before any map is constructed: it tells MapLibre where
 // its tile-decoding worker lives. Without it vector tiles are never requested at all.
 import './mapWorker';
-import { clusterPins } from '../discovery/mapClusters';
-import { money } from '../../lib/format';
+import { spreadPins } from '../discovery/mapClusters';
 import { categoryGlyph } from '../../lib/categoryGlyphs';
 import { useEffect, useRef } from 'react';
 import { LngLatBounds, Map as MapLibreMap, Marker, NavigationControl, type MapOptions, type StyleSpecification } from 'maplibre-gl';
@@ -73,9 +72,6 @@ export type MapMarker = {
   category?: string | null;
 };
 
-/** Beyond this zoom a cluster stops zooming in and hands its appointments to the page instead. */
-const CLUSTER_MAX_ZOOM = 17;
-
 /**
  * OpenMapTiles ships every name in `name` (local/English) plus translations in `name:xx`.
  * Liberty renders `name`, so Prague showed up as "Prague" and Malá Strana as "Lesser Town"
@@ -101,7 +97,6 @@ export function MapCanvas({
   zoom = 13,
   markers,
   onSelect,
-  onSelectGroup,
   selectedId,
   className,
   interactive = true,
@@ -115,7 +110,6 @@ export function MapCanvas({
   zoom?: number;
   markers: MapMarker[];
   onSelect?: (id: string) => void;
-  onSelectGroup?: (ids: string[]) => void;
   selectedId?: string;
   className?: string;
   interactive?: boolean;
@@ -131,9 +125,8 @@ export function MapCanvas({
 }) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
-  const groupRef = useRef(onSelectGroup);
   const selectedRef = useRef(selectedId);
-  useEffect(() => { groupRef.current = onSelectGroup; selectedRef.current = selectedId; }, [onSelectGroup, selectedId]);
+  useEffect(() => { selectedRef.current = selectedId; }, [selectedId]);
   const framePaddingRef = useRef(framePadding);
   useEffect(() => { framePaddingRef.current = framePadding; }, [framePadding]);
   const selectRef = useRef(onSelect);
@@ -243,66 +236,47 @@ export function MapCanvas({
         // A glyph tile over a price ticket: as wide as the ticket, never narrower than the tile.
         return { x: point.x, y: point.y, width: Math.max(56, marker.label.length * 7.5 + 24), indexes: [index] };
       });
-      const clusters = groupRef.current ? clusterPins(projected) : projected;
-      drawn.current = clusters.map((cluster) => {
-        const entries = cluster.indexes.map((index) => markers[index]);
-        const ids = entries.map((entry) => entry.id);
-        const multiple = entries.length > 1;
-        const count = entries.reduce((sum, entry) => sum + (entry.count ?? 1), 0);
-        const label = multiple ? `od ${money(Math.min(...entries.map((entry) => entry.price ?? 0)))}` : entries[0].label;
+      const positions = selectable ? spreadPins(projected) : projected.map((point) => ({ ...point, offsetX: 0, offsetY: 0 }));
+      drawn.current = positions.map((position) => {
+        const entry = markers[position.indexes[0]];
+        const ids = [entry.id];
+        const count = entry.count ?? 1;
+        const label = entry.label;
         const el = document.createElement(selectable ? 'button' : 'span');
         if (el instanceof HTMLButtonElement) el.type = 'button';
         el.dataset.mapIds = JSON.stringify(ids);
         const price = document.createElement('span');
         price.textContent = label;
 
-        if (multiple) {
-          // Several places overlap at this zoom: a count to zoom into, with the lowest price kept.
-          el.className = 'map-cluster';
-          el.setAttribute('aria-label', `${count} ${count < 5 ? 'termíny' : 'termínů'} v této oblasti, ${label}. Přiblížit.`);
-          const bubble = document.createElement('span');
-          bubble.className = 'map-cluster-count';
-          bubble.textContent = String(count);
-          bubble.setAttribute('aria-hidden', 'true');
-          price.className = 'map-cluster-price';
-          price.setAttribute('aria-hidden', 'true');
-          el.append(bubble, price);
-        } else {
-          el.className = 'map-pin';
-          el.setAttribute('aria-label', entries[0].description ?? label);
-          const glyph = categoryGlyph(entries[0].category);
-          const tile = document.createElement('span');
-          tile.className = `map-pin-tile map-pin-tile--${glyph.modifier}`;
-          tile.setAttribute('aria-hidden', 'true');
-          // Constant markup from categoryGlyphs.ts, never anything that came from the database.
-          tile.innerHTML = glyph.markup;
-          price.className = 'map-pin-price';
-          price.setAttribute('aria-hidden', 'true');
-          el.append(tile, price);
-          if (count > 1) {
-            const badge = document.createElement('span');
-            badge.className = 'map-pin-count';
-            badge.textContent = String(count);
-            badge.setAttribute('aria-hidden', 'true');
-            el.append(badge);
-          }
+        el.className = 'map-pin';
+        if (position.offsetX || position.offsetY) el.classList.add('is-displaced');
+        el.setAttribute('aria-label', entry.description ?? label);
+        const glyph = categoryGlyph(entry.category);
+        const tile = document.createElement('span');
+        tile.className = `map-pin-tile map-pin-tile--${glyph.modifier}`;
+        tile.setAttribute('aria-hidden', 'true');
+        // Constant markup from categoryGlyphs.ts, never anything that came from the database.
+        tile.innerHTML = glyph.markup;
+        price.className = 'map-pin-price';
+        price.setAttribute('aria-hidden', 'true');
+        el.append(tile, price);
+        if (count > 1) {
+          const badge = document.createElement('span');
+          badge.className = 'map-pin-count';
+          badge.textContent = String(count);
+          badge.setAttribute('aria-hidden', 'true');
+          el.append(badge);
         }
 
         const active = ids.includes(selectedRef.current ?? '');
         el.classList.toggle('is-selected', active);
-        if (selectable && !multiple) el.setAttribute('aria-pressed', String(active));
+        if (selectable) el.setAttribute('aria-pressed', String(active));
         if (selectable) {
-          el.addEventListener('click', () => {
-            if (!multiple) return selectRef.current?.(ids[0]);
-            // Zoom into the cluster until its places separate. Where they cannot — two doors
-            // in one building — the page shows all of their appointments instead.
-            if (instance.getZoom() >= CLUSTER_MAX_ZOOM - 0.25) return groupRef.current?.(ids);
-            const bounds = new LngLatBounds();
-            entries.forEach((entry) => bounds.extend([entry.lng, entry.lat]));
-            instance.fitBounds(bounds, { padding: framePaddingRef.current, maxZoom: CLUSTER_MAX_ZOOM, duration: cameraDuration() });
-          });
+          el.addEventListener('click', () => selectRef.current?.(entry.id));
         }
-        const pin = new Marker({ element: el }).setLngLat(instance.unproject([cluster.x, cluster.y])).addTo(instance);
+        const pin = new Marker({ element: el, offset: [position.offsetX, position.offsetY] })
+          .setLngLat([entry.lng, entry.lat])
+          .addTo(instance);
         if (focused === el.dataset.mapIds) el.focus({ preventScroll: true });
         return pin;
       });

@@ -2,7 +2,7 @@ import { FunctionsHttpError } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { result } from './errors';
 import { noteServerNow } from './clock';
-import type { AdminBooking, AdminBusiness, AdminMetrics, AdminUser, Business, BookingStatus, Category, ConfirmationDecision, ConfirmationQuote, CustomerBooking, CustomerMetrics, FavoriteBusiness, FavoriteOffer, MerchantBooking, MerchantBookingDetail, MerchantMetrics, MerchantOffer, OfferDetail, Payment, Profile, PublicBusiness, ReferralClaim, ReferralStats, PaymentsMode, PaymentState, BusinessPaymentsStatus, SearchRow, ServicePhoto, Service, SortKey, BusinessBilling, AdminAuditEntry, WhatsAppPairing, WhatsAppSettings, LegalInfo, BusinessProvider, ContentReportReason, AdminContentReport, Dac7Row, AresLookup } from '../types/database';
+import type { AdminBooking, AdminBusiness, AdminMetrics, AdminUser, Business, BookingStatus, Category, ConfirmationDecision, ConfirmationQuote, CustomerBooking, CustomerMetrics, FavoriteBusiness, FavoriteOffer, MerchantBooking, MerchantBookingDetail, MerchantMetrics, MerchantOffer, OfferDetail, Payment, Profile, PublicBusiness, ReferralClaim, ReferralStats, PaymentsMode, PaymentState, BusinessPaymentsStatus, SearchRow, ServicePhoto, Service, SortKey, BusinessBilling, AdminAuditEntry, WhatsAppPairing, WhatsAppSettings, LegalInfo, BusinessProvider, ContentReportReason, AdminContentReport, Dac7Row, AresLookup, BusinessReview, AdminContentModeration, ContentModerationStatus } from '../types/database';
 
 /** Records the server clock carried by any payload that exposes it. */
 function withClock<T extends { server_now?: string }>(rows: T[]): T[] {
@@ -226,6 +226,22 @@ export async function rateBooking(bookingId: string, rating: number): Promise<vo
   await result(supabase.rpc('rate_booking', { p_booking_id: bookingId, p_rating: rating }));
 }
 
+export async function submitBookingReview(bookingId: string, rating: number, body: string): Promise<{ rating: number; review_status: 'pending' | null }> {
+  return await result(supabase.rpc('submit_booking_review', {
+    p_booking_id: bookingId,
+    p_rating: rating,
+    p_body: body.trim() || null,
+  }));
+}
+
+export async function businessReviews(businessId: string, limit = 10): Promise<BusinessReview[]> {
+  return (await result<BusinessReview[]>(supabase.rpc('business_reviews', {
+    p_business_id: businessId,
+    p_limit: limit,
+    p_before: null,
+  }))) ?? [];
+}
+
 export async function myBookings(): Promise<CustomerBooking[]> {
   return withClock((await result<CustomerBooking[]>(supabase.rpc('my_bookings'))) ?? []);
 }
@@ -270,7 +286,7 @@ const SERVICE_PHOTO_TYPES: Record<string, string> = {
   'image/webp': 'webp',
 };
 
-/** Uploads a merchant's real service photo into the business-owned part of public Storage. */
+/** Uploads a merchant photo privately. It becomes public only after moderation approves it. */
 export async function uploadServicePhoto(businessId: string, file: File): Promise<string> {
   const extension = SERVICE_PHOTO_TYPES[file.type];
   if (!extension) throw new Error('Vyberte fotografii ve formátu JPG, PNG nebo WebP.');
@@ -280,14 +296,14 @@ export async function uploadServicePhoto(businessId: string, file: File): Promis
   const token = globalThis.crypto?.randomUUID?.()
     ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const path = `${businessId}/services/${token}.${extension}`;
-  const { error } = await supabase.storage.from('covers').upload(path, file, {
+  const { error } = await supabase.storage.from('moderation-pending').upload(path, file, {
     contentType: file.type,
     cacheControl: '31536000',
     upsert: false,
   });
   if (error) throw new Error('Fotku se nepodařilo nahrát. Zkontrolujte připojení a zkuste to znovu.');
 
-  return supabase.storage.from('covers').getPublicUrl(path).data.publicUrl;
+  return `moderation-pending://${path}`;
 }
 
 /**
@@ -509,6 +525,28 @@ export async function adminContentReports(status: 'open' | 'actioned' | 'dismiss
 
 export async function adminResolveContentReport(reportId: string, status: 'actioned' | 'dismissed', resolution: string): Promise<void> {
   await result(supabase.rpc('admin_resolve_content_report', { p_report_id: reportId, p_status: status, p_resolution: resolution }));
+}
+
+export async function adminContentModeration(status: ContentModerationStatus | null): Promise<AdminContentModeration[]> {
+  return (await result<AdminContentModeration[]>(supabase.rpc('admin_content_moderation', { p_status: status }))) ?? [];
+}
+
+export async function adminResolveContentModeration(id: string, decision: 'approve' | 'reject', note: string): Promise<void> {
+  await result(supabase.rpc('admin_resolve_content_moderation', {
+    p_id: id,
+    p_decision: decision,
+    p_note: note.trim() || null,
+  }));
+}
+
+export async function moderationImageUrl(path: string): Promise<string> {
+  const { data, error } = await supabase.storage.from('moderation-pending').createSignedUrl(path, 300);
+  if (error) throw error;
+  return data.signedUrl;
+}
+
+export async function adminSetWhatsAppEnabled(enabled: boolean): Promise<void> {
+  await result(supabase.rpc('admin_set_whatsapp_enabled', { p_enabled: enabled }));
 }
 
 export async function adminDac7Report(year: number): Promise<Dac7Row[]> {

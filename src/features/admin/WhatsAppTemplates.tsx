@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { WhatsAppNotConfigured, whatsappTemplatesSetup, type WhatsAppTemplateRow, type WhatsAppTemplateSetup } from '../../lib/api';
+import { adminSetWhatsAppEnabled, WhatsAppNotConfigured, whatsappTemplatesSetup, type WhatsAppTemplateRow, type WhatsAppTemplateSetup } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { Banner, Button } from '../../components/ui';
 
@@ -16,7 +16,9 @@ export function WhatsAppTemplates() {
     mutationFn: (dryRun: boolean) => whatsappTemplatesSetup(dryRun),
     onSuccess: setDone,
   });
+  const activate = useMutation({ mutationFn: () => adminSetWhatsAppEnabled(true) });
   const missing = run.error instanceof WhatsAppNotConfigured ? run.error.missing : null;
+  const allApproved = Boolean(done?.templates.length) && done!.templates.every((row) => row.status === 'APPROVED');
 
   return (
     <section className="mt-8 flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-card" aria-labelledby="whatsapp-sablony">
@@ -61,6 +63,18 @@ export function WhatsAppTemplates() {
                 : 'Nic nového k založení.'}
             {' '}Jazyk šablon: {done.language}.
           </p>
+          {allApproved ? (
+            <div className="rounded-xl border border-line bg-surface p-3">
+              <p className="text-sm text-muted">
+                Zpřístupněte kanál až po ověření callbacku <code>messages</code>, propojení čísla a úspěšné testovací zprávě. Do té doby ho zákazník ani podnik neuvidí.
+              </p>
+              <Button className="mt-3" loading={activate.isPending} onClick={() => activate.mutate()}>
+                Zpřístupnit WhatsApp
+              </Button>
+              {activate.isSuccess ? <p role="status" className="mt-2 text-sm font-bold text-positive">WhatsApp je v aplikaci dostupný.</p> : null}
+              {activate.isError ? <div className="mt-2"><Banner tone="warning">{errorMessage(activate.error, 'merchant')}</Banner></div> : null}
+            </div>
+          ) : null}
         </>
       ) : null}
     </section>

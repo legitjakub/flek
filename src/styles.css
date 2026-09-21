@@ -107,8 +107,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .map-pin.is-selected,
-  .map-pin:hover,
-  .map-cluster:hover {
+  .map-pin:hover {
     transform: none;
   }
 
@@ -181,10 +180,8 @@
     backdrop-filter: blur(14px) saturate(150%);
   }
 
-  /* A pin is the service itself: the icon of its trade in a compact FLEK tile over an ink price tab.
-     Several places that overlap become one ink count with a bright brand ring and the lowest price. */
-  .map-pin,
-  .map-cluster {
+  /* A pin is the service itself: the icon of its trade in a compact FLEK tile over an ink price tab. */
+  .map-pin {
     position: relative;
     display: inline-flex;
     flex-direction: column;
@@ -201,8 +198,7 @@
     cursor: pointer;
     transition: transform 150ms;
   }
-  .map-pin:hover,
-  .map-cluster:hover { transform: translateY(-2px); }
+  .map-pin:hover { transform: translateY(-2px); }
   .map-pin-tile {
     display: grid;
     place-items: center;
@@ -231,8 +227,7 @@
   .map-pin-shape { fill: var(--color-brand-bright); }
   .map-pin-face { fill: var(--color-card); }
   .map-pin-hands { fill: none; stroke: var(--color-ink); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-  .map-pin-price,
-  .map-cluster-price {
+  .map-pin-price {
     position: relative;
     display: inline-flex;
     align-items: center;
@@ -265,25 +260,6 @@
   .map-pin.is-selected { z-index: 2; transform: translateY(-3px) scale(1.12); }
   .map-pin.is-selected .map-pin-tile { border-color: var(--color-brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand) 35%, transparent), 0 6px 14px -3px rgb(16 18 31 / 0.4); }
   .map-pin.is-selected .map-pin-price { background: var(--color-brand); color: var(--color-brand-ink); }
-
-  .map-cluster-count {
-    display: grid;
-    place-items: center;
-    width: 46px;
-    height: 46px;
-    border-radius: 15px;
-    background: var(--color-ink);
-    color: var(--color-card);
-    font-size: 1rem;
-    box-shadow: 0 0 0 5px var(--color-brand-bright), 0 0 0 7px rgb(255 255 255 / 0.72), 0 6px 14px -4px rgb(16 18 31 / 0.4);
-  }
-  .map-cluster-price {
-    margin-top: 2px;
-    background: var(--color-card);
-    color: var(--color-ink);
-    box-shadow: 0 3px 8px -2px rgb(16 18 31 / 0.3);
-  }
-  .map-cluster.is-selected .map-cluster-count { background: var(--color-brand); color: var(--color-brand-ink); }
 
   /* Horizontal filter rails scroll, but the scrollbar itself is visual noise. */
   .rail {

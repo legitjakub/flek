@@ -36,6 +36,17 @@ export function approvalChecklist(business: AdminBusiness): CheckItem[] {
 
   return [
     {
+      key: 'content',
+      label: 'Veřejný obsah',
+      ok: business.content_status === 'approved',
+      blocking: true,
+      detail: business.content_status === 'pending'
+        ? 'Text nebo fotografie čekají na bezpečnostní kontrolu v Nahlášení → Ke kontrole.'
+        : business.content_status === 'rejected'
+          ? 'Obsah byl zamítnutý; podnik musí poslat upravenou verzi.'
+          : 'Text a fotografie prošly kontrolou.',
+    },
+    {
       key: 'ico',
       label: 'Kdo službu poskytuje',
       // Ukázkový podnik smí jít ven bez IČO, u skutečného to server odmítne.
@@ -103,5 +114,7 @@ export function approvalChecklist(business: AdminBusiness): CheckItem[] {
 export function approvalBlocker(business: AdminBusiness): string | null {
   const blocked = approvalChecklist(business).find((item) => item.blocking && !item.ok);
   if (!blocked) return null;
-  return blocked.key === 'ico' ? 'chybí IČO' : `chybí ${blocked.label.toLocaleLowerCase('cs-CZ')}`;
+  if (blocked.key === 'ico') return 'chybí IČO';
+  if (blocked.key === 'content') return 'veřejný obsah ještě neprošel kontrolou';
+  return `chybí ${blocked.label.toLocaleLowerCase('cs-CZ')}`;
 }

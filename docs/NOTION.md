@@ -1,6 +1,6 @@
 # FLEK — přehled projektu
 
-> Aktualizováno 20. 9. 2026. Zdroj pravdy je repozitář (`docs/NOTION.md`). Stránku aktualizuje Claude na požádání; ruční úpravy tady se při další aktualizaci přepíšou.
+> Aktualizováno 21. 9. 2026. Zdroj pravdy je repozitář (`docs/NOTION.md`). Stránku aktualizuje agent na požádání; ruční úpravy tady se při další aktualizaci přepíšou.
 
 ## Ve zkratce
 
@@ -11,10 +11,11 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 | Fáze | Fáze 1 — demo pilot (běží veřejně, platby přes Stripe v testovacím režimu) |
 | Web | https://www.app-flek.eu (původní https://flek-nine.vercel.app funguje dál) |
 | Kód | https://github.com/legitjakub/flek (větev `main`) |
-| Poslední nasazení | web, databáze i Edge Functions 18. 9. 2026 (web zase nasazuje Vercel sám, uspaná databáze je od projektu odpojená); běžně se nasazuje vždy poslední commit ve větvi `main` |
-| Testy | unit testy a build v CI při každém pushi, akceptační kontroly proti hostované databázi (18. 9.: 106/106 s potvrzováním; 15. 9.: 101/101 bez potvrzování), SQL testy potvrzování rezervací, WhatsAppu a právního minima |
+| Poslední nasazení | databáze a `content-moderation` 21. 9. 2026; web nasazuje Vercel automaticky z posledního commitu ve větvi `main` |
+| Testy | 152 unit testů a build, SQL testy potvrzování, WhatsAppu, právního minima a nově ověřených recenzí/moderace; změny v hostované DB se při SQL testech celé vracejí rollbackem |
 | Potvrzování rezervací podnikem | **zapnuté pro všechny podniky** od 15. 9. 15:54 (předtím demo: akceptace 106/106 a průchod se skutečnými testovacími platbami) |
-| WhatsApp | pro podniky i zákazníky, výchozí zapnutý a vypínatelný v nastavení upozornění, ověření čísla jedním klepnutím; u Meta je aplikace FLEK s odsouhlasenými podmínkami a testovacím číslem (18. 9.), chybí webhook a klíče v Supabase (úkol pro Jakuba níže); pět šablon u Mety založí po vložení tokenu admin funkce `whatsapp-templates-setup` |
+| WhatsApp | backend, párování, fronta, webhook a šablony v kódu hotové; kanál je serverově vypnutý a v UI skrytý, dokud nebudou úplné Meta secrets, webhook, schválené šablony, zobrazované číslo a úspěšná testovací zpráva |
+| Recenze a moderace | ověřené anonymní hvězdičky a komentáře po dokončené rezervaci; komentáře, vlastní veřejné texty a fotografie čekají na kontrolu. Funkce je nasazená, ale OpenAI 21. 9. vrací HTTP 429, takže nové podklady zatím bezpečně zůstávají neveřejné v admin frontě |
 | Právní texty | **zásady ochrany osobních údajů jsou od 20. 9. zveřejněné** (správce Jakub Hrnčíř jako fyzická osoba, kontakt jakub@app-flek.eu); obchodní podmínky pro zákazníky i pro podniky ve verzi 1.0 čekají na IČO. Všechny texty před ostrým provozem zkontroluje právník |
 | Přihlášení | e-mail a heslo; **Google od 20. 9. funguje** (v Google Cloud zatím režim Testing, přihlásí se jen účty v seznamu test users); Apple čeká na placené členství v Apple Developer Program |
 | Data v produkci (13. 9.) | 18 schválených podniků, 330 nabídek, 321 rezervací, 16 účtů (12 demo, 4 ostatní), od 13. 9. platby jen přes Stripe (test), 16 demo podniků s testovacím Stripe účtem |
@@ -30,6 +31,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
   1. V resend.com otevři API keys → Create API key. Název „FLEK“, oprávnění Sending access, doména `mail.app-flek.eu`.
   2. Nový klíč vlož v Supabase na dvě místa: Edge Functions → Secrets jako `RESEND_API_KEY` a Authentication → Emails → SMTP Settings → Password.
   3. Potom v Resendu smaž oba staré klíče („FLEK production“ a „FLEK production rotated“). Objevily se v záznamu Codexu.
+- [ ] **Aktivovat a otočit klíč pro automatickou moderaci.** V OpenAI projektu ověř limity/billing pro API; nasazený požadavek na bezplatný Moderation endpoint vrací HTTP 429. Vytvoř nový omezený klíč, vlož ho jako `OPENAI_API_KEY` pouze do Supabase Edge Functions secrets a starý smaž. Potom agent provede bezpečný a závadný test. Bez toho se nic závadného nezveřejní, ale bezpečný nový obsah čeká na ruční kontrolu.
 - [x] **Vyzkoušet e-maily.** Claude 13. 9. poslal na jakub.hrncir24@gmail.com „Obnova hesla — FLEK“ a „Zkušební upozornění — FLEK“, Resend oba hlásí Delivered. Zkontroluj, že nepadly do spamu. Odkaz z obnovy hesla použít nemusíš.
 - [ ] **Vyzkoušet platbu a upozornění.**
   1. Rezervuj FLEK u demo podniku a zaplať testovací kartou 4242 4242 4242 4242 (libovolné budoucí datum a CVC).
@@ -126,6 +128,10 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 - [x] Karusel „Mohlo by se ti líbit“ na detailu nabídky a lepší obrázek pro službu bez fotky (15. 9.)
 - [x] Vyměnit staré obrázky u aktivních demo služeb za knihovnu podle konkrétní aktivity a rozšířit demo provozovny o 24 testovacích služeb (20. 9.)
 - [x] Umožnit podniku nahrát vlastní fotografii služby; vlastní fotografie má všude přednost a ilustrační katalog slouží jen jako placeholder (20. 9.)
+- [x] Ověřené anonymní recenze po dokončené rezervaci, jediné upozornění v aplikaci/push a souhrn na podniku i detailu (21. 9.)
+- [x] Fail-closed fronta pro názvy, popisy, vlastní fotografie a text recenze; privátní upload, admin schválení/zamítnutí s auditem a zásady 1.1 (21. 9.)
+- [x] Mapa bez číselných čtvercových shluků; skutečné špendlíky, kompaktní 136px náhled a carousel po jedné službě (21. 9.)
+- [ ] Automatická moderace na skutečném bezpečném i závadném obsahu (čeká na vyřešení HTTP 429 v OpenAI projektu)
 - [x] Registrace existujícího e-mailu nabídne přihlášení nebo obnovu hesla místo „Poslali jsme odkaz“ (15. 9.)
 - [x] Platby přes Stripe Connect: Checkout, poplatek FLEKu jako application fee, výplaty a KYC podniků přes Stripe, ověřený webhook, vratky přes refund API (13. 9., testovací režim)
 - [x] Odebrat demo platby (`start_payment` jen Stripe, `demo_confirm_payment` zrušená) (13. 9.)
@@ -228,7 +234,8 @@ Schvaluje provozovny (skutečný podnik jen s IČO), kontroluje nabídky a rezer
 | Realtime upozornění | Supabase Realtime | záložně se aplikace ptá každých 15 s |
 | Pravidelná údržba | Supabase `pg_cron`, job `flek-maintenance` | každých 15 min dokončí rezervace 24 h po konci |
 | Potvrzování rezervací | Edge Function `booking-confirmation`, cron `flek-confirmation-expiry` (každých 30 s) | strhne platbu po potvrzení nebo uvolní autorizaci, vrací místa po vypršení; přepínač `manual_confirmation_enabled` v `private.settings` (od 15. 9. `true`) |
-| WhatsApp | Meta WhatsApp Cloud API, Edge Functions `whatsapp-webhook` (odesílá `notification-delivery`) a `whatsapp-templates-setup` (jen admin: založí u Mety pět šablon), cron `flek-whatsapp-events-cleanup` | podniky i zákazníci, pět šablon; u Meta aplikace FLEK a testovací číslo, chybí webhook a klíče (šablony založí funkce); webhook `https://yupkrntknbkvmlajwlph.supabase.co/functions/v1/whatsapp-webhook` |
+| WhatsApp | Meta WhatsApp Cloud API, Edge Functions `whatsapp-webhook` (odesílá `notification-delivery`) a `whatsapp-templates-setup` (jen admin: založí u Mety pět šablon), cron `flek-whatsapp-events-cleanup` | backend je hotový, `whatsapp_enabled=false`; chybí úplné Meta secrets, webhook, schválení šablon, zobrazované číslo a skutečný test. Do té doby je kanál v UI skrytý |
+| Moderace veřejného obsahu | privátní bucket `moderation-pending`, `private.content_moderation`, Edge Function `content-moderation`, OpenAI `omni-moderation-latest` | fail-closed texty a fotografie služeb/podniků a text recenze; admin fronta v Nahlášení. Provider 21. 9. vrací HTTP 429, bezpečný obsah zatím čeká na ruční kontrolu |
 | Obnova demo nabídek | `pg_cron`, job `flek-demo-refresh` (každé ráno) | doplní demo FLEKy na 3 dny dopředu, tři termíny na službu a den (od 20. 9.); před ostrým provozem vypnout |
 | Mazání staré analytiky | `pg_cron`, job `flek-analytics-retention` (každé ráno) | smaže události starší 180 dní |
 | Kontrola kódu | GitHub Actions (`.github/workflows/ci.yml`) | build, unit testy a audit závislostí při každém pushi; secret scanning a Dependabot |
@@ -248,7 +255,7 @@ Schvaluje provozovny (skutečný podnik jen s IČO), kontroluje nabídky a rezer
 | Mazání starých dat | `pg_cron`, job `flek-retention` (každou noc ve 3:40) | doručování a zprávy WhatsApp po 90 dnech, upozornění po 12 měsících, vyřízená nahlášení po 3 letech, záznamy cronu po 14 dnech |
 | Přihlášení přes Google a Apple | Supabase Auth → Sign In / Providers | Google zapnutý 20. 9. (klient v Google Cloud, Redirect URLs `https://www.app-flek.eu/**`), Apple zatím ne. Stav vypíše `npm run check:oauth` |
 | Ověření IČO | Edge Function `ares-lookup` nad veřejným API ARES | název a sídlo podniku z registru, bez klíče |
-| Fotky služeb | vlastní snímky ve Storage `covers/{business_id}/services`, fallback v `public/images/activities` (74 originálů 1254 px, deriváty 800/176 px) a `service_photos` | podnik nahraje JPG/PNG/WebP do 5 MB; vlastní fotka má všude přednost a není označená jako ilustrační, dvě ilustrační varianty pro všech 37 aktivit jsou jen placeholder |
+| Fotky služeb | vlastní snímky nejdřív v privátním `moderation-pending`, po schválení ve `covers/{business_id}/moderated`; fallback v `public/images/activities` (74 originálů 1254 px, deriváty 800/176 px) a `service_photos` | podnik nahraje JPG/PNG/WebP do 5 MB; schválená vlastní fotka má všude přednost, dvě ilustrační varianty pro 37 aktivit jsou jen placeholder |
 | Kód | GitHub `legitjakub/flek` | — |
 | Instalace na telefon | PWA (`public/sw.js`, manifest) | cachuje jen skořápku aplikace, nabídky nikdy |
 | Notion | stránka „FLEK — přehled projektu“ | kopie `docs/NOTION.md` |
@@ -267,6 +274,7 @@ React 19 + TypeScript + Vite, Tailwind v4, TanStack Query, React Hook Form + Zod
 | `VITE_NOTIFICATIONS_ENABLED` | Vercel | `true` zapne zvonek a nastavení upozornění |
 | `VITE_VAPID_PUBLIC_KEY` | Vercel | veřejný klíč pro Web Push |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Supabase secrets | platby přes Stripe |
+| `OPENAI_API_KEY` | Supabase Edge Functions secrets | automatická bezpečnostní kontrola veřejných textů a fotografií; nikdy nepatří do klienta ani repozitáře |
 | `RESEND_API_KEY`, `NOTIFICATION_FROM` | Supabase secrets | e-mailová upozornění (odesílatel `FLEK <rezervace@mail.app-flek.eu>`) |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | Supabase secrets | odesílání Web Push |
 | `GOOGLE_MAPS_API_KEY` | Supabase secrets | zatím nenastaveno, pro Google hodnocení |
@@ -319,6 +327,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 21. 9. 2026 | Mapa ukazuje skutečné FLEK špendlíky místo číselných shluků; mobilní náhled má 136 px a carousel se posouvá po jedné službě. Přibyly ověřené anonymní recenze, upozornění po dokončení, privátní fail-closed moderace textů a fotografií, admin fronta s auditem, RLS na citlivých privátních tabulkách a bezpečný příznak dostupnosti WhatsAppu. Databáze i funkce jsou nasazené; OpenAI moderace zatím vrací HTTP 429 a WhatsApp čeká na dokončení Meta. |
 | 21. 9. 2026 | Detail nabídky na mobilu: odznak slevy a „Začíná za…“ na fotce, den termínu v barvě značky, cena a úspora nad seznamem časů, hodina vlevo a cena vpravo u každého času, bloky pod kartou jako karty s barevnou ikonou |
 | 20. 9. 2026 | Podnik může u služby nahrát vlastní fotografii; ta má před ilustračním katalogem přednost na kartách, mapě, detailu i v partnerské části a nenese označení „ilustrační foto“. |
 | 20. 9. 2026 | Zásady ochrany osobních údajů jsou v aplikaci zveřejněné na Jakuba jako fyzickou osobu; obchodní podmínky čekají na IČO. |

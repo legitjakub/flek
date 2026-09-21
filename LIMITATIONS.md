@@ -80,11 +80,11 @@ Více provozoven na účet je podporováno přepínačem v partnerské části. 
 - Karta ve feedu a na mapě ukáže jen časy, které vrátilo aktuální hledání: s filtrem „Dnes“ nebo „Do 2 h“ chybí časy z dalších dnů. Výběr času na detailu bere všechny volné časy služby u podniku.
 - Seskupuje se podle služby, takže dvě služby se stejným názvem a jinou délkou (třeba masáž 30 a 60 minut) jsou dvě karty a na detailu si mezi nimi vybrat nejde.
 - „Mohlo by se ti líbit“ není personalizované: jiné služby podniku, stejná kategorie do 5 km od uložené polohy (jinak od podniku), pak cokoli v okolí.
-- Fotka kategorie je ilustrační a u neobvyklé služby nemusí sedět (půjčení kola dostane fotku sportovní lekce).
+- Katalogové snímky jsou pouze placeholder. U připravených aktivit jsou dvě varianty, neznámá vlastní služba spadne na univerzální abstraktní FLEK; vlastní schválená fotografie podniku má vždy přednost.
 
 ## Právní minimum (18. 9. 2026)
 
-- Od 20. 9. jsou zveřejněné **jen zásady ochrany osobních údajů** (na Jakuba jako fyzickou osobu). Obchodní podmínky pro zákazníky i pro podniky zůstávají schované, dokud nebude IČO — do té doby aplikace nemá souhlas s podmínkami v rezervaci a podnik souhlasí s „obchodními podmínkami FLEKu“ bez odkazu jako dřív. Do té doby aplikace nemá patičku „O FLEKu“, souhlas v rezervaci ani odkaz na zásady v registraci a podnik souhlasí s „obchodními podmínkami FLEKu“ bez odkazu jako dřív.
+- Od 20. 9. jsou zveřejněné **jen zásady ochrany osobních údajů** (na Jakuba jako fyzickou osobu). Obchodní podmínky pro zákazníky i pro podniky zůstávají schované, dokud nebude IČO; do té doby aplikace nemá souhlas s platnou verzí podmínek v rezervaci a podnik souhlasí s „obchodními podmínkami FLEKu“ bez odkazu jako dřív.
 - Texty napsal agent, ne právník (**IMPLEMENTOVÁNO, ALE VYŽADUJE RUČNÍ EXTERNÍ OVĚŘENÍ** právníkem před ostrým provozem). Řádek o zápisu provozovatele říká „podnikatel zapsaný v živnostenském rejstříku“; u s.r.o. se musí změnit.
 - Skutečný e-mail s podrobnostmi smlouvy zatím neodešel: demo účty e-maily nedostávají a jiná rezervace od nasazení nebyla.
 - Podnik, který se registroval před 18. 9., nemá typ podnikatele, datum narození ani ověření v ARES; doplní je ve fakturačních údajích. DAC7 podklad je jen podklad pro ruční oznámení, registraci provozovatele neřeší.
@@ -119,3 +119,12 @@ Více provozoven na účet je podporováno přepínačem v partnerské části. 
 - Sklo (`.glass`) je průhledné na 86 %, což je strop daný čitelností textu nad tmavou fotkou. Víc průhlednosti by shodilo malý text pod WCAG AA.
 - Logo v e-mailech je obrázek na `https://www.app-flek.eu/images/email-logo.png`. Klient, který blokuje obrázky, ukáže jen alt „FLEK“ — text e-mailu tím netrpí, ale hlavička je pak prázdná.
 - Šablony ověřovacích e-mailů (`supabase/templates/*.html`) jsou v repozitáři jen jako zdroj pravdy; Supabase Auth je čte ze svého nastavení. Změna v repozitáři se na odesílané e-maily projeví, až je člověk vloží v Supabase → Authentication → Emails.
+
+## Recenze, moderace a WhatsApp dostupnost (21. 9. 2026)
+
+- Veřejné recenze jsou záměrně anonymní. Podnik ani návštěvník neuvidí jméno autora; při řešení sporu má vazbu na rezervaci jen server a administrace.
+- Automatická moderace je fail-closed. Pokud OpenAI odpoví chybou, nový text ani fotografie se nezveřejní a poslední schválená verze zůstane vidět. To může bezpečný obsah dočasně zpozdit.
+- Skutečný požadavek z nasazené funkce `content-moderation` skončil 21. 9. odpovědí HTTP 429. Kód, fronta, opakování a ruční admin kontrola fungují; automatické schvalování začne až po vyřešení limitu nebo aktivace projektu OpenAI.
+- Moderace snižuje riziko explicitního a jinak závadného obsahu, ale negarantuje bezchybné rozhodnutí. Hraniční obsah musí posoudit člověk; falešně zamítnutý obsah lze znovu přezkoumat.
+- Hvězdičkové hodnocení se započítá ihned, protože je svázané s ověřenou dokončenou návštěvou. Text se ukáže teprve po schválení; zamítnutí textu hvězdičky nemaže.
+- WhatsApp je v UI skrytý, dokud serverový příznak a zobrazované číslo nepotvrdí, že je kanál skutečně připravený. Kód a SQL testy jsou hotové, ale bez plných Meta secrets, webhooku, schválených šablon a úspěšné testovací zprávy není produkčně aktivní.

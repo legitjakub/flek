@@ -1,6 +1,6 @@
 # FLEK — živý přehled projektu
 
-> Poslední kontrola: 20. 9. 2026
+> Poslední kontrola: 21. 9. 2026
 > Zdroj pravdy: repozitář FLEK v této složce. Tento soubor shrnuje stav produktu; technické detaily a akceptační důkazy zůstávají v odkazovaných dokumentech.
 
 ## Co FLEK řeší
@@ -13,9 +13,6 @@ Pilot používá češtinu, CZK a časovou zónu `Europe/Prague`. Praha je seed 
 
 | Role | Vstup | Co může dělat |
 | --- | --- | --- |
-| 21. 9. 2026 | Detail nabídky na mobilu přehlednější a v barvách značky. Na fotce je odznak slevy a „Začíná za 2 h“, den termínu je pilulka v ultramarínu místo šedé věty, cena a **Ušetříš X Kč** v zelené jsou nad seznamem časů (dřív pod pěti kartami, tedy pod ohybem), v kartě času je hodina vlevo a cena vpravo (ceny jdou porovnat sloupcem), sleva je zelený čip. „O službě“, „Kde to je“ a „Zrušení zdarma“ jsou karty s barevnou ikonou místo holých nadpisů na šedé ploše; spodní lišta zhubla na cenu a tlačítko, protože úsporu říká karta. | build a 148 unit testů; vykresleno v Chromiu na 390 a 1280 px s podvrženými daty (síť ven je z prostředí zakázaná) bez horizontálního přetečení; kontrast: accent na brand-soft 11 : 1, bílá na brandu 9,1 : 1, positive na 10% zelené AA |
-| 20. 9. 2026 | Logo v e-mailech menší a celé. První vykreslení sahalo přesně na kraj obrázku, takže špičku špendlíku i čárky poštovní klient oříznul; nový rastr má kolem značky okraj 3 % šířky a v hlavičce je 108 px místo 135 px. | `public/images/email-logo.png` 432×195 (čtyřnásobek zobrazené velikosti); vykresleno ze stejného tvaru a písma jako v aplikaci; zkušební e-mail prohlédnutý v Chromiu na 600 a 390 px |
-| 20. 9. 2026 | Šablony WhatsAppu zakládá funkce, ne člověk. WhatsApp Manager v prohlížeči 18. i 19. 9. zamrzal a neuložil jedinou z pěti šablon; jejich znění je proto v `_shared/whatsapp.ts` vedle odesílání a admin funkce `whatsapp-templates-setup` je pošle Metě přes Graph API. Šablonu, která už u Mety je, nepřepisuje, umí běh nanečisto a v odpovědi nikdy není token. Spouští se z administrace v nové sekci **Nastavení** (`/admin/nastaveni`): Zkontrolovat ukáže stav u Mety, Založit chybějící je odešle ke schválení. | build a 148 unit testů (dva nové na znění šablon: `{{n}}` v textu musí sedět s počtem ukázek a tlačítka má jen žádost pro podnik, jak to posílá `templateMessage`); počty parametrů srovnané s `claim_whatsapp_deliveries` (4/3/3/4/4); funkce nasazená (v1, `verify_jwt`) a bez přihlášení vrací 401; karta v administraci vykreslená v Chromiu na 390 a 1280 px ve všech stavech (přehled, po založení s jednou chybou, chybějící klíče) bez horizontálního přetečení, tlačítka 44 px; ostré spuštění čeká na token od Mety v Supabase secrets |
 | Zákazník | `/` → `/mapa`, `/nabidka/:id`, `/rezervace`, `/oblibene`, `/profil` | hledat termíny, procházet mapu, rezervovat a zaplatit, zobrazit voucher/QR, spravovat oblíbená místa a profil |
 | Podnik | `/partner` | spravovat provozovnu, připravené i vlastní služby, zveřejňovat FLEKy, sledovat rezervace a metriky, ověřit kód zákazníka |
 | Admin | `/admin` | schvalovat provozovny, kontrolovat nabídky a rezervace, spravovat uživatele a metriky pilotu |
@@ -29,10 +26,10 @@ Demo účty a jejich omezení jsou v [README.md](../README.md). Produkční hesl
 - Karta nabídky je celá fotka se zaoblenými rohy: na ní vlevo nahoře čas (u termínu do 2 hodin i „za 29 min“) a vpravo sleva, dole matný bílý panel se službou, podnikem, cenou, čtvrtí, vzdáleností, délkou, volnými místy a dalšími časy. Na Objevit je první sekce („Začíná brzy“) vodorovná lišta, ostatní sekce mřížka; stejný tvar má kostra při načítání i karusel „Mohlo by se ti líbit“ v detailu.
 - Hodnocení z Google Places je v kódu hotové (Edge Function `google-place-rating` a komponenta na kartě), **v produkci ale neaktivní**: funkce není v Supabase nasazená, chybí `GOOGLE_MAPS_API_KEY` a žádný podnik nemá Place ID (ověřeno 13. 9. 2026). Karty proto hodnocení neukazují a falešné se nedoplňuje. Zapnutí: klíč s billingem → `supabase secrets set GOOGLE_MAPS_API_KEY=…` → `supabase functions deploy google-place-rating` → Place ID u podniků v administraci. Každé zobrazení karty volá Places API bez cache, s rostoucím provozem to poroste i v nákladech.
 - Špendlík na mapě nese ikonu oboru (nůžky, ruka, jiskry, činka, květ, vlny podle `public.categories`) na tmavé dlaždici se značkovou kresbou, pod ní cenovku; neznámá kategorie dostane značku FLEK. Fotka služby zůstala v náhledové kartě a v seznamu vedle mapy, ve špendlíku při 48 px nic neřekla.
-- Klik na samostatnou cenu na mapě otevře přímo konkrétní aktivitu. Skupina více termínů otevře spodní panel.
-- Karta na mapě vede rovnou k rezervaci: „Chytit FLEK“ otevře detail s rozepsaným rezervačním formulářem (`?rezervovat=1`), „Detail“ je vedle jako vedlejší akce. Navigace z karty zmizela — je tam, kde ji člověk potřebuje, tedy na detailu a na voucheru po zaplacení.
-- Spodní panel má horizontální snap carousel, číslování, šipky a odkaz na detail každé aktivity. Každá karta se zarovnává na celou šířku, takže není potřeba „přeswipovat“ několik karet najednou.
-- Mapa má ovládání „Moje poloha“, seznamový režim a krátkou nápovědu. Mapové markery jsou skupinované podle provozovny/místa.
+- Každá provozovna zůstává viditelná jako skutečný FLEK špendlík i při oddálení. Blízké špendlíky se deterministicky rozestoupí v obrazových souřadnicích; jen nabídky na přesně stejné adrese zůstávají pod jedním bodem s malým počtem.
+- Spodní náhled mapy je na telefonu kompaktní řádek vysoký 136 px: malá fotografie, služba, podnik, nejbližší termín a konečná cena. Celá karta vede na detail; další údaje a rezervace jsou až tam.
+- Více služeb na jednom místě má horizontální snap carousel s číslováním. Krátké gesto i šipka klávesnice posunou právě o jednu službu; vybraný bod zůstává nad skutečně změřenou výškou karty.
+- Mapa má ovládání „Moje poloha“, seznamový režim a krátkou nápovědu.
 
 ### První návštěva
 
@@ -47,6 +44,14 @@ Demo účty a jejich omezení jsou v [README.md](../README.md). Produkční hesl
 - Galerie je vázaná na konkrétní aktivitu (např. padel, tenis, squash, badminton, osobní trénink), takže se nemíchají nesouvisející sportovní fotky.
 - Výběr fotky používá snap carousel s šipkami, indikátorem pozice a jedním velkým náhledem. Ilustrační fotografie mají nenápadný textový štítek.
 - Podnik může u služby nahrát vlastní JPG, PNG nebo WebP do 5 MB. Uložená vlastní fotografie má na kartách, mapě, detailu i v partnerském náhledu vždy přednost; katalog a univerzální FLEK jsou pouze záloha a vlastní fotografie se neoznačuje jako ilustrační.
+
+### Ověřené recenze a moderace obsahu (21. 9. 2026)
+
+- Zákazník může po dokončené rezervaci udělit 1–5 hvězd a přidat nepovinný komentář. Hodnocení je veřejně anonymní, nese službu, datum a štítek „Ověřená návštěva“; vazbu na konkrétní dokončenou rezervaci vynucuje databáze.
+- Po dokončení vznikne právě jedno upozornění `review_requested` v aplikaci a případně push podle nastavení. E-mail ani WhatsApp se pro žádost o recenzi neposílají.
+- Hvězdičky se započítají ihned. Veřejný text recenze, nové názvy a popisy služeb a podniků i jejich vlastní fotografie čekají v privátní frontě na bezpečnostní kontrolu. Poslední schválená verze zůstává veřejná, dokud nová neprojde.
+- Automatická kontrola je fail-closed: při označeném, nejasném nebo nedostupném výsledku obsah zůstane neveřejný a objeví se adminovi v **Nahlášení → Ke kontrole**. Schválení i zamítnutí se zapisuje do auditu.
+- Funkce `content-moderation` je nasazená a klíč uložený v Supabase secrets. Skutečný požadavek na OpenAI ale 21. 9. skončil HTTP 429, proto automatické schvalování čeká na aktivaci/limit projektu OpenAI; ruční fronta a bezpečné nezveřejnění fungují.
 
 ### Zveřejnění FLEKu a cena
 
@@ -118,7 +123,7 @@ Texty verze 1.0 napsal agent podle skutečného chování aplikace; **zveřejní
 - Opakované i souběžné volání se stejnou platbou vrátí stejnou rezervaci a odečte jediné místo. Zámek zákazníka, druhá kontrola po získání zámku a unikátní indexy chrání kapacitu i kód.
 - Všechny peníze jsou celočíselné haléře; časová způsobilost se rozhoduje pomocí PostgreSQL `now()`.
 - Google Place ID je jediný údaj uložený v databázi; samotné hodnocení se načítá živě a bez cache v klientovi.
-- Vlastní nahrávání veřejných fotografií partnerem není v první verzi povoleno.
+- Vlastní fotografie partnera se nejdřív ukládá do privátního bucketu `moderation-pending`; veřejnou URL dostane až po schválení. Přímý klientský zápis moderovaného obsahu není povolený.
 
 ## Databáze a architektura
 
@@ -161,6 +166,9 @@ Nejdůležitější migrace:
 | `20260918145910_legal_simplify.sql` | bez samostatných pravidel obsahu (`content_rules`), podmínky pro podniky stačí odsouhlasit jednou |
 | `20260915192546_legal_reports.sql` | `content_reports` a `report_content`, admin fronta nahlášení, `export_my_data`, `admin_dac7_report`, `record_event` bez identifikátoru relace |
 | `20260920164139_…_dry_run_record.sql`, `20260920210547_refresh_activity_photos_and_demo_services.sql` | první verze drží shodu s historií Supabase po transakčním dry runu; druhá účinně nasadila novou knihovnu na katalog a aktivní služby, opravu půjčení kola, 24 dalších služeb pouze u demo provozoven a jejich nabídky na tři dny |
+| `20260921132015_reviews_moderation_whatsapp_security.sql` | ověřené anonymní recenze, upozornění na hodnocení, privátní fronta a bucket moderace, serverové ukládání veřejného obsahu, admin kontrola s auditem, příznak dostupnosti WhatsAppu a RLS pro `private.settings` a `private.stripe_events` |
+| `20260921132229_reviews_moderation_preference_fix.sql` | zachování WhatsApp preference ve starém čtyřparametrovém volání nastavení upozornění |
+| `20260921132349_moderation_queue_indexes.sql` | indexy všech cizích klíčů nové fronty moderace podle performance advisoru |
 
 ## Ověření a otevřené body
 
@@ -182,12 +190,15 @@ Nejdůležitější migrace:
 
 - Právní minimum (18. 9. 2026): `tests/legal.sql` a `tests/manual-confirmation.sql` prošly proti hostované databázi (rollback), 134 unit testů (nové `legal.test.ts` a `email.test.ts`), build, průchod na 375/390/1280 px v nezveřejněném stavu i s lokálně podvrženými údaji provozovatele. `ares-lookup` ověřený proti skutečnému ARES po nasazení. Web je od 18. 9. znovu nasazený (Vercel po odpojení uspané databáze) a migrace povinných e-mailů a mazání jsou v produkci. **Otevřené:** údaje provozovatele a kontrola právníkem (kontrolní seznam v `PRED_SPUSTENIM.md`).
 
+- Recenze, moderace a mapa (21. 9. 2026): všechny tři migrace jsou v hostované DB, `content-moderation` je ACTIVE v1, SQL sady recenzí/moderace, WhatsAppu a ručního potvrzování prošly s rollbackem. Build a 152 unit testů prošly. Security advisor už nehlásí vypnuté RLS u `private.settings` ani `private.stripe_events`; nové indexy odstranily upozornění na cizí klíče moderace. **Otevřené:** OpenAI moderace vrací HTTP 429 a WhatsApp zůstává skrytý, dokud nebude dokončené Meta nastavení a úspěšná testovací zpráva.
+
 Podrobné důkazy jsou v [VERIFICATION.md](../VERIFICATION.md), omezení v [LIMITATIONS.md](../LIMITATIONS.md), technická rozhodnutí v [DECISIONS.md](../DECISIONS.md) a historické předání v [HANDOFF.md](../HANDOFF.md).
 
 ## Historie posledních změn
 
 | Datum | Změna | Stav |
 | --- | --- | --- |
+| 21. 9. 2026 | Mapa bez číselných čtvercových shluků, kompaktní 136px náhled a posun po jedné službě; ověřené anonymní recenze s upozorněním po dokončení; fail-closed moderace veřejných textů a fotografií s admin frontou; RLS na citlivých privátních tabulkách; WhatsApp se ukáže až po skutečné aktivaci. Zásady ochrany osobních údajů povýšené na 1.1. | tři migrace a `content-moderation` v produkci; SQL testy recenzí/moderace, WhatsAppu a potvrzování PASS; build a 152 unit testů; mapa ověřená v prohlížeči na 375, 390 a 1280 px bez přetečení, karta 136 px; OpenAI test správně zůstal neveřejný při HTTP 429 |
 | 20. 9. 2026 | Fotografie z katalogu jsou výslovně jen placeholder: partner může přímo v editoru služby nahrát vlastní fotografii do 5 MB a ta má ve všech zákaznických i partnerských zobrazeních nejvyšší prioritu. Vlastní snímek nemá popisek „ilustrační foto“; ten zůstává jen na obrázcích FLEKu. | build a 151/151 unit testů; produkční editor na 380 × 842 px bez přetečení, upload má 44px dotykovou výšku; GitHub CI, Supabase Preview a Vercel u `b430df2` úspěšné |
 | 20. 9. 2026 | **Zásady ochrany osobních údajů jsou zveřejněné.** Aplikace veřejně sbírá e-maily a telefony, takže informace o zpracování nemohla čekat na firmu: správcem může být fyzická osoba a IČO k tomu není potřeba. Zásady tedy mají vlastní, nižší práh (`privacyPublished`), obchodní podmínky zůstávají schované na plném prahu, dokud nebude IČO. Patička „O FLEKu“ se ukazuje a odkazuje jen na texty, které opravdu platí. | migrace `20260920200932` v produkci (`legal_info()` vrací provozovatele a účinné zásady, podmínky dál prázdné); build a 146 unit testů včetně pěti nových na zveřejnění bez IČO |
 | 20. 9. 2026 | Matné sklo místo bílých desek: panel s fakty na kartě nabídky, pilulka s časem, spodní navigace, kulatá tlačítka nad fotkou a celá karta nad mapou mají jedno sklo (`.glass` ve `styles.css`) — silné rozostření se zvýšenou sytostí, vlasová linka jako odlesk a měkký stín s náznakem barvy značky. V e-mailech je v hlavičce **skutečná značka FLEK** místo textu „flek′“, který se značkou nemá nic společného. | build a 141 unit testů; sklo změřené na nejhorším případu (černá fotka): text `--color-muted` na 86% bílé má 5,0 : 1, tedy nad AA; vykresleno v Chromiu nad fotkou, nad černou i nad mapou; logo vyrenderované do `public/images/email-logo.png` ze stejného tvaru, jaký kreslí aplikace, a zkontrolované v náhledu e-mailu |
