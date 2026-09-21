@@ -278,3 +278,9 @@ Jakub ukázal aplikaci s mapou, kde má každý špendlík značku aplikace, a s
 - Automatická kontrola používá `omni-moderation-latest`; OpenAI dostane jen obsah určený ke zveřejnění, ne adresu, kontakt, cenu ani fakturační údaje. Adminské rozhodnutí se auditovaně aplikuje nebo zamítne.
 - `private.settings` a `private.stripe_events` mají RLS bez klientských politik a odebrané klientské granty. Serverové funkce s pevnou autorizací zůstávají jedinou cestou.
 - WhatsApp má samostatný serverový příznak dostupnosti. Ovládání se nezobrazí jen proto, že v prostředí existuje část klíčů; aktivuje se až po webhooku, schválených šablonách a úspěšné testovací zprávě.
+
+## Barevný panel nabídky — 21. 9. 2026
+
+- Spodní panel na fotografii má vlastní jemně ultramarínové sklo místo neutrální bílé desky. Vysoký podíl bílé drží kontrast malých metadat, modrý nádech a horní světelná linka ho vizuálně spojují se značkou FLEK.
+- Konečná cena je jediný plný prvek panelu a používá hlavní ultramarín. Červené přeškrtnutí původní ceny zmizelo: červená v aplikaci patří chybě a zamítnutí, ne běžné cenové informaci.
+- Ikony polohy a délky i čipy dalších časů používají tlumenou brandovou modrou. Panel tak má jednu barevnou logiku a nepřidává další soutěžící barvu ke slevě v horním rohu fotografie.

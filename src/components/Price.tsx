@@ -23,7 +23,7 @@ export function savings(originalCents: number, dealCents: number): number {
 
 /**
  * The brand ultramarine is the promotional highlight; white on it reads at 9.1 : 1.
- * Text links and status labels use the darker tone of the same green family.
+ * Text links and status labels use the darker tone of the same ultramarine family.
  */
 export function DiscountBadge({
   pct,

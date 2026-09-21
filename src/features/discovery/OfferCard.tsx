@@ -88,7 +88,12 @@ export function OfferCard({
         <span
           key={time.id}
           aria-hidden="true"
-          className="tnum rounded-full border border-line px-2 py-0.5 text-xs font-bold text-ink"
+          className={cx(
+            'tnum rounded-full border px-2 py-0.5 text-xs font-bold',
+            compact
+              ? 'border-line text-ink'
+              : 'border-brand/15 bg-card/70 text-accent shadow-sm',
+          )}
         >
           {time.label}
         </span>
@@ -187,8 +192,8 @@ export function OfferCard({
         <IllustrativePhotoLabel className={offer.discount_pct > 0 ? 'top-13 right-4' : 'top-4 right-4'} />
       ) : null}
 
-      {/* The facts, on a frosted panel over the lower edge of the picture. */}
-      <div className="glass absolute inset-x-2.5 bottom-2.5 rounded-[1.375rem] p-3.5">
+      {/* A lightly tinted brand surface keeps the facts readable while still belonging to FLEK. */}
+      <div className="offer-panel absolute inset-x-2.5 bottom-2.5 rounded-[1.375rem] p-3.5">
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
             <h3 className="line-clamp-2 text-base leading-snug font-extrabold text-ink [overflow-wrap:anywhere]">
@@ -201,14 +206,18 @@ export function OfferCard({
             list price under it is struck, because that is the number nobody pays.
           */}
           <div className="flex shrink-0 flex-col items-end gap-1">
-            <span className="tnum inline-flex items-center rounded-full bg-ink px-2.5 py-1.5 text-base leading-none font-extrabold text-card">
+            <span className="tnum inline-flex items-center rounded-full bg-brand px-2.5 py-1.5 text-base leading-none font-extrabold text-brand-ink shadow-[0_5px_14px_-7px_var(--color-brand)] ring-1 ring-brand-bright/35">
               {money(offer.deal_price_cents)}
             </span>
-            {discounted ? <OriginalPrice cents={offer.original_price_cents} className="text-xs" /> : null}
+            {discounted ? (
+              <s className="tnum text-xs font-medium text-muted decoration-brand decoration-2">
+                {money(offer.original_price_cents)}
+              </s>
+            ) : null}
           </div>
         </div>
 
-        <p className="tnum mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">{meta}</p>
+        <p className="tnum mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted [&_svg]:text-accent">{meta}</p>
         {times}
       </div>
     </Link>

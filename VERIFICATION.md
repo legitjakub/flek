@@ -314,3 +314,8 @@ Lokální Docker integrační sada, fyzický iPhone/Safari, skutečná kamera, n
 - Mapa nad živými demo daty v lokální aplikaci: 16 skutečných FLEK špendlíků při výchozím oddálení, žádný čtvercový shluk. Náhled vybraného místa má 136 px na 375, 390 i 1280 px, `scrollWidth` stránky odpovídá viewportu a vybraný bod zůstává nad kartou. Krátká klávesová akce posunula carousel z první na druhou službu (`scrollLeft 0 → 308`); dotyková cesta používá stejný přesný index po 32px vodorovném gestu. Bez framework overlay a bez relevantních chyb nebo varování v konzoli.
 - WhatsApp zůstává bezpečně nedostupný: `whatsapp_enabled=false`, žádné zobrazované číslo, kontakty ani odeslané zprávy. V UI se nezobrazí, dokud není kanál skutečně aktivovaný a otestovaný.
 - Commit `2781d58` je na `main`; GitHub stav Vercelu je `success` („Deployment has completed“) a `https://www.app-flek.eu/` odpovídá HTTP 200. Produkční mapa na 390 × 844 px ukázala skutečné FLEK špendlíky a po otevření místa kartu 342 × 136 px se třemi službami, bez horizontálního přetečení a bez chyb či varování v konzoli.
+
+## Barevný panel nabídky — 21. 9. 2026
+
+- `npm run build` a `npm run test:unit`: PASS, **152/152**.
+- Lokální Objevování v prohlížeči na 375, 390 a 1280 px: jemně ultramarínový panel, brandová cena, ikony i čipy dalších časů; žádné horizontální přetečení ani chyba či varování v konzoli. Na 375 px měří karta 302 × 377 px a panel 282 × 104 px.
