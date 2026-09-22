@@ -325,3 +325,10 @@ Lokální Docker integrační sada, fyzický iPhone/Safari, skutečná kamera, n
 - `npm run build`: PASS; zůstává jen známé upozornění na velikost samostatného mapového balíčku. `npm run test:unit`: PASS, **154/154** v 19 souborech. Nové testy hlídají přepnutí městský pohled / detail čtvrti a zachování každého bodu při těsnějším rozložení 44px dotykových ploch.
 - Lokální mapa nad živými demo daty při 390 × 844 a 375 × 812 px: 15 samostatných kruhových bodů, žádný číselný čtvercový shluk, stránka má přesně šířku viewportu. Vybraný bod se rozbalil na ikonu s cenou a otevřel 136px kartu se třemi službami.
 - Desktop 1280 × 720 px po trojím přiblížení: všech 15 markerů zůstává v DOM, kompaktních je 0 a každý má plnou cenu; horizontální přetečení 0 px. Informační stav „Na dnešek nic není, ukazujeme celý týden“ měří na mobilu 330 × 40 px, používá značkové barvy a zůstává celý viditelný. Bez aplikační chyby; vývojový server zachytil jen známá varování cizího stylu OpenFreeMap o filtrech a chybějících sprite ikonách.
+
+## Mobilní detail služby — 22. 9. 2026
+
+- `npm run build`: PASS; pouze známé upozornění na velikost mapového balíčku. `npm run test:unit`: PASS, **154/154** v 19 souborech.
+- Lokální Chrome nad živými demo daty na 375 × 844 a 390 × 844 px: `scrollWidth` je shodný s viewportem, žádné chyby konzole. Rezervační karta má 469 px a spodní pevná lišta 93 px.
+- Přepnutí záložky z **Dnes** na **Zítra** zobrazilo panel „Zítra: dostupné časy“. Volba termínu 09:00 za 658 Kč převedla detail na odpovídající nabídku, souhrn ukázal **Zítra** a nový stav už nezůstal v načítání.
+- Desktop 1280 × 720 px zkontrolovaný v prohlížeči: karta zůstává v pravém sloupci, souhrn, dvě řady časů i hlavní akce jsou viditelné bez vlastního dlouhého seznamu.

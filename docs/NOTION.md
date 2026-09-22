@@ -1,6 +1,6 @@
 # FLEK — přehled projektu
 
-> Aktualizováno 21. 9. 2026. Zdroj pravdy je repozitář (`docs/NOTION.md`). Stránku aktualizuje agent na požádání; ruční úpravy tady se při další aktualizaci přepíšou.
+> Aktualizováno 22. 9. 2026. Zdroj pravdy je repozitář (`docs/NOTION.md`). Stránku aktualizuje agent na požádání; ruční úpravy tady se při další aktualizaci přepíšou.
 
 ## Ve zkratce
 
@@ -327,6 +327,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 22. 9. 2026 | Detail služby je upravený pro telefon: jeden přehledný souhrn vybraného FLEKu, záložky dnů, kompaktní dvousloupcové časy s cenou a nižší 93px rezervační lišta. Přepnutí termínu mění celý detail a po navigaci správně ukončí stav načítání. |
 | 21. 9. 2026 | Městský pohled mapy ukazuje všechny provozovny jako malé kruhové FLEK body; po přiblížení se rozbalí na plné špendlíky s oborem a cenou a vybraný bod se rozbalí vždy. Mapa využije plný bezpečný limit 100 výsledků a hláška o rozšířeném hledání má kompaktní ultramarínový štítek. |
 | 21. 9. 2026 | Karty v Objevování dostaly jemně ultramarínový skleněný panel: cena je v hlavní barvě FLEKu, ikony a další časy používají brandový odstín a původní cena už není červená. |
 | 21. 9. 2026 | Mapa ukazuje skutečné FLEK špendlíky místo číselných shluků; mobilní náhled má 136 px a carousel se posouvá po jedné službě. Přibyly ověřené anonymní recenze, upozornění po dokončení, privátní fail-closed moderace textů a fotografií, admin fronta s auditem, RLS na citlivých privátních tabulkách a bezpečný příznak dostupnosti WhatsAppu. Databáze i funkce jsou nasazené; OpenAI moderace zatím vrací HTTP 429 a WhatsApp čeká na dokončení Meta. |

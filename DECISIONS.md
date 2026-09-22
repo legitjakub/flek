@@ -291,3 +291,10 @@ Jakub ukázal aplikaci s mapou, kde má každý špendlík značku aplikace, a s
 - **Oddálení mění množství detailu, ne množství nabídky.** Pod úrovní čtvrti je marker kruhový 24px FLEK bod uvnitř 44px dotykové plochy; po přiblížení má 48px ikonu oboru a cenu. Vybraný kompaktní bod se rozbalí hned, aby klepnutí mělo jasnou odezvu.
 - **Kompaktní režim je adaptivní.** Zapne se pod zoomem 12,5 a také v přechodném pohledu, kde se příliš mnoho plných cenových lístků střetává. Nad zoomem 14 se vždy vrátí plné špendlíky. Rozložení zůstává deterministické, takže body při posunu mapy neposkakují.
 - **Sto je skutečný strop mapy.** Veřejné `search_offers` přijímá nejvýš 100 řádků; mapa proto žádá právě o 100 a klient limit bezpečně ořízne. Feed zůstává na 50, protože tam se výsledky čtou postupně a víc řádků by jen prodloužilo stránku.
+
+## Detail služby vybírá den a potom čas — 22. 9. 2026
+
+- **Vybraný termín je jeden souhrn.** Den, rozsah času, délka, konečná cena, původní cena a úspora patří k jednomu rozhodnutí, proto jsou v jedné jemně brandové ploše „Vybraný FLEK“. Samostatné pásy opakovaly stejný údaj a zvyšovaly kartu bez přidané informace.
+- **Nejdřív den, potom čas.** Na telefonu jsou dny záložky s počtem možností a teprve pod aktivním dnem jsou časy. Zákazník tak neprochází dlouhý svislý seznam, ve kterém se střídají nadpisy dnů a velké karty.
+- **Čas je kompaktní dlaždice.** Dvousloupcová dlaždice drží hodinu, cenu, slevu a případné poslední místo. Délka se neopakuje, protože patří stejné službě a je vidět v souhrnu; cena zůstává, protože se mezi FLEKy může lišit.
+- **Jedna hlavní akce zůstává přilepená.** Volba času jen změní nabídku. Rezervaci spouští jediné „Chytit FLEK“ ve spodní liště, která je na telefonu vysoká 93 px a stále ukazuje cenu, režim platby a bezplatné storno.

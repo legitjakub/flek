@@ -1,6 +1,6 @@
 # FLEK — živý přehled projektu
 
-> Poslední kontrola: 21. 9. 2026
+> Poslední kontrola: 22. 9. 2026
 > Zdroj pravdy: repozitář FLEK v této složce. Tento soubor shrnuje stav produktu; technické detaily a akceptační důkazy zůstávají v odkazovaných dokumentech.
 
 ## Co FLEK řeší
@@ -87,7 +87,7 @@ Implementované a nasazené v databázi i Edge Functions, **zapnuté pro všechn
 
 - **Jedna karta na službu s časy.** Každý čas je dál samostatná nabídka, ale feed, mapa, stránka podniku, oblíbené i náhrada za neobsaditelný FLEK je seskupí podle podniku a služby (`src/features/discovery/slots.ts`). Karta ukáže nejbližší čas a řádek „Další časy“ (nejvýš 3 čipy a „+N“, den jen při změně dne, jiná cena u čipu). Hledání bere 50 řádků a rozšiřování počítá karty.
 - **Mapa:** v náhledu po klepnutí na špendlík jsou karty v jednom karuselu stejně vysoké. Čipy časů jsou tlačítka, přepnou čas, cenu, místa i odkaz Detail; počítadlo „1 / 2“ počítá služby.
-- **Detail:** v kartě rezervace „Vyber si čas“ z `business_offers` stejné služby. Když má některý den víc časů, jsou pod nadpisy dnů, jinak v jedné řadě („Dnes 17:00“, „Zítra 13:00“). Klepnutí přednačte nabídku a přepne adresu, takže cena, lhůta zrušení, rezervace i návrat ze Stripe sedí na zvolený čas. U neobsaditelného času nabídne „Jiné časy téhle služby“.
+- **Detail:** karta „Vybraný FLEK“ spojuje den, čas, délku, konečnou cenu, slevu a úsporu do jednoho souhrnu. Jiné termíny stejné služby z `business_offers` se na telefonu vybírají nejdřív záložkou dne a potom kompaktní dlaždicí času s cenou; délka služby se zbytečně neopakuje u každé volby. Klepnutí přednačte nabídku a přepne adresu, takže cena, lhůta zrušení, rezervace i návrat ze Stripe sedí na zvolený čas. U neobsaditelného času nabídne „Volné časy“.
 - **„Mohlo by se ti líbit“** pod sekcí Zrušení: jiné služby podniku, pak stejná kategorie do 5 km, pak cokoli v okolí, nejvýš 8 karet s časy, jen když jsou aspoň dvě (`pickRecommendations.ts`). Klik měří `similar_offers_clicked` se `source: venue | detail_carousel`.
 - **Obrázek služby bez fotky:** vlastní fotka → ilustrace podle názvu (rozšířená slova, jóga a sauna) → fotka kategorie → nový obrázek FLEK (`public/images/flek-placeholder.svg`, ultramarín se špendlíkem) místo bledé dlaždice s plusem.
 
@@ -198,6 +198,7 @@ Podrobné důkazy jsou v [VERIFICATION.md](../VERIFICATION.md), omezení v [LIMI
 
 | Datum | Změna | Stav |
 | --- | --- | --- |
+| 22. 9. 2026 | Mobilní detail služby má jeden souhrn „Vybraný FLEK“, volbu dne v záložkách a kompaktní dvousloupcové časy s vlastní cenou. Spodní rezervační lišta je nižší, ale dál drží cenu, hlavní akci, způsob platby a storno. Přepnutí času už po navigaci nenechá dlaždici v načítání. | build a 154 unit testů; lokální Chrome 375 a 390 px bez horizontálního přetečení a chyb konzole; lišta 93 px, výběr dne i nabídky ověřený nad živými demo daty; desktop 1280 px zkontrolovaný v prohlížeči |
 | 21. 9. 2026 | Oddálená mapa používá samostatné kruhové FLEK body místo plných cenových karet, takže je vidět celý trh bez číselného shluku; po přiblížení se vrátí ikona oboru a cena. Mapa načítá maximálních 100 řádků povolených veřejným RPC a rozšíření hledání má kompaktní značkový informační štítek. | build a 154 unit testů; živá data lokálně: 15 samostatných bodů a 41 nabídek, mobil 375/390 px i desktop bez přetečení, karta po výběru 136 px, po přiblížení všech 15 DOM bodů přepnutých na plnou variantu; bez aplikační chyby, pouze známá varování stylu OpenFreeMap |
 | 21. 9. 2026 | Spodní panel zákaznické karty nabídky používá jemně ultramarínové sklo, brandovou cenu, ikony a čipy dalších časů. Původní cena je přeškrtnutá brandovou barvou místo červené určené pro chyby. | build a 152 unit testů; prohlížeč 375, 390 a 1280 px bez horizontálního přetečení, panel na 375 px měří 282 × 104 px a konzole je čistá |
 | 21. 9. 2026 | Mapa bez číselných čtvercových shluků, kompaktní 136px náhled a posun po jedné službě; ověřené anonymní recenze s upozorněním po dokončení; fail-closed moderace veřejných textů a fotografií s admin frontou; RLS na citlivých privátních tabulkách; WhatsApp se ukáže až po skutečné aktivaci. Zásady ochrany osobních údajů povýšené na 1.1. | tři migrace a `content-moderation` v produkci; SQL testy recenzí/moderace, WhatsAppu a potvrzování PASS; build a 152 unit testů; mapa ověřená lokálně na 375, 390 a 1280 px a po nasazení commitu `2781d58` na `www.app-flek.eu` při 390 px bez přetečení, karta 136 px; Vercel success a HTTP 200; OpenAI test správně zůstal neveřejný při HTTP 429 |

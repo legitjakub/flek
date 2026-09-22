@@ -85,6 +85,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
     const params = new URLSearchParams(search);
     for (const key of ['platba', 'zruseno', 'rezervovat', 'sledovat']) params.delete(key);
     navigate(`/nabidka/${id}${params.size ? `?${params}` : ''}`, { replace: true, scroll: false });
+    setSwitchingTo(null);
   }
 
   useEffect(() => {
@@ -324,58 +325,45 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           y=755. Grouping them fixes the collision by construction, not by nudging offsets.
         */}
         <aside
-          className="rounded-2xl bg-card p-4 shadow-card md:sticky md:top-24 md:col-start-2 md:row-start-1 md:row-span-2 md:p-5"
+          className="rounded-3xl bg-card p-4 shadow-card md:sticky md:top-24 md:col-start-2 md:row-start-1 md:row-span-2 md:p-5"
           aria-label="Vybraný termín"
         >
-          <h2 className="sr-only md:not-sr-only md:mb-3 md:block md:text-base md:font-extrabold">Tvůj termín</h2>
-
-          {/*
-            The duration sits at the far end of the row rather than under the time. Every
-            line in this card used to start at the same left edge and stop well short of the
-            right one — six stacked rows in the left third of a full-width box, with the
-            other two thirds empty. Two facts, two ends of one line.
-          */}
-          {/*
-            The day carries the brand fill and the hours are the biggest thing in the row. Both
-            used to be one grey-black sentence beside a pale icon tile — the single most important
-            line of the page ("is this today?") read like a caption.
-          */}
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-brand px-2.5 py-1 text-xs leading-none font-extrabold text-brand-ink">
-              <CalendarDays size={13} aria-hidden="true" />
-              {dayLabel(offer.start_at, now)}
-            </span>
-            <p className="tnum text-lg leading-none font-extrabold text-ink">
-              {clockTime(offer.start_at)}–{clockTime(offer.end_at)}
-            </p>
-            <span className="tnum ml-auto inline-flex shrink-0 items-center gap-1.5 text-sm text-muted">
-              <Clock3 size={14} aria-hidden="true" />
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-base font-extrabold text-ink">Vybraný FLEK</h2>
+            <span className="tnum inline-flex min-h-8 items-center gap-1.5 rounded-full bg-surface px-2.5 text-xs font-bold text-muted">
+              <Clock3 size={13} aria-hidden="true" />
               {duration(offer.start_at, offer.end_at)} min
             </span>
           </div>
-          {/*
-            One row, two ends. The two numbers a person compares stay together on the left
-            and the percentage goes to the right edge, so the row spans the card instead of
-            bunching in its left third — without a tinted block that ends up shouting louder
-            than the price it is describing.
 
-            The scale in styles.css assigns xl/800 to prices and times and 2xl/800 to the
-            page heading: at 2xl the price was the largest thing on the screen, louder than
-            the title of the thing being bought.
-          */}
-          <div className="mt-3 border-t border-line pt-3">
-            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-              <span className="tnum text-xl leading-none font-extrabold tracking-tight">
-                {money(offer.deal_price_cents)}
-              </span>
-              {savings > 0 ? <OriginalPrice cents={offer.original_price_cents} className="text-sm" /> : null}
-              {savings > 0 ? <DiscountBadge pct={offer.discount_pct} className="ml-auto" /> : null}
+          {/* One ticket-like surface answers the three booking questions together: which day,
+              which time and what it costs. The old layout split them across separate rows and
+              then repeated them once more in every time card. */}
+          <div className="mt-3 rounded-2xl border border-brand/15 bg-brand-soft p-3.5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="inline-flex items-center gap-1.5 text-sm font-bold text-accent">
+                  <CalendarDays size={15} aria-hidden="true" />
+                  {dayLabel(offer.start_at, now)}
+                </p>
+                <p className="tnum mt-1 text-xl leading-none font-extrabold tracking-tight text-ink">
+                  {clockTime(offer.start_at)}–{clockTime(offer.end_at)}
+                </p>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="tnum text-xl leading-none font-extrabold tracking-tight text-ink">
+                  {money(offer.deal_price_cents)}
+                </p>
+                {savings > 0 ? (
+                  <p className="mt-1 flex items-center justify-end gap-1.5">
+                    <OriginalPrice cents={offer.original_price_cents} className="text-xs" />
+                    <DiscountBadge pct={offer.discount_pct} />
+                  </p>
+                ) : null}
+              </div>
             </div>
-            {/* What the customer keeps, in crowns and in the money green — the product's whole
-                argument. It was a 12 px line inside the fixed bar on a phone and nowhere at all
-                on a desktop, where this card is the only place the price is shown. */}
             {savings > 0 ? (
-              <p className="tnum mt-2 inline-flex items-center gap-1.5 rounded-lg bg-positive/10 px-2 py-1 text-sm font-extrabold text-positive">
+              <p className="tnum mt-3 inline-flex items-center gap-1.5 text-sm font-extrabold text-positive">
                 <PiggyBank size={15} aria-hidden="true" />
                 Ušetříš {money(savings)}
               </p>
@@ -407,7 +395,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           {/* No sticky bar when there is nothing to book: a permanently disabled button is a
               dead end, and the recovery block below offers what is actually still possible. */}
           {offer.bookable ? (
-          <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:static md:mt-5 md:border-0 md:bg-transparent md:p-0">
+          <div className="glass glass-lift fixed inset-x-0 bottom-0 z-40 rounded-t-3xl border-t border-white/70 px-4 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] md:static md:mt-5 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-filter-none">
             {/*
               Price beside the action, not inside its label. "Chytit FLEK · 375 Kč" crammed a
               brand verb and a sum into one string joined by a floating dot, and neither half
@@ -415,7 +403,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
               the button is a thing you press. On desktop the card above already carries the
               price, so only the button remains.
             */}
-            <div className="flex items-center gap-4">
+            <div className="mx-auto flex max-w-xl items-center gap-3 md:block md:max-w-none">
               {/* One line, not three. The saving now sits in the card above as a green pill, so
                   repeating it here only made the bar 20 px taller on the screen with the least
                   room to spare — and put the same three numbers twice in one viewport. */}
@@ -423,7 +411,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
                 <span className="text-lg leading-none font-extrabold">{money(offer.deal_price_cents)}</span>
                 {savings > 0 ? <OriginalPrice cents={offer.original_price_cents} className="text-xs" /> : null}
               </p>
-              <Button size="lg" className="flex-1" onClick={() => setSheetOpen(true)}>
+              <Button size="lg" className="min-w-0 flex-1 md:w-full" onClick={() => setSheetOpen(true)}>
                 Chytit FLEK
               </Button>
             </div>
@@ -433,14 +421,14 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             {/* No dot between the two: whether they wrap depends on the column width, not the
                 breakpoint (the narrow desktop card wraps too), and a dot left hanging at the end
                 of a line reads as a typo. Each fact already opens with its own icon. */}
-            <p className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm text-muted">
-              <span className="inline-flex items-center gap-2">
-                <Banknote size={16} aria-hidden="true" />
+            <p className="mx-auto mt-1.5 flex max-w-xl flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[0.6875rem] leading-tight text-muted md:mt-2 md:max-w-none md:text-xs">
+              <span className="inline-flex items-center gap-1.5">
+                <Banknote size={13} aria-hidden="true" />
                 {manual ? 'Platíš, až podnik potvrdí' : 'Zaplatíš rovnou'}
               </span>
               {offer.bookable ? (
-                <span className="inline-flex items-center gap-1.5 font-bold text-positive">
-                  <Check size={15} aria-hidden="true" />
+                <span className="inline-flex items-center gap-1 font-bold text-positive">
+                  <Check size={13} aria-hidden="true" />
                   Zrušení zdarma {cancellationCopy}
                 </span>
               ) : null}
