@@ -1,7 +1,7 @@
 import { ArrowLeft, CalendarDays, CalendarPlus, ChevronDown, Clock3, Info, MapPin, Banknote, Check, PiggyBank, ShieldCheck } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { activityPhotoSrcSet } from '../../lib/activityGalleries';
-import { useEffect, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useState, type ReactNode } from 'react';
 import { businessOffers, confirmationQuote, getOfferDetail, setFavorite } from '../../lib/api';
 import { track } from '../../lib/analytics';
 import { relativeTime, useServerNow } from '../../lib/clock';
@@ -27,7 +27,7 @@ import { GooglePlaceRating } from '../ratings/GooglePlaceRating';
 import { FlekRatingSummary } from '../ratings/FlekReviews';
 import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
 import { isIllustrativeServiceImage, SERVICE_PLACEHOLDER, serviceIllustration } from '../../lib/serviceIllustrations';
-import { CapacityLabel } from '../../components/CapacityLabel';
+import { capacityLabel } from '../../components/CapacityLabel';
 import { TimePicker } from './TimePicker';
 import { Recommendations } from './Recommendations';
 import { WhatsAppPrompt } from '../notifications/WhatsApp';
@@ -176,13 +176,32 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
   const image = source === failedPhoto ? SERVICE_PLACEHOLDER : source;
   const savings = offer.original_price_cents - offer.deal_price_cents;
   const minutesAway = Math.round((Date.parse(offer.start_at) - Date.parse(now)) / 60000);
-  const showCapacity = offer.capacity_total > 1;
+  /*
+   * The plain sentence, not the chip: on the brand-tinted block of this card the chip's pale
+   * accent fill all but disappears, and a lone capacity chip can be the only thing left in the
+   * urgency row — an empty tinted row when nothing else applies. Same text helper, one voice.
+   */
+  const capacity = offer.capacity_total > 1 ? capacityLabel(offer.capacity_remaining, offer.capacity_total) : null;
   const cutoffMinutes = Math.round((Date.parse(offer.booking_cutoff_at) - Date.parse(now)) / 60000);
   const cancellationAt = cancellationDeadline(offer.start_at, offer.cancellation_window_minutes);
   const graceCopy = manual ? '10 minut od potvrzení' : '10 minut od rezervace';
   const cancellationCopy = Date.parse(cancellationAt) <= Date.parse(now)
     ? graceCopy
     : `do ${clockTime(cancellationAt)}`;
+
+  /*
+   * What makes this time pressing, in the order a person weighs it, with the separators derived
+   * rather than written between every pair. Three optional facts joined by hand meant two nested
+   * conditions for one dot, and a row that could render with nothing in it.
+   */
+  const urgency: Array<{ key: string; node: ReactNode }> = [];
+  if (minutesAway > 0 && minutesAway <= 120) {
+    urgency.push({ key: 'soon', node: <span className="font-bold text-accent">Začíná {relativeTime(offer.start_at, now)}</span> });
+  }
+  if (offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60) {
+    urgency.push({ key: 'cutoff', node: <span>Rezervovat ještě <strong className="text-ink">{cutoffMinutes} min</strong></span> });
+  }
+  if (capacity) urgency.push({ key: 'capacity', node: <span className="font-bold text-ink">{capacity}</span> });
 
   const hasPhoto = Boolean(image);
   const reason = unavailableReason(offer, now);
@@ -330,41 +349,44 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           <h2 className="sr-only md:not-sr-only md:mb-3 md:block md:text-base md:font-extrabold">Tvůj termín</h2>
 
           {/*
-            The duration sits at the far end of the row rather than under the time. Every
-            line in this card used to start at the same left edge and stop well short of the
-            right one — six stacked rows in the left third of a full-width box, with the
-            other two thirds empty. Two facts, two ends of one line.
-          */}
-          {/*
+            One block, not four bands. Day, hours, length, price, saving and what is left were
+            separated by three hairlines, which turned the card into a receipt: every fact looked
+            like a separate row of a form instead of one appointment. They belong together, on a
+            surface of their own in the brand's own colour — and the surface is what tells the
+            list below that it is a list of alternatives to this.
+
+            The duration sits at the far end of its row rather than under the time. Every line in
+            this card used to start at the same left edge and stop well short of the right one —
+            six stacked rows in the left third of a full-width box.
+
             The day carries the brand fill and the hours are the biggest thing in the row. Both
             used to be one grey-black sentence beside a pale icon tile — the single most important
             line of the page ("is this today?") read like a caption.
           */}
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-brand px-2.5 py-1 text-xs leading-none font-extrabold text-brand-ink">
-              <CalendarDays size={13} aria-hidden="true" />
-              {dayLabel(offer.start_at, now)}
-            </span>
-            <p className="tnum text-lg leading-none font-extrabold text-ink">
-              {clockTime(offer.start_at)}–{clockTime(offer.end_at)}
-            </p>
-            <span className="tnum ml-auto inline-flex shrink-0 items-center gap-1.5 text-sm text-muted">
-              <Clock3 size={14} aria-hidden="true" />
-              {duration(offer.start_at, offer.end_at)} min
-            </span>
-          </div>
-          {/*
-            One row, two ends. The two numbers a person compares stay together on the left
-            and the percentage goes to the right edge, so the row spans the card instead of
-            bunching in its left third — without a tinted block that ends up shouting louder
-            than the price it is describing.
+          <div className="rounded-2xl bg-brand-soft p-3.5">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-brand px-2.5 py-1 text-xs leading-none font-extrabold text-brand-ink">
+                <CalendarDays size={13} aria-hidden="true" />
+                {dayLabel(offer.start_at, now)}
+              </span>
+              <p className="tnum text-lg leading-none font-extrabold text-ink">
+                {clockTime(offer.start_at)}–{clockTime(offer.end_at)}
+              </p>
+              <span className="tnum ml-auto inline-flex shrink-0 items-center gap-1.5 text-sm text-muted">
+                <Clock3 size={14} aria-hidden="true" />
+                {duration(offer.start_at, offer.end_at)} min
+              </span>
+            </div>
+            {/*
+              One row, two ends. The two numbers a person compares stay together on the left and
+              the percentage goes to the right edge, so the row spans the card instead of bunching
+              in its left third.
 
-            The scale in styles.css assigns xl/800 to prices and times and 2xl/800 to the
-            page heading: at 2xl the price was the largest thing on the screen, louder than
-            the title of the thing being bought.
-          */}
-          <div className="mt-3 border-t border-line pt-3">
-            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+              The scale in styles.css assigns xl/800 to prices and times and 2xl/800 to the page
+              heading: at 2xl the price was the largest thing on the screen, louder than the title
+              of the thing being bought.
+            */}
+            <div className="mt-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
               <span className="tnum text-xl leading-none font-extrabold tracking-tight">
                 {money(offer.deal_price_cents)}
               </span>
@@ -373,23 +395,26 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             </div>
             {/* What the customer keeps, in crowns and in the money green — the product's whole
                 argument. It was a 12 px line inside the fixed bar on a phone and nowhere at all
-                on a desktop, where this card is the only place the price is shown. */}
+                on a desktop, where this card is the only place the price is shown. The green no
+                longer sits in a tinted pill: a second fill on a tinted surface went muddy. */}
             {savings > 0 ? (
-              <p className="tnum mt-2 inline-flex items-center gap-1.5 rounded-lg bg-positive/10 px-2 py-1 text-sm font-extrabold text-positive">
+              <p className="tnum mt-2 inline-flex items-center gap-1.5 text-sm font-extrabold text-positive">
                 <PiggyBank size={15} aria-hidden="true" />
                 Ušetříš {money(savings)}
               </p>
             ) : null}
-          </div>
 
-          {(minutesAway > 0 && minutesAway <= 120) || (offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60) || showCapacity ? (
-            <p className="tnum mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-line pt-3 text-sm text-muted">
-              {minutesAway > 0 && minutesAway <= 120 ? <span className="font-bold text-accent">Začíná {relativeTime(offer.start_at, now)}</span> : null}
-              {minutesAway > 0 && minutesAway <= 120 && offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60 ? <span aria-hidden="true">·</span> : null}
-              {offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60 ? <span>Rezervovat ještě <strong className="text-ink">{cutoffMinutes} min</strong></span> : null}
-              {showCapacity ? <CapacityLabel remaining={offer.capacity_remaining} total={offer.capacity_total} /> : null}
-            </p>
-          ) : null}
+            {urgency.length ? (
+              <p className="tnum mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
+                {urgency.map((fact, index) => (
+                  <Fragment key={fact.key}>
+                    {index > 0 ? <span aria-hidden="true">·</span> : null}
+                    {fact.node}
+                  </Fragment>
+                ))}
+              </p>
+            ) : null}
+          </div>
 
           {/*
             The list of other times comes after the price of the chosen one, not before it. With
