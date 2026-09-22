@@ -28,11 +28,20 @@ const FEED_LIMIT = 50;
 /*
  * The map asks for the whole answer. It draws one point per venue rather than a list of cards,
  * and a cap that is comfortable for a scrolling feed left whole streets without a point: at the
- * default filter (5 km, sorted by distance) fifty rows all came from three venues out of sixteen,
- * because one venue publishes dozens of times. The points were never missing from the drawing,
- * the rows were missing from the answer. Three hundred is the server's ceiling too.
+ * default filter (5 km, sorted by distance) fifty rows all came from three venues out of sixteen
+ * and a hundred from six, because one venue publishes dozens of times. The points were never
+ * missing from the drawing, the rows were missing from the answer.
  */
 export const MAP_LIMIT = 300;
+
+/*
+ * The server's own ceiling, kept here as well so a screen that asks for a larger visual target
+ * gets fewer rows rather than `VALIDATION_ERROR` and an empty map. Raising it means raising the
+ * bound in `search_offers` first (migration `20260921212301` moved it from 100 to 300).
+ */
+const SERVER_LIMIT = 300;
+
+const safeLimit = (limit: number) => Math.min(SERVER_LIMIT, Math.max(1, Math.trunc(limit)));
 
 /**
  * One server-side search; if the current filter is too thin, walk the cold-start ladder
@@ -40,6 +49,7 @@ export const MAP_LIMIT = 300;
  */
 export async function discover(point: Point, filters: Filters, limit = FEED_LIMIT): Promise<DiscoveryResult> {
   const steps = wideningSteps(filters, serverNow());
+  const rowLimit = safeLimit(limit);
   let best: DiscoveryResult = { rows: [], note: null, applied: { when: filters.when, radius_m: filters.radius_m } };
   for (const step of steps) {
     const range = windowFor(step.when, serverNow());
@@ -55,7 +65,7 @@ export async function discover(point: Point, filters: Filters, limit = FEED_LIMI
       sort: filters.sort,
       daypart: filters.daypart,
       // Several times of one service become one card, so ask for more rows than cards are shown.
-      limit,
+      limit: rowLimit,
     });
     // What counts is how many different FLEKs the customer gets, not how many times they have.
     const cards = groupSlots(rows).length;
@@ -70,7 +80,7 @@ export function useDiscovery(point: Point, filters: Filters, limit = FEED_LIMIT)
   // right Prague day window instead of leaving a wrong „Dnes" on screen.
   const epoch = useClockEpoch();
   const query = useQuery({
-    queryKey: ['discovery', point.lat.toFixed(4), point.lng.toFixed(4), filters, epoch, limit],
+    queryKey: ['discovery', point.lat.toFixed(4), point.lng.toFixed(4), filters, limit, epoch],
     queryFn: () => discover(point, filters, limit),
     // Inventory decays by the minute: never show a card that stopped being bookable.
     staleTime: 30_000,

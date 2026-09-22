@@ -287,8 +287,12 @@ Jakub ukázal aplikaci s mapou, kde má každý špendlík značku aplikace, a s
 
 ## Mapa, sklo a karta termínu — 22. 9. 2026
 
-- Mapa se přepne ze špendlíků na body podle skutečné hustoty, ne podle pevné hranice přiblížení: nejdřív se rozloží plné špendlíky, a když jediný z nich nenašel volné místo, překreslí se všechny jako body. Pevná hranice by při řídkém výsledku zbytečně schovala ceny a při hustém by nestačila. Rozhodnutí vychází ze vzdáleností na obrazovce, které se posunem mapy nemění, takže posouváním neblikají.
+Nahrazuje rozhodnutí „Kompaktní FLEK body při oddálení“ z 21. 9., které řešilo totéž, ale hranicemi přiblížení a stropem 100 řádků.
+
+- Mapa se přepne ze špendlíků na body podle skutečné hustoty, ne podle pevné hranice přiblížení: nejdřív se rozloží plné špendlíky, a když jediný z nich nenašel volné místo, překreslí se všechny jako body. Pevná hranice by při řídkém výsledku zbytečně schovala ceny a při hustém pohledu nad svou horní mezí by nestačila. Rozhodnutí vychází ze vzdáleností na obrazovce, které se posunem mapy nemění, takže posouváním neblikají.
+- Vybraný termín zůstává plným špendlíkem s cenou, místo aby se kompaktní bod rozbaloval zpět. Ušetří to čtyřicet řádků CSS, které přepisovaly to, co už výchozí špendlík umí.
+- Bod je prostý kotouč bez ikony oboru: při 13 px uvnitř 24 px kolečka není ikona čitelná (porovnáno vykreslením osmi kandidátů ve 4× měřítku). Víc termínů na jedné adrese pozná podle aury, ne podle číslíčka.
 - Rozmisťování počítá s dotykovou plochou bodu (44 px), ne s kolečkem (20 px). Klepnutí na bod musí otevřít ten bod, ne jeho souseda.
-- Mapa si říká o víc řádků ze stejného RPC, místo aby dostala vlastní funkci. „Rezervovatelné“ má zůstat jedna definice v SQL; druhá čtecí funkce by byla druhá odpověď na stejnou otázku. Strop 300 je pilotní kompromis, ne řešení pro velký katalog (viz LIMITATIONS.md).
+- Mapa si říká o víc řádků ze stejného RPC, místo aby dostala vlastní funkci. „Rezervovatelné“ má zůstat jedna definice v SQL; druhá čtecí funkce by byla druhá odpověď na stejnou otázku. Strop není 100, ale 300 — migrace `20260921212301` zvedla mez ve validaci `search_offers`, protože při 100 řádcích dosáhlo řazení „nejblíž“ jen na 6 podniků ze 16. Je to pilotní kompromis, ne řešení pro velký katalog (viz LIMITATIONS.md). Feed zůstává na 50: tam se výsledky čtou postupně a víc řádků by jen prodloužilo stránku.
 - Panel s fakty na kartě nabídky nemá vlastní materiál. Předchozí varianta s přelivem, vnitřním odleskem, barevným stínem a přechodovou linkou vyšla neprůhledná — tolik efektů kvůli bílé desce. Jedno sklo `.glass` pro celou aplikaci; barva značky nese význam (cena, časy), ne plochu.
 - Vybraný čas se v seznamu jiných časů neopakuje. Blok nad seznamem ho popisuje celý, takže jeho karta v seznamu opakovala šest údajů na jedné obrazovce. Nahoře „tvůj termín“, dole „místo něj“.

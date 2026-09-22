@@ -28,6 +28,8 @@ const markerTime = new Intl.DateTimeFormat('cs-CZ', {
   timeZone: 'Europe/Prague',
 });
 
+const appointmentWord = (count: number) => count === 1 ? 'termín' : count < 5 ? 'termíny' : 'termínů';
+
 /*
  * Free space the camera keeps around the results. On a phone the search controls float over
  * the top of the map and the tab bar over its bottom; a pin framed underneath either could
@@ -63,6 +65,7 @@ export function MapPage() {
   const [locateError, setLocateError] = useState(false);
   const [phone, setPhone] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
   const now = useServerNow();
+  // The map draws the whole filtered market, not a page of it; the cap lives in useDiscovery.
   const discovery = useDiscovery(point, filters, MAP_LIMIT);
   const categories = useQuery({ queryKey: ['categories'], queryFn: listCategories, staleTime: 3_600_000 });
   const rows = discovery.data?.rows;
@@ -84,7 +87,7 @@ export function MapPage() {
       category: first.category_slug,
       description: group.offers.length === 1
         ? `${first.service_name}, ${first.business_name}, ${markerTime.format(new Date(first.start_at))}, ${money(group.minPrice)}. Zobrazit náhled.`
-        : `${first.business_name}: ${group.offers.length} termíny, od ${money(group.minPrice)}. Zobrazit termíny.`,
+        : `${first.business_name}: ${group.offers.length} ${appointmentWord(group.offers.length)}, od ${money(group.minPrice)}. Zobrazit termíny.`,
     };
   }), [groups]);
 

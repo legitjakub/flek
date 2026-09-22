@@ -331,3 +331,11 @@ Lokální Docker integrační sada, fyzický iPhone/Safari, skutečná kamera, n
 - Patička „O FLEKu“: 368 px na 390 px (dřív 373 px) se třemi dlaždicemi ve tvaru 2 + 1, 255 px na 1280 px s jednou řadou pilulek; nikde vodorovné přetečení, dotyková plocha odkazů 44 px.
 - Panel karty nabídky nad třemi skutečnými fotografiemi (salon, masáže, tenis) na 390 px: fotka pod sklem prosvítá, text drží kontrast, karta zůstala 358 px.
 - Karta termínu na detailu nabídky na 390 px: 821 px místo 895 px, bez opakování vybraného času v seznamu.
+
+## Kompaktní body oddálené mapy — 21. 9. 2026
+
+> Tuhle podobu nahradila změna z 22. 9. (viz sekce výš): přepínání podle hustoty místo hranic přiblížení a 300 řádků místo 100. Důkazy níž platí pro implementaci, která už v kódu není.
+
+- `npm run build`: PASS; zůstává jen známé upozornění na velikost samostatného mapového balíčku. `npm run test:unit`: PASS, **154/154** v 19 souborech. Nové testy hlídají přepnutí městský pohled / detail čtvrti a zachování každého bodu při těsnějším rozložení 44px dotykových ploch.
+- Lokální mapa nad živými demo daty při 390 × 844 a 375 × 812 px: 15 samostatných kruhových bodů, žádný číselný čtvercový shluk, stránka má přesně šířku viewportu. Vybraný bod se rozbalil na ikonu s cenou a otevřel 136px kartu se třemi službami.
+- Desktop 1280 × 720 px po trojím přiblížení: všech 15 markerů zůstává v DOM, kompaktních je 0 a každý má plnou cenu; horizontální přetečení 0 px. Informační stav „Na dnešek nic není, ukazujeme celý týden“ měří na mobilu 330 × 40 px, používá značkové barvy a zůstává celý viditelný. Bez aplikační chyby; vývojový server zachytil jen známá varování cizího stylu OpenFreeMap o filtrech a chybějících sprite ikonách.
