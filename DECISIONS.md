@@ -284,3 +284,11 @@ Jakub ukázal aplikaci s mapou, kde má každý špendlík značku aplikace, a s
 - Spodní panel na fotografii má vlastní jemně ultramarínové sklo místo neutrální bílé desky. Vysoký podíl bílé drží kontrast malých metadat, modrý nádech a horní světelná linka ho vizuálně spojují se značkou FLEK.
 - Konečná cena je jediný plný prvek panelu a používá hlavní ultramarín. Červené přeškrtnutí původní ceny zmizelo: červená v aplikaci patří chybě a zamítnutí, ne běžné cenové informaci.
 - Ikony polohy a délky i čipy dalších časů používají tlumenou brandovou modrou. Panel tak má jednu barevnou logiku a nepřidává další soutěžící barvu ke slevě v horním rohu fotografie.
+
+## Mapa, sklo a karta termínu — 22. 9. 2026
+
+- Mapa se přepne ze špendlíků na body podle skutečné hustoty, ne podle pevné hranice přiblížení: nejdřív se rozloží plné špendlíky, a když jediný z nich nenašel volné místo, překreslí se všechny jako body. Pevná hranice by při řídkém výsledku zbytečně schovala ceny a při hustém by nestačila. Rozhodnutí vychází ze vzdáleností na obrazovce, které se posunem mapy nemění, takže posouváním neblikají.
+- Rozmisťování počítá s dotykovou plochou bodu (44 px), ne s kolečkem (20 px). Klepnutí na bod musí otevřít ten bod, ne jeho souseda.
+- Mapa si říká o víc řádků ze stejného RPC, místo aby dostala vlastní funkci. „Rezervovatelné“ má zůstat jedna definice v SQL; druhá čtecí funkce by byla druhá odpověď na stejnou otázku. Strop 300 je pilotní kompromis, ne řešení pro velký katalog (viz LIMITATIONS.md).
+- Panel s fakty na kartě nabídky nemá vlastní materiál. Předchozí varianta s přelivem, vnitřním odleskem, barevným stínem a přechodovou linkou vyšla neprůhledná — tolik efektů kvůli bílé desce. Jedno sklo `.glass` pro celou aplikaci; barva značky nese význam (cena, časy), ne plochu.
+- Vybraný čas se v seznamu jiných časů neopakuje. Blok nad seznamem ho popisuje celý, takže jeho karta v seznamu opakovala šest údajů na jedné obrazovce. Nahoře „tvůj termín“, dole „místo něj“.

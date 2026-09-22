@@ -36,7 +36,7 @@ Supabase advisor nadále hlásí vypnutou ochranu proti prolomeným heslům; na 
 
 ## Fotografie a Google hodnocení
 
-Lokální ilustrační fotografie existují v `public/images/services` a mají rozlišení podle aktivity; dřívější tvrzení, že sport nemá fotky, už neplatí. Katalog wellness používá neutrální spa snímek místo dřívější resortové fotografie. Některá ukázková data stále odkazují na Unsplash. Vybraná fotografie podniku má přednost před odvozenou ilustrací. Nahrávání vlastních fotografií přes UI není implementované; historické Storage politiky zůstávají samostatnou oblastí pro kontrolu před ostrým provozem.
+Lokální ilustrační fotografie existují v `public/images/services` a mají rozlišení podle aktivity; dřívější tvrzení, že sport nemá fotky, už neplatí. Katalog wellness používá neutrální spa snímek místo dřívější resortové fotografie. Některá ukázková data stále odkazují na Unsplash. Vybraná fotografie podniku má přednost před odvozenou ilustrací. Vlastní fotografii služby lze nahrát přímo v partnerském editoru (do 5 MB, přes privátní kbelík `moderation-pending` a frontu kontroly); zveřejní se teprve po schválení, takže bez `OPENAI_API_KEY` v Supabase secrets zůstane čekat.
 
 Google hodnocení se zobrazí jen pro správně přiřazené Place ID a funkční serverové Places API s billingem. Chybějící odpověď se nenahrazuje fiktivními hvězdičkami. Aktuální test rezervací neověřuje billing ani konfiguraci Google Cloud.
 
@@ -128,3 +128,9 @@ Více provozoven na účet je podporováno přepínačem v partnerské části. 
 - Moderace snižuje riziko explicitního a jinak závadného obsahu, ale negarantuje bezchybné rozhodnutí. Hraniční obsah musí posoudit člověk; falešně zamítnutý obsah lze znovu přezkoumat.
 - Hvězdičkové hodnocení se započítá ihned, protože je svázané s ověřenou dokončenou návštěvou. Text se ukáže teprve po schválení; zamítnutí textu hvězdičky nemaže.
 - WhatsApp je v UI skrytý, dokud serverový příznak a zobrazované číslo nepotvrdí, že je kanál skutečně připravený. Kód a SQL testy jsou hotové, ale bez plných Meta secrets, webhooku, schválených šablon a úspěšné testovací zprávy není produkčně aktivní.
+
+## Mapa a rozsah hledání (22. 9. 2026)
+
+- Mapa dostává stejnou odpověď jako feed, jen s vyšším stropem (300 řádků místo 50). Při pilotním objemu (315 rezervovatelných FLEKů u 17 podniků) na ně dosáhne každé řazení, ale je to strop, ne řešení: až bude nabídek řádově víc, bude mapa potřebovat vlastní čtecí RPC, které vrátí jeden řádek na adresu, ne všechny termíny. Strop RPC `search_offers` je proto 300 a výš by se neměl zvedat bez té funkce.
+- Body se při hustém pohledu rozmisťují kolem své skutečné polohy nejvýš o 88 px. V extrémně husté skupině (desítky podniků v jednom bloku) se proto i body překryjí; žádný z nich ale nezmizí a všechny zůstávají dosažitelné klávesnicí. Dál od skutečné polohy se špendlík posouvat nebude — vypadal by, že patří do jiné čtvrti.
+- Přepnutí mezi špendlíky a body se rozhoduje ze vzdáleností na obrazovce, takže posun mapou jím nehne; mění se jen při přiblížení. Při oddáleném pohledu není na mapě vidět cena — ta se vrátí po přiblížení nebo klepnutím na vybraný bod.

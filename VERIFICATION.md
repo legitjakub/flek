@@ -319,3 +319,15 @@ Lokální Docker integrační sada, fyzický iPhone/Safari, skutečná kamera, n
 
 - `npm run build` a `npm run test:unit`: PASS, **152/152**.
 - Lokální Objevování v prohlížeči na 375, 390 a 1280 px: jemně ultramarínový panel, brandová cena, ikony i čipy dalších časů; žádné horizontální přetečení ani chyba či varování v konzoli. Na 375 px měří karta 302 × 377 px a panel 282 × 104 px.
+
+## Mapa, hláška hledání, karty a patička — 22. 9. 2026
+
+- `npm run build` (včetně `tsc --noEmit`) a `npm run test:unit`: PASS, **156/156**, včetně dvou nových v `tests/map.test.ts` (rozmístění hlásí špendlík bez místa; stejné podniky jako body se vejdou bez překryvu a žádný nezmizí ani tam, kde se nevejde ani bod).
+- Migrace `20260921212301_map_search_limit_300` nanečisto v transakci s `rollback`, pak aplikovaná přes MCP; soubor přejmenovaný na verzi, kterou databáze zapsala.
+- Dotaz proti hostované databázi, výchozí filtr (do 5 km, `now()`, bez kategorie): při 50 řádcích dosáhne řazení „nejblíž“ na 3 podniky ze 16, „nejlevnější“ na 6, „doporučené“ na 14; při 300 řádcích dosáhnou všechna řazení na 16–17 podniků. Tělo funkce zůstalo slovo od slova stejné, mění se jediná mez ve validaci.
+- Vykreslení v Chromiu (Playwright, 2× DPR) proti sestavenému CSS a skutečnému písmu: šestnáct podniků na jedné pražské obrazovce při 390 px — plné špendlíky nechají jeden bez volného místa a přetékají přes okraj, body se vejdou všechny a vybraný si drží cenu. Dotyková plocha bodu změřená na 44 × 44 px.
+- Hláška o rozšířeném hledání a odznaky filtrů na 390 px: bez přetečení, nejdelší věta („Poblíž nic není, ukazujeme do 25 km a nejbližší dvě hodiny“) se zalomí uvnitř pilulky a kotouč zůstane u prvního řádku.
+- Karta „Tvůj FLEK“ na 375 i 390 px: 228 px (dřív 204 px), pruh se součtem drží dva řádky, odznak nejlepšího úlovku se nezalomí do třetího.
+- Patička „O FLEKu“: 368 px na 390 px (dřív 373 px) se třemi dlaždicemi ve tvaru 2 + 1, 255 px na 1280 px s jednou řadou pilulek; nikde vodorovné přetečení, dotyková plocha odkazů 44 px.
+- Panel karty nabídky nad třemi skutečnými fotografiemi (salon, masáže, tenis) na 390 px: fotka pod sklem prosvítá, text drží kontrast, karta zůstala 358 px.
+- Karta termínu na detailu nabídky na 390 px: 821 px místo 895 px, bez opakování vybraného času v seznamu.

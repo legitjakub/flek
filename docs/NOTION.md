@@ -327,6 +327,9 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 22. 9. 2026 | Mapa ukazuje všechny podniky i při oddáleném pohledu: server posílá mapě celou odpověď (dřív 50 řádků z jednoho konce města) a když špendlíky nemají kam, překreslí se všechny jako body. |
+| 22. 9. 2026 | Detail nabídky má termín v jednom bloku ve firemní barvě a seznam dole nabízí jen jiné časy, místo aby vybraný opakoval. |
+| 22. 9. 2026 | Karty v Objevování mají zpátky skutečné sklo — fotka pod panelem prosvítá; hláška o rozšířeném hledání, karta „Tvůj FLEK“ v profilu a patička „O FLEKu“ jsou přestavěné do firemních barev a drží pohromadě. |
 | 21. 9. 2026 | Karty v Objevování dostaly jemně ultramarínový skleněný panel: cena je v hlavní barvě FLEKu, ikony a další časy používají brandový odstín a původní cena už není červená. |
 | 21. 9. 2026 | Mapa ukazuje skutečné FLEK špendlíky místo číselných shluků; mobilní náhled má 136 px a carousel se posouvá po jedné službě. Přibyly ověřené anonymní recenze, upozornění po dokončení, privátní fail-closed moderace textů a fotografií, admin fronta s auditem, RLS na citlivých privátních tabulkách a bezpečný příznak dostupnosti WhatsAppu. Databáze i funkce jsou nasazené; OpenAI moderace zatím vrací HTTP 429 a WhatsApp čeká na dokončení Meta. |
 | 21. 9. 2026 | Detail nabídky na mobilu: odznak slevy a „Začíná za…“ na fotce, den termínu v barvě značky, cena a úspora nad seznamem časů, hodina vlevo a cena vpravo u každého času, bloky pod kartou jako karty s barevnou ikonou |
