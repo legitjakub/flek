@@ -327,6 +327,8 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 22. 9. 2026 | Podnik může nahrát fotku provozovny přímo v Provozovně; zákazník ji vidí nahoře na stránce podniku. |
+| 21. 9. 2026 | Osm nejvytíženějších oborů má skutečné fotografie místo generovaných a databáze prošla auditem výkonu (indexy a pravidla přístupu). |
 | 22. 9. 2026 | Mapa ukazuje všechny podniky i při oddáleném pohledu: server posílá mapě celou odpověď (dřív 50 řádků z jednoho konce města) a když špendlíky nemají kam, překreslí se všechny jako body. |
 | 22. 9. 2026 | Detail nabídky má termín v jednom bloku ve firemní barvě a seznam dole nabízí jen jiné časy, místo aby vybraný opakoval. |
 | 22. 9. 2026 | Karty v Objevování mají zpátky skutečné sklo — fotka pod panelem prosvítá; hláška o rozšířeném hledání, karta „Tvůj FLEK“ v profilu a patička „O FLEKu“ jsou přestavěné do firemních barev a drží pohromadě. |
