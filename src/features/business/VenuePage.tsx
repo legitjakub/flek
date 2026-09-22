@@ -92,6 +92,21 @@ export function VenuePage({ businessId }: { businessId: string }) {
         Zpět
       </Link>
 
+      {/*
+        The venue's own photograph, once the check has published it. It is a real picture of a real
+        place, so it carries no "ilustrační foto" label; venues without one keep the page as it was.
+      */}
+      {business.cover_url && !business.cover_url.startsWith('moderation-pending://') ? (
+        <div className="-mx-4 mb-3 sm:mx-0">
+          <img
+            src={business.cover_url}
+            alt=""
+            loading="lazy"
+            className="aspect-[16/9] w-full object-cover sm:rounded-2xl md:aspect-[3/1]"
+          />
+        </div>
+      ) : null}
+
       <h1 className="text-xl leading-tight font-extrabold tracking-tight md:text-2xl [overflow-wrap:anywhere]">
         {business.display_name}
       </h1>

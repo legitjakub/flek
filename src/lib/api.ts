@@ -286,8 +286,16 @@ const SERVICE_PHOTO_TYPES: Record<string, string> = {
   'image/webp': 'webp',
 };
 
-/** Uploads a merchant photo privately. It becomes public only after moderation approves it. */
-export async function uploadServicePhoto(businessId: string, file: File): Promise<string> {
+/**
+ * Uploads a merchant's photo to be checked before it is published.
+ *
+ * An authenticated client cannot write into the public buckets at all: the `flek_images_insert`
+ * policy is gone and `save_service` / `update_business` refuse any address that is not
+ * `moderation-pending://…` (`IMAGE_REUPLOAD_REQUIRED`). The picture goes into the private
+ * `moderation-pending` bucket, under a folder named after the business — that is what the storage
+ * policy checks membership against — and the worker publishes it once it passes.
+ */
+async function uploadForModeration(businessId: string, file: File, kind: 'services' | 'cover'): Promise<string> {
   const extension = SERVICE_PHOTO_TYPES[file.type];
   if (!extension) throw new Error('Vyberte fotografii ve formátu JPG, PNG nebo WebP.');
   if (file.size === 0) throw new Error('Vybraná fotografie je prázdná.');
@@ -295,7 +303,7 @@ export async function uploadServicePhoto(businessId: string, file: File): Promis
 
   const token = globalThis.crypto?.randomUUID?.()
     ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  const path = `${businessId}/services/${token}.${extension}`;
+  const path = `${businessId}/${kind}/${token}.${extension}`;
   const { error } = await supabase.storage.from('moderation-pending').upload(path, file, {
     contentType: file.type,
     cacheControl: '31536000',
@@ -303,7 +311,18 @@ export async function uploadServicePhoto(businessId: string, file: File): Promis
   });
   if (error) throw new Error('Fotku se nepodařilo nahrát. Zkontrolujte připojení a zkuste to znovu.');
 
+  // Not a public address: the picture has no public address until the check lets it through.
   return `moderation-pending://${path}`;
+}
+
+/** The merchant's own photograph of a service; `save_service` takes it as `image_url`. */
+export async function uploadServicePhoto(businessId: string, file: File): Promise<string> {
+  return await uploadForModeration(businessId, file, 'services');
+}
+
+/** The venue's own photograph, shown at the top of its public page; `update_business` takes it as `cover_url`. */
+export async function uploadBusinessCover(businessId: string, file: File): Promise<string> {
+  return await uploadForModeration(businessId, file, 'cover');
 }
 
 /**
