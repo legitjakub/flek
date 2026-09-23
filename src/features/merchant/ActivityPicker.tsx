@@ -121,7 +121,7 @@ export function ServicePhotoPicker({
       .sort((a, b) => b.label_cs.length - a.label_cs.length)[0]?.slug;
     const activity = templateSlug && templateSlug !== 'custom' ? templateSlug : (inferred ?? activityForName(serviceName, categorySlug));
     const reference = catalogue.find((photo) => photo.slug === activity);
-    const gallery = activity ? (ACTIVITY_GALLERIES[activity] ?? (reference?.image_url ? [reference.image_url] : [])) : [];
+    const gallery = activity ? [...new Set(ACTIVITY_GALLERIES[activity] ?? (reference?.image_url ? [reference.image_url] : []))].filter((url) => url !== SERVICE_PLACEHOLDER) : [];
     const options: PhotoOption[] = [
       { key: 'placeholder', label: 'Univerzální FLEK', imageUrl: SERVICE_PLACEHOLDER, value: null },
     ];
@@ -234,7 +234,7 @@ export function ServicePhotoPicker({
       <div className="relative mt-3 overflow-hidden rounded-2xl bg-line/45">
         {selected?.imageUrl ? (
           <>
-            <img src={selected.imageUrl} srcSet={activityPhotoSrcSet(selected.imageUrl)} sizes="(min-width: 768px) 560px, 100vw" alt="" className="aspect-[16/9] max-h-52 w-full object-cover" />
+            <img src={selected.imageUrl} srcSet={activityPhotoSrcSet(selected.imageUrl)} sizes="(min-width: 768px) 560px, 100vw" alt="" className="aspect-[16/9] max-h-52 w-full object-cover" onError={(event) => { if (event.currentTarget.getAttribute('src') === SERVICE_PLACEHOLDER) return; event.currentTarget.srcset = ''; event.currentTarget.src = SERVICE_PLACEHOLDER; }} />
             {isIllustrativeServiceImage(selected.imageUrl) ? <IllustrativePhotoLabel className="top-2 left-2" /> : null}
           </>
         ) : (
@@ -290,7 +290,7 @@ function PhotoChoice({ active, label, imageUrl, fallback, onClick }: {
     >
       {imageUrl ? (
         <>
-          <img src={imageUrl} srcSet={activityPhotoSrcSet(imageUrl)} sizes="96px" alt="" loading="lazy" className="aspect-square w-full object-cover" />
+          <img src={imageUrl} srcSet={activityPhotoSrcSet(imageUrl)} sizes="96px" alt="" loading="lazy" className="aspect-square w-full object-cover" onError={(event) => { if (event.currentTarget.getAttribute('src') === SERVICE_PLACEHOLDER) return; event.currentTarget.srcset = ''; event.currentTarget.src = SERVICE_PLACEHOLDER; }} />
           {isIllustrativeServiceImage(imageUrl) ? <IllustrativePhotoLabel compact className="bottom-[2.05rem] left-1" /> : null}
         </>
       ) : (

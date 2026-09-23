@@ -3,18 +3,10 @@
  * A map of forty offers must not download forty 1280 px photos to draw forty dots.
  *
  *   Unsplash         resized by its image CDN through the w / h / q parameters
- *   /images/services  a 176 px square pre-rendered next to the original, in thumbs/, for any
- *                    size that fits it; larger requests get the original
  *   anything else    returned unchanged, because there is no honest way to shrink it here
  */
 export function thumbnail(url: string | null | undefined, px = 132, square = true): string | null {
   if (!url) return null;
-  if (/^\/images\/activities\/[a-z0-9-]+-[12]\.jpg$/.test(url)) {
-    return px <= 176 ? url.replace(/\.jpg$/, '-176.jpg') : px <= 800 ? url.replace(/\.jpg$/, '-800.jpg') : url;
-  }
-  if (url.startsWith('/images/services/')) {
-    return px <= 176 && !url.includes('/thumbs/') ? url.replace('/images/services/', '/images/services/thumbs/') : url;
-  }
   try {
     const parsed = new URL(url);
     if (parsed.hostname === 'images.unsplash.com') {

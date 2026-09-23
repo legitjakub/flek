@@ -93,7 +93,7 @@ export function Wordmark({ tone = 'ink', suffix }: { tone?: 'ink' | 'invert'; su
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   /** `soft` is the warm beige secondary of the customer app: a quiet fill rather than an outline. */
-  variant?: 'primary' | 'secondary' | 'soft' | 'ghost' | 'danger';
+  variant?: 'primary' | 'brand' | 'secondary' | 'soft' | 'ghost' | 'danger';
   /** `sm` keeps the 44 px height but trims the sides, for several buttons sharing one row. */
   size?: 'sm' | 'md' | 'lg';
   /** `pill` is the customer app's shape; the merchant console keeps the squarer default. */
@@ -114,6 +114,7 @@ export function buttonClass({
     // Tailwind happens to emit after it, which is how a short button quietly wrapped its label.
     size === 'lg' ? 'min-h-13 gap-2 px-5 text-base' : size === 'sm' ? 'gap-1.5 px-2.5 text-sm whitespace-nowrap' : 'gap-2 px-4 text-sm',
     variant === 'primary' && 'bg-ink text-accent-ink hover:bg-ink-hover',
+    variant === 'brand' && 'bg-brand text-brand-ink hover:bg-accent',
     variant === 'secondary' && 'border border-line bg-card text-ink hover:bg-surface',
     variant === 'soft' && 'bg-line text-ink hover:bg-brand-soft',
     variant === 'ghost' && 'text-ink hover:bg-line/50',

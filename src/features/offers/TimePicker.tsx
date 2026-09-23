@@ -52,19 +52,18 @@ export function TimePicker({
   const last = new Map(slotLabels(times, now).map((label) => [label.id, label.last]));
 
   return (
-    <section className="mt-4 border-t border-line pt-4" aria-labelledby="vyber-casu">
+    <section className="mt-3" aria-labelledby="vyber-casu">
       <div className="flex items-baseline justify-between gap-3">
         <h3 id="vyber-casu" className="text-base font-extrabold text-ink">
           {current ? 'Jiný čas' : 'Volné časy'}
         </h3>
-        <p className="text-xs text-muted">Cena se může lišit</p>
       </div>
 
       {days.length > 1 ? (
         <div
           role="tablist"
           aria-label="Den termínu"
-          className="-mx-1 mt-2.5 flex snap-x gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="-mx-1 mt-2 flex snap-x gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {days.map((day) => {
             const selected = day.key === active.key;
@@ -79,7 +78,7 @@ export function TimePicker({
                   setExpandedDay(null);
                 }}
                 className={cx(
-                  'min-h-11 shrink-0 snap-start rounded-xl border px-3 text-sm font-bold transition-colors',
+                  'min-h-11 shrink-0 snap-start rounded-lg border px-3 text-sm font-bold transition-colors',
                   selected
                     ? 'border-brand bg-brand text-brand-ink'
                     : 'border-line bg-card text-muted hover:border-brand hover:text-accent',
@@ -100,7 +99,7 @@ export function TimePicker({
       <div
         role="tabpanel"
         aria-label={`${active.title}: dostupné časy`}
-        className="mt-2 grid grid-cols-2 gap-2"
+        className="mt-2 grid grid-cols-2 gap-1.5"
       >
         {visible.map((slot) => {
           const pending = slot.id === pendingId;
@@ -121,15 +120,15 @@ export function TimePicker({
               disabled={pendingId !== null && !pending}
               onClick={() => onPick(slot.id)}
               className={cx(
-                'relative min-h-[4.5rem] rounded-xl border px-3 py-2.5 text-left transition-[border-color,background-color,transform] active:scale-[0.98] disabled:opacity-55',
-                'border-line bg-surface hover:border-brand',
+                'relative min-h-[3.75rem] rounded-lg border px-2.5 py-2 text-left transition-[border-color,background-color,transform] active:scale-[0.98] disabled:opacity-55',
+                'border-line bg-card hover:border-brand hover:bg-brand-soft',
                 pending && 'animate-pulse',
               )}
             >
               <span className="flex items-center gap-2">
-                <span className="tnum text-lg leading-none font-extrabold">{clockTime(slot.start_at)}</span>
+                <span className="tnum text-base leading-none font-extrabold">{clockTime(slot.start_at)}</span>
               </span>
-              <span className="mt-2 flex items-center gap-1.5 text-xs text-muted">
+              <span className="mt-1 flex items-center gap-1.5 text-xs text-muted">
                 <span className="tnum font-bold">{money(slot.deal_price_cents)}</span>
                 {slot.discount_pct > 0 ? <span aria-hidden="true">·</span> : null}
                 {slot.discount_pct > 0 ? <span className="tnum font-bold">−{slot.discount_pct} %</span> : null}

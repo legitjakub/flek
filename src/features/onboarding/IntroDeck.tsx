@@ -1,21 +1,22 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { money } from '../../lib/format';
 import { DiscountBadge, OriginalPrice } from '../../components/Price';
+import { ACTIVITY_GALLERIES, activityPhotoSrcSet } from '../../lib/activityGalleries';
 
 /*
  * Illustrative, not inventory: no venue names, so the intro never presents a business
  * that does not exist as if it were a real offer. Service, district and time are enough
  * to show what the product is — and the spread of prices and discounts is the point.
  *
- * The photographs are 560 px copies of the service illustrations (260 kB for all five
- * instead of 1.5 MB), because this is the very first thing a new visitor downloads.
+ * The five verified photographs share the activity catalogue and use CDN widths so the
+ * first visit does not download full-size files.
  */
 const DECK = [
-  { image: '/images/intro/padel-prague.jpg', service: 'Padel na hodinu', place: 'Holešovice', time: 'Dnes 18:30', price: 390, was: 650 },
-  { image: '/images/intro/sauna-prague.jpg', service: 'Privátní sauna', place: 'Dejvice', time: 'Dnes 20:00', price: 225, was: 450 },
-  { image: '/images/intro/yoga-prague.jpg', service: 'Jóga pro začátečníky', place: 'Karlín', time: 'Dnes 17:00', price: 180, was: 240 },
-  { image: '/images/intro/personal-training-prague.jpg', service: 'Osobní trénink', place: 'Vinohrady', time: 'Zítra 7:30', price: 585, was: 900 },
-  { image: '/images/intro/tennis-prague.jpg', service: 'Tenisový kurt', place: 'Letná', time: 'Dnes 19:00', price: 320, was: 460 },
+  { image: ACTIVITY_GALLERIES['sport-padel'][0], service: 'Padel na hodinu', place: 'Holešovice', time: 'Dnes 18:30', price: 390, was: 650 },
+  { image: ACTIVITY_GALLERIES['wellness-privatni-sauna'][0], service: 'Privátní sauna', place: 'Dejvice', time: 'Dnes 20:00', price: 225, was: 450 },
+  { image: ACTIVITY_GALLERIES['joga-zacatecnici'][0], service: 'Jóga pro začátečníky', place: 'Karlín', time: 'Dnes 17:00', price: 180, was: 240 },
+  { image: ACTIVITY_GALLERIES['sport-osobni-trenink'][0], service: 'Osobní trénink', place: 'Vinohrady', time: 'Zítra 7:30', price: 585, was: 900 },
+  { image: ACTIVITY_GALLERIES['sport-tenis'][0], service: 'Tenisový kurt', place: 'Letná', time: 'Dnes 19:00', price: 320, was: 460 },
 ] as const;
 
 const INTERVAL_MS = 2600;
@@ -79,10 +80,13 @@ export function IntroDeck({ playing }: { playing: boolean }) {
             <div className="relative min-h-0 flex-1">
               <img
                 src={card.image}
+                srcSet={activityPhotoSrcSet(card.image)}
+                sizes="(min-width: 640px) 420px, 90vw"
                 alt=""
-                width={560}
-                height={420}
+                width={480}
+                height={360}
                 decoding="async"
+                onError={(event) => { if (event.currentTarget.getAttribute('src') === '/images/flek-placeholder.svg') return; event.currentTarget.srcset = ''; event.currentTarget.src = '/images/flek-placeholder.svg'; }}
                 className="size-full object-cover"
               />
               {/* Only the front card carries its badge: behind it, the badges peeked out as

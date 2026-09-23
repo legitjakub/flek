@@ -302,3 +302,10 @@ Nahrazuje rozhodnutí „Kompaktní FLEK body při oddálení“ z 21. 9., kter�
 - Vybraný FLEK má jeden souhrn s termínem, délkou, cenou, slevou a úsporou. Stejný termín se už pod ním nevykresluje jako další volba.
 - Alternativy se na telefonu vybírají ve dvou krocích: záložka dne a kompaktní dvousloupcové dlaždice časů. Cena zůstává u každého času, protože se mezi FLEKy může lišit; délka je společná a zůstává v souhrnu.
 - Pevná mobilní akce obsahuje jen cenu a „Chytit FLEK“. Platební režim a pravidla zrušení jsou vysvětlené v detailu a potvrzovacím kroku; jejich opakování pod tlačítkem zvyšovalo lištu a překrývalo výběr časů.
+
+## Skutečné fotografie a kratší detail — 23. 9. 2026
+
+- Původní generovaná knihovna z 20. 9. je nahrazená ověřenými skutečnými fotografiemi. Každá použitá fotografie má v manifestu zdroj, autora a licenci. Pokud snímek neukazuje věrohodně danou aktivitu, použije se neutrální FLEK; nepřiřazujeme obrázek podle pouhé podobnosti kategorie.
+- Migrace mění jen přesně známé staré katalogové adresy. Vlastní fotografie ve Storage nikdy nepřepisuje a ve všech zobrazeních má přednost. Poškozené nebo nedostupné URL končí stejným neutrálním placeholderem.
+- U detailu má fotografie na telefonu 180 px a rezervace tvoří jediný souvislý blok. Vybraný termín a jeho cena jsou nahoře, další volby pod nimi. Spodní akce používá barvu značky. Mapa se na telefonu načte až po výslovném otevření, protože dříve prodlužovala stránku před rozhodnutím o rezervaci.
+- Obecné ukázkové popisy a text provozovny se nevykreslují jako popis konkrétní služby. Konkrétní informace o službě zůstávají viditelné.

@@ -36,7 +36,7 @@ Supabase advisor nadále hlásí vypnutou ochranu proti prolomeným heslům; na 
 
 ## Fotografie a Google hodnocení
 
-Lokální ilustrační fotografie existují v `public/images/services` a mají rozlišení podle aktivity; dřívější tvrzení, že sport nemá fotky, už neplatí. Katalog wellness používá neutrální spa snímek místo dřívější resortové fotografie. Některá ukázková data stále odkazují na Unsplash. Vybraná fotografie podniku má přednost před odvozenou ilustrací. Vlastní fotografii služby lze nahrát přímo v partnerském editoru (do 5 MB, přes privátní kbelík `moderation-pending` a frontu kontroly); zveřejní se teprve po schválení, takže bez `OPENAI_API_KEY` v Supabase secrets zůstane čekat.
+Původní lokální generované fotografie byly 23. 9. odstraněny. Katalog nyní používá skutečné fotografie z Unsplashe; jejich zdroje, autoři a licence jsou v `docs/assets/activity-photo-sources.json`. U pěti variant, kde vhodný snímek nebyl, se ukazuje neutrální FLEK placeholder. Stock snímek není fotografií konkrétní provozovny a načítá se z externí CDN; při výpadku jej nahradí placeholder. Vybraná fotografie podniku má přednost před katalogem. Vlastní fotografii služby lze nahrát přímo v partnerském editoru (do 5 MB, přes privátní kbelík `moderation-pending` a frontu kontroly); zveřejní se teprve po schválení, takže bez funkční automatické nebo ruční moderace zůstane čekat.
 
 Google hodnocení se zobrazí jen pro správně přiřazené Place ID a funkční serverové Places API s billingem. Chybějící odpověď se nenahrazuje fiktivními hvězdičkami. Aktuální test rezervací neověřuje billing ani konfiguraci Google Cloud.
 

@@ -1,4 +1,4 @@
-import { ArrowLeft, CalendarDays, CalendarPlus, ChevronDown, Clock3, Info, MapPin, Check, PiggyBank, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, CalendarDays, CalendarPlus, ChevronDown, Clock3, Info, MapPin, Check, ShieldCheck } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { activityPhotoSrcSet } from '../../lib/activityGalleries';
 import { useEffect, useState, type ReactNode } from 'react';
@@ -44,8 +44,17 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
   const [code, setCode] = useState<string | null>(null);
   const [confirmedByMerchant, setConfirmedByMerchant] = useState(false);
   const [followed, setFollowed] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
+  const [desktopMap, setDesktopMap] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches);
   const { userId } = useSession();
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 768px)');
+    const update = () => setDesktopMap(media.matches);
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
 
   const query = useQuery({
     queryKey: ['offer', offerId],
@@ -187,6 +196,9 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
 
   const hasPhoto = Boolean(image);
   const reason = unavailableReason(offer, now);
+  const serviceDescription = offer.description?.trim();
+  const usefulDescription = serviceDescription && !isGenericServiceDescription(serviceDescription, offer.service_name, offer.business_name)
+    ? serviceDescription : null;
 
   return (
     <main className={cx('page-container md:pb-10', offer.bookable ? 'pb-32' : 'pb-10')}>
@@ -208,7 +220,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
                 sizes="(min-width: 1024px) 800px, 100vw"
                 onError={() => setFailedPhoto(source)}
                 alt=""
-                className="aspect-[16/9] w-full object-cover md:aspect-[2/1] md:rounded-2xl"
+                className="h-[180px] w-full object-cover md:h-auto md:aspect-[2/1] md:rounded-2xl"
               />
               {/* Only under the controls, and only as far as they reach: a scrim over the
                   whole image would dull the photograph for no reason. */}
@@ -325,7 +337,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           y=755. Grouping them fixes the collision by construction, not by nudging offsets.
         */}
         <aside
-          className="rounded-3xl bg-card p-4 shadow-card md:sticky md:top-24 md:col-start-2 md:row-start-1 md:row-span-2 md:p-5"
+          className="rounded-2xl border border-line bg-card p-3.5 shadow-card md:sticky md:top-24 md:col-start-2 md:row-start-1 md:row-span-2 md:p-5"
           aria-label="Vybraný termín"
         >
           <div className="flex items-center justify-between gap-3">
@@ -339,39 +351,33 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           {/* One ticket-like surface answers the three booking questions together: which day,
               which time and what it costs. The old layout split them across separate rows and
               then repeated them once more in every time card. */}
-          <div className="mt-3 rounded-2xl border border-brand/15 bg-brand-soft p-3.5">
+          <div className="mt-2.5 border-b border-line pb-3">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <p className="inline-flex items-center gap-1.5 text-sm font-bold text-accent">
+                <p className="inline-flex items-center gap-1.5 text-xs font-bold text-accent">
                   <CalendarDays size={15} aria-hidden="true" />
                   {dayLabel(offer.start_at, now)}
                 </p>
-                <p className="tnum mt-1 text-xl leading-none font-extrabold tracking-tight text-ink">
+                <p className="tnum mt-1 text-lg leading-none font-extrabold tracking-tight text-ink">
                   {clockTime(offer.start_at)}–{clockTime(offer.end_at)}
                 </p>
               </div>
               <div className="shrink-0 text-right">
-                <p className="tnum text-xl leading-none font-extrabold tracking-tight text-ink">
+                <p className="tnum text-lg leading-none font-extrabold tracking-tight text-ink">
                   {money(offer.deal_price_cents)}
                 </p>
                 {savings > 0 ? (
                   <p className="mt-1 flex items-center justify-end gap-1.5">
                     <OriginalPrice cents={offer.original_price_cents} className="text-xs" />
-                    <DiscountBadge pct={offer.discount_pct} />
+                    <span className="tnum text-xs font-bold text-accent">−{offer.discount_pct} %</span>
                   </p>
                 ) : null}
               </div>
             </div>
-            {savings > 0 ? (
-              <p className="tnum mt-3 inline-flex items-center gap-1.5 text-sm font-extrabold text-positive">
-                <PiggyBank size={15} aria-hidden="true" />
-                Ušetříš {money(savings)}
-              </p>
-            ) : null}
           </div>
 
           {(minutesAway > 0 && minutesAway <= 120) || (offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60) || showCapacity ? (
-            <p className="tnum mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-line pt-3 text-sm text-muted">
+            <p className="tnum mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
               {minutesAway > 0 && minutesAway <= 120 ? <span className="font-bold text-accent">Začíná {relativeTime(offer.start_at, now)}</span> : null}
               {minutesAway > 0 && minutesAway <= 120 && offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60 ? <span aria-hidden="true">·</span> : null}
               {offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60 ? <span>Rezervovat ještě <strong className="text-ink">{cutoffMinutes} min</strong></span> : null}
@@ -411,7 +417,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
                 <span className="text-lg leading-none font-extrabold">{money(offer.deal_price_cents)}</span>
                 {savings > 0 ? <OriginalPrice cents={offer.original_price_cents} className="text-xs" /> : null}
               </p>
-              <Button size="lg" className="min-w-0 flex-1 md:w-full" onClick={() => setSheetOpen(true)}>
+              <Button variant="brand" size="lg" className="min-w-0 flex-1 md:w-full" onClick={() => setSheetOpen(true)}>
                 Chytit FLEK
               </Button>
             </div>
@@ -441,16 +447,22 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             the same volume — or skipped. The glyph colours also carry the one thing the block is
             about: the venue (brand), the way there (brand) and the money back (green).
           */}
-          <Section title="O službě" tone="accent" icon={<Info size={18} aria-hidden="true" />}>
-            <p className="text-base leading-relaxed">{offer.description || `${offer.service_name} v podniku ${offer.business_name}. Délka služby ${duration(offer.start_at, offer.end_at)} minut.`}</p>
-            {offer.business_description ? <p className="mt-3 text-base leading-relaxed">{offer.business_description}</p> : null}
-          </Section>
+          {usefulDescription ? (
+            <Section title="O službě" tone="accent" icon={<Info size={18} aria-hidden="true" />}>
+              <p className="text-base leading-relaxed">{usefulDescription}</p>
+            </Section>
+          ) : null}
           <Section id="kde-to-je" title="Kde to je" tone="brand" icon={<MapPin size={18} aria-hidden="true" />}>
-            <p className="text-base leading-relaxed">
+            <p className="text-sm leading-relaxed">
               {offer.address_line}, {offer.district || offer.city}
               {offer.distance_m != null ? <span className="tnum text-muted"> · {formatDistance(offer.distance_m)}</span> : null}
             </p>
-            <LazyMap className="mt-3 h-56 w-full overflow-hidden rounded-2xl border border-line" center={{ lat: offer.latitude, lng: offer.longitude }} zoom={14} interactive={false} markers={[{ id: offer.id, lat: offer.latitude, lng: offer.longitude, label: offer.business_name }]} ariaLabel={`Mapa: ${offer.business_name}, ${offer.address_line}`} />
+            {!desktopMap && !mapOpen ? (
+              <button type="button" onClick={() => setMapOpen(true)} className="mt-2 inline-flex min-h-11 items-center text-sm font-bold text-accent underline underline-offset-4">
+                Zobrazit mapu
+              </button>
+            ) : null}
+            {desktopMap || mapOpen ? <LazyMap className="mt-3 h-48 w-full overflow-hidden rounded-xl border border-line md:h-56" center={{ lat: offer.latitude, lng: offer.longitude }} zoom={14} interactive={false} markers={[{ id: offer.id, lat: offer.latitude, lng: offer.longitude, label: offer.business_name }]} ariaLabel={`Mapa: ${offer.business_name}, ${offer.address_line}`} /> : null}
             <div className="mt-1 flex flex-wrap gap-x-6">
               <a className="inline-flex min-h-11 items-center gap-2 text-base font-bold text-accent" href={navigationHref(offer)} target="_blank" rel="noreferrer"><MapPin size={17} aria-hidden="true" />Navigovat</a>
               <Link
@@ -465,7 +477,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
               they described a deadline that cannot be used — noise at best, misleading at worst. */}
           {offer.bookable ? (
             <Section title="Zrušení zdarma" tone="positive" icon={<ShieldCheck size={18} aria-hidden="true" />}>
-              <p className="text-base leading-relaxed">Zrušit můžeš zdarma {cancellationCopy} a vrátíme ti celou částku.{Date.parse(cancellationAt) > Date.parse(now) ? ` Když rezervuješ později, máš na zrušení ${graceCopy}.` : ''}</p>
+              <p className="text-sm leading-relaxed">Zrušit můžeš zdarma {cancellationCopy} a vrátíme ti celou částku.{Date.parse(cancellationAt) > Date.parse(now) ? ` Když rezervuješ později, máš na zrušení ${graceCopy}.` : ''}</p>
             </Section>
           ) : null}
           {/* A slot that can no longer be booked already offers alternatives in the recovery block above. */}
@@ -511,11 +523,11 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section id={id} className="mt-4 scroll-mt-24 rounded-2xl bg-card p-4 shadow-card sm:p-5">
+    <section id={id} className="mt-4 scroll-mt-24 border-t border-line pt-4 md:rounded-2xl md:border-0 md:bg-card md:p-5 md:shadow-card">
       <h2 className="flex items-center gap-2.5 text-lg font-extrabold">
         <span
           className={cx(
-            'grid size-9 shrink-0 place-items-center rounded-xl',
+            'grid size-8 shrink-0 place-items-center rounded-lg',
             tone === 'accent' && 'bg-accent-soft text-accent',
             tone === 'brand' && 'bg-brand-soft text-brand',
             tone === 'positive' && 'bg-positive/10 text-positive',
@@ -528,6 +540,20 @@ function Section({
       <div className="mt-3">{children}</div>
     </section>
   );
+}
+
+function isGenericServiceDescription(description: string, serviceName: string, businessName: string): boolean {
+  const normalize = (text: string) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('cs-CZ').replace(/\s+/g, ' ').trim();
+  const text = normalize(description);
+  return text === normalize(serviceName)
+    || text === normalize(`${serviceName} v podniku ${businessName}.`)
+    || [
+      'ukazkova sluzba teto demo provozovny.',
+      'doprej si chvili pro sebe. v cene je vse potrebne pro tuto sluzbu.',
+      'pece a pozornost bez spechu.',
+    ].includes(text)
+    || /^sluzba trva \d+ minut\.?$/.test(text)
+    || /^delka sluzby \d+ minut\.?$/.test(text);
 }
 
 function BookingSuccess({

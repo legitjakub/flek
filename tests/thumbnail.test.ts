@@ -16,18 +16,6 @@ describe('thumbnail', () => {
     expect(url.searchParams.has('h')).toBe(false);
   });
 
-  it('uses the pre-rendered copy of a bundled photo only when it is big enough', () => {
-    expect(thumbnail('/images/services/padel-prague.jpg')).toBe('/images/services/thumbs/padel-prague.jpg');
-    expect(thumbnail('/images/services/padel-prague.jpg', 720)).toBe('/images/services/padel-prague.jpg');
-  });
-
-  it('uses responsive local copies of generated activity photos', () => {
-    const image = '/images/activities/masaze-relaxacni-1.jpg';
-    expect(thumbnail(image)).toBe('/images/activities/masaze-relaxacni-1-176.jpg');
-    expect(thumbnail(image, 720, false)).toBe('/images/activities/masaze-relaxacni-1-800.jpg');
-    expect(thumbnail(image, 1200, false)).toBe(image);
-  });
-
   it('leaves other hosts and missing pictures alone', () => {
     expect(thumbnail('https://example.com/a.jpg')).toBe('https://example.com/a.jpg');
     expect(thumbnail(null)).toBeNull();

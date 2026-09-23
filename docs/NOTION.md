@@ -1,6 +1,6 @@
 # FLEK — přehled projektu
 
-> Aktualizováno 22. 9. 2026. Zdroj pravdy je repozitář (`docs/NOTION.md`). Stránku aktualizuje agent na požádání; ruční úpravy tady se při další aktualizaci přepíšou.
+> Aktualizováno 23. 9. 2026. Zdroj pravdy je repozitář (`docs/NOTION.md`). Stránku aktualizuje agent na požádání; ruční úpravy tady se při další aktualizaci přepíšou.
 
 ## Ve zkratce
 
@@ -89,6 +89,8 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 
 - [x] Nahradit nevhodnou resortovou fotografii wellness služeb neutrálním spa snímkem; jednorázová migrace opravuje katalog i existující služby a obálky (14. 9. 2026)
 - [x] Dokončit originální fotografickou knihovnu pro každou připravenou aktivitu; 74 originálů, dvě varianty pro všech 37 aktivit včetně půjčení kola, responsivně napojené (20. 9. 2026)
+- [x] Nahradit generovanou knihovnu vizuálně ověřenými skutečnými fotografiemi nebo neutrálním FLEK placeholderem; zdroje a licence jsou v manifestu a vlastní fotka podniku má stále přednost (23. 9. 2026)
+- [x] Zkrátit mobilní detail služby a rezervaci, odstranit opakované údaje, obecné popisy a automaticky otevřenou mapu (23. 9. 2026)
 
 Rozdělení vychází z auditu 13. 9. 2026 (bezpečnostní audit ChatGPT ověřený proti kódu a produkční databázi a doplněný o chybějící oblasti).
 
@@ -327,6 +329,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 23. 9. 2026 | Detail služby na telefonu má kratší fotografii, přehlednější termín, cenu a výběr dalších časů, ultramarínovou akci a mapu otevřenou až po klepnutí. Všech 37 katalogových aktivit má dvě varianty: skutečné ověřené fotografie, případně neutrální FLEK. Generované soubory byly odstraněny a demo katalog aktualizovaly dvě cílené migrace. |
 | 22. 9. 2026 | Podnik může nahrát fotku provozovny přímo v Provozovně; zákazník ji vidí nahoře na stránce podniku. |
 | 22. 9. 2026 | Mapa ukazuje všechny podniky i při oddáleném pohledu: server posílá mapě celou odpověď (dřív 50 řádků z jednoho konce města) a když špendlíky nemají kam, překreslí se všechny jako body. |
 | 22. 9. 2026 | Mobilní detail nabídky má jeden přehledný souhrn vybraného FLEKu; pod ním se nejdřív volí den a potom jiný čas v kompaktní dvousloupcové mřížce. Vybraný termín se v seznamu neopakuje a spodní lišta obsahuje jen cenu a hlavní akci. |

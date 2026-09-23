@@ -1,6 +1,6 @@
 # FLEK — živý přehled projektu
 
-> Poslední kontrola: 22. 9. 2026
+> Poslední kontrola: 23. 9. 2026
 > Zdroj pravdy: repozitář FLEK v této složce. Tento soubor shrnuje stav produktu; technické detaily a akceptační důkazy zůstávají v odkazovaných dokumentech.
 
 ## Co FLEK řeší
@@ -34,7 +34,7 @@ Demo účty a jejich omezení jsou v [README.md](../README.md). Produkční hesl
 ### První návštěva
 
 - Anonymní návštěvník na `/` dostane jednorázové tříkrokové intro uložené v `localStorage`.
-- Intro vysvětluje princip volného termínu, cenu a rezervaci. Obsahuje ilustrativní pražské fotografie a žádná falešná jména podniků.
+- Intro vysvětluje princip volného termínu, cenu a rezervaci. Používá ověřené skutečné fotografie z katalogu, nikoli generované obrázky nebo falešná jména podniků.
 - Respektuje `prefers-reduced-motion`; poslední krok vede na objevování.
 
 ### Služby a fotografie pro podnik
@@ -44,6 +44,12 @@ Demo účty a jejich omezení jsou v [README.md](../README.md). Produkční hesl
 - Galerie je vázaná na konkrétní aktivitu (např. padel, tenis, squash, badminton, osobní trénink), takže se nemíchají nesouvisející sportovní fotky.
 - Výběr fotky používá snap carousel s šipkami, indikátorem pozice a jedním velkým náhledem. Ilustrační fotografie mají nenápadný textový štítek.
 - Podnik může u služby nahrát vlastní JPG, PNG nebo WebP do 5 MB. Uložená vlastní fotografie má na kartách, mapě, detailu i v partnerském náhledu vždy přednost; katalog a univerzální FLEK jsou pouze záloha a vlastní fotografie se neoznačuje jako ilustrační.
+- Katalog 37 aktivit nabízí dvě varianty: 69 použití skutečných fotografií s evidencí zdroje, autora a licence a pět neutrálních FLEK placeholderů tam, kde by konkrétní snímek klamal. Staré generované obrázky byly odstraněny; načítání nefunkčního obrázku končí neutrální náhradou.
+
+### Detail služby na telefonu (23. 9. 2026)
+
+- Fotografie má výšku 180 px, záhlaví krátce uvádí službu, podnik a adresu. Rezervační blok soustředí termín, délku a cenu nad kompaktní volbou dalšího dne a času; vybraný termín se neopakuje v možnostech.
+- Obecné ukázkové věty ani popis provozovny se nevydávají za popis služby. Mapa se na telefonu načte až po klepnutí na „Zobrazit mapu“. Pevná lišta nese cenu a ultramarínové tlačítko „Chytit FLEK“.
 
 ### Ověřené recenze a moderace obsahu (21. 9. 2026)
 
@@ -173,6 +179,8 @@ Nejdůležitější migrace:
 | `20260921194427_audit_foreign_key_indexes.sql` | indexy cizích klíčů, které aplikace opravdu čte (performance advisor) |
 | `20260921194443_rls_policies_evaluate_auth_uid_once.sql` | RLS politiky vyhodnocují `auth.uid()` jednou za dotaz, ne na každý řádek |
 | `20260921212301_map_search_limit_300.sql` | strop `search_offers` z 100 na 300 řádků, aby mapa dosáhla na všechny podniky; tělo funkce beze změny |
+| `20260923095229_replace_generated_activity_photos.sql` | výměna pouze přesně známých ilustračních URL v katalogu a demo službách; vlastní fotografie ve Storage zůstávají |
+| `20260923100358_adjust_wellness_rest_photos.sql` | náhrada dvou zavádějících wellness snímků odpočinku neutrálnějšími skutečnými fotografiemi |
 
 ## Ověření a otevřené body
 
@@ -202,6 +210,7 @@ Podrobné důkazy jsou v [VERIFICATION.md](../VERIFICATION.md), omezení v [LIMI
 
 | Datum | Změna | Stav |
 | --- | --- | --- |
+| 23. 9. 2026 | Mobilní detail má 180px fotografii, kratší záhlaví a rezervační celek bez vnořených karet; obecné popisy se nezobrazují a mapa se otevírá až na požádání. Katalog 37 aktivit přešel z generovaných obrázků na 69 použití skutečných fotografií a pět neutrálních placeholderů. Zdroj a licence jsou v `docs/assets/activity-photo-sources.json`; staré veřejné soubory byly odstraněny. | migrace `20260923095229` a `20260923100358` v hostované DB; mobil 375/390 px a desktop 1280 px bez přetečení, náhradní obrázek a změna termínu ověřeny; build a unit testy viz `VERIFICATION.md` |
 | 22. 9. 2026 | Fotka provozovny jde nahrát přímo v Provozovně (stejnou cestou přes kontrolu obsahu jako fotka služby) a zákazník ji vidí nahoře na stránce podniku. Přibyly české hlášky pro `IMAGE_REUPLOAD_REQUIRED`, `CONTENT_PENDING` a `MODERATION_UNAVAILABLE`. | build a 156 unit testů; skutečné nahrání odsud vyzkoušet nejde (kontejner nemá síť ven), ověří ho člověk na demo podniku |
 | 22. 9. 2026 | Detail nabídky: den, hodiny, délka, cena, úspora a zbývající místa drží pohromadě na jedné ploše ve firemní barvě místo tří vlasových linek. Vybraný čas se v seznamu „Jiné časy“ neopakuje — blok nad ním ho popisuje celý. V kartách časů má plnou výplň jen sleva; délka a poslední místo jsou text. | build a 156 unit testů; vykresleno v Chromiu na 390 px bez přetečení, karta 821 px místo 895 px |
 | 22. 9. 2026 | Patička „O FLEKu“: právní texty jsou dlaždice (na mobilu dvě vedle sebe, lichá poslední přes šířku; na širší obrazovce řada pilulek) místo tří podtržených odkazů pod sebou. Dotyková plocha zůstává 44 px. | build a 156 unit testů; 390 a 1280 px bez přetečení |

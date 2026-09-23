@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { existsSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ACTIVITY_GALLERIES, ACTIVITY_LABELS } from '../src/lib/activityGalleries';
 import { isIllustrativeServiceImage, SERVICE_PLACEHOLDER, serviceIllustration } from '../src/lib/serviceIllustrations';
@@ -27,36 +27,36 @@ describe('serviceIllustration', () => {
   });
 
   it('matches the other kinds of service by name, and not on fragments of unrelated words', () => {
-    expect(serviceIllustration('Vinyasa jóga')).toBe('/images/activities/joga-vinyasa-1.jpg');
-    expect(serviceIllustration('Privátní sauna')).toBe('/images/activities/wellness-privatni-sauna-1.jpg');
-    expect(serviceIllustration('Relaxační masáž')).toBe('/images/activities/masaze-relaxacni-1.jpg');
+    expect(serviceIllustration('Vinyasa jóga')).toBe(ACTIVITY_GALLERIES['joga-vinyasa'][0]);
+    expect(serviceIllustration('Privátní sauna')).toBe(ACTIVITY_GALLERIES['wellness-privatni-sauna'][0]);
+    expect(serviceIllustration('Relaxační masáž')).toBe(ACTIVITY_GALLERIES['masaze-relaxacni'][0]);
     // "vlastní" is not "vlasy", and "trasa" is not "řasy".
     expect(serviceIllustration('Vlastní lekce na trase', null, null)).toBe(SERVICE_PLACEHOLDER);
   });
 
-  it('falls back to a photo of the category before FLEK\'s own picture', () => {
-    expect(serviceIllustration('Kurz lukostřelby', null, 'sport')).toBe('/images/services/group-class-prague.jpg');
-    expect(serviceIllustration('Speciální balíček', null, 'krasa')).toMatch(/images\.unsplash\.com/);
+  it('uses a neutral placeholder when a service cannot be identified safely', () => {
+    expect(serviceIllustration('Kurz lukostřelby', null, 'sport')).toBe(SERVICE_PLACEHOLDER);
+    expect(serviceIllustration('Speciální balíček', null, 'krasa')).toBe(SERVICE_PLACEHOLDER);
     expect(serviceIllustration('Půjčení kola', null, 'neznama-kategorie')).toBe(SERVICE_PLACEHOLDER);
     expect(serviceIllustration('Půjčení kola')).toBe(ACTIVITY_GALLERIES['sport-pujceni-kola'][0]);
   });
 
-  it('has two pictures for every prepared activity, each of them real', () => {
+  it('has two verified choices for each activity and no generated public image dependency', () => {
     expect(Object.keys(ACTIVITY_GALLERIES).sort()).toEqual(Object.keys(ACTIVITY_LABELS).sort());
+    const sources = JSON.parse(readFileSync(join(process.cwd(), 'docs/assets/activity-photo-sources.json'), 'utf8')) as Array<{
+      activity: string; variant: number; image: string; source_page: string | null; author: string | null; license: string | null;
+    }>;
+    expect(sources).toHaveLength(74);
     for (const photos of Object.values(ACTIVITY_GALLERIES)) {
       expect(photos).toHaveLength(2);
-      for (const photo of photos) {
-        // Either a photograph on the Unsplash CDN, whose sizes `thumbnail()` asks for through
-        // the query, or a local file, which needs its 800 and 176 derivative next to it.
-        if (photo.startsWith('https://images.unsplash.com/')) {
-          expect(photo).toMatch(/^https:\/\/images\.unsplash\.com\/photo-[0-9a-f-]+\?w=\d+&q=\d+&auto=format&fit=crop$/);
-          continue;
-        }
-        expect(photo).toMatch(/^\/images\/activities\/[a-z0-9-]+-[12]\.jpg$/);
-        expect(existsSync(join(process.cwd(), 'public', photo))).toBe(true);
-        expect(existsSync(join(process.cwd(), 'public', photo.replace(/\.jpg$/, '-800.jpg')))).toBe(true);
-        expect(existsSync(join(process.cwd(), 'public', photo.replace(/\.jpg$/, '-176.jpg')))).toBe(true);
-      }
+      for (const photo of photos) expect(photo === SERVICE_PLACEHOLDER || photo.startsWith('https://images.unsplash.com/photo-')).toBe(true);
+    }
+    for (const source of sources) {
+      expect(ACTIVITY_GALLERIES[source.activity][source.variant - 1]).toBe(source.image);
+      if (source.image === SERVICE_PLACEHOLDER) continue;
+      expect(source.source_page).toMatch(/^https:\/\/unsplash\.com\/photos\//);
+      expect(source.author).toBeTruthy();
+      expect(source.license).toBe('Unsplash License');
     }
   });
 
