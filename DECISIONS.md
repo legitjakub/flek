@@ -305,6 +305,8 @@ Nahrazuje rozhodnutí „Kompaktní FLEK body při oddálení“ z 21. 9., kter�
 
 ## Skutečné fotografie a kratší detail — 23. 9. 2026
 
+- Následná úprava rezervačního bloku: plnou barvu značky má pouze souhrn vybraného termínu. Dny používají podtržení a ostatní termíny jemný podklad bez obrysů a opakovaných slev. Počty možností zůstávají v přístupném názvu dne, aby vizuálně nesoutěžily s cenou. Výběr dne je skupina běžných přepínacích tlačítek ovladatelných Tab/Enter, nikoli neúplný ARIA tablist.
+
 - Původní generovaná knihovna z 20. 9. je nahrazená ověřenými skutečnými fotografiemi. Každá použitá fotografie má v manifestu zdroj, autora a licenci. Pokud snímek neukazuje věrohodně danou aktivitu, použije se neutrální FLEK; nepřiřazujeme obrázek podle pouhé podobnosti kategorie.
 - Migrace mění jen přesně známé staré katalogové adresy. Vlastní fotografie ve Storage nikdy nepřepisuje a ve všech zobrazeních má přednost. Poškozené nebo nedostupné URL končí stejným neutrálním placeholderem.
 - U detailu má fotografie na telefonu 180 px a rezervace tvoří jediný souvislý blok. Vybraný termín a jeho cena jsou nahoře, další volby pod nimi. Spodní akce používá barvu značky. Mapa se na telefonu načte až po výslovném otevření, protože dříve prodlužovala stránku před rozhodnutím o rezervaci.

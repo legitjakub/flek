@@ -350,6 +350,8 @@ Lokální Docker integrační sada, fyzický iPhone/Safari, skutečná kamera, n
 
 ## Skutečné fotografie a kompaktní detail — 23. 9. 2026
 
+- Následný redesign vloženého rezervačního bloku: build a 154/154 unit testů PASS. Chrome 375/390 a 1280 px: vizuálně ověřen ultramarínový souhrn, podtržený výběr dne a jemné alternativy. Při 375 px blok měří 289 px, žádné horizontální přetečení ani tlačítko menší než 44 px. Přepnutí na 25. 9. a čas 11:00 změnilo nabídku na `ffbb0557-df8f-4af5-b826-95ca79d4eaa2` a cenu na 317 Kč. Konzole 0 chyb, jen známá varování mapového stylu. Mobbin neposkytl reference, protože připojení vyžaduje placený tarif; návrh proto není vydávaný za kopii konkrétní obrazovky z Mobbinu.
+
 - Nasazení commitu `e9fd9cb` na `main`: Vercel **success**, GitHub „Typy, build, unit testy a závislosti“ **success**, „Supabase Preview“ **success**. Produkční detail půjčení kola na `www.app-flek.eu` ověřen na 375 i 390 × 844 px: fotografie načtená, výška 180 px, nulové vodorovné přetečení, hlavní akce 52 px a ultramarín `rgb(44, 38, 210)`. Notion „FLEK — přehled projektu“ synchronizován a následným čtením ověřen.
 
 - `npm run build`: PASS včetně TypeScriptu; zůstává pouze známé upozornění na velikost mapového balíčku. `npm run test:unit`: PASS, **154/154** v 19 souborech. Dva testy starých generovaných derivátů byly odstraněny, nové testy ověřují všech 74 míst katalogu, evidenci skutečných fotografií, neutrální náhradu a přednost vlastní fotografie podniku.

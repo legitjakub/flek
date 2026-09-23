@@ -87,6 +87,8 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 
 ## Todolist
 
+- [x] Zpřehlednit výběr termínu: jeden výrazný souhrn v ultramarínu, podtržené dny a klidnější volby času s cenou (23. 9. 2026)
+
 - [x] Nahradit nevhodnou resortovou fotografii wellness služeb neutrálním spa snímkem; jednorázová migrace opravuje katalog i existující služby a obálky (14. 9. 2026)
 - [x] Dokončit originální fotografickou knihovnu pro každou připravenou aktivitu; 74 originálů, dvě varianty pro všech 37 aktivit včetně půjčení kola, responsivně napojené (20. 9. 2026)
 - [x] Nahradit generovanou knihovnu vizuálně ověřenými skutečnými fotografiemi nebo neutrálním FLEK placeholderem; zdroje a licence jsou v manifestu a vlastní fotka podniku má stále přednost (23. 9. 2026)

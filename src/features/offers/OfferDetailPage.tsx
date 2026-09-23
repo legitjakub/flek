@@ -337,39 +337,33 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           y=755. Grouping them fixes the collision by construction, not by nudging offsets.
         */}
         <aside
-          className="rounded-2xl border border-line bg-card p-3.5 shadow-card md:sticky md:top-24 md:col-start-2 md:row-start-1 md:row-span-2 md:p-5"
+          className="rounded-3xl border border-brand/10 bg-card p-3 md:sticky md:top-24 md:col-start-2 md:row-start-1 md:row-span-2 md:p-4"
           aria-label="Vybraný termín"
         >
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-base font-extrabold text-ink">Vybraný FLEK</h2>
-            <span className="tnum inline-flex min-h-8 items-center gap-1.5 rounded-full bg-surface px-2.5 text-xs font-bold text-muted">
-              <Clock3 size={13} aria-hidden="true" />
-              {duration(offer.start_at, offer.end_at)} min
-            </span>
-          </div>
-
-          {/* One ticket-like surface answers the three booking questions together: which day,
-              which time and what it costs. The old layout split them across separate rows and
-              then repeated them once more in every time card. */}
-          <div className="mt-2.5 border-b border-line pb-3">
-            <div className="flex items-start justify-between gap-4">
+          {/* The selected appointment is the only filled surface; alternatives stay quiet. */}
+          <div className="rounded-2xl bg-brand px-4 py-3.5 text-brand-ink">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs font-medium">
+              <h2 className="inline-flex items-center gap-1.5"><Check size={14} aria-hidden="true" />Tvůj termín</h2>
+              <span className="tnum inline-flex items-center gap-1.5"><Clock3 size={13} aria-hidden="true" />{duration(offer.start_at, offer.end_at)} min</span>
+            </div>
+            <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
               <div className="min-w-0">
-                <p className="inline-flex items-center gap-1.5 text-xs font-bold text-accent">
+                <p className="inline-flex items-center gap-1.5 text-sm font-semibold">
                   <CalendarDays size={15} aria-hidden="true" />
                   {dayLabel(offer.start_at, now)}
                 </p>
-                <p className="tnum mt-1 text-lg leading-none font-extrabold tracking-tight text-ink">
+                <p className="tnum mt-1.5 text-xl leading-none font-extrabold tracking-tight">
                   {clockTime(offer.start_at)}–{clockTime(offer.end_at)}
                 </p>
               </div>
               <div className="shrink-0 text-right">
-                <p className="tnum text-lg leading-none font-extrabold tracking-tight text-ink">
+                <p className="tnum text-xl leading-none font-extrabold tracking-tight">
                   {money(offer.deal_price_cents)}
                 </p>
                 {savings > 0 ? (
-                  <p className="mt-1 flex items-center justify-end gap-1.5">
-                    <OriginalPrice cents={offer.original_price_cents} className="text-xs" />
-                    <span className="tnum text-xs font-bold text-accent">−{offer.discount_pct} %</span>
+                  <p className="tnum mt-1.5 flex flex-wrap items-center justify-end gap-2 text-xs">
+                    <s className="decoration-current">{money(offer.original_price_cents)}</s>
+                    <span className="font-bold">−{offer.discount_pct} %</span>
                   </p>
                 ) : null}
               </div>
@@ -410,9 +404,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
               price, so only the button remains.
             */}
             <div className="mx-auto flex max-w-xl items-center gap-3 md:block md:max-w-none">
-              {/* One line, not three. The saving now sits in the card above as a green pill, so
-                  repeating it here only made the bar 20 px taller on the screen with the least
-                  room to spare — and put the same three numbers twice in one viewport. */}
+              {/* Keep the mobile action to one row; the selected summary explains the discount. */}
               <p className="tnum flex min-w-0 flex-wrap items-baseline gap-x-1.5 md:hidden">
                 <span className="text-lg leading-none font-extrabold">{money(offer.deal_price_cents)}</span>
                 {savings > 0 ? <OriginalPrice cents={offer.original_price_cents} className="text-xs" /> : null}
