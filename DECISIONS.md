@@ -285,16 +285,20 @@ Jakub ukázal aplikaci s mapou, kde má každý špendlík značku aplikace, a s
 - Konečná cena je jediný plný prvek panelu a používá hlavní ultramarín. Červené přeškrtnutí původní ceny zmizelo: červená v aplikaci patří chybě a zamítnutí, ne běžné cenové informaci.
 - Ikony polohy a délky i čipy dalších časů používají tlumenou brandovou modrou. Panel tak má jednu barevnou logiku a nepřidává další soutěžící barvu ke slevě v horním rohu fotografie.
 
-## Kompaktní FLEK body při oddálení — 21. 9. 2026
+## Mapa, sklo a karta termínu — 22. 9. 2026
 
-- **Každá provozovna zůstává samostatná.** Městský pohled neslučuje podniky do číselného čtverce. Termíny na úplně stejné adrese dál sdílejí jeden bod s malým počtem a po klepnutí se zpřístupní v carouselu.
-- **Oddálení mění množství detailu, ne množství nabídky.** Pod úrovní čtvrti je marker kruhový 24px FLEK bod uvnitř 44px dotykové plochy; po přiblížení má 48px ikonu oboru a cenu. Vybraný kompaktní bod se rozbalí hned, aby klepnutí mělo jasnou odezvu.
-- **Kompaktní režim je adaptivní.** Zapne se pod zoomem 12,5 a také v přechodném pohledu, kde se příliš mnoho plných cenových lístků střetává. Nad zoomem 14 se vždy vrátí plné špendlíky. Rozložení zůstává deterministické, takže body při posunu mapy neposkakují.
-- **Sto je skutečný strop mapy.** Veřejné `search_offers` přijímá nejvýš 100 řádků; mapa proto žádá právě o 100 a klient limit bezpečně ořízne. Feed zůstává na 50, protože tam se výsledky čtou postupně a víc řádků by jen prodloužilo stránku.
+Nahrazuje rozhodnutí „Kompaktní FLEK body při oddálení“ z 21. 9., které řešilo totéž, ale hranicemi přiblížení a stropem 100 řádků.
+
+- Mapa se přepne ze špendlíků na body podle skutečné hustoty, ne podle pevné hranice přiblížení: nejdřív se rozloží plné špendlíky, a když jediný z nich nenašel volné místo, překreslí se všechny jako body. Pevná hranice by při řídkém výsledku zbytečně schovala ceny a při hustém pohledu nad svou horní mezí by nestačila. Rozhodnutí vychází ze vzdáleností na obrazovce, které se posunem mapy nemění, takže posouváním neblikají.
+- Vybraný termín zůstává plným špendlíkem s cenou, místo aby se kompaktní bod rozbaloval zpět. Ušetří to čtyřicet řádků CSS, které přepisovaly to, co už výchozí špendlík umí.
+- Bod je prostý kotouč bez ikony oboru: při 13 px uvnitř 24 px kolečka není ikona čitelná (porovnáno vykreslením osmi kandidátů ve 4× měřítku). Víc termínů na jedné adrese pozná podle aury, ne podle číslíčka.
+- Rozmisťování počítá s dotykovou plochou bodu (44 px), ne s kolečkem (20 px). Klepnutí na bod musí otevřít ten bod, ne jeho souseda.
+- Mapa si říká o víc řádků ze stejného RPC, místo aby dostala vlastní funkci. „Rezervovatelné“ má zůstat jedna definice v SQL; druhá čtecí funkce by byla druhá odpověď na stejnou otázku. Strop není 100, ale 300 — migrace `20260921212301` zvedla mez ve validaci `search_offers`, protože při 100 řádcích dosáhlo řazení „nejblíž“ jen na 6 podniků ze 16. Je to pilotní kompromis, ne řešení pro velký katalog (viz LIMITATIONS.md). Feed zůstává na 50: tam se výsledky čtou postupně a víc řádků by jen prodloužilo stránku.
+- Panel s fakty na kartě nabídky nemá vlastní materiál. Předchozí varianta s přelivem, vnitřním odleskem, barevným stínem a přechodovou linkou vyšla neprůhledná — tolik efektů kvůli bílé desce. Jedno sklo `.glass` pro celou aplikaci; barva značky nese význam (cena, časy), ne plochu.
+- Vybraný čas se v seznamu jiných časů neopakuje. Blok nad seznamem ho popisuje celý, takže jeho karta v seznamu opakovala šest údajů na jedné obrazovce. Nahoře „tvůj termín“, dole „místo něj“.
 
 ## Detail služby vybírá den a potom čas — 22. 9. 2026
 
-- **Vybraný termín je jeden souhrn.** Den, rozsah času, délka, konečná cena, původní cena a úspora patří k jednomu rozhodnutí, proto jsou v jedné jemně brandové ploše „Vybraný FLEK“. Samostatné pásy opakovaly stejný údaj a zvyšovaly kartu bez přidané informace.
-- **Nejdřív den, potom čas.** Na telefonu jsou dny záložky s počtem možností a teprve pod aktivním dnem jsou časy. Zákazník tak neprochází dlouhý svislý seznam, ve kterém se střídají nadpisy dnů a velké karty.
-- **Čas je kompaktní dlaždice.** Dvousloupcová dlaždice drží hodinu, cenu, slevu a případné poslední místo. Délka se neopakuje, protože patří stejné službě a je vidět v souhrnu; cena zůstává, protože se mezi FLEKy může lišit.
-- **Jedna hlavní akce zůstává přilepená.** Volba času jen změní nabídku. Rezervaci spouští jediné „Chytit FLEK“ ve spodní liště, která je na telefonu vysoká 93 px a stále ukazuje cenu, režim platby a bezplatné storno.
+- Vybraný FLEK má jeden souhrn s termínem, délkou, cenou, slevou a úsporou. Stejný termín se už pod ním nevykresluje jako další volba.
+- Alternativy se na telefonu vybírají ve dvou krocích: záložka dne a kompaktní dvousloupcové dlaždice časů. Cena zůstává u každého času, protože se mezi FLEKy může lišit; délka je společná a zůstává v souhrnu.
+- Pevná mobilní akce obsahuje jen cenu a „Chytit FLEK“. Platební režim a pravidla zrušení jsou vysvětlené v detailu a potvrzovacím kroku; jejich opakování pod tlačítkem zvyšovalo lištu a překrývalo výběr časů.

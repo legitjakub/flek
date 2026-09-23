@@ -628,7 +628,7 @@ export function AdminMetricsPage() {
   const metrics = useQuery({ queryKey: ['admin-metrics'], queryFn: adminMetrics });
   return (
     <AdminFrame>
-      <h1 className="text-2xl font-extrabold tracking-tight text-ink">Metriky pilotu</h1>
+      <h1 className="text-2xl font-extrabold tracking-tight text-ink">Metriky</h1>
       {metrics.isPending ? <LoadingList rows={2} /> : null}
       {metrics.isError ? <ErrorState error={metrics.error} onRetry={() => metrics.refetch()} /> : null}
       {metrics.data ? <MetricsBody data={metrics.data} /> : null}

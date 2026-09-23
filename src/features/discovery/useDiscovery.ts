@@ -21,22 +21,35 @@ export type DiscoveryResult = {
 };
 
 const MIN_RESULTS = 3;
-const DEFAULT_RESULT_LIMIT = 50;
-export const MAP_RESULT_LIMIT = 100;
 
-function safeResultLimit(limit: number) {
-  // `search_offers` rejects anything above 100. Keep the contract here so a future screen
-  // cannot accidentally turn a larger visual target into a broken request.
-  return Math.min(MAP_RESULT_LIMIT, Math.max(1, Math.trunc(limit)));
-}
+/** Rows the feed asks for; several times of one service collapse into one card. */
+const FEED_LIMIT = 50;
+
+/*
+ * The map asks for the whole answer. It draws one point per venue rather than a list of cards,
+ * and a cap that is comfortable for a scrolling feed left whole streets without a point: at the
+ * default filter (5 km, sorted by distance) fifty rows all came from three venues out of sixteen
+ * and a hundred from six, because one venue publishes dozens of times. The points were never
+ * missing from the drawing, the rows were missing from the answer.
+ */
+export const MAP_LIMIT = 300;
+
+/*
+ * The server's own ceiling, kept here as well so a screen that asks for a larger visual target
+ * gets fewer rows rather than `VALIDATION_ERROR` and an empty map. Raising it means raising the
+ * bound in `search_offers` first (migration `20260921212301` moved it from 100 to 300).
+ */
+const SERVER_LIMIT = 300;
+
+const safeLimit = (limit: number) => Math.min(SERVER_LIMIT, Math.max(1, Math.trunc(limit)));
 
 /**
  * One server-side search; if the current filter is too thin, walk the cold-start ladder
  * and label the widening honestly. All filtering stays in Postgres.
  */
-export async function discover(point: Point, filters: Filters, limit = DEFAULT_RESULT_LIMIT): Promise<DiscoveryResult> {
+export async function discover(point: Point, filters: Filters, limit = FEED_LIMIT): Promise<DiscoveryResult> {
   const steps = wideningSteps(filters, serverNow());
-  const resultLimit = safeResultLimit(limit);
+  const rowLimit = safeLimit(limit);
   let best: DiscoveryResult = { rows: [], note: null, applied: { when: filters.when, radius_m: filters.radius_m } };
   for (const step of steps) {
     const range = windowFor(step.when, serverNow());
@@ -52,7 +65,7 @@ export async function discover(point: Point, filters: Filters, limit = DEFAULT_R
       sort: filters.sort,
       daypart: filters.daypart,
       // Several times of one service become one card, so ask for more rows than cards are shown.
-      limit: resultLimit,
+      limit: rowLimit,
     });
     // What counts is how many different FLEKs the customer gets, not how many times they have.
     const cards = groupSlots(rows).length;
@@ -62,7 +75,7 @@ export async function discover(point: Point, filters: Filters, limit = DEFAULT_R
   return best;
 }
 
-export function useDiscovery(point: Point, filters: Filters, limit = DEFAULT_RESULT_LIMIT) {
+export function useDiscovery(point: Point, filters: Filters, limit = FEED_LIMIT) {
   // The epoch is part of the key so a late clock correction re-runs the search with the
   // right Prague day window instead of leaving a wrong „Dnes" on screen.
   const epoch = useClockEpoch();

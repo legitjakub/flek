@@ -106,6 +106,15 @@ Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B). Úkoly na 
   7. Na svém telefonu: v Profilu i v Provozovně demo podniku klepnout na „Ověřit ve WhatsAppu“ (má se otevřít WhatsApp s připravenou zprávou), zprávu odeslat, nechat přijít žádost a vyzkoušet obě tlačítka, opakované klepnutí a zprávu zákazníkovi s kódem.
 - [ ] **E-mail při registraci:** SMTP v Supabase Auth je uložené správně (ověřeno 15. 9.: zapnuté, odesílatel `ucet@mail.app-flek.eu`, uživatel `resend`, port 465). Zbývá zaregistrovat novou adresu, otevřít odkaz v jiném prohlížeči a ověřit přihlášení.
 
+### Přepnutí na ostrý provoz
+
+Testovací a ukázkové texty v aplikaci nejsou napsané v kódu — řídí se skutečným stavem. Zmizí samy, jakmile projdeš těmito čtyřmi kroky, a do té doby mají zůstat, protože jinak by aplikace mlčela o tom, že se peníze nestrhávají:
+
+1. Ostré klíče Stripe v Supabase secrets (`sk_live_…`, `whsec_…`) a ostrý webhook.
+2. `update private.settings set value = 'false' where key = 'stripe_test_mode';` — tím zmizí hláška „Testovací platby. Použij kartu 4242…“ z rezervačního formuláře.
+3. Vyřadit z produkce demo podniky a účty `@flek.test` a zrušit obnovu demo nabídek (`select cron.unschedule('flek-demo-refresh');`) — tím zmizí věta „Ukázkový podnik…“ na stránce podniku i v rezervaci.
+4. Nová verze obchodních podmínek bez věty o testovacích platbách (řádek 53 v `podminky.md`) a o ukázkových podnicích (řádek 15): verze v `documents.ts`, řádek v `public.legal_documents` migrací a bod pro právníka.
+
 ### Supabase a infrastruktura
 
 - [ ] **Rozhodnout o produkčním prostředí.** Doporučení je nový Supabase projekt pro ostrý provoz; současný `yupkrntknbkvmlajwlph` zůstane jako demo/staging pro akceptační testy.

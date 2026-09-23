@@ -1,4 +1,4 @@
-import { ArrowLeft, CalendarDays, CalendarPlus, ChevronDown, Clock3, Info, MapPin, Banknote, Check, PiggyBank, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, CalendarDays, CalendarPlus, ChevronDown, Clock3, Info, MapPin, Check, PiggyBank, ShieldCheck } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { activityPhotoSrcSet } from '../../lib/activityGalleries';
 import { useEffect, useState, type ReactNode } from 'react';
@@ -415,24 +415,6 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
                 Chytit FLEK
               </Button>
             </div>
-            {/* Both facts a person weighs with their thumb already on the button: what the
-                payment is, and that it can be undone. The free-cancellation promise used to
-                be the last muted paragraph of the page, which is nowhere near the decision. */}
-            {/* No dot between the two: whether they wrap depends on the column width, not the
-                breakpoint (the narrow desktop card wraps too), and a dot left hanging at the end
-                of a line reads as a typo. Each fact already opens with its own icon. */}
-            <p className="mx-auto mt-1.5 flex max-w-xl flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[0.6875rem] leading-tight text-muted md:mt-2 md:max-w-none md:text-xs">
-              <span className="inline-flex items-center gap-1.5">
-                <Banknote size={13} aria-hidden="true" />
-                {manual ? 'Platíš, až podnik potvrdí' : 'Zaplatíš rovnou'}
-              </span>
-              {offer.bookable ? (
-                <span className="inline-flex items-center gap-1 font-bold text-positive">
-                  <Check size={13} aria-hidden="true" />
-                  Zrušení zdarma {cancellationCopy}
-                </span>
-              ) : null}
-            </p>
           </div>
           ) : null}
         </aside>

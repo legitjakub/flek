@@ -192,8 +192,17 @@ export function OfferCard({
         <IllustrativePhotoLabel className={offer.discount_pct > 0 ? 'top-13 right-4' : 'top-4 right-4'} />
       ) : null}
 
-      {/* A lightly tinted brand surface keeps the facts readable while still belonging to FLEK. */}
-      <div className="offer-panel absolute inset-x-2.5 bottom-2.5 rounded-[1.375rem] p-3.5">
+      {/*
+        The same glass as the chip above it, only bigger and lifted higher — one material for the
+        whole app instead of a second one for this card. The panel that stood here mixed a
+        diagonal brand tint, an inset highlight, a coloured drop shadow and a gradient hairline
+        and came out opaque: all that machinery for a white slab, with the photograph gone from
+        under it. What makes the card FLEK's is the blue on the price and on the times, where the
+        colour carries a meaning — not a wash over the whole sheet.
+
+        The radius is concentric with the card: 2rem outer, 0.625rem inset, 1.375rem here.
+      */}
+      <div className="glass glass-lift absolute inset-x-2.5 bottom-2.5 rounded-[1.375rem] p-3.5">
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
             <h3 className="line-clamp-2 text-base leading-snug font-extrabold text-ink [overflow-wrap:anywhere]">
@@ -205,15 +214,11 @@ export function OfferCard({
             The price closes the card, so it is the one filled element on the panel — and the
             list price under it is struck, because that is the number nobody pays.
           */}
-          <div className="flex shrink-0 flex-col items-end gap-1">
-            <span className="tnum inline-flex items-center rounded-full bg-brand px-2.5 py-1.5 text-base leading-none font-extrabold text-brand-ink shadow-[0_5px_14px_-7px_var(--color-brand)] ring-1 ring-brand-bright/35">
+          <div className="flex shrink-0 flex-col items-end gap-1.5">
+            <span className="tnum inline-flex items-center rounded-full bg-brand px-3 py-1.5 text-base leading-none font-extrabold text-brand-ink">
               {money(offer.deal_price_cents)}
             </span>
-            {discounted ? (
-              <s className="tnum text-xs font-medium text-muted decoration-brand decoration-2">
-                {money(offer.original_price_cents)}
-              </s>
-            ) : null}
+            {discounted ? <OriginalPrice cents={offer.original_price_cents} className="text-xs" /> : null}
           </div>
         </div>
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Check, ChevronDown } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { clockTime, dayKey, dayLabel } from '../../lib/time';
 import { relativeTime } from '../../lib/clock';
 import { money } from '../../lib/format';
@@ -30,9 +30,12 @@ export function TimePicker({
   onPick: (id: string) => void;
 }) {
   const current = slots.some((slot) => slot.id === offer.id);
-  const times = current ? slots : slots.filter((slot) => slot.id !== offer.id);
+  // The current slot already has a complete summary above this chooser. Showing it again here
+  // made the phone screen feel like two competing selections, so this list contains alternatives.
+  const times = slots.filter((slot) => slot.id !== offer.id);
   const days = useMemo(() => slotsByDay(times, now), [times, now]);
-  const selectedDay = current ? dayKey(offer.start_at) : days[0]?.key;
+  const offerDay = dayKey(offer.start_at);
+  const selectedDay = days.some((day) => day.key === offerDay) ? offerDay : days[0]?.key;
   const [activeDay, setActiveDay] = useState(selectedDay ?? '');
   const [expandedDay, setExpandedDay] = useState<string | null>(null);
 
@@ -40,7 +43,7 @@ export function TimePicker({
     if (selectedDay) setActiveDay(selectedDay);
   }, [selectedDay]);
 
-  if (times.length < (current ? 2 : 1) || days.length === 0) return null;
+  if (times.length === 0 || days.length === 0) return null;
 
   const active = days.find((day) => day.key === activeDay) ?? days[0];
   const isExpanded = expandedDay === active.key;
@@ -100,7 +103,6 @@ export function TimePicker({
         className="mt-2 grid grid-cols-2 gap-2"
       >
         {visible.map((slot) => {
-          const selected = slot.id === offer.id;
           const pending = slot.id === pendingId;
           const minutesAway = Math.round((Date.parse(slot.start_at) - Date.parse(now)) / 60000);
           const soon = minutesAway > 0 && minutesAway <= SOON_MINUTES;
@@ -109,7 +111,6 @@ export function TimePicker({
             <button
               key={slot.id}
               type="button"
-              aria-pressed={selected}
               aria-label={[
                 `${dayLabel(slot.start_at, now).toLocaleLowerCase('cs-CZ')} ${clockTime(slot.start_at)}`,
                 money(slot.deal_price_cents),
@@ -118,28 +119,23 @@ export function TimePicker({
               ].filter(Boolean).join(', ')}
               aria-busy={pending || undefined}
               disabled={pendingId !== null && !pending}
-              onClick={() => {
-                if (!selected) onPick(slot.id);
-              }}
+              onClick={() => onPick(slot.id)}
               className={cx(
                 'relative min-h-[4.5rem] rounded-xl border px-3 py-2.5 text-left transition-[border-color,background-color,transform] active:scale-[0.98] disabled:opacity-55',
-                selected
-                  ? 'border-brand bg-brand text-brand-ink shadow-card'
-                  : 'border-line bg-surface hover:border-brand',
+                'border-line bg-surface hover:border-brand',
                 pending && 'animate-pulse',
               )}
             >
               <span className="flex items-center gap-2">
                 <span className="tnum text-lg leading-none font-extrabold">{clockTime(slot.start_at)}</span>
-                {selected ? <Check size={16} aria-hidden="true" className="ml-auto shrink-0" /> : null}
               </span>
-              <span className={cx('mt-2 flex items-center gap-1.5 text-xs', selected ? 'text-brand-ink/85' : 'text-muted')}>
+              <span className="mt-2 flex items-center gap-1.5 text-xs text-muted">
                 <span className="tnum font-bold">{money(slot.deal_price_cents)}</span>
                 {slot.discount_pct > 0 ? <span aria-hidden="true">·</span> : null}
                 {slot.discount_pct > 0 ? <span className="tnum font-bold">−{slot.discount_pct} %</span> : null}
               </span>
               {soon || lastSeat ? (
-                <span className={cx('mt-1 block text-[0.6875rem] font-bold', selected ? 'text-brand-ink' : lastSeat ? 'text-warning' : 'text-accent')}>
+                <span className={cx('mt-1 block text-[0.6875rem] font-bold', lastSeat ? 'text-warning' : 'text-accent')}>
                   {lastSeat ? 'Poslední místo' : relativeTime(slot.start_at, now)}
                 </span>
               ) : null}

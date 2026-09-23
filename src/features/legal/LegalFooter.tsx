@@ -18,25 +18,37 @@ export function LegalFooter({ className }: { className?: string }) {
   const inForce = LEGAL_ORDER.filter((kind) => legal.documents[kind]?.version);
   return (
     <footer aria-labelledby="o-fleku" className={cx('rounded-3xl bg-card p-5 text-sm text-muted shadow-card sm:p-6', className)}>
+      {/*
+        Four paragraphs each on their own line made a short footer read as a long one. Who runs
+        FLEK is one block; the documents are a block of links that look like something to tap,
+        not underlined words in a sentence. Two per row on a phone, because one full title per
+        row was the sprawl — an odd last one takes the whole row rather than leaving a gap, and
+        which one that is depends on how many documents are actually in force.
+      */}
       <h2 id="o-fleku" className="text-base font-extrabold tracking-tight text-ink">O FLEKu</h2>
-      <p className="mt-2 leading-relaxed">
+      <p className="mt-1.5 leading-relaxed">
         FLEK provozuje {operatorIdentification(legal)}
         {operator.ico ? ', podnikatel zapsaný v živnostenském rejstříku' : null}.
       </p>
-      <p className="mt-1 leading-relaxed">
+      <p className="leading-relaxed">
         Podpora a kontaktní místo:{' '}
         <a href={`mailto:${operator.email}`} className="font-bold text-ink underline underline-offset-4">{operator.email}</a>
       </p>
-      <ul className="mt-2 flex flex-wrap gap-x-5">
-        {inForce.map((kind) => (
-          <li key={kind}>
-            <Link to={LEGAL_DOCUMENTS[kind].path} className="inline-flex min-h-11 items-center font-bold text-ink underline underline-offset-4">
-              {LEGAL_DOCUMENTS[kind].label}
-            </Link>
-          </li>
-        ))}
-      </ul>
-      <p className="mt-1 text-xs leading-relaxed">
+      <nav aria-label="Právní texty" className="mt-4">
+        <ul className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+          {inForce.map((kind, index) => (
+            <li key={kind} className={index === inForce.length - 1 && inForce.length % 2 === 1 ? 'col-span-2 sm:col-span-1' : ''}>
+              <Link
+                to={LEGAL_DOCUMENTS[kind].path}
+                className="flex min-h-11 items-center justify-center rounded-2xl bg-accent-soft px-3 py-2 text-center text-xs font-bold text-accent transition-colors hover:bg-brand-soft sm:rounded-full sm:px-4"
+              >
+                {LEGAL_DOCUMENTS[kind].label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
+      <p className="mt-4 border-t border-line pt-3 text-xs leading-relaxed">
         Mimosoudní řešení spotřebitelských sporů: Česká obchodní inspekce,{' '}
         <a href="https://adr.coi.cz" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">adr.coi.cz</a>
       </p>

@@ -16,6 +16,17 @@ function currentMonthName(): string {
   ];
 }
 
+/** One, two to four, five and more: Czech counts in three forms and the card says all three. */
+function caught(count: number): string {
+  if (count === 1) return 'chycený FLEK';
+  return count < 5 ? 'chycené FLEKy' : 'chycených FLEKů';
+}
+
+function fleks(count: number): string {
+  if (count === 1) return 'FLEK';
+  return count < 5 ? 'FLEKy' : 'FLEKů';
+}
+
 /**
  * A value dashboard, not a game. Every figure is computed in PostgreSQL from booking
  * snapshots and counts only appointments that were actually kept — no levels, no badges, no
@@ -28,7 +39,7 @@ export function CustomerFlekStats({ userId }: { userId: string }) {
     staleTime: 60_000,
   });
 
-  if (metrics.isPending) return <Skeleton className="h-44 w-full rounded-3xl" />;
+  if (metrics.isPending) return <Skeleton className="h-48 w-full rounded-3xl" />;
   if (metrics.isError || !metrics.data) return null;
 
   const m = metrics.data;
@@ -51,24 +62,40 @@ export function CustomerFlekStats({ userId }: { userId: string }) {
     <PromoCard tone="dark">
       <PinMark tone="dark" className="pointer-events-none absolute top-3.5 right-4 h-10 w-12" />
       <h2 className="text-sm font-bold text-brand-on-dark">Tvůj FLEK · {currentMonthName()}</h2>
-      <dl className="relative mt-3 grid grid-cols-2 gap-x-4 gap-y-3">
-        <div>
-          <dt className="text-sm text-card/75">Ušetřeno</dt>
-          <dd className="tnum text-2xl font-extrabold text-brand-on-dark">{money(m.month_saved_cents)}</dd>
+      {/*
+        The month is the headline and the rest is the footnote, because that is the order the
+        figures matter in: what the month saved, then how it compares with everything before it.
+        Value above label and one size bigger — a figure this card exists for should not be the
+        same size as the word describing it.
+      */}
+      <dl className="relative mt-4 flex flex-wrap items-end gap-x-8 gap-y-4">
+        <div className="min-w-0">
+          <dd className="tnum text-[2.125rem] leading-none font-extrabold tracking-tight text-brand-on-dark">
+            {money(m.month_saved_cents)}
+          </dd>
+          <dt className="mt-1.5 text-sm text-card/75">ušetřeno</dt>
         </div>
-        <div>
-          <dt className="text-sm text-card/75">Chycené FLEKy</dt>
-          <dd className="tnum text-2xl font-extrabold">{m.month_completed}</dd>
+        <div className="min-w-0">
+          <dd className="tnum text-[2.125rem] leading-none font-extrabold">{m.month_completed}</dd>
+          <dt className="mt-1.5 text-sm text-card/75">{caught(m.month_completed)}</dt>
         </div>
       </dl>
-      <p className="tnum relative mt-4 border-t border-card/15 pt-3 text-sm text-card/75">
-        Celkem {m.all_time_completed}{' '}
-        {m.all_time_completed === 1 ? 'chycený FLEK' : m.all_time_completed < 5 ? 'chycené FLEKy' : 'chycených FLEKů'}
-        {' · '}ušetřeno {money(m.all_time_saved_cents)}
+      {/* A band rather than a hairline: it separates the two time spans without adding a line. */}
+      <div className="relative mt-5 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-2xl bg-card/10 px-3.5 py-2.5">
+        {/* „FLEKů", not „chycených FLEKů": the label above already said what was caught, and the
+            longer wording wrapped this line on a phone and made the band three rows tall. */}
+        <p className="tnum text-sm text-card/75">
+          Celkem <span className="font-bold text-card">{m.all_time_completed} {fleks(m.all_time_completed)}</span>
+          {' · '}ušetřeno <span className="font-bold text-card">{money(m.all_time_saved_cents)}</span>
+        </p>
         {/* Null means "nothing completed yet", which the branch above already handled; 0 %
             would be a real if unexciting best catch, so it is not hidden. */}
-        {m.best_discount_pct !== null ? ` · nejlepší úlovek −${m.best_discount_pct} %` : ''}
-      </p>
+        {m.best_discount_pct !== null ? (
+          <span className="tnum shrink-0 rounded-full bg-brand-on-dark px-2.5 py-1 text-xs font-extrabold text-ink">
+            nejlepší úlovek −{m.best_discount_pct} %
+          </span>
+        ) : null}
+      </div>
     </PromoCard>
   );
 }

@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { StripePayouts } from './StripePayouts';
-import { useState } from 'react';
-import { aresLookup, businessBilling, createBusiness, listCategories, saveBusinessBilling, updateBusiness } from '../../lib/api';
+import { useEffect, useState } from 'react';
+import { Clock3, Store, Upload } from 'lucide-react';
+import { aresLookup, businessBilling, createBusiness, listCategories, saveBusinessBilling, updateBusiness, uploadBusinessCover } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
-import { Banner, Button, Field, Input, Segmented, Select, Textarea } from '../../components/ui';
+import { Banner, Button, cx, Field, Input, Segmented, Select, Textarea } from '../../components/ui';
 import { MerchantShell } from './MerchantShell';
 import { AddressField } from './AddressField';
 import { MoneyExplainer } from './MoneyExplainer';
@@ -163,6 +164,40 @@ function BusinessForm({ business }: { business?: Business }) {
     });
   }
 
+  /*
+   * The venue's own photograph. It is not part of `values`, because it must only be sent when it
+   * actually changed: `update_business` rejects a cover address that has not been through the
+   * check (`IMAGE_REUPLOAD_REQUIRED`), and an unchanged value would trip that rule.
+   */
+  const [cover, setCover] = useState<string | null | undefined>(undefined);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [coverUploading, setCoverUploading] = useState(false);
+  const [coverError, setCoverError] = useState<string | null>(null);
+  useEffect(() => () => {
+    if (coverPreview) URL.revokeObjectURL(coverPreview);
+  }, [coverPreview]);
+  const shownCover = cover === undefined ? (business?.cover_url ?? null) : cover;
+  const coverPending = Boolean(shownCover?.startsWith('moderation-pending://')) || business?.content_status === 'pending';
+
+  async function uploadCover(file: File | undefined) {
+    if (!file || !business || coverUploading) return;
+    setCoverError(null);
+    setCoverUploading(true);
+    try {
+      const preview = URL.createObjectURL(file);
+      setCoverPreview((previous) => {
+        if (previous) URL.revokeObjectURL(previous);
+        return preview;
+      });
+      setCover(await uploadBusinessCover(business.id, file));
+      setSaved(false);
+    } catch (error) {
+      setCoverError(error instanceof Error ? error.message : 'Fotku se nepodařilo nahrát. Zkuste to znovu.');
+    } finally {
+      setCoverUploading(false);
+    }
+  }
+
   const lat = Number(values.latitude);
   const lng = Number(values.longitude);
   const validPoint = Number.isFinite(lat) && Number.isFinite(lng) && lat !== 0 && lng !== 0;
@@ -194,6 +229,7 @@ function BusinessForm({ business }: { business?: Business }) {
         latitude: lat,
         longitude: lng,
         cancellation_window_minutes: Number(values.cancellation_window_minutes) || 0,
+        ...(cover === undefined ? {} : { cover_url: cover }),
       };
       const saved = business ? await updateBusiness(business.id, payload) : await createBusiness(payload);
       // Two calls on purpose: the billing row is a separate table with its own RLS, and a
@@ -301,6 +337,80 @@ function BusinessForm({ business }: { business?: Business }) {
       <Field id="b-description" label="Popis" hint="Krátce, co u vás zákazník najde.">
         <Textarea id="b-description" value={values.description} onChange={(event) => set('description', event.target.value)} />
       </Field>
+
+      {/*
+        Fotku provozovny šlo dosud nastavit jen migrací, přitom se nabízí jako volba u fotky
+        služby a od téhle změny ji zákazník vidí nahoře na stránce podniku. Prochází stejnou
+        kontrolou jako ostatní obsah, takže se zveřejní až po ní.
+      */}
+      {business ? (
+        <fieldset>
+          <legend className="text-sm font-bold text-ink">Fotka provozovny</legend>
+          <span className="mt-0.5 block text-sm text-muted">
+            Ukáže se nahoře na vaší stránce. JPG, PNG nebo WebP, nejvýše 5 MB. Zveřejníme ji po automatické kontrole.
+          </span>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <span className="relative grid h-24 w-40 shrink-0 place-items-center overflow-hidden rounded-2xl border border-line bg-surface">
+              {coverPreview || (shownCover && !shownCover.startsWith('moderation-pending://')) ? (
+                <img
+                  src={coverPreview ?? shownCover ?? undefined}
+                  alt=""
+                  className="size-full object-cover"
+                />
+              ) : (
+                <Store size={24} aria-hidden="true" className="text-muted" />
+              )}
+            </span>
+            <span className="flex flex-col gap-2">
+              <label
+                htmlFor="b-cover"
+                aria-busy={coverUploading || undefined}
+                className={cx(
+                  'inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-line bg-card px-3 text-sm font-bold text-ink hover:border-accent',
+                  coverUploading && 'pointer-events-none opacity-55',
+                )}
+              >
+                <Upload size={17} aria-hidden="true" />
+                {coverUploading ? 'Nahrávám…' : shownCover ? 'Vyměnit fotku' : 'Nahrát fotku'}
+              </label>
+              <input
+                id="b-cover"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="sr-only"
+                disabled={coverUploading}
+                onChange={(event) => {
+                  void uploadCover(event.target.files?.[0]);
+                  event.target.value = '';
+                }}
+              />
+              {shownCover ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCover(null);
+                    setCoverPreview((previous) => {
+                      if (previous) URL.revokeObjectURL(previous);
+                      return null;
+                    });
+                    setSaved(false);
+                  }}
+                  className="inline-flex min-h-11 items-center text-sm font-bold text-muted underline underline-offset-4 hover:text-ink"
+                >
+                  Odebrat fotku
+                </button>
+              ) : null}
+            </span>
+          </div>
+          {coverPending ? (
+            <p role="status" className="mt-2 inline-flex items-center gap-1.5 text-sm font-bold text-accent">
+              <Clock3 size={15} aria-hidden="true" />
+              Čeká na kontrolu. Zákazníkům se zatím ukazuje předchozí verze.
+            </p>
+          ) : null}
+          {coverError ? <p role="alert" className="mt-2 text-sm font-medium text-danger">{coverError}</p> : null}
+        </fieldset>
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <Field id="b-phone" label="Telefon" error={attempted ? errors['b-phone'] : undefined}>

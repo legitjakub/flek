@@ -1,4 +1,4 @@
-import { Info, SlidersHorizontal, X } from 'lucide-react';
+import { ScanSearch, SlidersHorizontal, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button, Field, Input, Segmented, Sheet } from '../../components/ui';
 import type { Category, SortKey } from '../../types/database';
@@ -168,12 +168,18 @@ export function FilterBar({
               <span className="sr-only">Zrušit filtr</span>
             </button>
           ))}
+          {/*
+            Same height as the chips beside it, and at one line the 18px radius is exactly their
+            round — but it is not a chip: no cross, and the brand disc says at a glance that this
+            is FLEK widening the search, not a filter the customer set. The fixed radius is what
+            keeps the longest sentence from turning into a stadium when it wraps on a phone.
+          */}
           {widened ? (
-            <span role="status" className={`inline-flex min-h-10 max-w-full items-center gap-2 rounded-[1.25rem] border border-brand/15 bg-card/95 py-1 pr-3 pl-1.5 font-bold text-accent backdrop-blur-sm ${floating ? 'shadow-card' : ''}`}>
-              <span className="grid size-7 shrink-0 place-items-center rounded-xl bg-brand text-brand-ink shadow-sm">
-                <Info size={14} aria-hidden="true" />
+            <span role="status" className={`inline-flex min-h-9 max-w-full items-center gap-2 rounded-[1.125rem] bg-brand-soft py-1 pr-3.5 pl-1 font-bold text-accent ${floating ? 'shadow-card' : ''}`}>
+              <span className="grid size-7 shrink-0 place-items-center self-start rounded-full bg-brand text-brand-ink">
+                <ScanSearch size={16} aria-hidden="true" />
               </span>
-              <span className="min-w-0 leading-snug">{widened}</span>
+              <span className="min-w-0 py-0.5">{widened}</span>
             </span>
           ) : null}
           {chips.length ? (

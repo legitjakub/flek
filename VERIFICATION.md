@@ -320,7 +320,21 @@ Lokální Docker integrační sada, fyzický iPhone/Safari, skutečná kamera, n
 - `npm run build` a `npm run test:unit`: PASS, **152/152**.
 - Lokální Objevování v prohlížeči na 375, 390 a 1280 px: jemně ultramarínový panel, brandová cena, ikony i čipy dalších časů; žádné horizontální přetečení ani chyba či varování v konzoli. Na 375 px měří karta 302 × 377 px a panel 282 × 104 px.
 
+## Mapa, hláška hledání, karty a patička — 22. 9. 2026
+
+- `npm run build` (včetně `tsc --noEmit`) a `npm run test:unit`: PASS, **156/156**, včetně dvou nových v `tests/map.test.ts` (rozmístění hlásí špendlík bez místa; stejné podniky jako body se vejdou bez překryvu a žádný nezmizí ani tam, kde se nevejde ani bod).
+- Migrace `20260921212301_map_search_limit_300` nanečisto v transakci s `rollback`, pak aplikovaná přes MCP; soubor přejmenovaný na verzi, kterou databáze zapsala.
+- Dotaz proti hostované databázi, výchozí filtr (do 5 km, `now()`, bez kategorie): při 50 řádcích dosáhne řazení „nejblíž“ na 3 podniky ze 16, „nejlevnější“ na 6, „doporučené“ na 14; při 300 řádcích dosáhnou všechna řazení na 16–17 podniků. Tělo funkce zůstalo slovo od slova stejné, mění se jediná mez ve validaci.
+- Vykreslení v Chromiu (Playwright, 2× DPR) proti sestavenému CSS a skutečnému písmu: šestnáct podniků na jedné pražské obrazovce při 390 px — plné špendlíky nechají jeden bez volného místa a přetékají přes okraj, body se vejdou všechny a vybraný si drží cenu. Dotyková plocha bodu změřená na 44 × 44 px.
+- Hláška o rozšířeném hledání a odznaky filtrů na 390 px: bez přetečení, nejdelší věta („Poblíž nic není, ukazujeme do 25 km a nejbližší dvě hodiny“) se zalomí uvnitř pilulky a kotouč zůstane u prvního řádku.
+- Karta „Tvůj FLEK“ na 375 i 390 px: 228 px (dřív 204 px), pruh se součtem drží dva řádky, odznak nejlepšího úlovku se nezalomí do třetího.
+- Patička „O FLEKu“: 368 px na 390 px (dřív 373 px) se třemi dlaždicemi ve tvaru 2 + 1, 255 px na 1280 px s jednou řadou pilulek; nikde vodorovné přetečení, dotyková plocha odkazů 44 px.
+- Panel karty nabídky nad třemi skutečnými fotografiemi (salon, masáže, tenis) na 390 px: fotka pod sklem prosvítá, text drží kontrast, karta zůstala 358 px.
+- Karta termínu na detailu nabídky na 390 px: 821 px místo 895 px, bez opakování vybraného času v seznamu.
+
 ## Kompaktní body oddálené mapy — 21. 9. 2026
+
+> Tuhle podobu nahradila změna z 22. 9. (viz sekce výš): přepínání podle hustoty místo hranic přiblížení a 300 řádků místo 100. Důkazy níž platí pro implementaci, která už v kódu není.
 
 - `npm run build`: PASS; zůstává jen známé upozornění na velikost samostatného mapového balíčku. `npm run test:unit`: PASS, **154/154** v 19 souborech. Nové testy hlídají přepnutí městský pohled / detail čtvrti a zachování každého bodu při těsnějším rozložení 44px dotykových ploch.
 - Lokální mapa nad živými demo daty při 390 × 844 a 375 × 812 px: 15 samostatných kruhových bodů, žádný číselný čtvercový shluk, stránka má přesně šířku viewportu. Vybraný bod se rozbalil na ikonu s cenou a otevřel 136px kartu se třemi službami.
@@ -328,7 +342,8 @@ Lokální Docker integrační sada, fyzický iPhone/Safari, skutečná kamera, n
 
 ## Mobilní detail služby — 22. 9. 2026
 
-- `npm run build`: PASS; pouze známé upozornění na velikost mapového balíčku. `npm run test:unit`: PASS, **154/154** v 19 souborech.
-- Lokální Chrome nad živými demo daty na 375 × 844 a 390 × 844 px: `scrollWidth` je shodný s viewportem, žádné chyby konzole. Rezervační karta má 469 px a spodní pevná lišta 93 px.
+- `npm run build`: PASS; pouze známé upozornění na velikost mapového balíčku. `npm run test:unit`: PASS, **156/156** v 19 souborech po sloučení mapových kontrol.
+- Lokální Chrome nad živými demo daty na 375 × 844 a 390 × 844 px: `scrollWidth` je shodný s viewportem, žádné chyby konzole. Pevná lišta obsahuje pouze cenu a hlavní akci, takže už nepřekrývá dvěma řádky vysvětlivek výběr časů.
 - Přepnutí záložky z **Dnes** na **Zítra** zobrazilo panel „Zítra: dostupné časy“. Volba termínu 09:00 za 658 Kč převedla detail na odpovídající nabídku, souhrn ukázal **Zítra** a nový stav už nezůstal v načítání.
+- Vybraný termín se zobrazuje právě jednou v souhrnu; mřížka „Jiný čas“ obsahuje jen skutečné alternativy.
 - Desktop 1280 × 720 px zkontrolovaný v prohlížeči: karta zůstává v pravém sloupci, souhrn, dvě řady časů i hlavní akce jsou viditelné bez vlastního dlouhého seznamu.

@@ -12,7 +12,7 @@ import { LazyMap } from '../offers/LazyMap';
 import { LocationChip } from './LocationChip';
 import { FilterBar, plural } from './FilterBar';
 import { useDiscoveryState } from './useDiscoveryState';
-import { MAP_RESULT_LIMIT, useDiscovery } from './useDiscovery';
+import { MAP_LIMIT, useDiscovery } from './useDiscovery';
 import { groupMapOffers } from './mapOffers';
 import { groupSlots, slotLabels } from './slots';
 import { MapPreviewCard } from './MapPreviewCard';
@@ -65,9 +65,8 @@ export function MapPage() {
   const [locateError, setLocateError] = useState(false);
   const [phone, setPhone] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
   const now = useServerNow();
-  // The map should reveal the whole filtered market. The public RPC deliberately caps a
-  // request at 100 rows, so this is the largest valid page rather than an arbitrary 200.
-  const discovery = useDiscovery(point, filters, MAP_RESULT_LIMIT);
+  // The map draws the whole filtered market, not a page of it; the cap lives in useDiscovery.
+  const discovery = useDiscovery(point, filters, MAP_LIMIT);
   const categories = useQuery({ queryKey: ['categories'], queryFn: listCategories, staleTime: 3_600_000 });
   const rows = discovery.data?.rows;
   const groups = useMemo(() => groupMapOffers(rows ?? []), [rows]);

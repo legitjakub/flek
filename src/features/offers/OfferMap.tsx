@@ -1,7 +1,7 @@
 // Side effect only, and it must run before any map is constructed: it tells MapLibre where
 // its tile-decoding worker lives. Without it vector tiles are never requested at all.
 import './mapWorker';
-import { COMPACT_PIN_SIZE, PIN_HEIGHT, shouldCompactPins, spreadPins } from '../discovery/mapClusters';
+import { DOT_SIZE, spreadPins } from '../discovery/mapClusters';
 import { categoryGlyph } from '../../lib/categoryGlyphs';
 import { useEffect, useRef } from 'react';
 import { LngLatBounds, Map as MapLibreMap, Marker, NavigationControl, type MapOptions, type StyleSpecification } from 'maplibre-gl';
@@ -231,16 +231,30 @@ export function MapCanvas({
       if (!instance) return;
       const focused = document.activeElement instanceof HTMLElement ? document.activeElement.dataset.mapIds : undefined;
       drawn.current.forEach((marker) => marker.remove());
-      const fullPins = markers.map((marker, index) => {
-        const point = instance.project([marker.lng, marker.lat]);
-        // A glyph tile over a price ticket: as wide as the ticket, never narrower than the tile.
-        return { x: point.x, y: point.y, width: Math.max(56, marker.label.length * 7.5 + 24), height: PIN_HEIGHT, indexes: [index] };
-      });
-      const compact = selectable && shouldCompactPins(fullPins, instance.getZoom());
-      const projected = compact
-        ? fullPins.map((point) => ({ ...point, width: COMPACT_PIN_SIZE, height: COMPACT_PIN_SIZE }))
-        : fullPins;
-      const positions = selectable ? spreadPins(projected) : projected.map((point) => ({ ...point, offsetX: 0, offsetY: 0 }));
+      /*
+       * A full pin with its price ticket is about 90 × 64 px. Over a whole city that is more
+       * than the map has room for: the layout runs out of free spots and venues end up under
+       * each other, which is why the map looked like it was hiding offers until you zoomed in.
+       *
+       * So the pins are laid out first, and if even one venue had nowhere free to sit, every
+       * venue is redrawn as a dot — a quarter of the footprint, the same count of markers,
+       * nothing behind anything. The selected one stays a full pin so its price is readable.
+       * The decision is made from screen distances at the current zoom, and panning is a
+       * translation of all of them at once, so it can only change when the customer zooms.
+       */
+      const layout = (compact: boolean) => {
+        const projected = markers.map((marker, index) => {
+          const point = instance.project([marker.lng, marker.lat]);
+          const dot = compact && marker.id !== selectedRef.current;
+          // A glyph tile over a price ticket: as wide as the ticket, never narrower than the tile.
+          const width = dot ? DOT_SIZE : Math.max(56, marker.label.length * 7.5 + 24);
+          return { x: point.x, y: point.y, width, height: dot ? DOT_SIZE : undefined, indexes: [index] };
+        });
+        return selectable ? spreadPins(projected) : projected.map((point) => ({ ...point, offsetX: 0, offsetY: 0, crowded: false }));
+      };
+      let positions = layout(false);
+      const compact = positions.some((position) => position.crowded);
+      if (compact) positions = layout(true);
       drawn.current = positions.map((position) => {
         const entry = markers[position.indexes[0]];
         const ids = [entry.id];
@@ -252,8 +266,9 @@ export function MapCanvas({
         const price = document.createElement('span');
         price.textContent = label;
 
-        el.className = 'map-pin';
-        if (compact) el.classList.add('is-compact');
+        const active = ids.includes(selectedRef.current ?? '');
+        el.className = compact && !active ? 'map-pin map-pin--dot' : 'map-pin';
+        if (compact && !active && count > 1) el.classList.add('map-pin--dot-many');
         if (position.offsetX || position.offsetY) el.classList.add('is-displaced');
         el.setAttribute('aria-label', entry.description ?? label);
         const glyph = categoryGlyph(entry.category);
@@ -273,7 +288,6 @@ export function MapCanvas({
           el.append(badge);
         }
 
-        const active = ids.includes(selectedRef.current ?? '');
         el.classList.toggle('is-selected', active);
         if (selectable) el.setAttribute('aria-pressed', String(active));
         if (selectable) {
