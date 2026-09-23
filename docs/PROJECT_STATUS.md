@@ -184,6 +184,8 @@ Nejdůležitější migrace:
 
 ## Ověření a otevřené body
 
+- Nasazení 23. 9. (`e9fd9cb`): Vercel, GitHub CI a Supabase Preview úspěšné. Produkční detail na 375/390 px načítá skutečnou fotografii, má 180px úvodní výřez a značkové tlačítko bez přetečení; lokálně prošel i desktop a změna času. Notion synchronizován.
+
 - Jednotkové testy a build s TypeScriptem běží v GitHub Actions (`.github/workflows/ci.yml`) při každém pushi; aktuální počet ukazuje CI. Vite upozorňuje na velikost mapového balíčku.
 - Bezpečnostní hlavičky (CSP, nosniff, Referrer-Policy, Permissions-Policy, zákaz rámů) jsou ve `vercel.json`. Průchod feedu, detailu, mapy, zapomenutého hesla, Realtime podniku, skeneru QR, hledání adresy a auditu v administraci proběhl s CSP bez jediného porušení (13. 9. 2026).
 - Produkční build prošel klikacím testem v systémovém Chrome při 375, 390, 430 a 1365 px: služba → nabídka → feed/mapa/detail → platba → potvrzení/historie a upozornění podniku ve druhém okně. Žádné horizontální přetečení ani chyby JavaScriptu; Realtime 881 ms a polling bez WebSocketu 29 013 ms.

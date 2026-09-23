@@ -350,6 +350,8 @@ Lokální Docker integrační sada, fyzický iPhone/Safari, skutečná kamera, n
 
 ## Skutečné fotografie a kompaktní detail — 23. 9. 2026
 
+- Nasazení commitu `e9fd9cb` na `main`: Vercel **success**, GitHub „Typy, build, unit testy a závislosti“ **success**, „Supabase Preview“ **success**. Produkční detail půjčení kola na `www.app-flek.eu` ověřen na 375 i 390 × 844 px: fotografie načtená, výška 180 px, nulové vodorovné přetečení, hlavní akce 52 px a ultramarín `rgb(44, 38, 210)`. Notion „FLEK — přehled projektu“ synchronizován a následným čtením ověřen.
+
 - `npm run build`: PASS včetně TypeScriptu; zůstává pouze známé upozornění na velikost mapového balíčku. `npm run test:unit`: PASS, **154/154** v 19 souborech. Dva testy starých generovaných derivátů byly odstraněny, nové testy ověřují všech 74 míst katalogu, evidenci skutečných fotografií, neutrální náhradu a přednost vlastní fotografie podniku.
 - Pro 63 různých fotografií byla při výběru otevřena zdrojová stránka, zkontrolován autor a označení „Free to use under the Unsplash License“; malé CDN náhledy odpověděly jako obrázky. Vizuální kontaktní listy kontrolovaly soulad s aktivitou, ořez a nevhodné osoby/loga. Pět nejednoznačných variant dostalo neutrální značkový placeholder; dvě wellness fotografie byly po další kontrole vyměněny.
 - Hostovaná DB eviduje migrace `20260923095229` a `20260923100358`. Po aplikaci: **0** starých lokálních URL v `service_photos`, `services` a `businesses`; jedna vlastní veřejná Storage fotografie služby zůstává. Primární fotografie půjčení kola v katalogu je skutečné kolo, nikoli rotoped.

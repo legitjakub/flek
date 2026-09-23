@@ -11,8 +11,8 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 | Fáze | Fáze 1 — demo pilot (běží veřejně, platby přes Stripe v testovacím režimu) |
 | Web | https://www.app-flek.eu (původní https://flek-nine.vercel.app funguje dál) |
 | Kód | https://github.com/legitjakub/flek (větev `main`) |
-| Poslední nasazení | databáze, `content-moderation` a web 21. 9. 2026; frontend z `main`, Vercel na `www.app-flek.eu` |
-| Testy | 156 unit testů a build, SQL testy potvrzování, WhatsAppu, právního minima a nově ověřených recenzí/moderace; změny v hostované DB se při SQL testech celé vracejí rollbackem |
+| Poslední nasazení | web a migrace fotografií 23. 9. 2026 (`e9fd9cb`); Vercel, GitHub CI a Supabase Preview úspěšné, produkční detail ověřen na 375/390 px. `content-moderation` nasazený 21. 9. |
+| Testy | 154 unit testů a build (23. 9.), SQL testy potvrzování, WhatsAppu, právního minima a ověřených recenzí/moderace; změny v hostované DB se při SQL testech celé vracejí rollbackem |
 | Potvrzování rezervací podnikem | **zapnuté pro všechny podniky** od 15. 9. 15:54 (předtím demo: akceptace 106/106 a průchod se skutečnými testovacími platbami) |
 | WhatsApp | backend, párování, fronta, webhook a šablony v kódu hotové; kanál je serverově vypnutý a v UI skrytý, dokud nebudou úplné Meta secrets, webhook, schválené šablony, zobrazované číslo a úspěšná testovací zpráva |
 | Recenze a moderace | ověřené anonymní hvězdičky a komentáře po dokončené rezervaci; komentáře, vlastní veřejné texty a fotografie čekají na kontrolu. Funkce je nasazená, ale OpenAI 21. 9. vrací HTTP 429, takže nové podklady zatím bezpečně zůstávají neveřejné v admin frontě |
