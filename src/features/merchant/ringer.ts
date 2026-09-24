@@ -89,29 +89,42 @@ export function armRinger(): () => void {
 }
 
 /**
- * "Ding-dong, ding-dong", then quiet: 2.6 s per cycle. Two bell-like tones with a quick attack
- * and a soft decay, so it carries across a room without sounding like an alarm.
+ * FLEK's ring: a rising major triad, G–C–E, played twice like a soft mallet, then quiet —
+ * 2.6 s per cycle. A doorbell "ding-dong" said "someone is at the door"; a rising chord says
+ * "good news", which a new booking is, and it still cuts through a salon. Mallet timbre: a round
+ * fundamental with a short bright strike on top, a slight detuned double for warmth, and each
+ * note fading out cleanly so the loop never clicks. Pure, so tests and previews hear the same.
  */
-function buildRing(current: AudioContext): AudioBuffer {
-  const rate = current.sampleRate;
-  const buffer = current.createBuffer(1, Math.ceil(rate * 2.6), rate);
-  const data = buffer.getChannelData(0);
-  const notes: Array<[number, number]> = [[0, 1318.5], [0.2, 987.8], [0.55, 1318.5], [0.75, 987.8]];
-  for (const [start, frequency] of notes) {
+export const RING_SECONDS = 2.6;
+const MOTIF: Array<[number, number]> = [[0, 783.99], [0.12, 1046.5], [0.24, 1318.51]];
+const NOTES = [...MOTIF, ...MOTIF.map(([start, frequency]): [number, number] => [start + 0.95, frequency])];
+
+export function ringSamples(rate: number): Float32Array {
+  const data = new Float32Array(Math.ceil(rate * RING_SECONDS));
+  const length = Math.floor(0.85 * rate);
+  const fade = Math.floor(0.15 * rate);
+  for (const [start, frequency] of NOTES) {
     const from = Math.floor(start * rate);
-    const length = Math.floor(0.7 * rate);
     for (let index = 0; index < length && from + index < data.length; index += 1) {
       const t = index / rate;
-      const envelope = Math.min(1, t / 0.004) * Math.exp(-t / 0.2);
-      const tone = Math.sin(2 * Math.PI * frequency * t)
-        + 0.35 * Math.sin(2 * Math.PI * frequency * 2 * t)
-        + 0.12 * Math.sin(2 * Math.PI * frequency * 3 * t);
-      data[from + index] += envelope * tone;
+      const attack = Math.min(1, t / 0.003);
+      const release = index > length - fade ? 0.5 + 0.5 * Math.cos((Math.PI * (index - (length - fade))) / fade) : 1;
+      const body = Math.exp(-t / 0.42) * (Math.sin(2 * Math.PI * frequency * t) + 0.25 * Math.sin(2 * Math.PI * frequency * 1.003 * t));
+      const strike = Math.exp(-t / 0.1) * 0.22 * Math.sin(2 * Math.PI * frequency * 2 * t)
+        + Math.exp(-t / 0.05) * 0.08 * Math.sin(2 * Math.PI * frequency * 4 * t);
+      data[from + index] += attack * release * (body + strike);
     }
   }
   let peak = 0;
   for (const sample of data) peak = Math.max(peak, Math.abs(sample));
   if (peak > 0) for (let index = 0; index < data.length; index += 1) data[index] = (data[index] / peak) * 0.9;
+  return data;
+}
+
+function buildRing(current: AudioContext): AudioBuffer {
+  const samples = ringSamples(current.sampleRate);
+  const buffer = current.createBuffer(1, samples.length, current.sampleRate);
+  buffer.getChannelData(0).set(samples);
   return buffer;
 }
 
