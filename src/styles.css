@@ -380,3 +380,10 @@
   .map-full .maplibregl-ctrl-bottom-right { bottom: calc(5.25rem + max(0.75rem, env(safe-area-inset-bottom))); }
   .map-full .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group { display: none; }
 }
+
+/* The bell in the partner console's ring bar: a short shake, then rest, in time with the ring. */
+@keyframes ring-shake {
+  0%, 55%, 100% { transform: rotate(0); }
+  8%, 24%, 40% { transform: rotate(-14deg); }
+  16%, 32%, 48% { transform: rotate(14deg); }
+}

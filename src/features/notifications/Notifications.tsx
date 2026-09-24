@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell } from 'lucide-react';
 import { Link } from '../../app/router';
 import { Button, SettingsRow, Sheet } from '../../components/ui';
 import { supabase } from '../../lib/supabase';
+import { errorMessage } from '../../lib/errors';
 import { useSession } from '../auth/session';
 import { WhatsAppSettingsSection, useWhatsAppSettings } from './WhatsApp';
 
@@ -145,6 +146,54 @@ function applicationServerKey(value: string): Uint8Array<ArrayBuffer> {
   return Uint8Array.from(binary, (character) => character.charCodeAt(0));
 }
 
+function sameKey(current: ArrayBuffer | null | undefined, wanted: Uint8Array): boolean {
+  if (!current) return false;
+  const bytes = new Uint8Array(current);
+  return bytes.length === wanted.length && bytes.every((byte, index) => byte === wanted[index]);
+}
+
+/** Why this device could not be registered; the screen turns it into a sentence for its audience. */
+class PushSetupError extends Error {
+  constructor(readonly reason: 'unsupported' | 'not-configured' | 'denied' | 'registration') {
+    super(`PUSH_${reason.toUpperCase()}`);
+  }
+}
+
+/**
+ * What went wrong with notifications on this device, in the screen's own voice. The browser's own
+ * text ("Registration failed - could not retrieve the public key") reached people untranslated.
+ */
+export function pushProblem(error: unknown, formal: boolean): string {
+  const reason = error instanceof PushSetupError ? error.reason : null;
+  const message = error instanceof Error ? error.message : '';
+  if (reason === 'unsupported') {
+    return formal
+      ? 'Tento prohlížeč oznámení nepodporuje. Na iPhonu si FLEK přidejte na plochu a otevřete ho odtud.'
+      : 'Tenhle prohlížeč oznámení nepodporuje. Na iPhonu si FLEK přidej na plochu a otevři ho odtud.';
+  }
+  if (reason === 'not-configured') return formal ? 'Oznámení na telefonu zatím nejsou aktivovaná.' : 'Oznámení na telefonu zatím nejsou aktivovaná.';
+  if (reason === 'denied') {
+    return formal
+      ? 'Prohlížeč má oznámení pro FLEK zakázaná. Povolíte je v nastavení prohlížeče u www.app-flek.eu.'
+      : 'Prohlížeč má oznámení pro FLEK zakázaná. Povolíš je v nastavení prohlížeče u www.app-flek.eu.';
+  }
+  if (reason === 'registration') {
+    return formal
+      ? 'Prohlížeč oznámení nezaregistroval. V nastavení prohlížeče u www.app-flek.eu oznámení zakažte a znovu povolte, nebo použijte Chrome či Safari.'
+      : 'Prohlížeč oznámení nezaregistroval. V nastavení prohlížeče u www.app-flek.eu oznámení zakaž a znovu povol, nebo použij Chrome či Safari.';
+  }
+  if (message.includes('DEVICE_LIMIT')) {
+    return formal ? 'Oznámení máte zapnutá už na 10 zařízeních. Na některém je odpojte.' : 'Oznámení máš zapnutá už na 10 zařízeních. Na některém je odpoj.';
+  }
+  if (message.includes('SUBSCRIPTION_OWNED_BY_ANOTHER_USER')) {
+    return formal ? 'Na tomto zařízení má oznámení zapnutá jiný účet.' : 'Na tomhle zařízení má oznámení zapnutá jiný účet.';
+  }
+  if (message.includes('INVALID_SUBSCRIPTION')) {
+    return formal ? 'Tento prohlížeč posílá oznámení službou, kterou FLEK nepodporuje. Použijte Chrome, Firefox nebo Safari.' : 'Tenhle prohlížeč posílá oznámení službou, kterou FLEK nepodporuje. Použij Chrome, Firefox nebo Safari.';
+  }
+  return errorMessage(error, formal ? 'merchant' : 'customer');
+}
+
 /** Whether this device already sends FLEK's notifications to the phone. */
 export async function devicePushEnabled(): Promise<boolean> {
   try {
@@ -157,21 +206,42 @@ export async function devicePushEnabled(): Promise<boolean> {
   }
 }
 
-/** Asks for permission and registers this device for push. Throws a sentence the screen can show. */
+/**
+ * Asks for permission and registers this device for push. The permission prompt comes first,
+ * before anything else is awaited: Safari shows it only straight from a tap.
+ */
 export async function enableDevicePush() {
   if (!('Notification' in window) || !('PushManager' in window) || !('serviceWorker' in navigator)) {
-    throw new Error('Tento prohlížeč oznámení nepodporuje. Na iPhonu přidej FLEK na plochu a otevři ho odtud. E-mail zůstává dostupný.');
+    throw new PushSetupError('unsupported');
   }
   const publicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
-  if (!publicKey) throw new Error('Oznámení na telefonu ještě nejsou aktivovaná. Použij zatím e-mail a centrum upozornění.');
+  if (!publicKey) throw new PushSetupError('not-configured');
   const permission = await Notification.requestPermission();
-  if (permission !== 'granted') throw new Error('Oznámení nejsou povolená. Povolení můžeš změnit v nastavení prohlížeče.');
+  if (permission !== 'granted') throw new PushSetupError('denied');
   const registration = await navigator.serviceWorker.ready;
-  const existing = await registration.pushManager.getSubscription();
-  const subscription = existing ?? await registration.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: applicationServerKey(publicKey),
-  });
+  const key = applicationServerKey(publicKey);
+  let subscription = await registration.pushManager.getSubscription().catch(() => null);
+  // A registration made with another key can never deliver ours, and it blocks a new one.
+  if (subscription && !sameKey(subscription.options.applicationServerKey, key)) {
+    await subscription.unsubscribe().catch(() => false);
+    subscription = null;
+  }
+  if (!subscription) {
+    const options = { userVisibleOnly: true, applicationServerKey: key };
+    try {
+      subscription = await registration.pushManager.subscribe(options);
+    } catch {
+      // Chrome answers a broken earlier registration with "could not retrieve the public key":
+      // drop whatever is left and try once more before giving up.
+      const stale = await registration.pushManager.getSubscription().catch(() => null);
+      await stale?.unsubscribe().catch(() => false);
+      try {
+        subscription = await registration.pushManager.subscribe(options);
+      } catch {
+        throw new PushSetupError('registration');
+      }
+    }
+  }
   await rpc('save_push_subscription', { p_subscription: subscription.toJSON() });
 }
 
@@ -225,10 +295,14 @@ export function usePreferenceQuery(businessId?: string) {
   });
 }
 
+const BUSINESS_EVENTS = ['requested', 'confirmed', 'cancelled'] as const;
+const CUSTOMER_EVENTS = ['confirmed', 'cancelled', 'review_requested', 'watch'] as const;
+
 function usePreferences(businessId?: string) {
   const { userId } = useSession();
   const scope = businessId ?? 'customer';
   const formal = Boolean(businessId);
+  const events = formal ? BUSINESS_EVENTS : CUSTOMER_EVENTS;
   const queryClient = useQueryClient();
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -238,6 +312,53 @@ function usePreferences(businessId?: string) {
   const whatsapp = useWhatsAppSettings(businessId);
   const device = useDevicePush();
   const channels = COLUMNS.filter((channel) => channel !== 'whatsapp' || whatsapp.data?.available);
+  // Saves go out one after another, so two quick taps on one row cannot overtake each other.
+  const queue = useRef<Promise<void>>(Promise.resolve());
+  const pending = useRef(0);
+
+  const defaultsFor = (event: Preference['event']): Preference => ({ event, ...(event === 'watch' ? WATCH_DEFAULTS : DEFAULTS) });
+  const sendPreference = (row: Preference) => rpc('save_notification_preference', {
+    p_scope: scope, p_event: row.event, p_email: row.email, p_push: row.push, p_whatsapp: row.whatsapp,
+  });
+
+  /*
+   * The box flips at the tap and the server catches up behind it. Before, every box waited for
+   * the round trip and all of them were locked meanwhile; worse, ticking "Telefon" first tried to
+   * register the device and, when the browser refused, saved nothing and the tick jumped back.
+   * The choice and the device are separate now: the choice is always kept, the device reports
+   * its own problem.
+   */
+  const save = (event: Preference['event'], channel: Channel, value: boolean) => {
+    const registering = channel === 'push' && value && device.on !== true ? enableDevicePush() : null;
+    // Handled below, after the choice is saved; this only keeps the browser from calling it unhandled.
+    registering?.catch(() => undefined);
+    const rows = queryClient.getQueryData<Preference[]>(queryKey) ?? [];
+    const before = rows.find((row) => row.event === event) ?? defaultsFor(event);
+    const after = { ...before, [channel]: value };
+    queryClient.setQueryData<Preference[]>(queryKey, [...rows.filter((row) => row.event !== event), after]);
+    setMessage('');
+    pending.current += 1;
+    queue.current = queue.current.then(async () => {
+      try {
+        await sendPreference(after);
+      } catch (error) {
+        queryClient.setQueryData<Preference[]>(queryKey, (current = []) => [...current.filter((row) => row.event !== event), before]);
+        setMessage(errorMessage(error, formal ? 'merchant' : 'customer'));
+      }
+      if (registering) {
+        try {
+          await registering;
+          setMessage(formal ? 'Oznámení na tomto zařízení jsou zapnutá.' : 'Oznámení na tomhle zařízení jsou zapnutá.');
+        } catch (error) {
+          setMessage(`${formal ? 'Nastavení je uložené, ale oznámení se na tomto zařízení nezapnula.' : 'Nastavení je uložené, ale oznámení se na tomhle zařízení nezapnula.'} ${pushProblem(error, formal)}`);
+        }
+        device.refresh();
+      }
+    }).finally(() => {
+      pending.current -= 1;
+      if (pending.current === 0) void queryClient.invalidateQueries({ queryKey });
+    });
+  };
 
   async function run(work: () => Promise<string>) {
     setBusy(true);
@@ -245,40 +366,39 @@ function usePreferences(businessId?: string) {
     try {
       setMessage(await work());
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Nastavení se nepodařilo uložit.');
+      setMessage(pushProblem(error, formal));
     } finally {
       device.refresh();
       setBusy(false);
     }
   }
 
-  const save = (event: Preference['event'], channel: Channel, value: boolean) => run(async () => {
-    if (channel === 'push' && value) await enableDevicePush();
-    const current = query.data?.find((preference) => preference.event === event) ?? (event === 'watch' ? WATCH_DEFAULTS : DEFAULTS);
-    await rpc('save_notification_preference', {
-      p_scope: scope,
-      p_event: event,
-      p_email: channel === 'email' ? value : current.email,
-      p_push: channel === 'push' ? value : current.push,
-      p_whatsapp: channel === 'whatsapp' ? value : current.whatsapp,
-    });
-    await queryClient.invalidateQueries({ queryKey });
-    return 'Nastavení je uložené.';
-  });
+  /*
+   * "Zapnout" means the phone, so it also ticks the Telefon column for every event the person has
+   * never set. Before, a venue switched the device on and still got nothing: a request's push is
+   * off until chosen, and nobody chose it.
+   */
   const deviceOn = () => run(async () => {
     await enableDevicePush();
-    return 'Oznámení na tomto zařízení jsou zapnutá.';
+    const stored = queryClient.getQueryData<Preference[]>(queryKey) ?? query.data ?? [];
+    for (const event of events) {
+      if (!offered(event, 'push') || stored.some((row) => row.event === event)) continue;
+      const row = defaultsFor(event);
+      if (!row.push) await sendPreference({ ...row, push: true });
+    }
+    await queryClient.invalidateQueries({ queryKey });
+    return formal ? 'Oznámení na tomto zařízení jsou zapnutá.' : 'Oznámení na tomhle zařízení jsou zapnutá.';
   });
   const deviceOff = () => run(async () => {
     try {
       await disableDevicePush();
     } catch {
-      throw new Error('Zařízení se nepodařilo odpojit.');
+      throw new Error(formal ? 'Zařízení se nepodařilo odpojit.' : 'Zařízení se nepodařilo odpojit.');
     }
-    return 'Oznámení na tomto zařízení jsou odpojená.';
+    return formal ? 'Oznámení na tomto zařízení jsou odpojená.' : 'Oznámení na tomhle zařízení jsou odpojená.';
   });
 
-  return { formal, query, whatsapp, device, channels, busy, message, save, deviceOn, deviceOff };
+  return { formal, events, query, whatsapp, device, channels, busy, message, save, deviceOn, deviceOff };
 }
 
 type Preferences = ReturnType<typeof usePreferences>;
@@ -288,8 +408,7 @@ type Preferences = ReturnType<typeof usePreferences>;
  * Each box keeps a 44 px target and says in full what it switches for a screen reader.
  */
 function PreferenceTable({ preferences }: { preferences: Preferences }) {
-  const { formal, query, channels, busy, save } = preferences;
-  const events = formal ? (['requested', 'confirmed', 'cancelled'] as const) : (['confirmed', 'cancelled', 'review_requested', 'watch'] as const);
+  const { formal, events, query, channels, save } = preferences;
 
   if (query.isError) {
     return (
@@ -336,8 +455,8 @@ function PreferenceTable({ preferences }: { preferences: Preferences }) {
                         className="size-5 accent-accent"
                         aria-label={`${EVENT_LABELS[event]}: ${CHANNEL_LABELS[channel].long}`}
                         checked={current?.[channel] ?? defaults[channel]}
-                        disabled={busy || query.isPending}
-                        onChange={(input) => void save(event, channel, input.target.checked)}
+                        disabled={query.isPending}
+                        onChange={(input) => save(event, channel, input.target.checked)}
                       />
                     </label>
                   )}

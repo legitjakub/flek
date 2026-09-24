@@ -59,7 +59,10 @@ Deno.serve(async request => {
         if (!response.ok) { status = response.status === 429 || response.status >= 500 ? 'pending' : 'failed'; failure = `EMAIL_HTTP_${response.status}`; }
       } else if (!job.subscription) status = 'skipped';
       else {
-        await webpush.sendNotification(job.subscription, JSON.stringify({ url: job.href, id: job.notification_id }), { TTL: 3600, timeout: 15000 });
+        // Only the kind rides along, never booking details: a request needs the venue now, so the
+        // service worker keeps it on screen until someone taps it.
+        const kind = job.event === 'requested' && !job.customer ? { kind: 'request' } : {};
+        await webpush.sendNotification(job.subscription, JSON.stringify({ url: job.href, id: job.notification_id, ...kind }), { TTL: 3600, timeout: 15000 });
       }
     } catch (e) {
       const code = (e as { statusCode?: number }).statusCode;

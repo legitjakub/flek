@@ -7,6 +7,7 @@ import { useSession } from '../auth/session';
 import { useMyBusinesses } from './useBusiness';
 import { PartnerLanding } from './PartnerLanding';
 import { useBookingAlerts, useUnreadBookings, type BookingAlert } from './useBookingAlerts';
+import { RingBar, useRequestRing } from './RequestRing';
 import { money } from '../../lib/format';
 import { clockTime, dayLabel } from '../../lib/time';
 import { serverNow, useServerNow } from '../../lib/clock';
@@ -135,7 +136,8 @@ function PendingNotice({ business }: { business: Business }) {
 }
 
 function ApprovedFrame({ business, path }: { business: Business; path: string }) {
-  const { alerts, unread, markRead, dismiss } = useBookingAlerts(business.id);
+  const { alerts, unread, markRead, dismiss, waiting } = useBookingAlerts(business.id);
+  const ring = useRequestRing(waiting);
   const [celebrate, setCelebrate] = useState(() => {
     try {
       return window.localStorage.getItem(PENDING_SEEN + business.id) === '1';
@@ -172,8 +174,11 @@ function ApprovedFrame({ business, path }: { business: Business; path: string })
         </div>
       ) : null}
       <div aria-live="polite" className="empty:hidden mb-4 flex flex-col gap-2">
-        {/* Přehled and Rezervace list the requests at the top themselves; a banner there would say it twice. */}
-        {alerts.filter((alert) => alert.kind !== 'request' || !REQUEST_PAGES.includes(path)).map((alert) => (
+        {/* Rings on every partner page until the request is answered, runs out or is muted. */}
+        <RingBar ring={ring} showOpen={!REQUEST_PAGES.includes(path)} />
+        {/* Přehled and Rezervace list the requests at the top themselves; a banner there would say it twice.
+            A request that still rings is already announced by the ring bar above. */}
+        {alerts.filter((alert) => alert.kind !== 'request' || (!REQUEST_PAGES.includes(path) && !ring.loud.some((request) => request.id === alert.id))).map((alert) => (
           <NewBookingBanner key={alert.id} alert={alert} onDismiss={() => dismiss(alert.id)} />
         ))}
       </div>

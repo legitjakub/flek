@@ -2,10 +2,11 @@ import { useEffect, useSyncExternalStore } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { merchantBookings } from '../../lib/api';
 import { dayBounds } from '../../lib/time';
-import { serverNow } from '../../lib/clock';
+import { serverNow, useServerNow } from '../../lib/clock';
 import { supabase } from '../../lib/supabase';
 import { useSession } from '../auth/session';
 import { bookingAlerts } from './bookingAlertStore';
+import type { WaitingRequest } from './RequestRing';
 export type { BookingAlert } from './bookingAlertStore';
 
 export function useUnreadBookings(businessId?: string): number {
@@ -14,7 +15,10 @@ export function useUnreadBookings(businessId?: string): number {
   return useSyncExternalStore(bookingAlerts.subscribe, () => bookingAlerts.get(scope).unreadIds.length, () => 0);
 }
 
-/** Two short tones, only if the browser allows sound without a fresh tap. */
+/**
+ * Two short tones for a booking that needs nothing from the venue, only if the browser allows
+ * sound without a fresh tap. A request that waits for an answer rings instead (`RequestRing`).
+ */
 function chime() {
   try {
     const Context = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -94,7 +98,7 @@ export function useBookingAlerts(businessId: string) {
   });
   useEffect(() => {
     if (!scope || !poll.data) return;
-    let fresh = false;
+    let freshBooking = false;
     for (const row of poll.data) {
       if (row.business_id !== businessId) continue;
       const alert = { id: row.id, service: row.service_name_snapshot, startAt: row.start_at_snapshot, payoutCents: row.merchant_payout_cents };
@@ -102,18 +106,26 @@ export function useBookingAlerts(businessId: string) {
         // A request is news when the customer's payment is authorised. Once answered, here, on another
         // device or on WhatsApp, the merchant decided it themselves and there is nothing to announce.
         if (row.status !== 'pending_merchant' || !row.authorized_at) { bookingAlerts.dismiss(scope, row.id); continue; }
-        fresh = bookingAlerts.announce(scope, { ...alert, kind: 'request', deadline: row.confirmation_expires_at }, Date.parse(row.authorized_at)) || fresh;
+        bookingAlerts.announce(scope, { ...alert, kind: 'request', deadline: row.confirmation_expires_at }, Date.parse(row.authorized_at));
         continue;
       }
       if (row.status !== 'confirmed') { bookingAlerts.dismiss(scope, row.id); continue; }
-      fresh = bookingAlerts.announce(scope, { ...alert, kind: 'booking' }, Date.parse(row.created_at)) || fresh;
+      freshBooking = bookingAlerts.announce(scope, { ...alert, kind: 'booking' }, Date.parse(row.created_at)) || freshBooking;
     }
     // Poll refreshes time-derived states even when no new booking arrived.
     for (const key of ['merchant-bookings', 'merchant-metrics', 'merchant-offers', 'merchant-booking-lookup']) {
       void queryClient.invalidateQueries({ queryKey: [key, businessId] });
     }
-    if (fresh) chime();
+    if (freshBooking) chime();
   }, [poll.data, poll.dataUpdatedAt, scope, businessId, queryClient]);
+
+  // What still waits for an answer right now; re-read every few seconds so a request that runs
+  // out stops ringing on time even when nothing new arrives.
+  const now = useServerNow(5_000);
+  const waiting: WaitingRequest[] = (poll.data ?? [])
+    .filter((row) => row.business_id === businessId && row.confirmation_version === 1 && row.status === 'pending_merchant'
+      && Boolean(row.authorized_at) && Date.parse(row.confirmation_expires_at ?? '') > Date.parse(now))
+    .map((row) => ({ id: row.id, deadline: row.confirmation_expires_at ?? null }));
 
   useEffect(() => {
     const previous = document.title;
@@ -122,6 +134,7 @@ export function useBookingAlerts(businessId: string) {
   }, [state.unreadIds.length]);
 
   return {
+    waiting,
     alerts: state.alerts,
     unread: state.unreadIds.length,
     markRead: () => bookingAlerts.markRead(scope),

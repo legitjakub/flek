@@ -10,7 +10,7 @@ import type { Category, FlekWatch } from '../../types/database';
 import { useSession } from '../auth/session';
 import { DAYPART_LABELS, DISCOUNT_LABELS, PRICE_LABELS, type Daypart, type Filters } from '../discovery/filters';
 import { money } from '../../lib/format';
-import { devicePushEnabled, enableDevicePush } from '../notifications/Notifications';
+import { devicePushEnabled, enableDevicePush, pushProblem } from '../notifications/Notifications';
 import { TRAVEL_MINUTES, TRAVEL_MODE_LABELS, radiusLabel, watchRadius, type TravelMinutes, type TravelMode } from './travel';
 
 type Place = { lat: number; lng: number; label: string };
@@ -109,7 +109,7 @@ export function WatchSheet({
         await enableDevicePush();
         setPush('on');
       } catch (failure) {
-        note = `Hlídač běží, nové FLEKy uvidíš ve zvonečku. ${failure instanceof Error ? failure.message : ''}`.trim();
+        note = `Hlídač běží, nové FLEKy uvidíš ve zvonečku. ${pushProblem(failure, false)}`;
       }
     }
     try {

@@ -15,6 +15,7 @@ import type { Business } from '../../types/database';
 import { NotificationSettings } from '../notifications/Notifications';
 import { BookingConfirmationInfo } from './BookingConfirmationInfo';
 import { WhatsAppSettingsSection } from '../notifications/WhatsApp';
+import { RingSettings } from './RequestRing';
 import { useLegalInfo } from '../legal/useLegal';
 
 type Values = {
@@ -168,6 +169,7 @@ function BusinessSettings({ business }: { business: Business }) {
       <div id="platby" className="scroll-mt-24"><StripePayouts business={business} /></div>
       <BookingConfirmationInfo business={business} />
       <div id="upozorneni" className="flex scroll-mt-24 flex-col gap-6">
+        <RingSettings />
         <NotificationSettings businessId={business.id} />
         <div id="whatsapp" className="scroll-mt-24"><WhatsAppSettingsSection businessId={business.id} /></div>
       </div>

@@ -40,11 +40,15 @@ self.addEventListener('push', event => {
   const url = target(data.url);
   const partner = url.startsWith('/partner/');
   const watch = WATCH_URL.test(url);
+  // A booking request waits for the venue's answer: it stays on screen and buzzes until tapped.
+  const request = partner && data.kind === 'request';
   event.waitUntil(self.registration.showNotification('FLEK', {
     body: watch
       ? 'V okolí se uvolnil nový FLEK podle tvého hlídače.'
-      : partner ? 'V aplikaci máte nové upozornění na rezervaci.' : 'V aplikaci máš nové upozornění na rezervaci.',
+      : request ? 'Nová rezervace čeká na potvrzení. Otevřete FLEK Partner a potvrďte ji, než vyprší.'
+        : partner ? 'V aplikaci máte nové upozornění na rezervaci.' : 'V aplikaci máš nové upozornění na rezervaci.',
     icon: '/icon.svg', badge: '/favicon.svg', tag: data.id || (watch ? 'flek-watch' : 'flek-reservations'), data: { url },
+    ...(request ? { requireInteraction: true, renotify: true, vibrate: [300, 150, 300, 150, 600] } : {}),
   }));
 });
 self.addEventListener('notificationclick', event => {
