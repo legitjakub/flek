@@ -16,12 +16,7 @@ function currentMonthName(): string {
   ];
 }
 
-/** One, two to four, five and more: Czech counts in three forms and the card says all three. */
-function caught(count: number): string {
-  if (count === 1) return 'chycený FLEK';
-  return count < 5 ? 'chycené FLEKy' : 'chycených FLEKů';
-}
-
+/** One, two to four, five and more: Czech counts in three forms. */
 function fleks(count: number): string {
   if (count === 1) return 'FLEK';
   return count < 5 ? 'FLEKy' : 'FLEKů';
@@ -39,7 +34,7 @@ export function CustomerFlekStats({ userId }: { userId: string }) {
     staleTime: 60_000,
   });
 
-  if (metrics.isPending) return <Skeleton className="h-48 w-full rounded-3xl" />;
+  if (metrics.isPending) return <Skeleton className="h-60 w-full rounded-3xl" />;
   if (metrics.isError || !metrics.data) return null;
 
   const m = metrics.data;
@@ -59,43 +54,52 @@ export function CustomerFlekStats({ userId }: { userId: string }) {
   }
 
   return (
-    <PromoCard tone="dark">
-      <PinMark tone="dark" className="pointer-events-none absolute top-3.5 right-4 h-10 w-12" />
-      <h2 className="text-sm font-bold text-brand-on-dark">Tvůj FLEK · {currentMonthName()}</h2>
+    <section className="relative overflow-hidden rounded-3xl bg-card shadow-card">
       {/*
-        The month is the headline and the rest is the footnote, because that is the order the
-        figures matter in: what the month saved, then how it compares with everything before it.
-        Value above label and one size bigger — a figure this card exists for should not be the
-        same size as the word describing it.
+        A stub, like the voucher the customer shows at the business: the torn-off top is what
+        the month saved, the rest is the small print. One figure is the headline on purpose —
+        the card exists for the money, and the count used to compete with it at the same size.
       */}
-      <dl className="relative mt-4 flex flex-wrap items-end gap-x-8 gap-y-4">
-        <div className="min-w-0">
-          <dd className="tnum text-[2.125rem] leading-none font-extrabold tracking-tight text-brand-on-dark">
-            {money(m.month_saved_cents)}
-          </dd>
-          <dt className="mt-1.5 text-sm text-card/75">ušetřeno</dt>
-        </div>
-        <div className="min-w-0">
-          <dd className="tnum text-[2.125rem] leading-none font-extrabold">{m.month_completed}</dd>
-          <dt className="mt-1.5 text-sm text-card/75">{caught(m.month_completed)}</dt>
-        </div>
-      </dl>
-      {/* A band rather than a hairline: it separates the two time spans without adding a line. */}
-      <div className="relative mt-5 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-2xl bg-card/10 px-3.5 py-2.5">
-        {/* „FLEKů", not „chycených FLEKů": the label above already said what was caught, and the
-            longer wording wrapped this line on a phone and made the band three rows tall. */}
-        <p className="tnum text-sm text-card/75">
-          Celkem <span className="font-bold text-card">{m.all_time_completed} {fleks(m.all_time_completed)}</span>
-          {' · '}ušetřeno <span className="font-bold text-card">{money(m.all_time_saved_cents)}</span>
+      <div className="relative bg-ink px-5 pt-5 pb-6 text-card sm:px-6">
+        <PinMark tone="dark" className="pointer-events-none absolute top-4 right-5 h-9 w-10" />
+        <h2 className="text-xs font-bold tracking-[0.06em] text-brand-on-dark uppercase">
+          Tvůj FLEK · {currentMonthName()}
+        </h2>
+        <p className="tnum mt-2.5 text-[2.75rem] leading-none font-extrabold tracking-tight text-brand-on-dark">
+          {money(m.month_saved_cents)}
         </p>
+        <p className="mt-1.5 text-sm text-card/75">ušetřeno</p>
+      </div>
+      {/* The perforation: a dashed tear line with a bite out of each edge in the page colour. */}
+      <div aria-hidden="true" className="relative border-t-2 border-dashed border-line">
+        <span className="absolute -top-[11px] -left-2.5 size-5 rounded-full bg-surface" />
+        <span className="absolute -top-[11px] -right-2.5 size-5 rounded-full bg-surface" />
+      </div>
+      <dl className="tnum px-5 pt-3 pb-4 text-sm sm:px-6">
+        <div className="flex items-baseline justify-between gap-4 py-1.5">
+          <dt className="text-muted">Chycené FLEKy</dt>
+          <dd className="font-bold text-ink">{m.month_completed}</dd>
+        </div>
         {/* Null means "nothing completed yet", which the branch above already handled; 0 %
             would be a real if unexciting best catch, so it is not hidden. */}
         {m.best_discount_pct !== null ? (
-          <span className="tnum shrink-0 rounded-full bg-brand-on-dark px-2.5 py-1 text-xs font-extrabold text-ink">
-            nejlepší úlovek −{m.best_discount_pct} %
-          </span>
+          <div className="flex items-baseline justify-between gap-4 py-1.5">
+            <dt className="text-muted">Nejlepší úlovek</dt>
+            <dd className="font-bold text-brand">−{m.best_discount_pct} %</dd>
+          </div>
         ) : null}
-      </div>
-    </PromoCard>
+        {/* In the first month every FLEK is also this month's, so the row would repeat the
+            figures above word for word. It appears once there is history to add up. */}
+        {m.all_time_completed !== m.month_completed ? (
+          <div className="flex items-baseline justify-between gap-4 py-1.5">
+            <dt className="text-muted">Od začátku</dt>
+            <dd className="text-right text-ink">
+              {m.all_time_completed} {fleks(m.all_time_completed)} ·{' '}
+              <span className="font-bold">{money(m.all_time_saved_cents)}</span>
+            </dd>
+          </div>
+        ) : null}
+      </dl>
+    </section>
   );
 }
