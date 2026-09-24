@@ -100,19 +100,79 @@ function initial(business?: Business): Values {
   };
 }
 
+/*
+ * The longest page of the console — payments, alerts and the whole venue form ran to more than
+ * four phone screens with a heading only in the middle. It now opens with its name, a row that
+ * jumps to each part, and every part can be linked to (`?sekce=platby`), which is how the setup
+ * guide sends a venue straight to the field it still has to fill in.
+ */
+const SECTIONS = [
+  { id: 'platby', label: 'Platby' },
+  { id: 'upozorneni', label: 'Upozornění' },
+  { id: 'udaje', label: 'Údaje' },
+  { id: 'fakturace', label: 'Fakturace' },
+  { id: 'zruseni', label: 'Zrušení' },
+] as const;
+
+function jumpTo(id: string, smooth = true) {
+  document.getElementById(id)?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+}
+
+/** Scrolls to `?sekce=…` once the part has rendered; the forms below load their data first. */
+function useSectionFromAddress() {
+  const { search } = useRouter();
+  const target = search.get('sekce');
+  useEffect(() => {
+    if (!target) return;
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      tries += 1;
+      const element = document.getElementById(target);
+      if (element || tries > 30) {
+        window.clearInterval(timer);
+        if (element) jumpTo(target, false);
+      }
+    }, 100);
+    return () => window.clearInterval(timer);
+  }, [target]);
+}
+
 export function MerchantBusinessPage() {
   return (
     <MerchantShell>
-      {(business) => (
-        <div className="flex flex-col gap-6">
-          <StripePayouts business={business} />
-          <BookingConfirmationInfo business={business} />
-          <NotificationSettings businessId={business.id} />
-          <WhatsAppSettingsSection businessId={business.id} />
-          <BusinessForm business={business} />
-        </div>
-      )}
+      {(business) => <BusinessSettings business={business} />}
     </MerchantShell>
+  );
+}
+
+function BusinessSettings({ business }: { business: Business }) {
+  useSectionFromAddress();
+  return (
+    <div className="flex flex-col gap-6">
+      <header>
+        <h1 className="text-2xl font-extrabold tracking-tight text-ink">Provozovna</h1>
+        <p className="mt-1 text-sm text-muted">Platby, upozornění a údaje, které o vás vidí zákazníci.</p>
+        <nav aria-label="Části stránky" className="rail -mx-4 mt-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+          {SECTIONS.map((section) => (
+            <button
+              key={section.id}
+              type="button"
+              onClick={() => jumpTo(section.id)}
+              className="min-h-11 shrink-0 rounded-full bg-card px-4 text-sm font-bold text-ink shadow-card hover:bg-accent-soft hover:text-accent"
+            >
+              {section.label}
+            </button>
+          ))}
+        </nav>
+      </header>
+      <div id="platby" className="scroll-mt-24"><StripePayouts business={business} /></div>
+      <BookingConfirmationInfo business={business} />
+      <div id="upozorneni" className="flex scroll-mt-24 flex-col gap-6">
+        <NotificationSettings businessId={business.id} />
+        <div id="whatsapp" className="scroll-mt-24"><WhatsAppSettingsSection businessId={business.id} /></div>
+      </div>
+      <BusinessForm business={business} />
+    </div>
   );
 }
 
@@ -306,9 +366,11 @@ function BusinessForm({ business }: { business?: Business }) {
       }}
       noValidate
     >
-      <h1 className="text-2xl font-extrabold tracking-tight text-ink">
-        {business ? 'Provozovna' : 'Registrace provozovny'}
-      </h1>
+      {business ? (
+        <h2 id="udaje" className="scroll-mt-24 text-lg font-extrabold tracking-tight text-ink">Údaje o provozovně</h2>
+      ) : (
+        <h1 className="text-2xl font-extrabold tracking-tight text-ink">Registrace provozovny</h1>
+      )}
       {!business ? (
         <>
           {/* No e-mail goes out on approval — the app has no mail provider — so the promise is
@@ -496,7 +558,7 @@ function BusinessForm({ business }: { business?: Business }) {
         no IČO, no DIČ, no account number, no contact person, no terms. It is kept in its own
         section, and in its own table, because the customer never sees any of it.
       */}
-      <section className="mt-2 flex flex-col gap-4 rounded-2xl border border-line p-4">
+      <section id="fakturace" className="mt-2 flex scroll-mt-24 flex-col gap-4 rounded-2xl border border-line p-4">
         <div>
           <h2 className="text-lg font-extrabold tracking-tight text-ink">Fakturační údaje</h2>
           <p className="mt-1 text-sm text-muted">
@@ -630,7 +692,7 @@ function BusinessForm({ business }: { business?: Business }) {
         </div>
       </section>
 
-      <fieldset className="flex flex-col gap-2">
+      <fieldset id="zruseni" className="flex scroll-mt-24 flex-col gap-2">
         <legend className="pb-1 text-sm font-bold">Bezplatné zrušení</legend>
         <p className="text-sm text-muted">
           Do kdy před začátkem může zákazník zrušit a dostat peníze zpět. Kdo si termín

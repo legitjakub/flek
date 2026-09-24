@@ -14,21 +14,22 @@ import { localInput, localToInstant } from '../../lib/time';
 import { useServices } from './useBusiness';
 import { StatusBadge } from '../../components/StatusBadge';
 import { discountPct, priceProblem, quote } from '../../lib/pricing';
-import type { MerchantOffer } from '../../types/database';
+import type { Business, MerchantOffer } from '../../types/database';
+import { SetupNotice, usePublishReadiness } from './SetupGuide';
 
 type Tab = 'active' | 'upcoming' | 'ended';
 
 export function MerchantOffersPage() {
   return (
     <MerchantShell>
-      {(business) => (
-        <Offers businessId={business.id} approved={business.status === 'approved'} />
-      )}
+      {(business) => <Offers business={business} />}
     </MerchantShell>
   );
 }
 
-function Offers({ businessId, approved }: { businessId: string; approved: boolean }) {
+function Offers({ business }: { business: Business }) {
+  const businessId = business.id;
+  const readiness = usePublishReadiness(business);
   const now = useServerNow();
   const [tab, setTab] = useState<Tab>('active');
   const [draft, setDraft] = useState<OfferDraft>(null);
@@ -64,42 +65,52 @@ function Offers({ businessId, approved }: { businessId: string; approved: boolea
       ) : null}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-extrabold tracking-tight text-ink">Nabídky</h1>
-        <Button
-          size="lg"
-          className="w-full sm:w-auto"
-          disabled={!approved || services.isPending}
-          onClick={() => {
-            setDraft(null);
-            setSheetOpen(true);
-          }}
-        >
-          <Plus size={20} aria-hidden="true" />Přidat volný termín
-        </Button>
+        {readiness.canPublish ? (
+          <Button
+            size="lg"
+            className="w-full sm:w-auto"
+            onClick={() => {
+              setDraft(null);
+              setSheetOpen(true);
+            }}
+          >
+            <Plus size={20} aria-hidden="true" />Přidat volný termín
+          </Button>
+        ) : null}
       </div>
+      {/* A button that opened a sheet only to fail at the end said nothing about why; this says what is missing. */}
+      <SetupNotice business={business} />
 
-      <Tabs
-        label="Nabídky"
-        value={tab}
-        onChange={setTab}
-        items={[
-          { value: 'active', label: 'Aktivní' },
-          { value: 'upcoming', label: 'Nadcházející' },
-          { value: 'ended', label: 'Ukončené' },
-        ]}
-      />
+      {/* Three tabs over nothing at all only asked which empty list to look at. */}
+      {query.isSuccess && all.length === 0 ? null : (
+        <Tabs
+          label="Nabídky"
+          value={tab}
+          onChange={setTab}
+          items={[
+            { value: 'active', label: 'Aktivní' },
+            { value: 'upcoming', label: 'Nadcházející' },
+            { value: 'ended', label: 'Ukončené' },
+          ]}
+        />
+      )}
 
       {query.isPending ? <LoadingList /> : null}
       {query.isError ? <ErrorState error={query.error} onRetry={() => query.refetch()} /> : null}
       {query.isSuccess && rows.length === 0 ? (
-        <EmptyState
-          title="V tomto přehledu zatím nemáte žádnou nabídku."
-          body="Prázdný termín zveřejníte za půl minuty."
-          action={
-            approved ? (
-              <Button onClick={() => setSheetOpen(true)}><Plus size={20} aria-hidden="true" />Přidat volný termín</Button>
-            ) : undefined
-          }
-        />
+        all.length === 0 && !readiness.canPublish ? (
+          <EmptyState title="Zatím tu nejsou žádné FLEKy." body="Až dokončíte nastavení, zveřejníte volný termín za půl minuty." />
+        ) : (
+          <EmptyState
+            title="V tomto přehledu zatím nemáte žádnou nabídku."
+            body="Prázdný termín zveřejníte za půl minuty."
+            action={
+              readiness.canPublish ? (
+                <Button onClick={() => { setDraft(null); setSheetOpen(true); }}><Plus size={20} aria-hidden="true" />Přidat volný termín</Button>
+              ) : undefined
+            }
+          />
+        )
       ) : null}
 
       <ul className="flex flex-col gap-3">
@@ -150,7 +161,7 @@ function Offers({ businessId, approved }: { businessId: string; approved: boolea
             <div className="mt-4 flex flex-wrap gap-2 xl:mt-0">
               {/* Not on a suspended or unapproved venue: the sheet opened, the form filled
                   in, and the publish then failed with BUSINESS_NOT_APPROVED. */}
-              {approved ? (
+              {readiness.canPublish ? (
                 <Button
                   variant="secondary"
                   onClick={() => {

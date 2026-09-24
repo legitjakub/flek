@@ -1,7 +1,7 @@
 import { Plus, CalendarDays } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { merchantBookings } from '../../lib/api';
+import { merchantBookings, merchantOffers } from '../../lib/api';
 import { money } from '../../lib/format';
 import { clockTime, dayBounds, dayLabel } from '../../lib/time';
 import { useServerNow } from '../../lib/clock';
@@ -10,7 +10,7 @@ import { Link } from '../../app/router';
 import { MerchantShell } from './MerchantShell';
 import { CreateOfferSheet } from './CreateOfferSheet';
 import { useMerchantMetrics, useServices } from './useBusiness';
-import { SetupChecklist } from './SetupChecklist';
+import { SetupGuide, usePublishReadiness } from './SetupGuide';
 import type { Business } from '../../types/database';
 import { ResolveButtons } from './ResolveButtons';
 import { ConfirmationRequests, isConfirmationRequest, visibleToMerchant } from './ConfirmationRequests';
@@ -27,12 +27,16 @@ export function MerchantDashboardPage() {
 
 function Dashboard({ business }: { business: Business }) {
   const businessId = business.id;
-  const approved = business.status === 'approved';
   const now = useServerNow();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [published, setPublished] = useState<string | null>(null);
   const services = useServices(businessId);
   const metrics = useMerchantMetrics(businessId);
+  const readiness = usePublishReadiness(business);
+  const offers = useQuery({ queryKey: ['merchant-offers', businessId], queryFn: () => merchantOffers(businessId) });
+  // Until the first FLEK, the dashboard is the guide: three zeros and two empty booking lists
+  // only pushed the one thing a new venue has to do below the fold.
+  const fresh = offers.isSuccess && offers.data.length === 0;
   const day = dayBounds(now);
   // From yesterday: a booking stays open for "Nedorazil" until 24 h after its end, so an
   // evening slot from yesterday still belongs on this screen this morning.
@@ -61,17 +65,27 @@ function Dashboard({ business }: { business: Business }) {
         </div>
       ) : null}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div><h1 className="text-2xl font-extrabold tracking-tight text-ink">Přehled</h1><p className="mt-1 text-sm text-muted">Vaše termíny a rezervace na jednom místě.</p></div>
-        <Button size="lg" className="w-full sm:w-auto" disabled={!approved || services.isPending} onClick={() => setSheetOpen(true)}>
-          <Plus size={20} aria-hidden="true" />Přidat volný termín
-        </Button>
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight text-ink">Přehled</h1>
+          <p className="mt-1 text-sm text-muted">
+            {fresh ? 'Pár kroků a můžete nabízet volné termíny.' : 'Vaše termíny a rezervace na jednom místě.'}
+          </p>
+        </div>
+        {/* Only once it works: before that the guide below says what is missing and leads there. */}
+        {readiness.canPublish ? (
+          <Button size="lg" className="w-full sm:w-auto" onClick={() => setSheetOpen(true)}>
+            <Plus size={20} aria-hidden="true" />Přidat volný termín
+          </Button>
+        ) : null}
       </div>
 
       {/* A request answers itself by running out, so it comes before anything the merchant could do later. */}
       <ConfirmationRequests rows={requests} />
 
-      <SetupChecklist business={business} />
+      <SetupGuide business={business} onAddOffer={() => setSheetOpen(true)} />
 
+      {fresh ? null : (
+      <>
       {metrics.isError ? <ErrorState error={metrics.error} onRetry={() => metrics.refetch()} /> : null}
       <div className="grid grid-cols-3 gap-2 sm:gap-4">
         <Stat label="Aktivní nabídky" value={metrics.data?.active_offers} />
@@ -136,7 +150,8 @@ function Dashboard({ business }: { business: Business }) {
           </ul>
         )}
       </section>
-
+      </>
+      )}
 
       {sheetOpen ? <CreateOfferSheet onPublished={setPublished} open onClose={() => setSheetOpen(false)} services={services.data ?? []} /> : null}
     </div>

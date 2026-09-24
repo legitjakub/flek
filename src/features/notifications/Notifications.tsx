@@ -199,7 +199,7 @@ function offered(event: Preference['event'], channel: Channel) {
 }
 
 /** Whether this device gets push, read again after the person switches it on or off here. */
-function useDevicePush() {
+export function useDevicePush() {
   const [on, setOn] = useState<boolean | null>(null);
   const [check, setCheck] = useState(0);
   useEffect(() => {
@@ -214,6 +214,17 @@ function useDevicePush() {
   return { on, refresh: () => setCheck((count) => count + 1) };
 }
 
+/** The signed-in person's choices for one scope: their own (`customer`) or a venue's. */
+export function usePreferenceQuery(businessId?: string) {
+  const { userId } = useSession();
+  const scope = businessId ?? 'customer';
+  return useQuery({
+    queryKey: ['notification-preferences', userId, scope],
+    queryFn: () => rpc<Preference[]>('my_notification_preferences', { p_scope: scope }),
+    enabled: NOTIFICATIONS_ENABLED && Boolean(userId),
+  });
+}
+
 function usePreferences(businessId?: string) {
   const { userId } = useSession();
   const scope = businessId ?? 'customer';
@@ -222,11 +233,7 @@ function usePreferences(businessId?: string) {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const queryKey = ['notification-preferences', userId, scope];
-  const query = useQuery({
-    queryKey,
-    queryFn: () => rpc<Preference[]>('my_notification_preferences', { p_scope: scope }),
-    enabled: NOTIFICATIONS_ENABLED && Boolean(userId),
-  });
+  const query = usePreferenceQuery(businessId);
   // WhatsApp gets its column once FLEK has a number to send from, like the other channels: on by default.
   const whatsapp = useWhatsAppSettings(businessId);
   const device = useDevicePush();

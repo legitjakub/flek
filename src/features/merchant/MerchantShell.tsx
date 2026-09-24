@@ -1,7 +1,7 @@
-import { LayoutDashboard, CalendarDays, Ticket, Scissors, Store, ChartNoAxesColumn, Ellipsis, ArrowUpRight, Eye, BellRing, X } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, Ticket, Scissors, Store, ChartNoAxesColumn, Ellipsis, ArrowUpRight, Eye, BellRing, X, HelpCircle, LogOut } from 'lucide-react';
 import { Fragment, useEffect, useState, type ReactNode } from 'react';
 import { Banner, LoadingList, ErrorState, Wordmark, Sheet } from '../../components/ui';
-import { SignOutButton } from '../auth/SignOutButton';
+import { SignOutButton, useSignOut } from '../auth/SignOutButton';
 import { Link, useRouter } from '../../app/router';
 import { useSession } from '../auth/session';
 import { useMyBusinesses } from './useBusiness';
@@ -14,6 +14,7 @@ import { timeLeft } from '../bookings/confirmationView';
 import type { Business } from '../../types/database';
 import { NotificationBell } from '../notifications/Notifications';
 import { MerchantTermsNotice } from './MerchantTermsNotice';
+import { PartnerHelp, openPartnerHelp } from './PartnerHelp';
 
 const NAV = [
   { to: '/partner', label: 'Přehled', icon: LayoutDashboard },
@@ -95,7 +96,9 @@ export function MerchantShell({ children }: { children: (business: Business) => 
       path={path}
     >
       {business.status === 'approved' ? <ApprovedFrame key={`alerts:${userId}:${business.id}`} business={business} path={path} /> : null}
-      {business.status !== 'approved' ? <PendingNotice business={business} /> : null}
+      {/* On Přehled the setup guide already says the venue is being checked; the banner stays for the rest,
+          and for a rejected or suspended venue everywhere, because it carries the reason. */}
+      {business.status !== 'approved' && !(business.status === 'pending' && path === '/partner') ? <PendingNotice business={business} /> : null}
       <MerchantTermsNotice key={`terms:${userId}:${business.id}`} business={business} />
       <Fragment key={`content:${userId}:${business.id}`}>{children(business)}</Fragment>
     </MerchantFrame>
@@ -303,11 +306,13 @@ function MerchantFrame({
                 <span className="sr-only sm:hidden">Zobrazit jako zákazník</span>
               </a>
             ) : null}
+            {/* On a phone with the console's own menu these two sit in "Další": four bare icons in
+                a row read as a puzzle, and the customer app is not what a venue opens every day. */}
             <Link
               to="/"
               aria-label="Přejít do zákaznické části"
               title="Přejít do zákaznické části"
-              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 text-sm font-bold sm:min-w-0"
+              className={`${nav ? 'hidden sm:inline-flex' : 'inline-flex'} min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 text-sm font-bold sm:min-w-0`}
             >
               <span className="hidden sm:inline">Zákaznická část</span>
               <ArrowUpRight size={17} aria-hidden="true" />
@@ -315,18 +320,44 @@ function MerchantFrame({
             {userId ? (
               <>
                 <NotificationBell businessId={business?.id} />
-                <SignOutButton compact />
+                <span className={nav ? 'hidden sm:contents' : 'contents'}>
+                  <SignOutButton compact />
+                </span>
               </>
             ) : null}
           </div>
         </div>
       </header>
       <div className={`mx-auto max-w-[1440px] ${nav ? 'lg:grid lg:grid-cols-[224px_minmax(0,1fr)]' : ''}`}>
-        {nav ? <aside className="hidden min-h-[calc(100dvh-73px)] border-r border-line bg-card px-4 py-6 lg:block"><nav aria-label="Partner" className="sticky top-24"><ul className="flex flex-col gap-2">{NAV.map(({ to, label, icon: Icon }) => <li key={to}><Link to={to} aria-current={path === to ? 'page' : undefined} className={`flex min-h-12 items-center gap-3 rounded-xl px-4 text-sm font-bold ${path === to ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-surface hover:text-ink'}`}><Icon size={20} aria-hidden="true" />{label}{badge(to)}</Link></li>)}</ul></nav></aside> : null}
+        {nav ? <aside className="hidden min-h-[calc(100dvh-73px)] border-r border-line bg-card px-4 py-6 lg:block"><nav aria-label="Partner" className="sticky top-24"><ul className="flex flex-col gap-2">{NAV.map(({ to, label, icon: Icon }) => <li key={to}><Link to={to} aria-current={path === to ? 'page' : undefined} className={`flex min-h-12 items-center gap-3 rounded-xl px-4 text-sm font-bold ${path === to ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-surface hover:text-ink'}`}><Icon size={20} aria-hidden="true" />{label}{badge(to)}</Link></li>)}</ul><button type="button" onClick={openPartnerHelp} className="mt-6 flex min-h-12 w-full items-center gap-3 rounded-xl border-t border-line px-4 pt-4 text-sm font-bold text-muted hover:text-ink"><HelpCircle size={20} aria-hidden="true" />Jak FLEK funguje</button></nav></aside> : null}
         <main id="partner-obsah" className="min-w-0 px-4 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6 lg:p-8">{children}</main>
       </div>
       {nav ? <nav aria-label="Partner" className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card pb-[env(safe-area-inset-bottom)] lg:hidden"><ul className="flex">{NAV.slice(0, 3).map(({ to, label, icon: Icon }) => <li key={to} className="flex-1"><Link to={to} aria-current={path === to ? 'page' : undefined} className={`relative flex min-h-16 flex-col items-center justify-center gap-1 text-xs font-bold ${path === to ? 'text-accent' : 'text-muted'}`}><span className="relative inline-flex"><Icon size={22} aria-hidden="true" />{to === '/partner/rezervace' && unread > 0 ? <span className="tnum absolute -top-1.5 -right-2.5 grid min-h-4 min-w-4 place-items-center rounded-full bg-brand px-1 text-[10px] font-extrabold text-brand-ink" aria-label={`${unread} nových`}>{unread}</span> : null}</span>{label}</Link></li>)}<li className="flex-1"><button type="button" onClick={() => setMenu(true)} aria-haspopup="dialog" className={`flex min-h-16 w-full flex-col items-center justify-center gap-1 text-xs font-bold ${NAV.slice(3).some((item) => item.to === path) ? 'text-accent' : 'text-muted'}`}><Ellipsis size={22} aria-hidden="true" />Další</button></li></ul></nav> : null}
-      <Sheet open={menu} onClose={() => setMenu(false)} title="Správa provozovny"><div className="flex flex-col gap-2">{NAV.slice(3).map(({ to, label, icon: Icon }) => <button key={to} type="button" onClick={() => { setMenu(false); navigate(to); }} className={`flex min-h-13 items-center gap-3 rounded-xl px-4 text-base font-bold ${path === to ? 'bg-accent-soft text-accent' : 'hover:bg-surface'}`}><Icon size={20} aria-hidden="true" />{label}</button>)}</div></Sheet>
+      <Sheet open={menu} onClose={() => setMenu(false)} title="Správa provozovny">
+        <div className="flex flex-col gap-2">
+          {NAV.slice(3).map(({ to, label, icon: Icon }) => <button key={to} type="button" onClick={() => { setMenu(false); navigate(to); }} className={`flex min-h-13 items-center gap-3 rounded-xl px-4 text-base font-bold ${path === to ? 'bg-accent-soft text-accent' : 'hover:bg-surface'}`}><Icon size={20} aria-hidden="true" />{label}</button>)}
+          <div className="my-1 border-t border-line" />
+          <button type="button" onClick={() => { setMenu(false); openPartnerHelp(); }} className="flex min-h-13 items-center gap-3 rounded-xl px-4 text-base font-bold hover:bg-surface"><HelpCircle size={20} aria-hidden="true" />Jak FLEK funguje</button>
+          <button type="button" onClick={() => { setMenu(false); navigate('/'); }} className="flex min-h-13 items-center gap-3 rounded-xl px-4 text-base font-bold hover:bg-surface"><ArrowUpRight size={20} aria-hidden="true" />Zákaznická část</button>
+          <MenuSignOut />
+        </div>
+      </Sheet>
+      {userId ? <PartnerHelp /> : null}
     </div>
+  );
+}
+
+function MenuSignOut() {
+  const { busy, signOut } = useSignOut();
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={() => void signOut()}
+      className="flex min-h-13 items-center gap-3 rounded-xl px-4 text-base font-bold text-danger hover:bg-danger/5 disabled:opacity-55"
+    >
+      <LogOut size={20} aria-hidden="true" />
+      {busy ? 'Odhlašuji…' : 'Odhlásit se'}
+    </button>
   );
 }

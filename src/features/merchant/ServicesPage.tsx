@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, ChevronDown, ImageOff } from 'lucide-react';
 import { listCategories, saveService } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
 import { Banner, Button, Chip, EmptyState, Field, Input, LoadingList, Select, Sheet, Textarea, cx } from '../../components/ui';
 import { MerchantShell } from './MerchantShell';
+import { useRouter } from '../../app/router';
 import { ActivitySuggestions, ServicePhotoPicker } from './ActivityPicker';
 import { useServices } from './useBusiness';
 import type { Business, Service } from '../../types/database';
@@ -20,8 +21,16 @@ export function MerchantServicesPage() {
 
 function Services({ business }: { business: Business }) {
   const services = useServices(business.id);
+  const { search, navigate } = useRouter();
   const [editing, setEditing] = useState<Service | null>(null);
-  const [open, setOpen] = useState(false);
+  // Arriving from the setup guide's "Přidat službu" opens the form straight away, once.
+  const [open, setOpen] = useState(() => search.get('nova') === '1');
+
+  useEffect(() => {
+    if (search.get('nova') === '1') navigate('/partner/sluzby', { replace: true, scroll: false });
+    // Read once on arrival; the address is cleaned so a reload does not open it again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function add() {
     setEditing(null);

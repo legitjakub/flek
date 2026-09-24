@@ -32,7 +32,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik zveř
 | `src/features/discovery` | Objevit, mapa, filtry, rozšiřování hledání (`filters.ts`, `useDiscovery.ts`), jedna karta na službu s více časy (`slots.ts`) |
 | `src/features/offers` | detail nabídky, výběr času (`TimePicker.tsx`), „Mohlo by se ti líbit“ (`Recommendations.tsx`), `OfferMap.tsx` (MapLibre) |
 | `src/features/bookings` | rezervace, platba, voucher s QR |
-| `src/features/merchant` | FLEK Partner: provozovna, služby, zveřejnění FLEKu, rezervace, metriky, upozornění |
+| `src/features/merchant` | FLEK Partner: provozovna, služby, zveřejnění FLEKu, rezervace, metriky, upozornění; průvodce „Začínáme“ a `usePublishReadiness` (`SetupGuide.tsx`), nápověda „Jak FLEK funguje“ a sdílené kroky (`PartnerHelp.tsx`) |
 | `src/features/admin` | administrace, fronta nahlášení (`AdminReports.tsx`), podklad DAC7 (`Dac7Export.tsx`, `dac7.ts`) |
 | `src/features/legal` | právní stránky, patička „O FLEKu“, věta o poskytovateli, nahlášení obsahu; vykreslení omezeného markdownu bez HTML (`markdown.tsx`), verze textů (`documents.ts`) |
 | `src/content/pravni` | právní texty v markdownu: `podminky.md` (včetně nahlášení obsahu podle DSA), `podminky-podniky.md`, `soukromi.md` |
