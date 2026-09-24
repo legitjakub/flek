@@ -75,9 +75,9 @@ Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B). Úkoly na 
        Rezervace na {{1}} je potvrzená.
        Služba: {{2}}
        Částka k výplatě: {{3}}
-       Zákazník se u vás prokáže rezervačním kódem, ověříte ho v aplikaci FLEK Partner.
+       Podrobnosti najdete v aplikaci FLEK Partner v Rezervacích.
        ```
-       Ukázky: `zítra 9:00`, `Masáž zad (60 min)`, `586 Kč`. Původní znění („Máte novou potvrzenou rezervaci… Vy dostanete: {{3}}“) Meta 24. 9. zamítla jako `INCORRECT_CATEGORY`.
+       Ukázky: `zítra 9:00`, `Masáž zad (60 min)`, `586 Kč`. Předchozí dvě znění („Máte novou potvrzenou rezervaci… Vy dostanete: {{3}}… Kód zákazníka ověříte v aplikaci“ a „…prokáže rezervačním kódem, ověříte ho v aplikaci“) Meta 24. 9. zamítla jako `INCORRECT_CATEGORY`. Šablona se posílá jen u rezervace potvrzené bez rozhodnutí podniku, tedy při vypnutém potvrzování; dokud je `manual_confirmation_enabled` zapnuté, její schválení spuštění WhatsAppu neblokuje.
      - `flek_business_cancelled` (podniku, zrušení, vypršení, selhání platby):
        ```
        Změna rezervace ve FLEKu.

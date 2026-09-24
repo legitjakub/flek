@@ -155,9 +155,11 @@ export const TEMPLATE_DEFINITIONS: TemplateDefinition[] = [
   {
     template: 'business_confirmed',
     name: 'flek_business_confirmed',
-    // Meta 24. 9. zamítla „Máte novou potvrzenou rezervaci… Vy dostanete: {{3}}“ jako INCORRECT_CATEGORY:
-    // „vy dostanete“ zní jako nabídka. Potvrzení transakce věcně, pořadí parametrů beze změny.
-    body: 'Rezervace na {{1}} je potvrzená.\nSlužba: {{2}}\nČástka k výplatě: {{3}}\nZákazník se u vás prokáže rezervačním kódem, ověříte ho v aplikaci FLEK Partner.',
+    // Meta 24. 9. dvakrát zamítla jako INCORRECT_CATEGORY: „Máte novou potvrzenou rezervaci… Vy dostanete“
+    // i „…prokáže rezervačním kódem, ověříte ho v aplikaci“. Společná je věta o ověření kódu, kterou Meta
+    // nejspíš čte jako přihlašovací kód (kategorie Authentication). Poslední řádek je proto stejný jako
+    // u zrušení; pořadí parametrů beze změny.
+    body: 'Rezervace na {{1}} je potvrzená.\nSlužba: {{2}}\nČástka k výplatě: {{3}}\nPodrobnosti najdete v aplikaci FLEK Partner v Rezervacích.',
     example: ['zítra 9:00', 'Masáž zad (60 min)', '586 Kč'],
   },
   {
