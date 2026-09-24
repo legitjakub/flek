@@ -71,13 +71,12 @@ Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B). Úkoly na 
        Ukázky: `dnes 14:30`, `Pánský střih (45 min)`, `750 Kč`, `14:08`.
      - `flek_business_confirmed` (podniku, nová rezervace bez potvrzování):
        ```
-       Máte novou potvrzenou rezervaci.
-       Termín: {{1}}
+       Rezervace na {{1}} je potvrzená.
        Služba: {{2}}
-       Vy dostanete: {{3}}
-       Kód zákazníka ověříte v aplikaci FLEK Partner.
+       Částka k výplatě: {{3}}
+       Zákazník se u vás prokáže rezervačním kódem, ověříte ho v aplikaci FLEK Partner.
        ```
-       Ukázky: `zítra 9:00`, `Masáž zad (60 min)`, `586 Kč`.
+       Ukázky: `zítra 9:00`, `Masáž zad (60 min)`, `586 Kč`. Původní znění („Máte novou potvrzenou rezervaci… Vy dostanete: {{3}}“) Meta 24. 9. zamítla jako `INCORRECT_CATEGORY`.
      - `flek_business_cancelled` (podniku, zrušení, vypršení, selhání platby):
        ```
        Změna rezervace ve FLEKu.

@@ -155,7 +155,9 @@ export const TEMPLATE_DEFINITIONS: TemplateDefinition[] = [
   {
     template: 'business_confirmed',
     name: 'flek_business_confirmed',
-    body: 'Máte novou potvrzenou rezervaci.\nTermín: {{1}}\nSlužba: {{2}}\nVy dostanete: {{3}}\nKód zákazníka ověříte v aplikaci FLEK Partner.',
+    // Meta 24. 9. zamítla „Máte novou potvrzenou rezervaci… Vy dostanete: {{3}}“ jako INCORRECT_CATEGORY:
+    // „vy dostanete“ zní jako nabídka. Potvrzení transakce věcně, pořadí parametrů beze změny.
+    body: 'Rezervace na {{1}} je potvrzená.\nSlužba: {{2}}\nČástka k výplatě: {{3}}\nZákazník se u vás prokáže rezervačním kódem, ověříte ho v aplikaci FLEK Partner.',
     example: ['zítra 9:00', 'Masáž zad (60 min)', '586 Kč'],
   },
   {
