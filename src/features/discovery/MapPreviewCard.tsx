@@ -159,7 +159,7 @@ function PreviewCard({
             <span className="flex shrink-0 flex-col items-end gap-1">
               <span className="tnum text-lg leading-none font-extrabold text-ink">{money(offer.deal_price_cents)}</span>
               {offer.original_price_cents > offer.deal_price_cents ? (
-                <OriginalPrice cents={offer.original_price_cents} className="text-xs leading-none" />
+                <OriginalPrice cents={offer.original_price_cents} className="text-[11px] leading-none" />
               ) : null}
             </span>
           </span>

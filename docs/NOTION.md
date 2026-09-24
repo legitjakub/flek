@@ -171,7 +171,6 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 - [x] Poloha na mapě a hlídač FLEKů v okolí s upozorněním (24. 9.)
 - [x] Revize hlídače: noční klid s ranní zprávou, brzda 15 min, sleva ve zprávě, mazání se smazáním účtu, pozvánka z Objevit a Rezervací (24. 9.)
 - [x] Úvod pro nové zákazníky a stránka pro podniky podle dnešní aplikace; přeškrtnutá běžná cena všude, kde zákazník vidí cenu (24. 9.)
-- [x] Přívětivější běžná cena: šedá místo červené, slovo „běžně“ a bublina „ušetříš …“ (25. 9.)
 - [x] Průvodce „Začínáme“ pro nové podniky, přehlednější Provozovna a nápověda „Jak FLEK funguje“ na vyžádání (24. 9.)
 - [ ] WhatsApp: vlastní číslo do „To“ (Jakub), schválení šablon u Mety, zpřístupnění a zkouška na telefonu (token, odběr, webhook, profil s logem a číslo hotové 24. 9.)
 - [ ] Hlídač: skutečný čas cesty místo odhadu vzdušnou čarou (potřebuje routovací službu)
@@ -336,7 +335,6 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
-| 25. 9. 2026 | Běžná cena už není přeškrtnutá červeně: je šedá, čitelná, se slovem „běžně“, a u vybraného termínu a v platebním okně přibyla bublina „ušetříš …“. |
 | 24. 9. 2026 | WhatsApp u Mety je skoro hotový: s trvalým tokenem je FLEK přihlášený k odběru zpráv, profil na WhatsAppu má texty a logo FLEKu a číslo je uložené v aplikaci. Webhook je nastavený a Meta ho ověřila. Pět šablon čeká na schválení. |
 | 24. 9. 2026 | WhatsApp nejel, protože token Mety v Supabase byl dočasný a po odhlášení z Facebooku přestal platit. Claude teď umí dokončit nastavení u Mety sám z databáze včetně webhooku a loga v profilu; stačí trvalý token systémového uživatele. Panel v administraci jde nově volat i z webu (dřív ho zastavil prohlížeč). |
 | 24. 9. 2026 | WhatsApp jde dokončit z administrace: panel ukáže, co chybí, a uloží číslo, přihlásí odběr a nastaví profil FLEKu jedním klepnutím. V Metě zbývá webhook a fotka profilu. |

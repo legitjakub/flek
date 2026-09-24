@@ -126,12 +126,10 @@ export function TimePicker({
             >
               <span className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
                 <span className="tnum text-base leading-none font-extrabold">{clockTime(slot.start_at)}</span>
-                {/* The price you would pay is the one in ink; the regular price beside it only
-                    compares. Both were grey before, the paid one included. */}
                 <span className="tnum flex items-baseline gap-1.5 text-xs">
-                  <span className="text-sm font-bold text-ink">{money(slot.deal_price_cents)}</span>
+                  <span className="font-semibold text-muted">{money(slot.deal_price_cents)}</span>
                   {slot.original_price_cents > slot.deal_price_cents ? (
-                    <OriginalPrice cents={slot.original_price_cents} />
+                    <OriginalPrice cents={slot.original_price_cents} className="text-[0.6875rem]" />
                   ) : null}
                 </span>
               </span>
