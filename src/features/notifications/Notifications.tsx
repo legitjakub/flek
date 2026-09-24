@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell } from 'lucide-react';
 import { Link } from '../../app/router';
-import { Button, Sheet } from '../../components/ui';
+import { Button, SettingsRow, Sheet } from '../../components/ui';
 import { supabase } from '../../lib/supabase';
 import { useSession } from '../auth/session';
-import { useWhatsAppSettings } from './WhatsApp';
+import { WhatsAppSettingsSection, useWhatsAppSettings } from './WhatsApp';
 
 type Notice = {
   id: string;
@@ -175,7 +175,46 @@ export async function enableDevicePush() {
   await rpc('save_push_subscription', { p_subscription: subscription.toJSON() });
 }
 
-export function NotificationSettings({ businessId }: { businessId?: string }) {
+const EVENT_LABELS: Record<Preference['event'], string> = {
+  requested: 'Nová žádost o rezervaci',
+  confirmed: 'Potvrzená rezervace',
+  cancelled: 'Zrušená rezervace',
+  review_requested: 'Připomenutí hodnocení',
+  watch: 'Hlídač FLEKů',
+};
+
+/* The phone first: it is the channel a customer actually chooses, e-mail about a booking always goes. */
+const COLUMNS: Channel[] = ['push', 'email', 'whatsapp'];
+const CHANNEL_LABELS: Record<Channel, { short: string; long: string }> = {
+  push: { short: 'Telefon', long: 'Oznámení na telefonu' },
+  email: { short: 'E-mail', long: 'E-mail' },
+  whatsapp: { short: 'WhatsApp', long: 'WhatsApp' },
+};
+
+/** What each event can be sent by: a review reminder only to the phone, a watch never on WhatsApp. */
+function offered(event: Preference['event'], channel: Channel) {
+  if (event === 'review_requested') return channel === 'push';
+  if (event === 'watch') return channel !== 'whatsapp';
+  return true;
+}
+
+/** Whether this device gets push, read again after the person switches it on or off here. */
+function useDevicePush() {
+  const [on, setOn] = useState<boolean | null>(null);
+  const [check, setCheck] = useState(0);
+  useEffect(() => {
+    let live = true;
+    void devicePushEnabled().then((value) => {
+      if (live) setOn(value);
+    });
+    return () => {
+      live = false;
+    };
+  }, [check]);
+  return { on, refresh: () => setCheck((count) => count + 1) };
+}
+
+function usePreferences(businessId?: string) {
   const { userId } = useSession();
   const scope = businessId ?? 'customer';
   const formal = Boolean(businessId);
@@ -190,110 +229,218 @@ export function NotificationSettings({ businessId }: { businessId?: string }) {
   });
   // WhatsApp gets its column once FLEK has a number to send from, like the other channels: on by default.
   const whatsapp = useWhatsAppSettings(businessId);
-  const channels: Channel[] = whatsapp.data?.available ? ['email', 'push', 'whatsapp'] : ['email', 'push'];
-  // The customer's e-mail about a booking confirms the contract, so the server always sends it.
-  const emailLocked = !formal;
+  const device = useDevicePush();
+  const channels = COLUMNS.filter((channel) => channel !== 'whatsapp' || whatsapp.data?.available);
 
-  if (!NOTIFICATIONS_ENABLED || !userId) return null;
-
-  async function save(event: Preference['event'], channel: Channel, value: boolean) {
+  async function run(work: () => Promise<string>) {
     setBusy(true);
     setMessage('');
     try {
-      if (channel === 'push' && value) await enableDevicePush();
-
-      const current = query.data?.find((preference) => preference.event === event) ?? (event === 'watch' ? WATCH_DEFAULTS : DEFAULTS);
-      await rpc('save_notification_preference', {
-        p_scope: scope,
-        p_event: event,
-        p_email: channel === 'email' ? value : current.email,
-        p_push: channel === 'push' ? value : current.push,
-        p_whatsapp: channel === 'whatsapp' ? value : current.whatsapp,
-      });
-      await queryClient.invalidateQueries({ queryKey });
-      setMessage('Nastavení je uložené.');
+      setMessage(await work());
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Nastavení se nepodařilo uložit.');
     } finally {
+      device.refresh();
       setBusy(false);
     }
   }
 
-  return (
-    <section className="rounded-2xl bg-card p-5 shadow-card sm:p-6">
-      <h2 className="text-lg font-extrabold tracking-tight text-ink">{formal ? 'Upozornění na rezervace' : 'Upozornění'}</h2>
-      <p className="mt-1 text-sm text-muted">
-        {formal ? 'Vyberte, jak vás upozorníme.' : 'Vyber si, jak tě upozorníme.'} Zprávy v aplikaci zůstávají dostupné vždy.
-        {emailLocked ? ' E-mail o potvrzení a zrušení rezervace ti pošleme vždy, je to potvrzení tvé rezervace.' : ''}
-      </p>
+  const save = (event: Preference['event'], channel: Channel, value: boolean) => run(async () => {
+    if (channel === 'push' && value) await enableDevicePush();
+    const current = query.data?.find((preference) => preference.event === event) ?? (event === 'watch' ? WATCH_DEFAULTS : DEFAULTS);
+    await rpc('save_notification_preference', {
+      p_scope: scope,
+      p_event: event,
+      p_email: channel === 'email' ? value : current.email,
+      p_push: channel === 'push' ? value : current.push,
+      p_whatsapp: channel === 'whatsapp' ? value : current.whatsapp,
+    });
+    await queryClient.invalidateQueries({ queryKey });
+    return 'Nastavení je uložené.';
+  });
+  const deviceOn = () => run(async () => {
+    await enableDevicePush();
+    return 'Oznámení na tomto zařízení jsou zapnutá.';
+  });
+  const deviceOff = () => run(async () => {
+    try {
+      await disableDevicePush();
+    } catch {
+      throw new Error('Zařízení se nepodařilo odpojit.');
+    }
+    return 'Oznámení na tomto zařízení jsou odpojená.';
+  });
 
-      {query.isError ? (
-        <div role="alert" className="mt-3 rounded-xl bg-danger-soft p-3 text-sm text-danger">
-          <p>Nastavení se nepodařilo načíst.</p>
-          <Button variant="ghost" className="mt-2" onClick={() => void query.refetch()}>Zkusit znovu</Button>
-        </div>
-      ) : (
-        (formal ? ['requested', 'confirmed', 'cancelled'] as const : ['confirmed', 'cancelled', 'review_requested', 'watch'] as const).map((event) => {
+  return { formal, query, whatsapp, device, channels, busy, message, save, deviceOn, deviceOff };
+}
+
+type Preferences = ReturnType<typeof usePreferences>;
+
+/**
+ * Events down, channels across: one short table instead of a block of checkboxes per event.
+ * Each box keeps a 44 px target and says in full what it switches for a screen reader.
+ */
+function PreferenceTable({ preferences }: { preferences: Preferences }) {
+  const { formal, query, channels, busy, save } = preferences;
+  const events = formal ? (['requested', 'confirmed', 'cancelled'] as const) : (['confirmed', 'cancelled', 'review_requested', 'watch'] as const);
+
+  if (query.isError) {
+    return (
+      <div role="alert" className="rounded-xl bg-danger-soft p-3 text-sm text-danger">
+        <p>Nastavení se nepodařilo načíst.</p>
+        <Button variant="ghost" className="mt-2" onClick={() => void query.refetch()}>Zkusit znovu</Button>
+      </div>
+    );
+  }
+
+  return (
+    <table className="w-full border-collapse text-left">
+      <thead>
+        <tr>
+          <th scope="col" className="pb-1"><span className="sr-only">Událost</span></th>
+          {channels.map((channel) => (
+            <th key={channel} scope="col" className="w-15 pb-1 text-center text-xs font-bold text-muted sm:w-20">
+              {CHANNEL_LABELS[channel].short}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {events.map((event) => {
           const current = query.data?.find((preference) => preference.event === event);
-          const eventChannels: Channel[] = event === 'review_requested' ? ['push'] : event === 'watch' ? ['push', 'email'] : channels;
           const defaults = event === 'watch' ? WATCH_DEFAULTS : DEFAULTS;
           return (
-            <fieldset key={event} className="mt-4 border-t border-line pt-3">
-              <legend className="font-bold text-ink">
-                {event === 'requested' ? 'Nová žádost o rezervaci'
-                  : event === 'confirmed' ? 'Potvrzená rezervace'
-                    : event === 'cancelled' ? 'Zrušená rezervace'
-                      : event === 'watch' ? 'Hlídač FLEKů v okolí' : 'Připomenutí hodnocení'}
-              </legend>
-              {event === 'review_requested' ? <p className="mt-1 text-xs text-muted">V aplikaci se připomenutí ukáže vždy. E-mail ani WhatsApp neposíláme.</p> : null}
-              {event === 'watch' ? <p className="mt-1 text-xs text-muted">Nejvýš jedna zpráva za půl hodiny na hlídač, od 22 do 7 hodin jen v aplikaci.</p> : null}
-              <div className="mt-1 flex flex-wrap gap-x-5">
-                {eventChannels.map((channel) => {
-                  const locked = channel === 'email' && emailLocked && event !== 'watch';
-                  return (
-                    <label key={channel} className={`flex min-h-11 items-center gap-2 text-sm font-medium text-ink ${locked ? '' : 'cursor-pointer'}`}>
+            <tr key={event} className="border-t border-line">
+              <th scope="row" className="py-1 pr-2 text-sm leading-snug font-bold text-ink">{EVENT_LABELS[event]}</th>
+              {channels.map((channel) => (
+                <td key={channel} className="text-center">
+                  {!offered(event, channel) ? (
+                    <>
+                      <span aria-hidden="true" className="text-muted">–</span>
+                      <span className="sr-only">Neposíláme</span>
+                    </>
+                  ) : !formal && channel === 'email' && event !== 'watch' ? (
+                    // The customer's e-mail about a booking confirms the contract, so the server always sends it.
+                    <span className="text-xs font-bold text-muted">vždy</span>
+                  ) : (
+                    <label className="inline-grid size-11 cursor-pointer place-items-center rounded-xl hover:bg-surface">
                       <input
                         type="checkbox"
                         className="size-5 accent-accent"
-                        checked={locked || (current?.[channel] ?? defaults[channel])}
-                        disabled={locked || busy || query.isPending}
-                        onChange={(eventTarget) => void save(event, channel, eventTarget.target.checked)}
+                        aria-label={`${EVENT_LABELS[event]}: ${CHANNEL_LABELS[channel].long}`}
+                        checked={current?.[channel] ?? defaults[channel]}
+                        disabled={busy || query.isPending}
+                        onChange={(input) => void save(event, channel, input.target.checked)}
                       />
-                      {channel === 'email' ? (locked ? 'E-mail (vždy)' : 'E-mail') : channel === 'push' ? 'Oznámení na telefonu' : 'WhatsApp'}
                     </label>
-                  );
-                })}
-              </div>
-            </fieldset>
+                  )}
+                </td>
+              ))}
+            </tr>
           );
-        })
-      )}
+        })}
+      </tbody>
+    </table>
+  );
+}
 
-      {whatsapp.data?.available && whatsapp.data.status !== 'verified' && !query.isError ? (
-        <p className="mt-3 text-sm text-muted">
-          {formal ? 'Na WhatsApp začnou zprávy chodit, až níže ověříte číslo.' : 'Na WhatsApp začnou zprávy chodit, až níže ověříš číslo.'}
-        </p>
+/** Everything under the table: this device's push, what WhatsApp still needs, and the last result. */
+function PreferenceNotes({ preferences }: { preferences: Preferences }) {
+  const { formal, whatsapp, device, busy, message, deviceOn, deviceOff } = preferences;
+  return (
+    <>
+      {device.on === false ? (
+        <div className="mt-3 flex items-center gap-3 rounded-2xl bg-surface p-3">
+          <p className="min-w-0 flex-1 text-sm text-ink">
+            {formal ? 'Na tomto zařízení máte oznámení vypnutá.' : 'Na tomhle zařízení máš oznámení vypnutá.'}
+          </p>
+          <Button size="sm" variant="brand" shape={formal ? 'rounded' : 'pill'} disabled={busy} onClick={() => void deviceOn()}>
+            Zapnout
+          </Button>
+        </div>
+      ) : null}
+      {/* In Profil the WhatsApp block follows right under the table and says the same itself. */}
+      {formal && whatsapp.data?.available && whatsapp.data.status !== 'verified' ? (
+        <p className="mt-3 text-sm text-muted">Na WhatsApp začnou zprávy chodit, až níže ověříte číslo.</p>
       ) : null}
       {formal && whatsapp.data?.status === 'verified' && !whatsapp.data.mine ? (
         <p className="mt-3 text-sm text-muted">Na WhatsApp provozovny chodí zprávy podle nastavení člena, který číslo ověřil.</p>
       ) : null}
-
-      <Button
-        variant="ghost"
-        className="mt-2"
-        disabled={busy}
-        onClick={async () => {
-          try {
-            await disableDevicePush();
-            setMessage('Oznámení na tomto zařízení jsou odpojená.');
-          } catch {
-            setMessage('Zařízení se nepodařilo odpojit.');
-          }
-        }}
-      >
-        Odpojit oznámení na tomto zařízení
-      </Button>
+      {device.on ? (
+        <Button variant="ghost" size="sm" shape={formal ? 'rounded' : 'pill'} className="mt-2 -ml-2.5" disabled={busy} onClick={() => void deviceOff()}>
+          Odpojit oznámení na tomto zařízení
+        </Button>
+      ) : null}
       {message ? <p role="status" className="mt-2 text-sm text-muted">{message}</p> : null}
+    </>
+  );
+}
+
+/** Provozovna: the venue's own settings, one card with the table. */
+export function NotificationSettings({ businessId }: { businessId: string }) {
+  const { userId } = useSession();
+  const preferences = usePreferences(businessId);
+  if (!NOTIFICATIONS_ENABLED || !userId) return null;
+  return (
+    <section className="rounded-2xl bg-card p-5 shadow-card sm:p-6">
+      <h2 className="text-lg font-extrabold tracking-tight text-ink">Upozornění na rezervace</h2>
+      <p className="mt-1 mb-3 text-sm text-muted">Vyberte, jak vás upozorníme. Zprávy v aplikaci zůstávají dostupné vždy.</p>
+      <PreferenceTable preferences={preferences} />
+      <PreferenceNotes preferences={preferences} />
     </section>
+  );
+}
+
+function listCs(items: string[]) {
+  return items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} a ${items[items.length - 1]}`;
+}
+
+/**
+ * Profil: one row in "Můj účet" that says where messages go and opens the table below itself,
+ * so the settings are a tap away instead of a long block on the page. WhatsApp lives in the same
+ * place, since it is only another way to be told.
+ */
+export function NotificationsRow() {
+  const { userId } = useSession();
+  const [open, setOpen] = useState(false);
+  const preferences = usePreferences();
+  const whatsapp = preferences.whatsapp.data;
+  if (!userId || (!NOTIFICATIONS_ENABLED && !whatsapp?.available)) return null;
+
+  const channels = [
+    NOTIFICATIONS_ENABLED ? 'e-mail' : null,
+    NOTIFICATIONS_ENABLED && preferences.device.on ? 'telefon' : null,
+    whatsapp?.status === 'verified' ? 'WhatsApp' : null,
+  ].filter((channel): channel is string => Boolean(channel));
+  const hint = channels.length === 1 && channels[0] === 'e-mail'
+    ? 'Chodí jen na e-mail'
+    : channels.length ? `Chodí na ${listCs(channels)}` : 'Vyber si, kam ti dáme vědět';
+
+  return (
+    <>
+      <SettingsRow
+        icon={<Bell size={20} />}
+        label="Upozornění"
+        hint={hint}
+        expanded={open}
+        controls="profil-upozorneni"
+        onClick={() => setOpen((current) => !current)}
+      />
+      {open ? (
+        <li id="profil-upozorneni" className="px-4 pt-1 pb-5">
+          {NOTIFICATIONS_ENABLED ? (
+            <>
+              <PreferenceTable preferences={preferences} />
+              <PreferenceNotes preferences={preferences} />
+              <p className="mt-3 text-xs leading-relaxed text-muted">
+                E-mail o potvrzení a zrušení rezervace chodí vždy, je to potvrzení tvé rezervace. Hlídač pošle nejvýš jednu
+                zprávu za čtvrt hodiny, v noci mlčí a co přibude, pošle ráno v 7. Všechno najdeš i ve zvonečku nahoře.
+              </p>
+            </>
+          ) : null}
+          <WhatsAppSettingsSection embedded />
+        </li>
+      ) : null}
+    </>
   );
 }

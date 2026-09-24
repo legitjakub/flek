@@ -107,8 +107,11 @@ function usePairing(businessId: string | undefined) {
 
 type Pairing = ReturnType<typeof usePairing>;
 
-/** WhatsApp in Provozovna (with `businessId`) and in Profil. A customer sees nothing until FLEK has a WhatsApp number. */
-export function WhatsAppSettingsSection({ businessId }: { businessId?: string }) {
+/**
+ * WhatsApp in Provozovna (with `businessId`) and in Profil. A customer sees nothing until FLEK has a WhatsApp number.
+ * `embedded` drops the card: in Profil it sits inside the opened Upozornění row.
+ */
+export function WhatsAppSettingsSection({ businessId, embedded = false }: { businessId?: string; embedded?: boolean }) {
   const flow = usePairing(businessId);
   const [changing, setChanging] = useState(false);
   const data = flow.settings.data;
@@ -120,11 +123,21 @@ export function WhatsAppSettingsSection({ businessId }: { businessId?: string })
   const shape = flow.formal ? 'rounded' : 'pill';
   const verified = data.status === 'verified';
   return (
-    <section className="rounded-2xl bg-card p-5 shadow-card sm:p-6" aria-labelledby="whatsapp">
-      <h2 id="whatsapp" className="flex items-center gap-2 text-lg font-extrabold tracking-tight text-ink">
-        <MessageCircle size={20} aria-hidden="true" />
-        {flow.copy.title}
-      </h2>
+    <section
+      className={embedded ? 'mt-5 border-t border-line pt-4' : 'rounded-2xl bg-card p-5 shadow-card sm:p-6'}
+      aria-labelledby="whatsapp"
+    >
+      {embedded ? (
+        <h3 id="whatsapp" className="flex items-center gap-2 text-base font-extrabold text-ink">
+          <MessageCircle size={18} aria-hidden="true" />
+          {flow.copy.title}
+        </h3>
+      ) : (
+        <h2 id="whatsapp" className="flex items-center gap-2 text-lg font-extrabold tracking-tight text-ink">
+          <MessageCircle size={20} aria-hidden="true" />
+          {flow.copy.title}
+        </h2>
+      )}
       <p className="mt-1 text-sm text-muted">
         {data.available
           ? flow.copy.purpose

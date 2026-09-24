@@ -46,14 +46,24 @@ begin
 
   -- Pretend the watch has existed for a month so today's FLEKs count as new.
   update private.flek_watches set armed_at = now() - interval '30 days' where id in (w1, w2);
-  sent := private.scan_watches();
-  assert sent = 1, 'one alert: the paused watch stays silent';
-  select * into n from public.notifications where user_id = a and event = 'watch';
-  assert n.booking_id is null and n.business_id is null, 'watch alert is not tied to a booking';
-  assert n.href ~ '^/(nabidka/|mapa\?hlidac=)', 'alert links to the FLEK or the map';
-  assert (select count(*) from private.notification_delivery d where d.notification_id = n.id and d.channel = 'email') = 0,
-    'no e-mail unless switched on';
-  assert private.scan_watches() = 0, 'at most one alert per half hour';
+  if extract(hour from now() at time zone 'Europe/Prague') >= 22 or extract(hour from now() at time zone 'Europe/Prague') < 7 then
+    -- At night nothing goes out and nothing is marked as announced, so the 7:00 scan still has all of it.
+    assert private.scan_watches() = 0, 'quiet at night';
+    assert not exists (select 1 from private.flek_watch_hits where watch_id in (w1, w2)), 'night keeps new FLEKs for the morning';
+    assert (select last_alert_at is null from private.flek_watches where id = w1), 'night does not start the pause between alerts';
+  else
+    sent := private.scan_watches();
+    assert sent = 1, 'one alert: the paused watch stays silent';
+    select * into n from public.notifications where user_id = a and event = 'watch';
+    assert n.booking_id is null and n.business_id is null, 'watch alert is not tied to a booking';
+    assert n.href ~ '^/(nabidka/|mapa\?hlidac=)', 'alert links to the FLEK or the map';
+    assert n.body ~ ' Kč', 'alert names the price';
+    assert (select count(*) from private.notification_delivery d where d.notification_id = n.id and d.channel = 'email') = 0,
+      'no e-mail unless switched on';
+    assert private.scan_watches() = 0, 'at most one alert per quarter hour';
+  end if;
+  assert private.watch_offer_line('Masáž', 'Studio', now(), 49000, 38) like '% · 490 Kč (−38 %)', 'discount in the alert';
+  assert private.watch_offer_line('Masáž', 'Studio', now(), 49000, 0) like '% · 490 Kč', 'no discount, no brackets';
 
   -- Moving a follow-me watch: under 300 m nothing happens, further on it moves and re-arms.
   perform pg_temp.act_as(a);
@@ -65,6 +75,17 @@ begin
 
   perform public.delete_watch(w1);
   assert not exists (select 1 from private.flek_watches where id = w1), 'own watch deleted';
+
+  -- Deleting the account keeps the auth row (anonymised), so the cascade never fires: the watch
+  -- with its place has to be deleted explicitly.
+  insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+  values ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated', 'qa-watch-delete@example.invalid', 'x', now(),
+    '{"provider": "email", "providers": ["email"]}', '{"first_name": "QA", "last_name": "Hlídač"}', now(), now())
+  returning id into b;
+  perform pg_temp.act_as(b);
+  perform public.save_watch(null, 'Doma', 50.08, 14.42, 'walk', 20, null, null, 0, null, false, false);
+  assert public.delete_my_account() = 'deleted', 'account deleted';
+  assert not exists (select 1 from private.flek_watches where user_id = b), 'watch deleted with the account';
   raise notice 'watches.sql: PASS';
 end $$;
 rollback;

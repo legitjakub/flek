@@ -36,7 +36,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik zveř
 | `src/features/admin` | administrace, fronta nahlášení (`AdminReports.tsx`), podklad DAC7 (`Dac7Export.tsx`, `dac7.ts`) |
 | `src/features/legal` | právní stránky, patička „O FLEKu“, věta o poskytovateli, nahlášení obsahu; vykreslení omezeného markdownu bez HTML (`markdown.tsx`), verze textů (`documents.ts`) |
 | `src/content/pravni` | právní texty v markdownu: `podminky.md` (včetně nahlášení obsahu podle DSA), `podminky-podniky.md`, `soukromi.md` |
-| `src/features/watches` | hlídač FLEKů: `WatchSheet.tsx` (založení a úprava), `WatchList.tsx` (Profil), `travel.ts` (dojezd → okruh, zrcadlí `private.watch_radius`); tečku polohy kreslí `OfferMap.tsx` z `src/lib/useLivePosition.ts` |
+| `src/features/watches` | hlídač FLEKů: `WatchSheet.tsx` (založení a úprava), `WatchList.tsx` (Profil), `WatchPrompt.tsx` (pozvánka v Objevit a prázdných Rezervacích), `travel.ts` (dojezd → okruh, zrcadlí `private.watch_radius`); tečku polohy kreslí `OfferMap.tsx` z `src/lib/useLivePosition.ts` |
 | `src/features/notifications` | zvonek s upozorněními a nastavení e-mailu, push a WhatsApp (zákazník v Profilu, podnik v Provozovně), zapíná `VITE_NOTIFICATIONS_ENABLED`; `WhatsApp.tsx` ověření čísla jedním klepnutím a výzvy |
 | `src/features/{auth,profile,favorites,referral,onboarding,pwa,business,ratings}` | přihlášení (e-mail, `SocialSignIn.tsx` pro Google a Apple, jen když jsou zapnuté v Supabase), profil, oblíbené, pozvánky, intro, instalace, stránka podniku, Google hodnocení |
 | `src/components/ui.tsx` | sdílené komponenty (Button, PromoCard, SettingsList, Tabs, Sheet…) |

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { locate } from '../../lib/geo';
 import { useQueryClient } from '@tanstack/react-query';
 import { BellRing, Check, ChevronDown, LocateFixed, MapPin, SlidersHorizontal } from 'lucide-react';
 import { Link } from '../../app/router';
@@ -39,25 +40,28 @@ export function WatchSheet({
   here: { lat: number; lng: number } | null;
   filters?: Filters;
   categories: Category[];
-  onSaved?: (id: string) => void;
+  /** `note` says how the customer will hear about new FLEKs, for a confirmation on the screen behind. */
+  onSaved?: (id: string, note: string) => void;
 }) {
   const { userId } = useSession();
   const queryClient = useQueryClient();
+  // The device position: from the map when it already knows it, or asked for right here.
+  const [position, setPosition] = useState(here);
+  const [locating, setLocating] = useState(false);
   const [form, setForm] = useState<WatchInput>(() => initial(watch, mapPoint, here, filters));
   // Editing a watch that follows the customer keeps „where I am“ selected, even before the map knows it.
   const [useHere, setUseHere] = useState(watch ? watch.follow_me : Boolean(here));
   const [push, setPush] = useState<'unknown' | 'on' | 'off'>('unknown');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [pushError, setPushError] = useState('');
 
   // Every opening starts from the current state of the map, not from what was typed last time.
   useEffect(() => {
     if (!open) return;
+    setPosition(here);
     setForm(initial(watch, mapPoint, here, filters));
     setUseHere(watch ? watch.follow_me : Boolean(here));
     setError('');
-    setPushError('');
     void devicePushEnabled().then((enabled) => setPush(enabled ? 'on' : 'off'));
     // The map point and filters are read when the sheet opens; later changes do not reset a half-filled form.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -66,10 +70,26 @@ export function WatchSheet({
   const set = <K extends keyof WatchInput>(key: K, value: WatchInput[K]) => setForm((current) => ({ ...current, [key]: value }));
   const radius = watchRadius(form.travel_mode, form.travel_minutes);
 
-  function choosePlace(nextHere: boolean) {
+  async function choosePlace(nextHere: boolean) {
+    setError('');
+    if (nextHere && !position) {
+      // Asking here, at the moment it is needed, rather than sending the customer back to the map.
+      setLocating(true);
+      try {
+        const found = await locate();
+        setPosition(found);
+        setUseHere(true);
+        setForm((current) => ({ ...current, lat: found.lat, lng: found.lng, follow_me: true, label: current.label === placeLabel(mapPoint) ? 'Moje okolí' : current.label }));
+      } catch {
+        setError('Polohu se nepodařilo zjistit. Povol ji v prohlížeči, nebo hlídej místo, kde hledáš.');
+      } finally {
+        setLocating(false);
+      }
+      return;
+    }
     setUseHere(nextHere);
-    if (nextHere && here) {
-      setForm((current) => ({ ...current, lat: here.lat, lng: here.lng, follow_me: true, label: current.label === mapPoint.label ? 'Moje okolí' : current.label }));
+    if (nextHere && position) {
+      setForm((current) => ({ ...current, lat: position.lat, lng: position.lng, follow_me: true, label: current.label === placeLabel(mapPoint) ? 'Moje okolí' : current.label }));
     } else {
       setForm((current) => ({ ...current, lat: mapPoint.lat, lng: mapPoint.lng, follow_me: false, label: current.label === 'Moje okolí' ? placeLabel(mapPoint) : current.label }));
     }
@@ -78,10 +98,24 @@ export function WatchSheet({
   async function save() {
     setBusy(true);
     setError('');
+    /*
+     * The one moment a permission prompt makes sense to the customer: they just asked to be told.
+     * It has to be the first thing the tap does — browsers only allow the prompt while the tap is
+     * fresh. A refusal does not stop the watch; it only means news waits in the bell.
+     */
+    let note = 'Hlídač běží. Nové FLEKy ti pošleme na telefon.';
+    if (push !== 'on') {
+      try {
+        await enableDevicePush();
+        setPush('on');
+      } catch (failure) {
+        note = `Hlídač běží, nové FLEKy uvidíš ve zvonečku. ${failure instanceof Error ? failure.message : ''}`.trim();
+      }
+    }
     try {
       const id = await saveWatch({ ...form, label: form.label.trim() || 'Moje okolí' }, watch?.id ?? null);
       await queryClient.invalidateQueries({ queryKey: ['watches'] });
-      onSaved?.(id);
+      onSaved?.(id, watch ? 'Hlídač je upravený.' : note);
       onClose();
     } catch (failure) {
       setError(errorMessage(failure));
@@ -101,16 +135,6 @@ export function WatchSheet({
       setError(errorMessage(failure));
     } finally {
       setBusy(false);
-    }
-  }
-
-  async function turnOnPush() {
-    setPushError('');
-    try {
-      await enableDevicePush();
-      setPush('on');
-    } catch (failure) {
-      setPushError(failure instanceof Error ? failure.message : 'Oznámení se nepodařilo zapnout.');
     }
   }
 
@@ -155,15 +179,15 @@ export function WatchSheet({
         <div className="mt-2 grid gap-2 sm:grid-cols-2">
           <PlaceOption
             active={useHere}
-            disabled={!here && !useHere}
-            onClick={() => choosePlace(true)}
-            icon={<LocateFixed size={18} aria-hidden="true" />}
+            disabled={locating}
+            onClick={() => void choosePlace(true)}
+            icon={<LocateFixed size={18} aria-hidden="true" className={locating ? 'animate-spin' : ''} />}
             title="Kde právě jsem"
-            hint={here ? 'Posune se s tebou, když otevřeš mapu' : 'Nejdřív povol polohu tlačítkem na mapě'}
+            hint={locating ? 'Zjišťuju polohu…' : position ? 'Posune se s tebou, když otevřeš mapu' : 'Klepni a povol polohu'}
           />
           <PlaceOption
             active={!useHere}
-            onClick={() => choosePlace(false)}
+            onClick={() => void choosePlace(false)}
             icon={<MapPin size={18} aria-hidden="true" />}
             title={placeLabel(mapPoint)}
             hint="Místo, kolem kterého teď hledáš"
@@ -260,18 +284,12 @@ export function WatchSheet({
             <Check size={16} aria-hidden="true" /> Oznámení na tomhle telefonu jsou zapnutá.
           </p>
         ) : (
-          <>
-            <p className="text-sm text-ink">
-              <strong>Ať ti telefon pípne.</strong> Bez oznámení uvidíš nové FLEKy jen ve zvonečku v aplikaci.
-            </p>
-            <Button variant="brand" shape="pill" className="mt-2" onClick={() => void turnOnPush()}>
-              Zapnout oznámení
-            </Button>
-            {pushError ? <p role="alert" className="mt-2 text-sm text-danger">{pushError}</p> : null}
-          </>
+          <p className="text-sm text-ink">
+            <strong>Ať ti telefon pípne.</strong> Po uložení tě prohlížeč požádá o povolení oznámení. Bez nich uvidíš nové FLEKy jen ve zvonečku.
+          </p>
         )}
         <p className="mt-2 text-xs text-muted">
-          Nejvýš jedna zpráva za půl hodiny, od 22 do 7 hodin jen v aplikaci. E-mailem jen když si ho zapneš v Profilu.
+          Nejvýš jedna zpráva za čtvrt hodiny. V noci mlčí a co přibude, pošle ráno v 7 najednou. E-mailem jen když si ho zapneš v Profilu.
         </p>
       </div>
 

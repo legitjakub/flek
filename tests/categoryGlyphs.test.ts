@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GLYPH_CATEGORIES, categoryGlyph } from '../src/lib/categoryGlyphs';
+import { BRAND_PIN, GLYPH_CATEGORIES, categoryGlyph } from '../src/lib/categoryGlyphs';
 
 /**
  * Every category a venue can pick has its own pin glyph, and anything else still gets a pin.
@@ -40,5 +40,14 @@ describe('categoryGlyph', () => {
       expect(markup).not.toMatch(/<script|on[a-z]+=|href|javascript:/i);
       expect(markup.endsWith('</svg>')).toBe(true);
     }
+  });
+
+  it('draws the zoomed-out map point as the brand pin, hidden from screen readers like the rest', () => {
+    // The marker's own aria-label names the venue; the drawing adds nothing to read out.
+    expect(BRAND_PIN.startsWith('<svg')).toBe(true);
+    expect(BRAND_PIN.endsWith('</svg>')).toBe(true);
+    expect(BRAND_PIN).toContain('aria-hidden="true"');
+    expect(BRAND_PIN).toContain('map-pin-brand-shape');
+    expect(BRAND_PIN).not.toMatch(/<script|on[a-z]+=|href|javascript:/i);
   });
 });

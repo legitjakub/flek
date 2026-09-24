@@ -29,6 +29,15 @@ const SHAPES: Record<string, string> = {
 const FLEK_MARK =
   '<svg viewBox="0 0 36 34" focusable="false" aria-hidden="true"><path d="M12 31s11-11.8 11-17.8a11 11 0 1 0-22 0C1 19.2 12 31 12 31z" class="map-pin-shape"/><circle cx="12" cy="13.2" r="6.5" class="map-pin-face"/><path d="M12 8.8v4.5l3.4 2" class="map-pin-hands"/></svg>';
 
+/**
+ * FLEK's pin as the logo draws it — brand body, white clock face, ink hands — without the signal
+ * dashes, which at map size would only blur into the street under it. This is what a venue looks
+ * like on a zoomed-out map: the brand at a glance, not an anonymous dot. The white edge keeps it
+ * readable over a park, the river or a busy street.
+ */
+export const BRAND_PIN =
+  '<svg viewBox="-1 0 26 33" focusable="false" aria-hidden="true" class="map-pin-brand"><path d="M12 30.6s11-11.8 11-17.6a11 11 0 1 0-22 0c0 5.8 11 17.6 11 17.6z" class="map-pin-brand-shape"/><circle cx="12" cy="13" r="6.6" class="map-pin-brand-face"/><path d="M12 8.4v4.6l3.5 2" class="map-pin-brand-hands"/></svg>';
+
 export type PinGlyph = {
   /** Ready-to-insert SVG markup. */
   markup: string;

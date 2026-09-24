@@ -1,18 +1,25 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, Phone, QrCode, Star, Ticket, X } from 'lucide-react';
 import { cancelBooking, cancelPendingBooking, myBookings, submitBookingReview } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
 import { clockTime, dayLabel } from '../../lib/time';
 import { useServerNow } from '../../lib/clock';
-import { Banner, Button, EmptyState, ErrorState, LoadingList, Sheet, Tabs, Textarea, buttonClass, cx } from '../../components/ui';
+import { Banner, Button, EmptyState, ErrorState, LoadingList, PinMark, PromoCard, Sheet, Tabs, Textarea, buttonClass, cx } from '../../components/ui';
 import { Link, useRouter } from '../../app/router';
 import { useSession } from '../auth/session';
 import { Voucher } from './Voucher';
 import { StatusBadge } from '../../components/StatusBadge';
 import type { CustomerBooking } from '../../types/database';
 import { confirmationView, waitingLine } from './confirmationView';
+import { DEFAULT_POINT, storedPoint } from '../../lib/geo';
+import { DEFAULT_FILTERS } from '../discovery/filters';
+import { plural } from '../discovery/FilterBar';
+import { OfferRail } from '../discovery/OfferRail';
+import { groupSlots } from '../discovery/slots';
+import { useDiscovery } from '../discovery/useDiscovery';
+import { WatchPrompt } from '../watches/WatchPrompt';
 
 export function MyBookingsPage() {
   const { userId } = useSession();
@@ -134,17 +141,11 @@ export function MyBookingsPage() {
         {query.isPending ? <LoadingList /> : null}
         {query.isError ? <ErrorState error={query.error} onRetry={() => query.refetch()} /> : null}
         {query.isSuccess && rows.length === 0 ? (
-          <EmptyState
-            tone="promo"
-            icon={<Ticket size={26} />}
-            title={tab === 'upcoming' ? 'Nemáš žádnou nadcházející rezervaci.' : 'Historie je zatím prázdná.'}
-            body="Najdi si volný FLEK na dnes."
-            action={
-              <Link to="/" className={buttonClass({ size: 'lg', shape: 'pill' })}>
-                Objevit nabídky
-              </Link>
-            }
-          />
+          tab === 'upcoming' ? (
+            <NothingPlanned now={now} />
+          ) : (
+            <EmptyState title="Historie je zatím prázdná." body="Proběhlé a zrušené rezervace najdeš tady." />
+          )
         ) : null}
 
         {rows.map((booking) => {
@@ -394,6 +395,91 @@ export function MyBookingsPage() {
         ) : null}
       </Sheet>
     </main>
+  );
+}
+
+/**
+ * No booking ahead. Instead of a block of colour with one button, the screen shows what will be here
+ * — the dark strip with the code, the thing a customer comes back to this tab for — then FLEKy that
+ * can be booked right now, and the watch for when nothing nearby fits.
+ */
+function NothingPlanned({ now }: { now: string }) {
+  const point = storedPoint() ?? DEFAULT_POINT;
+  // Silent: this is a glance at what is nearby, not a search the customer made.
+  const nearby = useDiscovery(point, DEFAULT_FILTERS, undefined, true);
+  const groups = useMemo(() => groupSlots(nearby.data?.rows ?? []).slice(0, 8), [nearby.data?.rows]);
+  const rows = useMemo(() => groups.map((group) => group.lead), [groups]);
+  const slotsFor = useMemo(() => Object.fromEntries(groups.map((group) => [group.lead.id, group.slots])), [groups]);
+
+  return (
+    <>
+      <PromoCard tone="promo" className="px-5 pt-8 pb-7 sm:px-8 sm:py-10">
+        <div className="flex flex-col items-center gap-6 text-center sm:flex-row sm:gap-10 sm:text-left">
+          <TicketPreview />
+          <div className="min-w-0">
+            <h2 className="text-lg font-extrabold tracking-tight text-ink">Zatím nemáš nic v plánu</h2>
+            <p className="mx-auto mt-1 max-w-sm text-base text-ink sm:mx-0">
+              Zarezervuj si volný FLEK se slevou. Kód, který v&nbsp;podniku ukážeš, pak najdeš tady.
+            </p>
+            <Link to="/" className={cx(buttonClass({ size: 'lg', shape: 'pill' }), 'mt-5')}>
+              Najít volný FLEK
+            </Link>
+          </div>
+        </div>
+      </PromoCard>
+
+      {rows.length ? (
+        <OfferRail
+          id="rezervace-v-okoli"
+          title="Volné FLEKy v okolí"
+          note={`${rows.length} ${plural(rows.length)}`}
+          action={
+            <Link to="/" className="-my-3 inline-flex min-h-11 shrink-0 items-center text-sm font-bold text-accent">
+              Všechny
+            </Link>
+          }
+          rows={rows}
+          slotsFor={slotsFor}
+          now={now}
+        />
+      ) : null}
+
+      <WatchPrompt point={point} className="mt-3" />
+    </>
+  );
+}
+
+/**
+ * A booking card in miniature, with placeholders where the details will be. Decoration only, so it
+ * is hidden from screen readers; the dots stand for a code, never a made-up one.
+ */
+function TicketPreview() {
+  return (
+    <div aria-hidden="true" className="relative w-60 shrink-0 -rotate-3">
+      <div className="overflow-hidden rounded-2xl bg-card shadow-lift">
+        <div className="flex items-center justify-between gap-3 bg-ink px-4 py-2.5">
+          <span className="text-xs font-bold text-card/75">Rezervační kód</span>
+          <span className="tnum font-mono text-base font-extrabold tracking-[0.2em] text-brand-on-dark">••••••</span>
+        </div>
+        <div className="flex flex-col gap-2.5 px-4 pt-3.5 pb-4">
+          <span className="flex items-center justify-between gap-3">
+            <span className="h-2.5 w-24 rounded-full bg-line" />
+            <span className="h-5 w-16 rounded-full bg-brand-soft" />
+          </span>
+          <span className="flex items-center justify-between gap-3">
+            <span className="h-2.5 w-32 rounded-full bg-line" />
+            <span className="h-2.5 w-10 rounded-full bg-line" />
+          </span>
+          <span className="h-2 w-20 rounded-full bg-line/70" />
+          <span className="mt-1 grid grid-cols-3 gap-1.5">
+            <span className="h-7 rounded-full bg-ink" />
+            <span className="h-7 rounded-full bg-line" />
+            <span className="h-7 rounded-full bg-line" />
+          </span>
+        </div>
+      </div>
+      <PinMark className="absolute -top-5 -right-6 h-12 w-14 rotate-6 drop-shadow-sm" />
+    </div>
   );
 }
 

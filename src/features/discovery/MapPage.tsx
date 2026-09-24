@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { BellRing, Crosshair, List, X } from 'lucide-react';
+import { BellPlus, BellRing, Check, Crosshair, List, X } from 'lucide-react';
 import { Link, useRouter } from '../../app/router';
 import { listCategories, moveWatch } from '../../lib/api';
 import { money, distance } from '../../lib/format';
@@ -66,6 +66,13 @@ export function MapPage() {
   const { point, setPoint, filters, setFilters } = useDiscoveryState();
   const { search, navigate } = useRouter();
   const [watchOpen, setWatchOpen] = useState(false);
+  // What happens next, said once after a watch is saved; it fades on its own.
+  const [watchNote, setWatchNote] = useState('');
+  useEffect(() => {
+    if (!watchNote) return;
+    const timer = window.setTimeout(() => setWatchNote(''), 8000);
+    return () => window.clearTimeout(timer);
+  }, [watchNote]);
   const watches = useWatches();
   const queryClient = useQueryClient();
   const activeWatches = (watches.data ?? []).filter((watch) => !watch.paused);
@@ -270,7 +277,8 @@ export function MapPage() {
                   activeWatches.length ? 'bg-brand text-brand-ink' : 'bg-card text-ink',
                 )}
               >
-                <BellRing size={19} aria-hidden="true" />
+                {/* A plus while there is nothing to watch, so it does not read as the inbox bell in the header. */}
+                {activeWatches.length ? <BellRing size={19} aria-hidden="true" /> : <BellPlus size={19} aria-hidden="true" />}
               </button>
             ) : null}
           </div>
@@ -286,6 +294,12 @@ export function MapPage() {
               floating
             />
           </div>
+          {watchNote ? (
+            <p role="status" className="pointer-events-auto inline-flex max-w-full items-center gap-2 self-start rounded-[1.125rem] bg-card py-2 pr-4 pl-2 text-sm font-bold text-ink shadow-card">
+              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-positive text-card" aria-hidden="true"><Check size={15} /></span>
+              <span className="min-w-0">{watchNote}</span>
+            </p>
+          ) : null}
           {shownWatch && search.has('hlidac') ? (
             <p className="pointer-events-auto inline-flex max-w-full items-center gap-2 self-start rounded-[1.125rem] bg-brand py-1 pr-1 pl-3.5 text-sm font-bold text-brand-ink shadow-card">
               <BellRing size={15} aria-hidden="true" className="shrink-0" />
@@ -353,7 +367,10 @@ export function MapPage() {
         here={live.position}
         filters={filters}
         categories={categories.data ?? []}
-        onSaved={(id) => navigate(`/mapa?hlidac=${id}`, { replace: true, scroll: false })}
+        onSaved={(id, note) => {
+          setWatchNote(note);
+          navigate(`/mapa?hlidac=${id}`, { replace: true, scroll: false });
+        }}
       />
     </main>
   );

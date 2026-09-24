@@ -13,9 +13,9 @@ export const PIN_HEIGHT = 64;
 const GAP = 8;
 
 /*
- * A venue drawn as a dot at a wide view. The circle itself is 22 px, but the marker keeps a
- * 44 px touch target, and it is the target that must not overlap the neighbour's — tapping a
- * dot has to open that dot. So the layout reserves the target, not the drawing.
+ * A venue drawn as FLEK's small pin at a wide view. The pin itself is 26 × 33 px, but the marker
+ * keeps a 44 px touch target, and it is the target that must not overlap the neighbour's — tapping
+ * a pin has to open that pin. So the layout reserves the target, not the drawing.
  */
 export const DOT_SIZE = 44;
 

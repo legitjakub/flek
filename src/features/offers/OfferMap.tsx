@@ -2,7 +2,7 @@
 // its tile-decoding worker lives. Without it vector tiles are never requested at all.
 import './mapWorker';
 import { DOT_SIZE, spreadPins } from '../discovery/mapClusters';
-import { categoryGlyph } from '../../lib/categoryGlyphs';
+import { BRAND_PIN, categoryGlyph } from '../../lib/categoryGlyphs';
 import { circleDiameterPx } from '../../lib/mapGeometry';
 import { useEffect, useRef } from 'react';
 import { LngLatBounds, Map as MapLibreMap, Marker, NavigationControl, type MapOptions, type StyleSpecification } from 'maplibre-gl';
@@ -244,8 +244,8 @@ export function MapCanvas({
        * each other, which is why the map looked like it was hiding offers until you zoomed in.
        *
        * So the pins are laid out first, and if even one venue had nowhere free to sit, every
-       * venue is redrawn as a dot — a quarter of the footprint, the same count of markers,
-       * nothing behind anything. The selected one stays a full pin so its price is readable.
+       * venue is redrawn as FLEK's own small pin — a quarter of the footprint, the same count of
+       * markers, nothing behind anything. The selected one stays a full pin so its price is readable.
        * The decision is made from screen distances at the current zoom, and panning is a
        * translation of all of them at once, so it can only change when the customer zooms.
        */
@@ -274,19 +274,29 @@ export function MapCanvas({
         price.textContent = label;
 
         const active = ids.includes(selectedRef.current ?? '');
-        el.className = compact && !active ? 'map-pin map-pin--dot' : 'map-pin';
-        if (compact && !active && count > 1) el.classList.add('map-pin--dot-many');
+        // Zoomed out, a venue is FLEK's own pin; the trade's glyph and the price come back on zoom.
+        const mark = compact && !active;
+        el.className = mark ? 'map-pin map-pin--mark' : 'map-pin';
         if (position.offsetX || position.offsetY) el.classList.add('is-displaced');
         el.setAttribute('aria-label', entry.description ?? label);
-        const glyph = categoryGlyph(entry.category);
-        const tile = document.createElement('span');
-        tile.className = `map-pin-tile map-pin-tile--${glyph.modifier}`;
-        tile.setAttribute('aria-hidden', 'true');
-        // Constant markup from categoryGlyphs.ts, never anything that came from the database.
-        tile.innerHTML = glyph.markup;
-        price.className = 'map-pin-price';
-        price.setAttribute('aria-hidden', 'true');
-        el.append(tile, price);
+        if (mark) {
+          const pinMark = document.createElement('span');
+          pinMark.className = 'map-pin-markwrap';
+          pinMark.setAttribute('aria-hidden', 'true');
+          // Constant markup from categoryGlyphs.ts, never anything that came from the database.
+          pinMark.innerHTML = BRAND_PIN;
+          el.append(pinMark);
+        } else {
+          const glyph = categoryGlyph(entry.category);
+          const tile = document.createElement('span');
+          tile.className = `map-pin-tile map-pin-tile--${glyph.modifier}`;
+          tile.setAttribute('aria-hidden', 'true');
+          // Constant markup from categoryGlyphs.ts, never anything that came from the database.
+          tile.innerHTML = glyph.markup;
+          price.className = 'map-pin-price';
+          price.setAttribute('aria-hidden', 'true');
+          el.append(tile, price);
+        }
         if (count > 1) {
           const badge = document.createElement('span');
           badge.className = 'map-pin-count';
@@ -300,7 +310,8 @@ export function MapCanvas({
         if (selectable) {
           el.addEventListener('click', () => selectRef.current?.(entry.id));
         }
-        const pin = new Marker({ element: el, offset: [position.offsetX, position.offsetY] })
+        // A pin's tip marks the place, so the brand pin hangs from it; the full pin stays centred.
+        const pin = new Marker({ element: el, anchor: mark ? 'bottom' : 'center', offset: [position.offsetX, position.offsetY] })
           .setLngLat([entry.lng, entry.lat])
           .addTo(instance);
         if (focused === el.dataset.mapIds) el.focus({ preventScroll: true });

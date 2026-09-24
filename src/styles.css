@@ -258,25 +258,36 @@
     box-shadow: 0 0 0 2px var(--color-card);
   }
   /* Over a whole city a pin with its price ticket has nowhere to sit and venues end up stacked,
-     so every venue drops to a dot: a quarter of the footprint, none of them hidden, and the
-     44 px touch target kept. The price comes back on the next zoom, or on the selected one. */
-  .map-pin--dot { justify-content: center; }
-  .map-pin--dot .map-pin-tile {
-    width: 20px;
-    height: 20px;
-    border-radius: 9999px;
-    background: var(--color-brand);
-    box-shadow: 0 0 0 1px rgb(16 18 31 / 0.2), 0 2px 5px -1px rgb(16 18 31 / 0.35);
+     so every venue drops to FLEK's own pin: the brand at a glance, a quarter of the footprint,
+     none of them hidden, and the 44 px touch target kept. The marker hangs from its tip (anchor
+     bottom), so the pin sits at the bottom of the target. The price comes back on the next zoom,
+     or on the selected one. */
+  .map-pin--mark { justify-content: flex-end; }
+  .map-pin-markwrap { display: block; line-height: 0; }
+  .map-pin-brand {
+    width: 26px;
+    height: 33px;
+    overflow: visible;
+    filter: drop-shadow(0 2px 3px rgb(16 18 31 / 0.35));
+    transform-origin: 50% 100%;
+    transition: transform 150ms;
   }
-  /* The trade's glyph is unreadable at 20 px, and a price ticket would defeat the point. */
-  .map-pin--dot .map-pin-tile > *,
-  .map-pin--dot .map-pin-price,
-  .map-pin--dot .map-pin-count { display: none; }
-  /* More than one FLEK at this address gets a halo, so density still reads without a number. */
-  .map-pin--dot-many .map-pin-tile {
-    box-shadow: 0 0 0 1px rgb(16 18 31 / 0.2), 0 0 0 5px color-mix(in srgb, var(--color-brand) 30%, transparent), 0 2px 5px -1px rgb(16 18 31 / 0.35);
+  .map-pin-brand-shape { fill: var(--color-brand); stroke: var(--color-card); stroke-width: 2; paint-order: stroke; }
+  .map-pin-brand-face { fill: var(--color-card); }
+  .map-pin-brand-hands { fill: none; stroke: var(--color-ink); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+  .map-pin--mark:hover { transform: none; }
+  .map-pin--mark:hover .map-pin-brand { transform: scale(1.15); }
+  /* Several FLEKs at one address: the same count badge as the full pin, sized for the small one. */
+  .map-pin--mark .map-pin-count {
+    top: 0;
+    background: var(--color-ink);
+    color: var(--color-card);
+    margin-right: -21px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    font-size: 0.6875rem;
   }
-  .map-pin--dot:hover .map-pin-tile { transform: scale(1.2); }
   /* Where the customer is: the bright brand blue the pins' glyphs use, a white ring so it reads on
      any street colour, and a slow pulse so it is found at a glance. Reduced motion stops the pulse. */
   .user-dot {

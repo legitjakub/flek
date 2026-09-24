@@ -133,7 +133,7 @@ Více provozoven na účet je podporováno přepínačem v partnerské části. 
 
 - Mapa dostává stejnou odpověď jako feed, jen s vyšším stropem (300 řádků místo 50). Při pilotním objemu (315 rezervovatelných FLEKů u 17 podniků) na ně dosáhne každé řazení, ale je to strop, ne řešení: až bude nabídek řádově víc, bude mapa potřebovat vlastní čtecí RPC, které vrátí jeden řádek na adresu, ne všechny termíny. Strop RPC `search_offers` je proto 300 a výš by se neměl zvedat bez té funkce.
 - Body se při hustém pohledu rozmisťují kolem své skutečné polohy nejvýš o 88 px. V extrémně husté skupině (desítky podniků v jednom bloku) se proto i body překryjí; žádný z nich ale nezmizí a všechny zůstávají dosažitelné klávesnicí. Dál od skutečné polohy se špendlík posouvat nebude — vypadal by, že patří do jiné čtvrti.
-- Přepnutí mezi špendlíky a body se rozhoduje ze vzdáleností na obrazovce, takže posun mapou jím nehne; mění se jen při přiblížení. Při oddáleném pohledu není na mapě vidět cena — ta se vrátí po přiblížení nebo klepnutím na vybraný bod.
+- Přepnutí mezi špendlíky a body se rozhoduje ze vzdáleností na obrazovce, takže posun mapou jím nehne; mění se jen při přiblížení. Při oddáleném pohledu není na mapě vidět cena (body jsou malé firemní špendlíky) — ta se vrátí po přiblížení nebo klepnutím na špendlík.
 
 ## Poloha a hlídač FLEKů (24. 9. 2026)
 
@@ -143,3 +143,5 @@ Více provozoven na účet je podporováno přepínačem v partnerské části. 
 - Hlídá se jen to, co přibude po založení nebo přesunu hlídače, a jen termíny do 48 hodin. FLEK, který se uvolní zrušením rezervace, se neohlásí znovu, pokud ho hlídač už jednou ohlásil.
 - Hlídač chodí e-mailem jen po zapnutí v Profilu; WhatsAppem nechodí vůbec (Meta by šablonu nabídek posuzovala jako marketing).
 - Skenování běží každých 5 minut v databázi (`flek-watch-scan`). Při tisících hlídačů by potřebovalo index nebo dávkování podle oblasti.
+- Od 22 do 7 hlídač nic neposílá. Ranní zpráva v 7 obsahuje jen to, co je v tu chvíli pořád volné: FLEK, který se uvolnil a zase zmizel přes noc, zákazník neuvidí. Mezi dvěma zprávami jednoho hlídače je nejméně 15 minut, takže FLEK zveřejněný hned po zprávě přijde až v další.
+- Pozvánka k hlídači v Objevit a v Rezervacích nezná polohu telefonu, dokud ji zákazník v okně nepovolí; do té doby nabízí místo hledání (uložené místo, jinak centrum Prahy).

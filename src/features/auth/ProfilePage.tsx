@@ -18,8 +18,7 @@ import { useInstallMode } from '../pwa/InstallPrompt';
 import { promptInstall } from '../pwa/install';
 import { openIntro } from '../onboarding/FirstVisitIntro';
 import { useMyBusinesses } from '../merchant/useBusiness';
-import { NotificationSettings } from '../notifications/Notifications';
-import { WhatsAppSettingsSection } from '../notifications/WhatsApp';
+import { NotificationsRow } from '../notifications/Notifications';
 import { LegalFooter } from '../legal/LegalFooter';
 import { useLegalInfo } from '../legal/useLegal';
 
@@ -75,10 +74,8 @@ export function ProfilePage() {
 
       <SettingsList title="Můj účet">
         <DetailsRow />
+        <NotificationsRow />
       </SettingsList>
-
-      <NotificationSettings />
-      <WhatsAppSettingsSection />
 
       <AppList partner={(businesses.data?.length ?? 0) > 0} admin={admin} signedIn />
 

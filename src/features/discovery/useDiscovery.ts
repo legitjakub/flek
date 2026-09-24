@@ -75,7 +75,8 @@ export async function discover(point: Point, filters: Filters, limit = FEED_LIMI
   return best;
 }
 
-export function useDiscovery(point: Point, filters: Filters, limit = FEED_LIMIT) {
+/** `silent` is for a screen that only shows what is nearby: it is not a search the customer made. */
+export function useDiscovery(point: Point, filters: Filters, limit = FEED_LIMIT, silent = false) {
   // The epoch is part of the key so a late clock correction re-runs the search with the
   // right Prague day window instead of leaving a wrong „Dnes" on screen.
   const epoch = useClockEpoch();
@@ -93,7 +94,7 @@ export function useDiscovery(point: Point, filters: Filters, limit = FEED_LIMIT)
   const tracked = useRef<string | null>(null);
   const result = query.data;
   useEffect(() => {
-    if (!result || tracked.current === searchKey) return;
+    if (silent || !result || tracked.current === searchKey) return;
     tracked.current = searchKey;
     track('search_performed', {
       // A district is enough for "where is the marketplace thin"; the server rounds the same way.
@@ -109,7 +110,7 @@ export function useDiscovery(point: Point, filters: Filters, limit = FEED_LIMIT)
       applied_when: result.applied.when,
       applied_radius_m: result.applied.radius_m,
     });
-  }, [searchKey, result, point.lat, point.lng, filters]);
+  }, [silent, searchKey, result, point.lat, point.lng, filters]);
 
   return query;
 }
