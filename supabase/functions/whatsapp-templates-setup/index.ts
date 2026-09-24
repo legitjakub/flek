@@ -21,7 +21,9 @@ import { TEMPLATE_DEFINITIONS, TEMPLATE_SECRETS, templateCreatePayload } from '.
  * k webhooku `whatsapp_business_account` s polem `messages` a adresou `whatsapp-webhook`; Meta při
  * tom ověří náš endpoint stejným tokenem, jaký má `WHATSAPP_VERIFY_TOKEN`. `picture: true` nahraje
  * jako fotku profilu ikonu FLEKu z webu. Obojí potřebuje ID aplikace: z `app_id`, jinak aplikace,
- * která je přihlášená k odběru účtu (přihlašuje ji tentýž token, takže je to FLEK).
+ * ke které patří token (`/app`). Podle odběru účtu se hádat nedá: testovací číslo má přihlášenou
+ * i vlastní aplikaci Mety („WA DevX Webhook Events 1P App“). `resubmit: true` spolu s
+ * `dry_run: false` pošle zamítnuté šablony znovu ke schválení v dnešním znění z `_shared/whatsapp.ts`.
  *
  * Admin ji volá z prohlížeče na jiné doméně, proto odpovídá na předletový dotaz a posílá hlavičky
  * CORS jen pro adresy FLEKu, stejně jako ostatní funkce volané z aplikace.
@@ -46,7 +48,7 @@ const PROFILE = {
 /** Fotka profilu: ikona pro instalaci aplikace, čtverec s celým špendlíkem uvnitř kruhového ořezu. */
 const PICTURE_PATH = '/icon-maskable-512.png';
 
-type MetaTemplate = { name: string; status?: string; category?: string; language?: string };
+type MetaTemplate = { id?: string; name: string; status?: string; category?: string; language?: string; rejected_reason?: string };
 
 Deno.serve(async (request) => {
   const early = preflight(request);
@@ -71,6 +73,7 @@ Deno.serve(async (request) => {
 
   const body = await request.json().catch(() => ({})) as {
     dry_run?: boolean; waba_id?: string; subscribe?: boolean; profile?: boolean; webhook?: boolean; picture?: boolean; app_id?: string;
+    resubmit?: boolean;
   };
   const token = Deno.env.get('WHATSAPP_ACCESS_TOKEN');
   const waba = body.waba_id ?? Deno.env.get('WHATSAPP_WABA_ID');
@@ -80,12 +83,13 @@ Deno.serve(async (request) => {
   const missing = [!token && 'WHATSAPP_ACCESS_TOKEN', !waba && 'WHATSAPP_WABA_ID'].filter(Boolean);
   if (missing.length) return json({ error: 'WHATSAPP_NOT_CONFIGURED', missing }, 503);
 
-  const graph = `https://graph.facebook.com/${version}/${waba}/message_templates`;
+  const graphRoot = `https://graph.facebook.com/${version}`;
+  const graph = `${graphRoot}/${waba}/message_templates`;
   const auth = { Authorization: `Bearer ${token}` };
 
   let existing: MetaTemplate[];
   try {
-    const response = await fetch(`${graph}?fields=name,status,language,category&limit=200`, { headers: auth });
+    const response = await fetch(`${graph}?fields=id,name,status,language,category,rejected_reason&limit=200`, { headers: auth });
     const payload = await response.json();
     if (!response.ok) {
       return json({ error: 'META_REQUEST_FAILED', step: 'list', status: response.status, detail: payload?.error?.message ?? null }, 502);
@@ -100,8 +104,32 @@ Deno.serve(async (request) => {
     const secret = TEMPLATE_SECRETS[definition.template];
     const name = Deno.env.get(secret) ?? definition.name;
     const found = existing.find((candidate) => candidate.name === name);
+    // Důvod zamítnutí od Mety (INVALID_FORMAT, INCORRECT_CATEGORY…), podle něj se upraví text.
+    const rejectedReason = found?.status === 'REJECTED' ? found.rejected_reason ?? null : null;
+    if (found && found.status === 'REJECTED' && body.resubmit && found.id) {
+      if (body.dry_run) {
+        results.push({ template: definition.template, name, secret, action: 'would_resubmit', status: found.status, rejected_reason: rejectedReason });
+        continue;
+      }
+      // Úprava zamítnuté šablony: stejný název i jazyk, nové tělo; Meta ji posoudí znovu.
+      const { category, components } = templateCreatePayload(definition, name, language);
+      try {
+        const response = await fetch(`${graphRoot}/${found.id}`, {
+          method: 'POST',
+          headers: { ...auth, 'content-type': 'application/json' },
+          body: JSON.stringify({ category, components }),
+        });
+        const payload = await response.json().catch(() => null);
+        results.push(response.ok
+          ? { template: definition.template, name, secret, action: 'resubmitted', status: 'PENDING' }
+          : { template: definition.template, name, secret, action: 'failed', status: response.status, detail: payload?.error?.error_user_msg ?? payload?.error?.message ?? null });
+      } catch (error) {
+        results.push({ template: definition.template, name, secret, action: 'failed', detail: error instanceof Error ? error.message : String(error) });
+      }
+      continue;
+    }
     if (found) {
-      results.push({ template: definition.template, name, secret, action: 'exists', status: found.status ?? null });
+      results.push({ template: definition.template, name, secret, action: 'exists', status: found.status ?? null, rejected_reason: rejectedReason });
       continue;
     }
     if (body.dry_run) {
@@ -125,14 +153,13 @@ Deno.serve(async (request) => {
     }
   }
 
-  const created = results.filter((result) => result.action === 'created').length;
+  const created = results.filter((result) => result.action === 'created' || result.action === 'resubmitted').length;
   const failed = results.filter((result) => result.action === 'failed').length;
   console.log(`whatsapp-templates-setup created=${created} failed=${failed}`);
 
   const secrets = Object.fromEntries(
     [...SECRET_NAMES, ...Object.values(TEMPLATE_SECRETS)].map((name) => [name, Boolean(Deno.env.get(name))]),
   );
-  const graphRoot = `https://graph.facebook.com/${version}`;
   const metaApi = async (path: string, init?: RequestInit) => {
     const response = await fetch(`${graphRoot}/${path}`, { ...init, headers: { ...auth, 'content-type': 'application/json', ...(init?.headers ?? {}) } });
     const payload = await response.json().catch(() => null);
@@ -152,10 +179,11 @@ Deno.serve(async (request) => {
       apps: ((data?.data ?? []) as { whatsapp_business_api_data?: { id?: string; name?: string }; override_callback_uri?: string }[])
         .map((app) => ({ id: app.whatsapp_business_api_data?.id ?? null, name: app.whatsapp_business_api_data?.name ?? null, override_callback_uri: app.override_callback_uri ?? null })),
     }), failure);
-  const subscribedApps = 'apps' in subscription ? subscription.apps : [];
-  const appId = body.app_id && /^\d{5,20}$/.test(body.app_id)
-    ? body.app_id
-    : subscribedApps.length === 1 && subscribedApps[0].id && /^\d{5,20}$/.test(subscribedApps[0].id) ? subscribedApps[0].id : null;
+  // Aplikace, ke které patří token: tu přihlašuje `subscribe`, pro ni se nastavuje webhook i logo.
+  const tokenApp = await metaApi('app?fields=id,name')
+    .then((data) => ({ id: typeof data?.id === 'string' ? data.id : null, name: data?.name ?? null }), failure);
+  const tokenAppId = 'id' in tokenApp && tokenApp.id && /^\d{5,20}$/.test(tokenApp.id) ? tokenApp.id : null;
+  const appId = body.app_id && /^\d{5,20}$/.test(body.app_id) ? body.app_id : tokenAppId;
 
   const callbackUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`;
   const appSecret = Deno.env.get('WHATSAPP_APP_SECRET');
@@ -242,7 +270,7 @@ Deno.serve(async (request) => {
   // Jméno tajného klíče u každé šablony: podle něj se doplní zbytek nastavení v Supabase.
   return json({
     language, graph_version: version, dry_run: Boolean(body.dry_run), created, failed, templates: results,
-    secrets, callback_url: callbackUrl,
+    secrets, callback_url: callbackUrl, token_app: tokenApp,
     phone, numbers, subscription, app_subscriptions: appSubscriptions, profile, actions, brand_profile: PROFILE,
   }, failed ? 207 : 200);
 });

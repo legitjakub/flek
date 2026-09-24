@@ -51,7 +51,9 @@ export function WhatsAppSetup() {
   const hooks = phone?.webhook ?? null;
   const webhookOk = Boolean(done?.callback_url && [hooks?.application, hooks?.whatsapp_business_account, hooks?.phone_number].includes(done.callback_url));
   const apps = done?.subscription && !metaFailed(done.subscription) ? done.subscription.apps : null;
-  const subscribed = Boolean(apps?.length);
+  // Testovací číslo má přihlášenou i vlastní aplikaci Mety; počítá se jen aplikace, ke které patří token.
+  const tokenAppId = done?.token_app && !metaFailed(done.token_app) ? done.token_app.id : null;
+  const subscribed = Boolean(apps?.some((app) => !tokenAppId || app.id === tokenAppId));
   const profile = done?.profile && !metaFailed(done.profile) ? done.profile : null;
   const textsOk = Boolean(profile && done?.brand_profile && profile.about === done.brand_profile.about);
   const pictureOk = Boolean(profile?.has_picture);
@@ -60,6 +62,7 @@ export function WhatsAppSetup() {
   const missingSecrets = done?.secrets ? Object.entries(done.secrets).filter(([name, set]) => !set && !OPTIONAL_SECRETS.includes(name)).map(([name]) => name) : [];
   const allApproved = Boolean(done?.templates.length) && done!.templates.every((row) => row.status === 'APPROVED');
   const toCreate = done?.templates.some((row) => row.action === 'would_create') ?? false;
+  const rejected = done?.templates.some((row) => row.status === 'REJECTED') ?? false;
   const ready = numberSaved && webhookOk && subscribed && allApproved && missingSecrets.length === 0;
 
   return (
@@ -192,6 +195,13 @@ export function WhatsAppSetup() {
                   Založit chybějící
                 </Button>
               </div>
+            ) : rejected ? (
+              <div className="mt-2">
+                <p>Zamítnutou šablonu je potřeba nejdřív přepsat v kódu (<code>_shared/whatsapp.ts</code>), pak ji pošlete znovu.</p>
+                <Button className="mt-2" size="sm" variant="secondary" loading={run.isPending} onClick={() => run.mutate({ dryRun: false, resubmit: true })}>
+                  Poslat zamítnuté znovu ke schválení
+                </Button>
+              </div>
             ) : allApproved ? null : (
               <p className="mt-1">Meta je schvaluje sama, obvykle v řádu minut. Stav ověříte znovu tlačítkem Zkontrolovat stav.</p>
             )}
@@ -289,6 +299,8 @@ function nameStatus(status: string): string {
 function rowLabel(row: WhatsAppTemplateRow): string {
   if (row.action === 'would_create') return 'chybí, založí se';
   if (row.action === 'created') return 'odesláno ke schválení';
+  if (row.action === 'would_resubmit') return 'zamítnutá, pošle se znovu';
+  if (row.action === 'resubmitted') return 'upravená, znovu ke schválení';
   if (row.action === 'failed') return `nepodařilo se${row.detail ? `: ${row.detail}` : ''}`;
   switch (row.status) {
     case 'APPROVED':
@@ -298,7 +310,7 @@ function rowLabel(row: WhatsAppTemplateRow): string {
     case 'PENDING_DELETION':
       return 'čeká na schválení';
     case 'REJECTED':
-      return 'Meta ji zamítla — text je potřeba upravit';
+      return `Meta ji zamítla${row.rejected_reason && row.rejected_reason !== 'NONE' ? ` (${row.rejected_reason})` : ''}, text je potřeba upravit`;
     case 'PAUSED':
     case 'DISABLED':
       return 'Meta ji pozastavila';

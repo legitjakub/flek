@@ -577,9 +577,11 @@ export type WhatsAppTemplateRow = {
   template: string;
   name: string;
   secret: string;
-  action: 'exists' | 'would_create' | 'created' | 'failed';
+  action: 'exists' | 'would_create' | 'created' | 'would_resubmit' | 'resubmitted' | 'failed';
   status?: string | null;
   detail?: string | null;
+  /** Proč Meta šablonu zamítla (INVALID_FORMAT, INCORRECT_CATEGORY…); jen u zamítnutých. */
+  rejected_reason?: string | null;
 };
 
 type MetaFailure = { error: string };
@@ -613,6 +615,8 @@ export type WhatsAppTemplateSetup = {
   /** Jen jména tajných klíčů a zda jsou vyplněné; hodnoty se z funkce nikdy nevrací. */
   secrets?: Record<string, boolean>;
   callback_url?: string;
+  /** Aplikace, ke které patří token v Supabase: ta musí být přihlášená k odběru a mít webhook. */
+  token_app?: { id: string | null; name: string | null } | MetaFailure;
   phone?: WhatsAppPhoneState | MetaFailure;
   subscription?: { apps: { id: string | null; name: string | null; override_callback_uri: string | null }[] } | MetaFailure;
   profile?: WhatsAppProfileState | MetaFailure | null;
@@ -621,7 +625,7 @@ export type WhatsAppTemplateSetup = {
 };
 
 /** Co funkce udělá u Mety na výslovné klepnutí; bez nich jen čte stav. */
-export type WhatsAppSetupAction = 'subscribe' | 'webhook' | 'profile' | 'picture';
+export type WhatsAppSetupAction = 'subscribe' | 'webhook' | 'profile' | 'picture' | 'resubmit';
 
 export function metaFailed(value: unknown): value is MetaFailure {
   return Boolean(value && typeof value === 'object' && 'error' in value);
