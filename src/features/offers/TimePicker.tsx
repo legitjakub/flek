@@ -4,6 +4,7 @@ import { clockTime, dayKey, dayLabel } from '../../lib/time';
 import { relativeTime } from '../../lib/clock';
 import { money } from '../../lib/format';
 import { cx } from '../../components/ui';
+import { OriginalPrice } from '../../components/Price';
 import { slotLabels, slotsByDay } from '../discovery/slots';
 import type { OfferDetail, SearchRow } from '../../types/database';
 
@@ -78,7 +79,7 @@ export function TimePicker({
                   setExpandedDay(null);
                 }}
                 className={cx(
-                  'min-h-11 shrink-0 snap-start border-b-2 px-1 text-sm font-bold transition-colors',
+                  'min-h-11 min-w-11 shrink-0 snap-start border-b-2 px-1 text-sm font-bold transition-colors',
                   selected
                     ? 'border-brand text-brand'
                     : 'border-transparent text-muted hover:border-brand/30 hover:text-accent',
@@ -110,6 +111,7 @@ export function TimePicker({
               aria-label={[
                 `${dayLabel(slot.start_at, now).toLocaleLowerCase('cs-CZ')} ${clockTime(slot.start_at)}`,
                 money(slot.deal_price_cents),
+                slot.original_price_cents > slot.deal_price_cents ? `běžně ${money(slot.original_price_cents)}` : null,
                 slot.discount_pct > 0 ? `sleva ${slot.discount_pct} procent` : null,
                 lastSeat ? 'poslední místo' : null,
               ].filter(Boolean).join(', ')}
@@ -124,7 +126,12 @@ export function TimePicker({
             >
               <span className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
                 <span className="tnum text-base leading-none font-extrabold">{clockTime(slot.start_at)}</span>
-                <span className="tnum text-xs font-semibold text-muted">{money(slot.deal_price_cents)}</span>
+                <span className="tnum flex items-baseline gap-1.5 text-xs">
+                  <span className="font-semibold text-muted">{money(slot.deal_price_cents)}</span>
+                  {slot.original_price_cents > slot.deal_price_cents ? (
+                    <OriginalPrice cents={slot.original_price_cents} className="text-[0.6875rem]" />
+                  ) : null}
+                </span>
               </span>
               {soon || lastSeat ? (
                 <span className={cx('mt-1 block text-[0.6875rem] font-bold', lastSeat ? 'text-warning' : 'text-accent')}>

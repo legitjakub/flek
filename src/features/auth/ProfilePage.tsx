@@ -157,7 +157,7 @@ function AppList({ partner, admin, signedIn }: { partner: boolean; admin: boolea
   return (
     <>
       <SettingsList title="Aplikace">
-        <SettingsRow icon={<Sparkles size={20} />} label="Jak FLEK funguje?" hint="Krátké představení ve třech krocích" onClick={openIntro} />
+        <SettingsRow icon={<Sparkles size={20} />} label="Jak FLEK funguje?" hint="Krátké představení ve čtyřech krocích" onClick={openIntro} />
         {install ? (
           <SettingsRow
             icon={<Download size={20} />}

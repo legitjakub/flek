@@ -10,6 +10,7 @@ import { profileSchema } from '../../lib/schemas';
 import { clockTime, dayLabel } from '../../lib/time';
 import { track } from '../../lib/analytics';
 import { Banner, Button, Field, Input, Sheet } from '../../components/ui';
+import { OriginalPrice } from '../../components/Price';
 import { hasPhone, useSession } from '../auth/session';
 import { useRouter } from '../../app/router';
 import type { OfferDetail } from '../../types/database';
@@ -162,7 +163,7 @@ export function BookingSheet({
         ) : null}
         {savings > 0 ? (
           <p className="tnum mt-1 text-sm text-muted">
-            Běžně {money(offer.original_price_cents)} · <span className="font-bold text-ink">ušetříš {money(savings)}</span>
+            Běžně <OriginalPrice cents={offer.original_price_cents} /> · <span className="font-bold text-ink">ušetříš {money(savings)}</span>
           </p>
         ) : null}
       </div>

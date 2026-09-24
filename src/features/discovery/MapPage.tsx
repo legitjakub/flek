@@ -153,7 +153,7 @@ export function MapPage() {
       count: group.offers.length, price: group.minPrice,
       category: first.category_slug,
       description: group.offers.length === 1
-        ? `${first.service_name}, ${first.business_name}, ${markerTime.format(new Date(first.start_at))}, ${money(group.minPrice)}. Zobrazit náhled.`
+        ? `${first.service_name}, ${first.business_name}, ${markerTime.format(new Date(first.start_at))}, ${money(group.minPrice)}${first.original_price_cents > first.deal_price_cents ? ` místo ${money(first.original_price_cents)}` : ''}. Zobrazit náhled.`
         : `${first.business_name}: ${group.offers.length} ${appointmentWord(group.offers.length)}, od ${money(group.minPrice)}. Zobrazit termíny.`,
     };
   }), [groups]);

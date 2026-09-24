@@ -11,6 +11,7 @@ import { Link, useRouter } from '../../app/router';
 import { useSession } from '../auth/session';
 import { Voucher } from './Voucher';
 import { StatusBadge } from '../../components/StatusBadge';
+import { OriginalPrice } from '../../components/Price';
 import type { CustomerBooking } from '../../types/database';
 import { confirmationView, waitingLine } from './confirmationView';
 import { DEFAULT_POINT, storedPoint } from '../../lib/geo';
@@ -190,10 +191,15 @@ export function MyBookingsPage() {
                   </span>
                 </div>
 
-                <p className="mt-3 flex items-baseline gap-3 text-base font-bold text-ink">
-                  <span className="min-w-0 flex-1">{booking.service_name_snapshot}</span>
-                  <span className="tnum shrink-0">{money(booking.price_cents)}</span>
-                </p>
+                <div className="mt-3 flex items-start gap-3 text-base font-bold text-ink">
+                  <p className="min-w-0 flex-1">{booking.service_name_snapshot}</p>
+                  <p className="flex shrink-0 flex-col items-end gap-0.5">
+                    <span className="tnum">{money(booking.price_cents)}</span>
+                    {booking.original_price_cents_snapshot > booking.price_cents ? (
+                      <OriginalPrice cents={booking.original_price_cents_snapshot} className="text-xs font-normal" />
+                    ) : null}
+                  </p>
+                </div>
                 <p className="text-sm text-muted">
                   {booking.business_name_snapshot} · {booking.business_address_snapshot}
                 </p>

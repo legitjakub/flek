@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Clock3, X } from 'lucide-react';
 import { Link } from '../../app/router';
 import { cx } from '../../components/ui';
+import { OriginalPrice } from '../../components/Price';
 import { useSnapCarousel } from '../../components/useSnapCarousel';
 import { money } from '../../lib/format';
 import { SERVICE_PLACEHOLDER, serviceIllustration } from '../../lib/serviceIllustrations';
@@ -155,7 +156,12 @@ function PreviewCard({
             <span className="truncate text-xs font-bold text-accent">
               {otherTimes ? `+${otherTimes} ${otherTimes === 1 ? 'další čas' : otherTimes < 5 ? 'další časy' : 'dalších časů'}` : 'Otevřít detail'}
             </span>
-            <span className="tnum shrink-0 text-lg leading-none font-extrabold text-ink">{money(offer.deal_price_cents)}</span>
+            <span className="flex shrink-0 flex-col items-end gap-1">
+              <span className="tnum text-lg leading-none font-extrabold text-ink">{money(offer.deal_price_cents)}</span>
+              {offer.original_price_cents > offer.deal_price_cents ? (
+                <OriginalPrice cents={offer.original_price_cents} className="text-[11px] leading-none" />
+              ) : null}
+            </span>
           </span>
         </span>
       </Link>

@@ -173,6 +173,7 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 - [x] Web push upozornění pro podnik i zákazníka (13. 9.)
 - [x] Poloha na mapě a hlídač FLEKů v okolí s upozorněním (24. 9.)
 - [x] Revize hlídače: noční klid s ranní zprávou, brzda 15 min, sleva ve zprávě, mazání se smazáním účtu, pozvánka z Objevit a Rezervací (24. 9.)
+- [x] Úvod pro nové zákazníky a stránka pro podniky podle dnešní aplikace; přeškrtnutá běžná cena všude, kde zákazník vidí cenu (24. 9.)
 - [ ] Hlídač: skutečný čas cesty místo odhadu vzdušnou čarou (potřebuje routovací službu)
 - [ ] Kredit za doporučení
 - [ ] Menší balík aplikace (mapa 979 kB, Temporal 325 kB) a měření Lighthouse
@@ -335,6 +336,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 24. 9. 2026 | Nový úvod pro zákazníky ukáže i polohu na mapě a hlídač, stránka pro podniky vysvětlí celý postup od zveřejnění po výplatu. Běžnou přeškrtnutou cenu zákazník vidí u každé ceny, i v náhledu na mapě a ve svých rezervacích. |
 | 24. 9. 2026 | Hlídač FLEKů v noci mlčí a ráno pošle jednu zprávu, ozve se nejdřív po čtvrt hodině a řekne i slevu; smazáním účtu zmizí i hlídače. Oddálená mapa ukazuje firemní špendlíky místo teček, Upozornění v Profilu se rozkliknou až na klepnutí a prázdné Rezervace nabídnou volné FLEKy v okolí a hlídač. |
 | 24. 9. 2026 | Mapa ukazuje, kde právě jsi, a hlídač FLEKů ti dá vědět, když se do 10–30 minut cesty uvolní nový FLEK podle tvého filtru. |
 | 23. 9. 2026 | Detail služby na telefonu má kratší fotografii, přehlednější termín, cenu a výběr dalších časů, ultramarínovou akci a mapu otevřenou až po klepnutí. Všech 37 katalogových aktivit má dvě varianty: skutečné ověřené fotografie, případně neutrální FLEK. Generované soubory byly odstraněny a demo katalog aktualizovaly dvě cílené migrace. |
