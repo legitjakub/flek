@@ -444,9 +444,10 @@ verify_jwt = false
 [functions.ares-lookup]
 verify_jwt = true
 
-# Zakládá šablony zpráv u Mety; jen pro adminy, kontrola je uvnitř funkce.
+# Stav a nastavení WhatsAppu u Mety; volá ji admin, nebo databáze s tajným klíčem workeru.
+# Obě cesty ověřuje funkce sama, proto brána JWT neověřuje (klíč workeru není JWT).
 [functions.whatsapp-templates-setup]
-verify_jwt = true
+verify_jwt = false
 
 # Volá ji jen databáze s worker secretem; ten se ověřuje uvnitř funkce.
 [functions.content-moderation]

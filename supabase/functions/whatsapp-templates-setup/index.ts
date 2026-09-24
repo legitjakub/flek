@@ -13,6 +13,12 @@ import { TEMPLATE_DEFINITIONS, TEMPLATE_SECRETS, templateCreatePayload } from '.
  * jsou vyplněné (jen jména), číslo a jméno od Mety, kam Meta posílá webhook, jestli je aplikace
  * přihlášená k odběru zpráv účtu. `subscribe: true` aplikaci k odběru přihlásí a `profile: true`
  * nastaví texty profilu FLEKu na WhatsAppu; obojí jen na výslovné klepnutí admina.
+ *
+ * Volat ji smí přihlášený admin, nebo databáze s tajným klíčem workeru (stejným, jakým se volá
+ * doručování upozornění), aby nastavení šlo dokončit i bez prohlížeče. Proto `verify_jwt = false`:
+ * obě cesty ověřuje funkce sama a bez jedné z nich nic neudělá. `webhook_app_id` přihlásí aplikaci
+ * k webhooku `whatsapp_business_account` s polem `messages` a adresou `whatsapp-webhook`; Meta při
+ * tom ověří náš endpoint stejným tokenem, jaký má `WHATSAPP_VERIFY_TOKEN`.
  */
 
 /** Tajné klíče, které kanál používá; odpověď nese jen to, zda jsou vyplněné. */
@@ -42,14 +48,23 @@ Deno.serve(async (request) => {
   const authorization = request.headers.get('Authorization');
   if (!authorization?.startsWith('Bearer ')) return json({ error: 'AUTH_REQUIRED' }, 401);
 
+  // Databáze s tajným klíčem workeru, nebo admin; klíč workeru má aspoň 32 znaků a JWT mu nikdy nerovná.
+  const service = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data: worker } = await service.rpc('notification_worker_authorized', { p_secret: authorization.slice(7) });
   const client = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
     global: { headers: { Authorization: authorization } },
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const { data: admin } = await client.rpc('is_admin');
-  if (admin !== true) return json({ error: 'FORBIDDEN' }, 403);
+  if (worker !== true) {
+    const { data: admin } = await client.rpc('is_admin');
+    if (admin !== true) return json({ error: 'FORBIDDEN' }, 403);
+  }
 
-  const body = await request.json().catch(() => ({})) as { dry_run?: boolean; waba_id?: string; subscribe?: boolean; profile?: boolean };
+  const body = await request.json().catch(() => ({})) as {
+    dry_run?: boolean; waba_id?: string; subscribe?: boolean; profile?: boolean; webhook_app_id?: string;
+  };
   const token = Deno.env.get('WHATSAPP_ACCESS_TOKEN');
   const waba = body.waba_id ?? Deno.env.get('WHATSAPP_WABA_ID');
   const language = Deno.env.get('WHATSAPP_TEMPLATE_LANGUAGE') ?? 'cs';
@@ -125,6 +140,26 @@ Deno.serve(async (request) => {
   if (body.subscribe) {
     actions.subscribe = await metaApi(`${waba}/subscribed_apps`, { method: 'POST' }).then(() => ({ ok: true }), failure);
   }
+  const callbackUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`;
+  const appId = body.webhook_app_id && /^\d{5,20}$/.test(body.webhook_app_id) ? body.webhook_app_id : null;
+  const appSecret = Deno.env.get('WHATSAPP_APP_SECRET');
+  const verifyToken = Deno.env.get('WHATSAPP_VERIFY_TOKEN') ?? '';
+  // Webhook aplikace se dá nastavit jen tokenem aplikace (ID|App Secret); ten nikdy neopustí funkci.
+  const appToken = appId && appSecret ? `${appId}|${appSecret}` : null;
+  if (appId) {
+    actions.webhook = !appToken || verifyToken.length < 16
+      ? { error: !appToken ? 'WHATSAPP_APP_SECRET' : 'WHATSAPP_VERIFY_TOKEN' }
+      : await fetch(`${graphRoot}/${appId}/subscriptions`, {
+        method: 'POST',
+        body: new URLSearchParams({
+          object: 'whatsapp_business_account', callback_url: callbackUrl, verify_token: verifyToken,
+          fields: 'messages', include_values: 'true', access_token: appToken,
+        }),
+      }).then(async (response) => {
+        const payload = await response.json().catch(() => null);
+        return response.ok ? { ok: true } : { error: payload?.error?.message ?? `HTTP ${response.status}` };
+      }, failure);
+  }
   if (body.profile && phoneNumberId) {
     const { data: legal } = await client.rpc('legal_info');
     const email = (legal as { operator?: { email?: string | null } } | null)?.operator?.email ?? undefined;
@@ -151,6 +186,19 @@ Deno.serve(async (request) => {
       apps: ((data?.data ?? []) as { whatsapp_business_api_data?: { id?: string; name?: string }; override_callback_uri?: string }[])
         .map((app) => ({ id: app.whatsapp_business_api_data?.id ?? null, name: app.whatsapp_business_api_data?.name ?? null, override_callback_uri: app.override_callback_uri ?? null })),
     }), failure);
+  const numbers = await metaApi(`${waba}/phone_numbers?fields=id,display_phone_number,verified_name,code_verification_status,quality_rating`)
+    .then((data) => ({ list: (data?.data ?? []) as Record<string, unknown>[] }), failure);
+  const appSubscriptions = appToken
+    ? await fetch(`${graphRoot}/${appId}/subscriptions?access_token=${encodeURIComponent(appToken)}`)
+      .then(async (response) => {
+        const payload = await response.json().catch(() => null);
+        if (!response.ok) return { error: payload?.error?.message ?? `HTTP ${response.status}` };
+        return {
+          list: ((payload?.data ?? []) as { object?: string; callback_url?: string; active?: boolean; fields?: { name?: string }[] }[])
+            .map((entry) => ({ object: entry.object ?? null, callback_url: entry.callback_url ?? null, active: entry.active ?? null, fields: (entry.fields ?? []).map((field) => field.name) })),
+        };
+      }, failure)
+    : null;
   const profile = phoneNumberId
     ? await metaApi(`${phoneNumberId}/whatsapp_business_profile?fields=about,description,email,websites,vertical,profile_picture_url`)
       .then((data) => {
@@ -162,7 +210,7 @@ Deno.serve(async (request) => {
   // Jméno tajného klíče u každé šablony: podle něj se doplní zbytek nastavení v Supabase.
   return json({
     language, graph_version: version, dry_run: Boolean(body.dry_run), created, failed, templates: results,
-    secrets, callback_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`,
-    phone, subscription, profile, actions, brand_profile: PROFILE,
+    secrets, callback_url: callbackUrl,
+    phone, numbers, subscription, app_subscriptions: appSubscriptions, profile, actions, brand_profile: PROFILE,
   }, failed ? 207 : 200);
 });
