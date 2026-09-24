@@ -1,4 +1,5 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { json as reply, preflight } from '../_shared/stripe.ts';
 import { TEMPLATE_DEFINITIONS, TEMPLATE_SECRETS, templateCreatePayload } from '../_shared/whatsapp.ts';
 
 /**
@@ -16,9 +17,14 @@ import { TEMPLATE_DEFINITIONS, TEMPLATE_SECRETS, templateCreatePayload } from '.
  *
  * Volat ji smí přihlášený admin, nebo databáze s tajným klíčem workeru (stejným, jakým se volá
  * doručování upozornění), aby nastavení šlo dokončit i bez prohlížeče. Proto `verify_jwt = false`:
- * obě cesty ověřuje funkce sama a bez jedné z nich nic neudělá. `webhook_app_id` přihlásí aplikaci
+ * obě cesty ověřuje funkce sama a bez jedné z nich nic neudělá. `webhook: true` přihlásí aplikaci
  * k webhooku `whatsapp_business_account` s polem `messages` a adresou `whatsapp-webhook`; Meta při
- * tom ověří náš endpoint stejným tokenem, jaký má `WHATSAPP_VERIFY_TOKEN`.
+ * tom ověří náš endpoint stejným tokenem, jaký má `WHATSAPP_VERIFY_TOKEN`. `picture: true` nahraje
+ * jako fotku profilu ikonu FLEKu z webu. Obojí potřebuje ID aplikace: z `app_id`, jinak aplikace,
+ * která je přihlášená k odběru účtu (přihlašuje ji tentýž token, takže je to FLEK).
+ *
+ * Admin ji volá z prohlížeče na jiné doméně, proto odpovídá na předletový dotaz a posílá hlavičky
+ * CORS jen pro adresy FLEKu, stejně jako ostatní funkce volané z aplikace.
  */
 
 /** Tajné klíče, které kanál používá; odpověď nese jen to, zda jsou vyplněné. */
@@ -37,14 +43,15 @@ const PROFILE = {
   websites: ['https://www.app-flek.eu'],
   vertical: 'OTHER',
 };
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
-}
+/** Fotka profilu: ikona pro instalaci aplikace, čtverec s celým špendlíkem uvnitř kruhového ořezu. */
+const PICTURE_PATH = '/icon-maskable-512.png';
 
 type MetaTemplate = { name: string; status?: string; category?: string; language?: string };
 
 Deno.serve(async (request) => {
-  if (request.method !== 'POST') return json({ error: 'METHOD_NOT_ALLOWED' }, 405);
+  const early = preflight(request);
+  if (early) return early;
+  const json = (body: unknown, status = 200) => reply(request, body, status);
   const authorization = request.headers.get('Authorization');
   if (!authorization?.startsWith('Bearer ')) return json({ error: 'AUTH_REQUIRED' }, 401);
 
@@ -63,7 +70,7 @@ Deno.serve(async (request) => {
   }
 
   const body = await request.json().catch(() => ({})) as {
-    dry_run?: boolean; waba_id?: string; subscribe?: boolean; profile?: boolean; webhook_app_id?: string;
+    dry_run?: boolean; waba_id?: string; subscribe?: boolean; profile?: boolean; webhook?: boolean; picture?: boolean; app_id?: string;
   };
   const token = Deno.env.get('WHATSAPP_ACCESS_TOKEN');
   const waba = body.waba_id ?? Deno.env.get('WHATSAPP_WABA_ID');
@@ -135,20 +142,29 @@ Deno.serve(async (request) => {
   const failure = (error: unknown) => ({ error: error instanceof Error ? error.message : String(error) });
   const phoneNumberId = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID');
 
-  // Na výslovné klepnutí: přihlásit aplikaci k odběru zpráv účtu, nastavit texty profilu.
+  // Na výslovné klepnutí: přihlásit odběr zpráv účtu, nastavit webhook, fotku a texty profilu.
   const actions: Record<string, unknown> = {};
   if (body.subscribe) {
     actions.subscribe = await metaApi(`${waba}/subscribed_apps`, { method: 'POST' }).then(() => ({ ok: true }), failure);
   }
+  const subscription = await metaApi(`${waba}/subscribed_apps`)
+    .then((data) => ({
+      apps: ((data?.data ?? []) as { whatsapp_business_api_data?: { id?: string; name?: string }; override_callback_uri?: string }[])
+        .map((app) => ({ id: app.whatsapp_business_api_data?.id ?? null, name: app.whatsapp_business_api_data?.name ?? null, override_callback_uri: app.override_callback_uri ?? null })),
+    }), failure);
+  const subscribedApps = 'apps' in subscription ? subscription.apps : [];
+  const appId = body.app_id && /^\d{5,20}$/.test(body.app_id)
+    ? body.app_id
+    : subscribedApps.length === 1 && subscribedApps[0].id && /^\d{5,20}$/.test(subscribedApps[0].id) ? subscribedApps[0].id : null;
+
   const callbackUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`;
-  const appId = body.webhook_app_id && /^\d{5,20}$/.test(body.webhook_app_id) ? body.webhook_app_id : null;
   const appSecret = Deno.env.get('WHATSAPP_APP_SECRET');
   const verifyToken = Deno.env.get('WHATSAPP_VERIFY_TOKEN') ?? '';
   // Webhook aplikace se dá nastavit jen tokenem aplikace (ID|App Secret); ten nikdy neopustí funkci.
   const appToken = appId && appSecret ? `${appId}|${appSecret}` : null;
-  if (appId) {
-    actions.webhook = !appToken || verifyToken.length < 16
-      ? { error: !appToken ? 'WHATSAPP_APP_SECRET' : 'WHATSAPP_VERIFY_TOKEN' }
+  if (body.webhook) {
+    actions.webhook = !appId ? { error: 'APP_ID' }
+      : !appToken || verifyToken.length < 16 ? { error: !appToken ? 'WHATSAPP_APP_SECRET' : 'WHATSAPP_VERIFY_TOKEN' }
       : await fetch(`${graphRoot}/${appId}/subscriptions`, {
         method: 'POST',
         body: new URLSearchParams({
@@ -160,8 +176,29 @@ Deno.serve(async (request) => {
         return response.ok ? { ok: true } : { error: payload?.error?.message ?? `HTTP ${response.status}` };
       }, failure);
   }
+  if (body.picture && phoneNumberId) {
+    // Nahrávací API Mety: sezení u aplikace, pak samotný soubor, a vrácený handle do profilu.
+    actions.picture = !appId ? { error: 'APP_ID' } : await (async () => {
+      const site = Deno.env.get('SITE_URL') ?? 'https://www.app-flek.eu';
+      const image = await fetch(`${site}${PICTURE_PATH}`);
+      if (!image.ok) throw new Error(`PICTURE_HTTP_${image.status}`);
+      const bytes = new Uint8Array(await image.arrayBuffer());
+      const session = await metaApi(`${appId}/uploads?${new URLSearchParams({ file_name: 'flek.png', file_length: String(bytes.byteLength), file_type: 'image/png' })}`, { method: 'POST' });
+      if (typeof session?.id !== 'string') throw new Error('UPLOAD_SESSION');
+      const upload = await fetch(`${graphRoot}/${session.id}`, {
+        method: 'POST', headers: { Authorization: `OAuth ${token}`, file_offset: '0', 'content-type': 'image/png' }, body: bytes,
+      });
+      const uploaded = await upload.json().catch(() => null);
+      if (!upload.ok || typeof uploaded?.h !== 'string') throw new Error(uploaded?.error?.message ?? `HTTP ${upload.status}`);
+      await metaApi(`${phoneNumberId}/whatsapp_business_profile`, {
+        method: 'POST', body: JSON.stringify({ messaging_product: 'whatsapp', profile_picture_handle: uploaded.h }),
+      });
+      return { ok: true };
+    })().catch(failure);
+  }
   if (body.profile && phoneNumberId) {
-    const { data: legal } = await client.rpc('legal_info');
+    // Veřejný údaj; klíč workeru není JWT, takže by ho PostgREST pod `client` odmítl.
+    const { data: legal } = await service.rpc('legal_info');
     const email = (legal as { operator?: { email?: string | null } } | null)?.operator?.email ?? undefined;
     actions.profile = await metaApi(`${phoneNumberId}/whatsapp_business_profile`, {
       method: 'POST',
@@ -181,11 +218,6 @@ Deno.serve(async (request) => {
         webhook: data.webhook_configuration ?? null,
       }), failure)
     : { error: 'WHATSAPP_PHONE_NUMBER_ID' };
-  const subscription = await metaApi(`${waba}/subscribed_apps`)
-    .then((data) => ({
-      apps: ((data?.data ?? []) as { whatsapp_business_api_data?: { id?: string; name?: string }; override_callback_uri?: string }[])
-        .map((app) => ({ id: app.whatsapp_business_api_data?.id ?? null, name: app.whatsapp_business_api_data?.name ?? null, override_callback_uri: app.override_callback_uri ?? null })),
-    }), failure);
   const numbers = await metaApi(`${waba}/phone_numbers?fields=id,display_phone_number,verified_name,code_verification_status,quality_rating`)
     .then((data) => ({ list: (data?.data ?? []) as Record<string, unknown>[] }), failure);
   const appSubscriptions = appToken

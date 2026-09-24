@@ -8,6 +8,7 @@ import {
   metaFailed,
   WhatsAppNotConfigured,
   whatsappTemplatesSetup,
+  type WhatsAppSetupAction,
   type WhatsAppTemplateRow,
   type WhatsAppTemplateSetup,
 } from '../../lib/api';
@@ -17,9 +18,9 @@ import { Banner, Button, cx } from '../../components/ui';
 /**
  * WhatsApp od začátku do konce na jednom místě. Stav se čte přímo od Mety přes
  * `whatsapp-templates-setup` (token zůstává v Supabase secrets, do prohlížeče se nedostane):
- * tajné klíče, číslo, kam Meta posílá webhook, odběr zpráv účtu, profil a šablony. Co jde
- * dokončit odsud, má tlačítko; co jde jen v konzoli Mety, má přesný návod. Klikat šablony ve
- * WhatsApp Manageru se 18. i 19. 9. nepodařilo, proto je zakládá funkce.
+ * tajné klíče, číslo, odběr zpráv účtu, kam Meta posílá webhook, profil a šablony. Každý krok
+ * má tlačítko, včetně webhooku a loga v profilu; ruční návod do konzole Mety zůstal jen jako
+ * záloha. Klikat šablony ve WhatsApp Manageru se 18. i 19. 9. nepodařilo, proto je zakládá funkce.
  */
 const OPTIONAL_SECRETS = ['WHATSAPP_TEMPLATE_LANGUAGE'];
 
@@ -28,8 +29,8 @@ export function WhatsAppSetup() {
   const state = useQuery({ queryKey: ['admin-whatsapp-state'], queryFn: adminWhatsAppState });
   const [done, setDone] = useState<WhatsAppTemplateSetup | null>(null);
   const run = useMutation({
-    mutationFn: (options: { dryRun: boolean; subscribe?: boolean; profile?: boolean }) =>
-      whatsappTemplatesSetup(options.dryRun, { subscribe: options.subscribe, profile: options.profile }),
+    mutationFn: ({ dryRun, ...actions }: { dryRun: boolean } & Partial<Record<WhatsAppSetupAction, boolean>>) =>
+      whatsappTemplatesSetup(dryRun, actions),
     onSuccess: setDone,
   });
   const saveNumber = useMutation({
@@ -52,7 +53,9 @@ export function WhatsAppSetup() {
   const apps = done?.subscription && !metaFailed(done.subscription) ? done.subscription.apps : null;
   const subscribed = Boolean(apps?.length);
   const profile = done?.profile && !metaFailed(done.profile) ? done.profile : null;
-  const profileOk = Boolean(profile && done?.brand_profile && profile.about === done.brand_profile.about);
+  const textsOk = Boolean(profile && done?.brand_profile && profile.about === done.brand_profile.about);
+  const pictureOk = Boolean(profile?.has_picture);
+  const profileOk = textsOk && pictureOk;
   // Jazyk šablon má výchozí `cs`, bez něj kanál funguje; ostatní klíče jsou potřeba.
   const missingSecrets = done?.secrets ? Object.entries(done.secrets).filter(([name, set]) => !set && !OPTIONAL_SECRETS.includes(name)).map(([name]) => name) : [];
   const allApproved = Boolean(done?.templates.length) && done!.templates.every((row) => row.status === 'APPROVED');
@@ -108,20 +111,6 @@ export function WhatsAppSetup() {
             ) : null}
           </Row>
 
-          <Row ok={webhookOk} title="Webhook (odpovědi a tlačítka z WhatsAppu)">
-            {webhookOk ? (
-              'Meta posílá zprávy do FLEKu.'
-            ) : (
-              <>
-                {hooks?.application ? <>Meta teď posílá na <code className="break-all">{hooks.application}</code>. </> : 'Meta zatím nikam neposílá. '}
-                V konzoli Mety: WhatsApp → Konfigurace → Webhook → Upravit. Callback URL:
-                <CopyValue value={done.callback_url ?? ''} />
-                Ověřovací token: stejná hodnota, jakou má <code>WHATSAPP_VERIFY_TOKEN</code> v Supabase. Po „Ověřit a uložit“
-                u Webhook fields přihlaste pole <code>messages</code>.
-              </>
-            )}
-          </Row>
-
           <Row ok={subscribed} title="Odběr zpráv účtu">
             {metaFailed(done.subscription) ? (
               <>Stav odběru se nepodařilo zjistit: {done.subscription.error}</>
@@ -137,28 +126,55 @@ export function WhatsAppSetup() {
                 </div>
               </>
             )}
-            {done.actions?.subscribe && metaFailed(done.actions.subscribe) ? <p className="mt-1 text-danger">{done.actions.subscribe.error}</p> : null}
+            <ActionError value={done.actions?.subscribe} />
+          </Row>
+
+          <Row ok={webhookOk} title="Webhook (odpovědi a tlačítka z WhatsAppu)">
+            {webhookOk ? (
+              'Meta posílá zprávy do FLEKu.'
+            ) : (
+              <>
+                {hooks?.application ? <>Meta teď posílá na <code className="break-all">{hooks.application}</code>. </> : 'Meta zatím nikam neposílá. '}
+                {subscribed ? <>Tlačítko nastaví adresu FLEKu a Meta ji hned ověří tokenem z <code>WHATSAPP_VERIFY_TOKEN</code>.</> : 'Nastavit půjde po přihlášení odběru výš.'}
+                {subscribed ? (
+                  <div className="mt-2">
+                    <Button size="sm" loading={run.isPending} onClick={() => run.mutate({ dryRun: true, webhook: true })}>
+                      Nastavit webhook FLEKu
+                    </Button>
+                  </div>
+                ) : null}
+                <details className="mt-1">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center font-bold text-accent [&::-webkit-details-marker]:hidden">
+                    Ručně v konzoli Mety
+                  </summary>
+                  WhatsApp → Konfigurace → Webhook → Upravit. Callback URL:
+                  <CopyValue value={done.callback_url ?? ''} />
+                  Ověřovací token: stejná hodnota, jakou má <code>WHATSAPP_VERIFY_TOKEN</code> v Supabase. Po „Ověřit a uložit“
+                  u Webhook fields přihlaste pole <code>messages</code>.
+                </details>
+              </>
+            )}
+            <ActionError value={done.actions?.webhook} />
           </Row>
 
           <Row ok={profileOk} optional title="Profil FLEKu na WhatsAppu">
-            {profileOk ? (
-              'Texty profilu odpovídají FLEKu.'
+            {metaFailed(done.profile) ? (
+              <>Profil se nepodařilo načíst: {done.profile.error}</>
+            ) : profileOk ? (
+              'Texty i logo odpovídají FLEKu.'
             ) : (
               <>
-                Popis, web a e-mail podpory ve stejných slovech jako aplikace.
+                {textsOk ? 'Texty profilu odpovídají FLEKu. ' : 'Popis, web a e-mail podpory ve stejných slovech jako aplikace. '}
+                {pictureOk ? 'Fotka je nahraná.' : 'Jako fotka se nahraje logo FLEKu.'}
                 <div className="mt-2">
-                  <Button size="sm" variant="secondary" loading={run.isPending} onClick={() => run.mutate({ dryRun: true, profile: true })}>
+                  <Button size="sm" variant="secondary" loading={run.isPending} onClick={() => run.mutate({ dryRun: true, profile: !textsOk, picture: !pictureOk })}>
                     Nastavit profil FLEKu
                   </Button>
                 </div>
               </>
             )}
-            {profile && !profile.has_picture ? (
-              <p className="mt-1">
-                Fotka profilu chybí: nahrajte <code>docs/assets/brand/whatsapp-profil-640.png</code> ve WhatsApp Manageru → Telefonní čísla → Profil.
-              </p>
-            ) : null}
-            {done.actions?.profile && metaFailed(done.actions.profile) ? <p className="mt-1 text-danger">{done.actions.profile.error}</p> : null}
+            <ActionError value={done.actions?.profile} />
+            <ActionError value={done.actions?.picture} />
           </Row>
 
           <Row ok={allApproved} title="Šablony zpráv">
@@ -241,6 +257,18 @@ function CopyValue({ value }: { value: string }) {
       </Button>
     </span>
   );
+}
+
+/** Chyby, které funkce pojmenuje sama; ostatní jsou text od Mety. */
+const ACTION_ERRORS: Record<string, string> = {
+  APP_ID: 'Nejdřív přihlaste odběr zpráv účtu výš, podle něj se pozná aplikace FLEK.',
+  WHATSAPP_APP_SECRET: 'V Supabase chybí WHATSAPP_APP_SECRET.',
+  WHATSAPP_VERIFY_TOKEN: 'WHATSAPP_VERIFY_TOKEN v Supabase chybí nebo má méně než 16 znaků.',
+};
+
+function ActionError({ value }: { value: unknown }) {
+  if (!metaFailed(value)) return null;
+  return <p className="mt-1 text-danger">{ACTION_ERRORS[value.error] ?? value.error}</p>;
 }
 
 function nameStatus(status: string): string {

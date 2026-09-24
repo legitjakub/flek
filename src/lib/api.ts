@@ -616,9 +616,12 @@ export type WhatsAppTemplateSetup = {
   phone?: WhatsAppPhoneState | MetaFailure;
   subscription?: { apps: { id: string | null; name: string | null; override_callback_uri: string | null }[] } | MetaFailure;
   profile?: WhatsAppProfileState | MetaFailure | null;
-  actions?: { subscribe?: { ok: true } | MetaFailure; profile?: { ok: true } | MetaFailure };
+  actions?: Partial<Record<WhatsAppSetupAction, { ok: true } | MetaFailure>>;
   brand_profile?: { about: string; description: string; websites: string[]; vertical: string };
 };
+
+/** Co funkce udělá u Mety na výslovné klepnutí; bez nich jen čte stav. */
+export type WhatsAppSetupAction = 'subscribe' | 'webhook' | 'profile' | 'picture';
 
 export function metaFailed(value: unknown): value is MetaFailure {
   return Boolean(value && typeof value === 'object' && 'error' in value);
@@ -649,7 +652,7 @@ export class WhatsAppNotConfigured extends Error {
  */
 export async function whatsappTemplatesSetup(
   dryRun: boolean,
-  actions: { subscribe?: boolean; profile?: boolean } = {},
+  actions: Partial<Record<WhatsAppSetupAction, boolean>> = {},
 ): Promise<WhatsAppTemplateSetup> {
   const { data, error } = await supabase.functions.invoke<WhatsAppTemplateSetup>('whatsapp-templates-setup', {
     body: { dry_run: dryRun, ...actions },
@@ -658,6 +661,8 @@ export async function whatsappTemplatesSetup(
     if (error instanceof FunctionsHttpError) {
       const payload = (await error.context.json().catch(() => null)) as { error?: string; missing?: string[] } | null;
       if (payload?.error === 'WHATSAPP_NOT_CONFIGURED') throw new WhatsAppNotConfigured(payload.missing ?? []);
+      // Meta odmítla samotný token (typicky dočasný, který skončil odhlášením): to se opakováním nespraví.
+      if (payload?.error === 'META_REQUEST_FAILED' && (payload as { status?: number }).status === 401) throw new Error('WHATSAPP_TOKEN_INVALID');
       throw new Error(payload?.error ?? 'META_REQUEST_FAILED');
     }
     throw error;

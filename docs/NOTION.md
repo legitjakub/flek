@@ -1,6 +1,6 @@
 # FLEK — přehled projektu
 
-> Aktualizováno 23. 9. 2026. Zdroj pravdy je repozitář (`docs/NOTION.md`). Stránku aktualizuje agent na požádání; ruční úpravy tady se při další aktualizaci přepíšou.
+> Aktualizováno 24. 9. 2026. Zdroj pravdy je repozitář (`docs/NOTION.md`). Stránku aktualizuje agent na požádání; ruční úpravy tady se při další aktualizaci přepíšou.
 
 ## Ve zkratce
 
@@ -43,13 +43,11 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 - [x] **Nasadit funkce pro potvrzování rezervací.** Push do `main` je nasadil sám přes GitHub integraci, `stripe-checkout` a `stripe-test-pay` doplnil Claude (15. 9.).
 - [x] **Přidat události do testovacího webhooku ve Stripe.** Claude je 15. 9. přidal bez Dashboardu přes admin funkci `stripe-webhook-setup` (klíč zůstal v Supabase), zapnul potvrzování pro demo podniky a testy prošly.
 - [x] **Zapnout potvrzování pro všechny podniky.** Po tvém souhlasu přepnul Claude 15. 9. v 15:54 na `true` a upravil dva texty pro podniky.
-- [ ] **Dokončit WhatsApp u Meta.** Hotovo 18. 9. (Claude s tvým svolením): podmínky Meta pro WhatsApp odsouhlasené, založený testovací WhatsApp účet s testovacím číslem +1 555 156 7838; Phone Number ID a ID účtu ti Claude napsal do chatu (do repozitáře nepatří). **Šablony už klikat nemusíš** — od 20. 9. je založí admin funkce `whatsapp-templates-setup`, jakmile je v Supabase token. Zbývá:
-  1. developers.facebook.com → FLEK → WhatsApp → API Setup → pole „To“ → Manage phone number list: přidej svoje číslo (případně demo telefon podniku, nejvýš 5 čísel) a potvrď ho kódem z SMS. Testovací číslo píše jen na tato čísla.
-  2. business.facebook.com → Nastavení → Uživatelé systému → Přidat (role Admin) → Přiřadit prostředky: aplikace FLEK a WhatsApp účet s plnou kontrolou → Vygenerovat token pro aplikaci FLEK, platnost „Nikdy“, oprávnění `whatsapp_business_messaging` a `whatsapp_business_management`.
-  3. Supabase → Edge Functions → Secrets: `WHATSAPP_ACCESS_TOKEN` (token z bodu 2), `WHATSAPP_WABA_ID` (ID WhatsApp účtu z chatu), `WHATSAPP_APP_SECRET` (developers.facebook.com → FLEK → Nastavení aplikace → Základní → Tajný klíč aplikace), `WHATSAPP_PHONE_NUMBER_ID` (z chatu), `WHATSAPP_VERIFY_TOKEN` (vymysli náhodný řetězec aspoň 16 znaků), `WHATSAPP_TEMPLATE_LANGUAGE` = `cs` a pět názvů šablon podle `docs/PRED_SPUSTENIM.md`. Token nikdy do chatu ani do repozitáře.
-  4. developers.facebook.com → FLEK → WhatsApp → Configuration → Webhook: Callback URL `https://yupkrntknbkvmlajwlph.supabase.co/functions/v1/whatsapp-webhook`, Verify token stejný řetězec jako v bodě 3 → Verify and save, potom u pole `messages` Subscribe.
-  5. V administraci otevři **Nastavení** (www.app-flek.eu/admin/nastaveni) → Šablony zpráv na WhatsAppu → Zkontrolovat, pak Založit chybějící. Řekne, co u Mety chybí, co čeká na schválení a co jí neprošlo; když chybí klíč v Supabase, napíše který.
-  6. Napiš agentovi „WhatsApp je nastavený“. Zapíše číslo do aplikace, pošle zkušební zprávu a ty na telefonu vyzkoušíš „Ověřit ve WhatsAppu“ v Profilu i v Provozovně. Meta šablony schvaluje řádově v minutách až hodinách; do té doby se zprávy jen přeskakují.
+- [ ] **Dokončit WhatsApp u Meta.** Hotovo 18. 9. (Claude s tvým svolením): podmínky Meta pro WhatsApp odsouhlasené, založený testovací WhatsApp účet s testovacím číslem +1 555 156 7838; Phone Number ID a ID účtu ti Claude napsal do chatu (do repozitáře nepatří). **Stav 24. 9. ve 22:34:** token v Supabase už neplatí (Meta: „The session is invalid because the user logged out“), byl dočasný a skončil odhlášením z Facebooku. Webhook, odběr, profil, šablony i číslo v aplikaci od teď dokončí Claude sám z databáze; od tebe je potřeba jen tohle:
+  1. business.facebook.com → Nastavení firmy → Uživatelé → Systémoví uživatelé → Přidat (třeba „FLEK server“, role Admin) → Přiřadit prostředky: aplikace FLEK a WhatsApp účet s plnou kontrolou → Vygenerovat token pro aplikaci FLEK, platnost **„Nikdy“**, oprávnění `whatsapp_business_messaging` a `whatsapp_business_management`.
+  2. Supabase → Edge Functions → Secrets: token z bodu 1 vlož jako `WHATSAPP_ACCESS_TOKEN` (nahradí ten neplatný). Tamtéž zkontroluj, že jsou vyplněné `WHATSAPP_WABA_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN` (náhodný řetězec aspoň 16 znaků, vymysli si ho) a pět názvů šablon `WHATSAPP_TEMPLATE_*` podle `docs/PRED_SPUSTENIM.md`. Token nikdy do chatu ani do repozitáře.
+  3. developers.facebook.com → FLEK → WhatsApp → API Setup → pole „To“ → Manage phone number list: přidej svoje číslo (případně demo telefon podniku, nejvýš 5 čísel) a potvrď ho kódem z SMS. Testovací číslo píše jen na tato čísla.
+  4. Napiš Claudovi „token je v Supabase“. Přihlásí odběr, nastaví webhook, profil FLEKu i s logem, zkontroluje šablony, uloží číslo do aplikace a pošle zkušební zprávu; ty pak na telefonu vyzkoušíš „Ověřit ve WhatsAppu“ v Profilu i v Provozovně. Totéž jde i tlačítky v administraci (Nastavení → WhatsApp → Zkontrolovat stav). Meta šablony schvaluje řádově v minutách až hodinách; do té doby se zprávy jen přeskakují.
 - [x] **Zkontrolovat SMTP odesílatele v Supabase Auth.** Uložené správně (15. 9.): zapnuté, odesílatel `ucet@mail.app-flek.eu`, jméno FLEK, uživatel `resend`, port 465.
 - [ ] **Vyzkoušet registraci nové adresy** s odkazem otevřeným v jiném prohlížeči (agent účty zakládat nesmí).
 - [x] **Odpojit uspanou databázi od projektu ve Vercelu.** Hotovo 18. 9.: po tvém souhlasu Claude odpojil nepoužívanou databázi `supabase-cerulean-village` od projektu flek (Storage → Projects → Remove Project Connection; databáze zůstala a jde znovu připojit). Nasazení commitu 060491e prošlo a na www.app-flek.eu běží nová verze.
@@ -175,7 +173,7 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 - [x] Revize hlídače: noční klid s ranní zprávou, brzda 15 min, sleva ve zprávě, mazání se smazáním účtu, pozvánka z Objevit a Rezervací (24. 9.)
 - [x] Úvod pro nové zákazníky a stránka pro podniky podle dnešní aplikace; přeškrtnutá běžná cena všude, kde zákazník vidí cenu (24. 9.)
 - [x] Průvodce „Začínáme“ pro nové podniky, přehlednější Provozovna a nápověda „Jak FLEK funguje“ na vyžádání (24. 9.)
-- [ ] WhatsApp: v konzoli Mety nastavit webhook a fotku profilu, pak v administraci Zkontrolovat stav → Uložit číslo → Přihlásit odběr → Nastavit profil → Zpřístupnit (Jakub)
+- [ ] WhatsApp: trvalý token systémového uživatele do Supabase a vlastní číslo do „To“ (Jakub), pak odběr, webhook, profil s logem, číslo a zkušební zprávu dokončí Claude z databáze
 - [ ] Hlídač: skutečný čas cesty místo odhadu vzdušnou čarou (potřebuje routovací službu)
 - [ ] Kredit za doporučení
 - [ ] Menší balík aplikace (mapa 979 kB, Temporal 325 kB) a měření Lighthouse
@@ -245,7 +243,7 @@ Schvaluje provozovny (skutečný podnik jen s IČO), kontroluje nabídky a rezer
 | Realtime upozornění | Supabase Realtime | záložně se aplikace ptá každých 15 s |
 | Pravidelná údržba | Supabase `pg_cron`, job `flek-maintenance` | každých 15 min dokončí rezervace 24 h po konci |
 | Potvrzování rezervací | Edge Function `booking-confirmation`, cron `flek-confirmation-expiry` (každých 30 s) | strhne platbu po potvrzení nebo uvolní autorizaci, vrací místa po vypršení; přepínač `manual_confirmation_enabled` v `private.settings` (od 15. 9. `true`) |
-| WhatsApp | Meta WhatsApp Cloud API, Edge Functions `whatsapp-webhook` (odesílá `notification-delivery`) a `whatsapp-templates-setup` (jen admin: založí u Mety pět šablon), cron `flek-whatsapp-events-cleanup` | backend je hotový, `whatsapp_enabled=false`; chybí úplné Meta secrets, webhook, schválení šablon, zobrazované číslo a skutečný test. Do té doby je kanál v UI skrytý |
+| WhatsApp | Meta WhatsApp Cloud API, Edge Functions `whatsapp-webhook` (odesílá `notification-delivery`) a `whatsapp-templates-setup` (admin nebo databáze: stav u Mety, šablony, odběr, webhook, profil a logo), cron `flek-whatsapp-events-cleanup` | backend je hotový, `whatsapp_enabled=false`; chybí úplné Meta secrets, webhook, schválení šablon, zobrazované číslo a skutečný test. Do té doby je kanál v UI skrytý |
 | Moderace veřejného obsahu | privátní bucket `moderation-pending`, `private.content_moderation`, Edge Function `content-moderation`, OpenAI `omni-moderation-latest` | fail-closed texty a fotografie služeb/podniků a text recenze; admin fronta v Nahlášení. Provider 21. 9. vrací HTTP 429, bezpečný obsah zatím čeká na ruční kontrolu |
 | Obnova demo nabídek | `pg_cron`, job `flek-demo-refresh` (každé ráno) | doplní demo FLEKy na 3 dny dopředu, tři termíny na službu a den (od 20. 9.); před ostrým provozem vypnout |
 | Mazání staré analytiky | `pg_cron`, job `flek-analytics-retention` (každé ráno) | smaže události starší 180 dní |
@@ -338,6 +336,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 24. 9. 2026 | WhatsApp nejel, protože token Mety v Supabase byl dočasný a po odhlášení z Facebooku přestal platit. Claude teď umí dokončit nastavení u Mety sám z databáze včetně webhooku a loga v profilu; stačí trvalý token systémového uživatele. Panel v administraci jde nově volat i z webu (dřív ho zastavil prohlížeč). |
 | 24. 9. 2026 | WhatsApp jde dokončit z administrace: panel ukáže, co chybí, a uloží číslo, přihlásí odběr a nastaví profil FLEKu jedním klepnutím. V Metě zbývá webhook a fotka profilu. |
 | 24. 9. 2026 | Nový podnik vede průvodce „Začínáme“: vidí, kolik má hotovo a co udělat teď, a jedním klepnutím se dostane přesně tam. Až je připravený, průvodce zmizí. Provozovna má rozcestník a nápověda je po ruce, když ji podnik chce. |
 | 24. 9. 2026 | Nový úvod pro zákazníky ukáže i polohu na mapě a hlídač, stránka pro podniky vysvětlí celý postup od zveřejnění po výplatu. Běžnou přeškrtnutou cenu zákazník vidí u každé ceny, i v náhledu na mapě a ve svých rezervacích. |

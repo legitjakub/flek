@@ -35,6 +35,7 @@ const messages:Record<string,string>={
  CONTENT_PENDING:'Předchozí úprava se ještě kontroluje. Počkejte prosím, než projde.',
  MODERATION_UNAVAILABLE:'Kontrola obsahu teď neodpovídá. Fotka i text se zveřejní, jakmile projdou.',
  WHATSAPP_NOT_CONFIGURED:'WhatsApp zatím nemá v Supabase vyplněné klíče od Mety.',
+ WHATSAPP_TOKEN_INVALID:'Meta odmítla token uložený v Supabase (WHATSAPP_ACCESS_TOKEN). Dočasný token končí odhlášením z Facebooku; vytvořte v Meta Business trvalý token systémového uživatele a vložte ho do Supabase → Edge Functions → Secrets.',
  META_REQUEST_FAILED:'Meta požadavek odmítla. Zkuste to prosím znovu, nebo se podívejte do logu funkce.',
  META_UNREACHABLE:'Meta teď neodpovídá. Zkuste to prosím za chvíli.',
  INVALID_ICO:'IČO nesedí. Zkontrolujte, že má 8 číslic.',ARES_UNAVAILABLE:'Registr ARES teď neodpovídá. Údaje vyplňte ručně, nebo to zkuste za chvíli.',
