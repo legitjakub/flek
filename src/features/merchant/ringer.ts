@@ -78,7 +78,10 @@ export async function unlockSound(): Promise<boolean> {
 export function armRinger(): () => void {
   // The events a browser counts as a user's own activation.
   const events = ['pointerdown', 'pointerup', 'touchend', 'keydown', 'click'] as const;
-  const unlock = () => {
+  const unlock = (event: Event) => {
+    // "Zapnout zvuk" does its own unlocking. Unlocking here first swapped that button for "Ztlumit"
+    // under the finger, and the same tap then muted the ring it had just started.
+    if ((event.target as Element | null)?.closest?.('[data-ring-unlock]')) return;
     if (!soundReady()) void unlockSound();
   };
   events.forEach((name) => window.addEventListener(name, unlock, { capture: true, passive: true }));
@@ -170,6 +173,12 @@ export async function ringOnce(): Promise<boolean> {
 export function muteRequests(ids: string[]) {
   ids.forEach((id) => muted.add(id));
   stopRinging();
+  emit();
+}
+
+/** Takes back a mute, when "Zapnout zvuk" found the sound still blocked. */
+export function unmuteRequests(ids: string[]) {
+  ids.forEach((id) => muted.delete(id));
   emit();
 }
 

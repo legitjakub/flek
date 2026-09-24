@@ -15,6 +15,7 @@ import {
   stopRinging,
   subscribeRinger,
   unlockSound,
+  unmuteRequests,
   wakeLockSupported,
 } from './ringer';
 
@@ -72,9 +73,15 @@ export function useRequestRing(waiting: WaitingRequest[]) {
      * sound works, and the requests on screen stay quiet. The next one rings in full.
      */
     enable: async () => {
-      if (!(await unlockSound())) return false;
+      // Muted before the sound unlocks: unlocking first let the loop start for a split second.
+      const ids = loud.map((request) => request.id);
       mutedVersion += 1;
-      muteRequests(loud.map((request) => request.id));
+      muteRequests(ids);
+      if (!(await unlockSound())) {
+        mutedVersion += 1;
+        unmuteRequests(ids);
+        return false;
+      }
       await ringOnce();
       return true;
     },
@@ -123,7 +130,7 @@ export function RingBar({ ring, showOpen }: { ring: ReturnType<typeof useRequest
             Ztlumit
           </button>
         ) : (
-          <button type="button" onClick={() => void ring.enable().then((ok) => setBlocked(!ok))} className={action}>
+          <button type="button" data-ring-unlock onClick={() => void ring.enable().then((ok) => setBlocked(!ok))} className={action}>
             <Volume2 size={17} aria-hidden="true" />
             Zapnout zvuk
           </button>
