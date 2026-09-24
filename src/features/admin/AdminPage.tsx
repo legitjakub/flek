@@ -25,7 +25,7 @@ import { LazyMap } from '../offers/LazyMap';
 import { StatusBadge } from '../../components/StatusBadge';
 import type { AdminAuditEntry, AdminBusiness } from '../../types/database';
 import { Dac7Export } from './Dac7Export';
-import { WhatsAppTemplates } from './WhatsAppTemplates';
+import { WhatsAppSetup } from './WhatsAppTemplates';
 
 const NAV = [
   { to: '/admin', label: 'Provozovny' },
@@ -642,7 +642,7 @@ export function AdminSettingsPage() {
   return (
     <AdminFrame>
       <h1 className="text-2xl font-extrabold tracking-tight text-ink">Nastavení</h1>
-      <WhatsAppTemplates />
+      <WhatsAppSetup />
     </AdminFrame>
   );
 }

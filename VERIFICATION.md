@@ -388,3 +388,11 @@ Lokální Docker integrační sada, fyzický iPhone/Safari, skutečná kamera, n
 - `npm run build` (včetně `tsc`) a `npm run test:unit`: PASS, **161/161**.
 - Předpoklady zveřejnění ověřené v hostované DB: `publish_flek` vyhazuje `BUSINESS_NOT_APPROVED`, volá `private.require_payments_ready` (`STRIPE_NOT_CONNECTED` bez účtu Stripe s `stripe_charges_enabled`) a odmítne neaktivní službu; propojení se Stripe (`stripe-connect`, `onboard`) schválení nevyžaduje.
 - Náhled skutečných stránek s podvrženými daty pro tři podniky (nový schválený, čekající na schválení, zaběhnutý se službami a FLEKy) na 390 a 1280 px: nový a čekající vidí průvodce s rozbaleným jediným krokem, zaběhnutý ho nevidí; Nabídky nového podniku bez tlačítka a záložek, s větou o chybějícím kroku; `?sekce=fakturace` odroluje na fakturační údaje (horní hrana 96 px, pod lepivou hlavičkou); `?nova=1` otevře formulář služby; nabídka „Další“ s nápovědou, zákaznickou částí a odhlášením; nápověda se otevře z nabídky. Bez vodorovného přetečení a bez ovládacího prvku pod 44 px; v konzoli jen chyby dlaždic mapy (kontejner je nestáhne).
+
+## WhatsApp: stav a dokončení z administrace — 24. 9. 2026
+
+- Stav před změnou z databáze a logů: `whatsapp_display_number` prázdné, žádný kontakt ani zpráva; `whatsapp-templates-setup` ve 12:31 UTC 503 (chyběly klíče), v 19:31 UTC dvakrát 200 (bez chyb šablon); `whatsapp-webhook` za posledních 24 h Meta nevolala.
+- Sonda z databáze přes `pg_net`: nepodepsaný POST na webhook → 401 „Invalid signature“ (tedy `WHATSAPP_APP_SECRET` je nastavený; bez něj 503), GET s cizím ověřovacím tokenem → 403.
+- Migrace `20260924202246_admin_whatsapp_number` nanečisto v transakci: neadmin dostane `FORBIDDEN`, krátké číslo `VALIDATION_ERROR`, „+1 555 010 9999“ se uloží jako `+15550109999`, `admin_whatsapp_state` ho vrátí, audit `whatsapp_number_changed` vznikne; po rollbacku zůstalo číslo prázdné. Pak aplikována přes MCP, soubor přejmenován na zapsanou verzi.
+- Upravená funkce se sestaví (rolldown, bez chyb syntaxe); proti Metě ji odsud spustit nejde (volá ji jen přihlášený admin), výsledek ukáže panel po „Zkontrolovat stav“.
+- Panel WhatsApp vykreslený s ukázkovou odpovědí na 390 a 1280 px bez přetečení; build a 161 unit testů PASS.

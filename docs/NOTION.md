@@ -175,6 +175,7 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 - [x] Revize hlídače: noční klid s ranní zprávou, brzda 15 min, sleva ve zprávě, mazání se smazáním účtu, pozvánka z Objevit a Rezervací (24. 9.)
 - [x] Úvod pro nové zákazníky a stránka pro podniky podle dnešní aplikace; přeškrtnutá běžná cena všude, kde zákazník vidí cenu (24. 9.)
 - [x] Průvodce „Začínáme“ pro nové podniky, přehlednější Provozovna a nápověda „Jak FLEK funguje“ na vyžádání (24. 9.)
+- [ ] WhatsApp: v konzoli Mety nastavit webhook a fotku profilu, pak v administraci Zkontrolovat stav → Uložit číslo → Přihlásit odběr → Nastavit profil → Zpřístupnit (Jakub)
 - [ ] Hlídač: skutečný čas cesty místo odhadu vzdušnou čarou (potřebuje routovací službu)
 - [ ] Kredit za doporučení
 - [ ] Menší balík aplikace (mapa 979 kB, Temporal 325 kB) a měření Lighthouse
@@ -337,6 +338,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 24. 9. 2026 | WhatsApp jde dokončit z administrace: panel ukáže, co chybí, a uloží číslo, přihlásí odběr a nastaví profil FLEKu jedním klepnutím. V Metě zbývá webhook a fotka profilu. |
 | 24. 9. 2026 | Nový podnik vede průvodce „Začínáme“: vidí, kolik má hotovo a co udělat teď, a jedním klepnutím se dostane přesně tam. Až je připravený, průvodce zmizí. Provozovna má rozcestník a nápověda je po ruce, když ji podnik chce. |
 | 24. 9. 2026 | Nový úvod pro zákazníky ukáže i polohu na mapě a hlídač, stránka pro podniky vysvětlí celý postup od zveřejnění po výplatu. Běžnou přeškrtnutou cenu zákazník vidí u každé ceny, i v náhledu na mapě a ve svých rezervacích. |
 | 24. 9. 2026 | Hlídač FLEKů v noci mlčí a ráno pošle jednu zprávu, ozve se nejdřív po čtvrt hodině a řekne i slevu; smazáním účtu zmizí i hlídače. Oddálená mapa ukazuje firemní špendlíky místo teček, Upozornění v Profilu se rozkliknou až na klepnutí a prázdné Rezervace nabídnou volné FLEKy v okolí a hlídač. |

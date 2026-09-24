@@ -350,3 +350,11 @@ Nahrazuje rozhodnutí „Kompaktní FLEK body při oddálení“ z 21. 9., kter�
 - **Nový podnik vidí jen průvodce.** Tři nuly a dva prázdné seznamy rezervací odsouvaly jedinou věc, kterou má udělat, pod ohyb. Přehled se ukáže celý po prvním FLEKu.
 - **Nápověda jen na vyžádání.** „Jak FLEK funguje“ (kroky, ukázka žádosti, lhůty, peníze, kontakt) je v postranním panelu, v nabídce „Další“ a v průvodci, nikdy se neotevře sama. Kroky i ukázka žádosti jsou stejné jako na stránce pro podniky před registrací (`PartnerHelp.tsx`), aby podnik po registraci nečetl jiný příběh.
 - **Žádný nový záznam v prohlížeči.** Průvodce počítá stav ze serveru a ze zařízení (oznámení); jediný uložený údaj je dosavadní `flek.merchant.previewed.<id>`. Zásady se proto nemění.
+
+## WhatsApp: stav a dokončení z administrace — 24. 9. 2026
+
+- **Stav kanálu se čte od Mety, ne odhaduje.** Rozšířená `whatsapp-templates-setup` vrací, které tajné klíče jsou vyplněné (jen jména), co Meta ví o čísle (`display_phone_number`, `verified_name`, `name_status`, `webhook_configuration`), kdo odebírá zprávy účtu (`/{WABA}/subscribed_apps`) a profil. Administrace z toho skládá kontrolní seznam; hodnoty klíčů ani token do prohlížeče nejdou.
+- **Webhook se v konzoli Mety nastavuje ručně.** Přes API by to šlo jen tokenem aplikace (`{app-id}|{app-secret}`) nebo náhradní adresou u účtu, která podle Mety předpokládá už fungující odběr; obojí bez možnosti to odsud vyzkoušet. Panel proto ukáže přesnou adresu ke zkopírování a ověří výsledek.
+- **Číslo FLEKu bere admin od Mety.** Tlačítko uloží přesně to číslo, které Meta vrátila, v E.164, přes auditovanou `admin_set_whatsapp_display_number`; dřív ho agent psal ručně SQL podle zprávy v chatu.
+- **Profil ve stejných slovech jako aplikace.** Texty profilu jsou v kódu funkce bez oslovení (čte je zákazník i podnik) a říkají pravdu: na běžné zprávy se neodpovídá, rezervace jsou v aplikaci. Fotka profilu a ikona aplikace se generují z `public/icon-maskable.svg`, takže v kruhovém ořezu zůstane celý špendlík.
+- **Zpřístupnění zůstává ruční.** Tlačítko se odemkne až při zeleném stavu (číslo uložené, webhook míří na FLEK, odběr, všechny šablony schválené, povinné klíče), ale kanál zapne až člověk po vlastní zkoušce na telefonu.

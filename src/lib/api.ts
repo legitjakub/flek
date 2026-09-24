@@ -582,6 +582,27 @@ export type WhatsAppTemplateRow = {
   detail?: string | null;
 };
 
+type MetaFailure = { error: string };
+
+/** Co o čísle FLEKu říká Meta; `webhook.application` je adresa, kam posílá zprávy. */
+export type WhatsAppPhoneState = {
+  display_phone_number: string | null;
+  verified_name: string | null;
+  name_status: string | null;
+  quality_rating: string | null;
+  code_verification_status: string | null;
+  webhook: { application?: string | null; whatsapp_business_account?: string | null; phone_number?: string | null } | null;
+};
+
+export type WhatsAppProfileState = {
+  about: string | null;
+  description: string | null;
+  email: string | null;
+  websites: string[];
+  vertical: string | null;
+  has_picture: boolean;
+};
+
 export type WhatsAppTemplateSetup = {
   language: string;
   graph_version: string;
@@ -589,7 +610,30 @@ export type WhatsAppTemplateSetup = {
   created: number;
   failed: number;
   templates: WhatsAppTemplateRow[];
+  /** Jen jména tajných klíčů a zda jsou vyplněné; hodnoty se z funkce nikdy nevrací. */
+  secrets?: Record<string, boolean>;
+  callback_url?: string;
+  phone?: WhatsAppPhoneState | MetaFailure;
+  subscription?: { apps: { id: string | null; name: string | null; override_callback_uri: string | null }[] } | MetaFailure;
+  profile?: WhatsAppProfileState | MetaFailure | null;
+  actions?: { subscribe?: { ok: true } | MetaFailure; profile?: { ok: true } | MetaFailure };
+  brand_profile?: { about: string; description: string; websites: string[]; vertical: string };
 };
+
+export function metaFailed(value: unknown): value is MetaFailure {
+  return Boolean(value && typeof value === 'object' && 'error' in value);
+}
+
+export type AdminWhatsAppState = { display_number: string | null; enabled: boolean; contacts_verified: number; messages: number };
+
+export async function adminWhatsAppState(): Promise<AdminWhatsAppState> {
+  return await result<AdminWhatsAppState>(supabase.rpc('admin_whatsapp_state'));
+}
+
+/** Uloží zobrazované číslo FLEKu (E.164); zapíše se do auditu. */
+export async function adminSetWhatsAppDisplayNumber(number: string): Promise<string> {
+  return await result<string>(supabase.rpc('admin_set_whatsapp_display_number', { p_number: number }));
+}
 
 /** Chybějící tajné klíče nejsou porucha, ale seznam toho, co doplnit — proto je chyba nese s sebou. */
 export class WhatsAppNotConfigured extends Error {
@@ -603,9 +647,12 @@ export class WhatsAppNotConfigured extends Error {
  * Založí u Mety chybějící šablony zpráv (`dryRun` jen vypíše, co by udělala). Token zůstává
  * v Supabase secrets, prohlížeč ho nikdy nevidí — funkce vrací jen názvy šablon a jejich stav.
  */
-export async function whatsappTemplatesSetup(dryRun: boolean): Promise<WhatsAppTemplateSetup> {
+export async function whatsappTemplatesSetup(
+  dryRun: boolean,
+  actions: { subscribe?: boolean; profile?: boolean } = {},
+): Promise<WhatsAppTemplateSetup> {
   const { data, error } = await supabase.functions.invoke<WhatsAppTemplateSetup>('whatsapp-templates-setup', {
-    body: { dry_run: dryRun },
+    body: { dry_run: dryRun, ...actions },
   });
   if (error) {
     if (error instanceof FunctionsHttpError) {
