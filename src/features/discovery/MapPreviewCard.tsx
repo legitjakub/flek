@@ -64,7 +64,12 @@ export function MapPreviewCard({
           if (Math.abs(dx) < 32 || Math.abs(dx) <= Math.abs(dy)) return;
           carousel.goTo(carousel.index + (dx < 0 ? 1 : -1));
         }}
-        className="rail pointer-events-auto flex snap-x snap-mandatory scroll-px-3 gap-2 overflow-x-auto overscroll-x-contain px-3 pb-3 -mb-3 touch-pan-x"
+        // A horizontal scroller clips vertically too, and the lifted glass shadow (40 px blur,
+        // 18 px down) only fades out about 60 px below the card. With 12 px of room it ended in
+        // a hard line level with the top of the tab bar; the padding now holds the whole shadow
+        // and the negative margins keep the card where it was. The extra room below sits under
+        // the tab bar, which stays on top and keeps its taps.
+        className="rail pointer-events-auto flex snap-x snap-mandatory scroll-px-3 gap-2 overflow-x-auto overscroll-x-contain px-3 pt-2 pb-16 -mt-2 -mb-16 touch-pan-x"
       >
         {groups.map((group, index) => (
           <li

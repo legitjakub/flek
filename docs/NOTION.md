@@ -1,6 +1,6 @@
 # FLEK — přehled projektu
 
-> Aktualizováno 24. 9. 2026. Zdroj pravdy je repozitář (`docs/NOTION.md`). Stránku aktualizuje agent na požádání; ruční úpravy tady se při další aktualizaci přepíšou.
+> Aktualizováno 25. 9. 2026. Zdroj pravdy je repozitář (`docs/NOTION.md`). Stránku aktualizuje agent na požádání; ruční úpravy tady se při další aktualizaci přepíšou.
 
 ## Ve zkratce
 
@@ -337,6 +337,8 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 25. 9. 2026 | Náhled služby na mapě má stín, který pod kartou plynule mizí místo ostrého řezu nad spodním menu. |
+| 25. 9. 2026 | Karta „Tvůj FLEK“ v Profilu vypadá jako útržek voucheru: velké číslo ušetřené za měsíc, pod perforací počet FLEKů, nejlepší úlovek a součet od začátku (v prvním měsíci skrytý, aby se čísla neopakovala). |
 | 25. 9. 2026 | Partnerská aplikace při nové žádosti o rezervaci zvoní, dokud ji podnik nepotvrdí nebo neodmítne (jde ztlumit a vyzkoušet v Provozovně, displej může zůstat rozsvícený). Zaškrtávání upozornění v Profilu a Provozovně reaguje hned a „Zapnout“ zapne i oznámení na telefonu. |
 | 24. 9. 2026 | WhatsApp u Mety je skoro hotový: s trvalým tokenem je FLEK přihlášený k odběru zpráv, profil na WhatsAppu má texty a logo FLEKu a číslo je uložené v aplikaci. Webhook je nastavený a Meta ho ověřila. Pět šablon čeká na schválení. |
 | 24. 9. 2026 | WhatsApp nejel, protože token Mety v Supabase byl dočasný a po odhlášení z Facebooku přestal platit. Claude teď umí dokončit nastavení u Mety sám z databáze včetně webhooku a loga v profilu; stačí trvalý token systémového uživatele. Panel v administraci jde nově volat i z webu (dřív ho zastavil prohlížeč). |
