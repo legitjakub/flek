@@ -211,14 +211,14 @@ export function OfferCard({
             <p className="truncate text-sm text-muted">{offer.business_name}</p>
           </div>
           {/*
-            The price closes the card, so it is the one filled element on the panel — and the
-            list price under it is struck, because that is the number nobody pays.
+            The price closes the card, so it is the one filled element on the panel. Under it,
+            the regular price as a quiet grey reference that says what it is ("běžně").
           */}
           <div className="flex shrink-0 flex-col items-end gap-1.5">
             <span className="tnum inline-flex items-center rounded-full bg-brand px-3 py-1.5 text-base leading-none font-extrabold text-brand-ink">
               {money(offer.deal_price_cents)}
             </span>
-            {discounted ? <OriginalPrice cents={offer.original_price_cents} className="text-xs" /> : null}
+            {discounted ? <OriginalPrice cents={offer.original_price_cents} label="běžně" className="text-xs" /> : null}
           </div>
         </div>
 

@@ -6,7 +6,7 @@ import { businessOffers, confirmationQuote, getOfferDetail, setFavorite } from '
 import { track } from '../../lib/analytics';
 import { relativeTime, useServerNow } from '../../lib/clock';
 import { money, distance as formatDistance } from '../../lib/format';
-import { DiscountBadge, OriginalPrice } from '../../components/Price';
+import { DiscountBadge, OriginalPrice, SavingPill } from '../../components/Price';
 import { clockTime, dayLabel, duration } from '../../lib/time';
 import { DEFAULT_POINT, storedPoint } from '../../lib/geo';
 import { Button, ErrorState, Skeleton, cx } from '../../components/ui';
@@ -360,11 +360,13 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
                 <p className="tnum text-xl leading-none font-extrabold tracking-tight">
                   {money(offer.deal_price_cents)}
                 </p>
+                {/* The regular price as a quiet reference and the saving as the gain; the
+                    percentage already rides on the photograph above. */}
                 {savings > 0 ? (
-                  <p className="tnum mt-1.5 flex flex-wrap items-center justify-end gap-2 text-xs">
-                    <s className="decoration-current">{money(offer.original_price_cents)}</s>
-                    <span className="font-bold">−{offer.discount_pct} %</span>
-                  </p>
+                  <div className="mt-1.5 flex flex-col items-end gap-1.5 text-xs">
+                    <OriginalPrice cents={offer.original_price_cents} label="běžně" tone="onBrand" />
+                    <SavingPill cents={savings} tone="onBrand" />
+                  </div>
                 ) : null}
               </div>
             </div>

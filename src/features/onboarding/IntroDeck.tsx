@@ -103,7 +103,7 @@ export function IntroDeck({ playing }: { playing: boolean }) {
               </p>
               <p className="mt-2 flex items-baseline gap-2">
                 <span className="tnum text-xl leading-none font-extrabold text-ink">{money(card.price * 100)}</span>
-                <OriginalPrice cents={card.was * 100} className="text-sm" />
+                <OriginalPrice cents={card.was * 100} label="běžně" className="text-sm" />
               </p>
             </div>
           </article>
