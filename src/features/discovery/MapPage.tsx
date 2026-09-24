@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Crosshair, List } from 'lucide-react';
+import { BellRing, Crosshair, List, X } from 'lucide-react';
 import { Link, useRouter } from '../../app/router';
-import { listCategories } from '../../lib/api';
+import { listCategories, moveWatch } from '../../lib/api';
 import { money, distance } from '../../lib/format';
 import { DiscountBadge, OriginalPrice } from '../../components/Price';
 import { clockTime, dayLabel, duration } from '../../lib/time';
@@ -17,6 +17,12 @@ import { groupMapOffers } from './mapOffers';
 import { groupSlots, slotLabels } from './slots';
 import { MapPreviewCard } from './MapPreviewCard';
 import { locate } from '../../lib/geo';
+import { locationAlreadyAllowed, useLivePosition } from '../../lib/useLivePosition';
+import { distanceMeters } from '../../lib/mapGeometry';
+import { useQueryClient } from '@tanstack/react-query';
+import { NOTIFICATIONS_ENABLED } from '../notifications/Notifications';
+import { WatchSheet } from '../watches/WatchSheet';
+import { useWatches, watchSummary } from '../watches/WatchList';
 import { serviceIllustration } from '../../lib/serviceIllustrations';
 import { thumbnail } from '../../lib/thumbnail';
 import type { SearchRow } from '../../types/database';
@@ -58,11 +64,65 @@ export function MapPage() {
   }, []);
 
   const { point, setPoint, filters, setFilters } = useDiscoveryState();
-  const { search } = useRouter();
+  const { search, navigate } = useRouter();
+  const [watchOpen, setWatchOpen] = useState(false);
+  const watches = useWatches();
+  const queryClient = useQueryClient();
+  const activeWatches = (watches.data ?? []).filter((watch) => !watch.paused);
+  // Opened from a watch's notification or from Profile: show what the watch covers.
+  const shownWatch = (watches.data ?? []).find((watch) => watch.id === search.get('hlidac')) ?? null;
   const [openGroup, setOpenGroup] = useState<string[]>([]);
   const [highlighted, setHighlighted] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
   const [locateError, setLocateError] = useState(false);
+  // The dot follows the customer only once they have allowed it — here or on an earlier visit.
+  const [tracking, setTracking] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    void locationAlreadyAllowed().then((allowed) => { if (allowed && !cancelled) setTracking(true); });
+    return () => { cancelled = true; };
+  }, []);
+  const live = useLivePosition(tracking);
+
+  /*
+   * `/mapa?hlidac=…` arrives without a place: search around the watch, with its filters and its
+   * radius, over the next days it covers. The watch id stays in the address so the circle stays
+   * drawn; touching a filter afterwards is a new search and lets it go.
+   */
+  useEffect(() => {
+    if (!shownWatch || search.has('lat')) return;
+    const params = new URLSearchParams({
+      hlidac: shownWatch.id,
+      lat: String(shownWatch.lat),
+      lng: String(shownWatch.lng),
+      place: shownWatch.label,
+      radius_m: String(shownWatch.radius_m),
+      when: 'week',
+    });
+    if (shownWatch.category) params.set('category', shownWatch.category);
+    if (shownWatch.max_price_cents) params.set('max_price_cents', String(shownWatch.max_price_cents));
+    if (shownWatch.min_discount_pct) params.set('min_discount_pct', String(shownWatch.min_discount_pct));
+    if (shownWatch.daypart) params.set('daypart', shownWatch.daypart);
+    navigate(`/mapa?${params}`, { replace: true, scroll: false });
+  }, [shownWatch, search, navigate]);
+
+  /*
+   * „Posouvat s mojí polohou": a watch set to follow the customer moves to where they open the map.
+   * Only while the map is open — a browser cannot follow anyone in the background, and FLEK does
+   * not pretend to. Once per watch every five minutes; the server ignores moves under 300 m.
+   */
+  const lastMoves = useRef(new Map<string, number>());
+  useEffect(() => {
+    const here = live.position;
+    if (!here) return;
+    const moving = (watches.data ?? []).filter((watch) =>
+      watch.follow_me && !watch.paused && distanceMeters(here, watch) > 300
+      && Date.now() - (lastMoves.current.get(watch.id) ?? 0) > 300_000);
+    if (!moving.length) return;
+    moving.forEach((watch) => lastMoves.current.set(watch.id, Date.now()));
+    void Promise.all(moving.map((watch) => moveWatch(watch.id, here.lat, here.lng).catch(() => undefined)))
+      .then(() => queryClient.invalidateQueries({ queryKey: ['watches'] }));
+  }, [live.position, watches.data, queryClient]);
   const [phone, setPhone] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
   const now = useServerNow();
   // The map draws the whole filtered market, not a page of it; the cap lives in useDiscovery.
@@ -116,10 +176,16 @@ export function MapPage() {
   }, [openGroup]);
 
   async function useMyLocation() {
-    setLocating(true);
     setLocateError(false);
+    // Already following the customer: search around the dot without asking the device again.
+    if (live.position) {
+      setPoint({ lat: live.position.lat, lng: live.position.lng, label: 'Moje poloha' });
+      return;
+    }
+    setLocating(true);
     try {
       setPoint(await locate());
+      setTracking(true);
     } catch {
       setLocateError(true);
     } finally {
@@ -164,6 +230,8 @@ export function MapPage() {
           focusId={openGroup.length === 1 ? openGroup[0] : undefined}
           focusArea={phone ? { ...PHONE_FOCUS, bottom: previewHeight + 110 } : WIDE_FOCUS}
           onSelect={(id) => setOpenGroup([id])}
+          userLocation={live.position}
+          area={shownWatch ? { lat: shownWatch.lat, lng: shownWatch.lng, radius_m: shownWatch.radius_m } : null}
           ariaLabel="Mapa volných FLEKů. Každý špendlík s cenou otevře náhled nabídky."
         />
 
@@ -186,10 +254,25 @@ export function MapPage() {
               title="Moje poloha"
               disabled={locating}
               onClick={() => void useMyLocation()}
-              className="grid size-11 shrink-0 place-items-center rounded-full bg-card text-ink shadow-card disabled:opacity-60"
+              className={cx('grid size-11 shrink-0 place-items-center rounded-full bg-card shadow-card disabled:opacity-60', live.position ? 'text-brand' : 'text-ink')}
             >
+              {/* Blue once the map knows where you are: the dot is live and a tap searches around it. */}
               <Crosshair size={19} className={locating ? 'animate-spin' : ''} aria-hidden="true" />
             </button>
+            {NOTIFICATIONS_ENABLED ? (
+              <button
+                type="button"
+                aria-label={activeWatches.length ? `Hlídač FLEKů, zapnutých ${activeWatches.length}` : 'Hlídat okolí'}
+                title="Hlídač FLEKů"
+                onClick={() => setWatchOpen(true)}
+                className={cx(
+                  'relative grid size-11 shrink-0 place-items-center rounded-full shadow-card',
+                  activeWatches.length ? 'bg-brand text-brand-ink' : 'bg-card text-ink',
+                )}
+              >
+                <BellRing size={19} aria-hidden="true" />
+              </button>
+            ) : null}
           </div>
           <div className="pointer-events-auto">
             <FilterBar
@@ -203,7 +286,21 @@ export function MapPage() {
               floating
             />
           </div>
-          {locateError ? (
+          {shownWatch && search.has('hlidac') ? (
+            <p className="pointer-events-auto inline-flex max-w-full items-center gap-2 self-start rounded-[1.125rem] bg-brand py-1 pr-1 pl-3.5 text-sm font-bold text-brand-ink shadow-card">
+              <BellRing size={15} aria-hidden="true" className="shrink-0" />
+              <span className="min-w-0 truncate">{shownWatch.label} · {watchSummary(shownWatch, categories.data ?? [])}</span>
+              <button
+                type="button"
+                aria-label="Skrýt okruh hlídače"
+                onClick={() => setFilters({ ...filters })}
+                className="grid size-9 shrink-0 place-items-center rounded-full hover:bg-white/15"
+              >
+                <X size={16} aria-hidden="true" />
+              </button>
+            </p>
+          ) : null}
+          {locateError || live.denied ? (
             <p role="status" className="pointer-events-auto self-start rounded-2xl bg-card px-4 py-2.5 text-sm text-ink shadow-card">
               Polohu se nepodařilo zjistit. Vyber místo ručně.
             </p>
@@ -226,6 +323,15 @@ export function MapPage() {
             <div className="pointer-events-auto mx-3 w-[calc(100%-1.5rem)] max-w-sm rounded-3xl bg-card p-5 shadow-lift">
               <p className="text-base font-extrabold text-ink">V okolí teď nic volného není.</p>
               <p className="mt-1 text-sm text-muted">Zkus jiné místo nebo čas nahoře nad mapou.</p>
+              {NOTIFICATIONS_ENABLED ? (
+                <button
+                  type="button"
+                  onClick={() => setWatchOpen(true)}
+                  className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-full bg-brand px-4 text-sm font-bold text-brand-ink hover:bg-accent"
+                >
+                  <BellRing size={16} aria-hidden="true" /> Dej mi vědět, až tu něco bude
+                </button>
+              ) : null}
             </div>
           ) : null}
           {selectedOffers.length ? (
@@ -240,6 +346,15 @@ export function MapPage() {
           ) : null}
         </div>
       </div>
+      <WatchSheet
+        open={watchOpen}
+        onClose={() => setWatchOpen(false)}
+        mapPoint={point}
+        here={live.position}
+        filters={filters}
+        categories={categories.data ?? []}
+        onSaved={(id) => navigate(`/mapa?hlidac=${id}`, { replace: true, scroll: false })}
+      />
     </main>
   );
 }

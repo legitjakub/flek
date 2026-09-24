@@ -92,6 +92,8 @@ export function contractDetails(contract: Contract): { rows: [string, string][];
 }
 
 function buttonLabel(href: string): string {
+  if (href.startsWith('/nabidka/')) return 'Zobrazit FLEK';
+  if (href.startsWith('/mapa?hlidac=')) return 'Zobrazit na mapě';
   if (href === '/partner/provozovna') return 'Otevřít provozovnu';
   if (href === '/profil') return 'Otevřít profil';
   return 'Otevřít rezervace';

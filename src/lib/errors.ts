@@ -27,6 +27,7 @@ const messages:Record<string,string>={
  CONSENT_REQUIRED:'Pro zapnutí WhatsApp upozornění potřebujeme váš souhlas.',
  WHATSAPP_UNAVAILABLE:'WhatsApp upozornění zatím nejsou dostupná.',
  WHATSAPP_PAIRING_RATE_LIMITED:'Kód jste si nechali vygenerovat už několikrát. Zkuste to prosím za hodinu.',
+ WATCH_LIMIT:'Hlídat můžeš nejvýš tři místa. Jeden hlídač smaž nebo uprav.',
  TERMS_OUTDATED:'Podmínky pro podniky se změnily. Přečtěte si novou verzi a potvrďte souhlas v Provozovně.',
  PROVIDER_DETAILS_REQUIRED:'Podnik nemá vyplněné IČO. Bez údajů o poskytovateli ho nejde schválit — doplní je v Provozovně ve fakturačních údajích.',
  REPORT_RATE_LIMITED:'Dnes jste poslali už hodně nahlášení. Další pošlete zítra, nebo nám napište e-mailem.',

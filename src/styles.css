@@ -277,6 +277,47 @@
     box-shadow: 0 0 0 1px rgb(16 18 31 / 0.2), 0 0 0 5px color-mix(in srgb, var(--color-brand) 30%, transparent), 0 2px 5px -1px rgb(16 18 31 / 0.35);
   }
   .map-pin--dot:hover .map-pin-tile { transform: scale(1.2); }
+  /* Where the customer is: the bright brand blue the pins' glyphs use, a white ring so it reads on
+     any street colour, and a slow pulse so it is found at a glance. Reduced motion stops the pulse. */
+  .user-dot {
+    position: relative;
+    display: block;
+    width: 18px;
+    height: 18px;
+    border: 3px solid var(--color-card);
+    border-radius: 9999px;
+    background: var(--color-brand-bright);
+    box-shadow: 0 1px 4px rgb(16 18 31 / 0.35);
+    pointer-events: none;
+  }
+  .user-dot::after {
+    position: absolute;
+    inset: -9px;
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--color-brand-bright) 35%, transparent);
+    content: '';
+    animation: user-pulse 2.4s ease-out infinite;
+  }
+  @keyframes user-pulse {
+    from { transform: scale(0.4); opacity: 1; }
+    to { transform: scale(1.6); opacity: 0; }
+  }
+  /* How unsure the fix is, at its real size in metres. */
+  .user-halo {
+    display: block;
+    border: 1px solid color-mix(in srgb, var(--color-brand-bright) 40%, transparent);
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--color-brand-bright) 12%, transparent);
+    pointer-events: none;
+  }
+  /* The area a FLEK watch covers: a dashed edge rather than a fill, so the pins inside stay the focus. */
+  .watch-area {
+    display: block;
+    border: 2px dashed color-mix(in srgb, var(--color-brand) 55%, transparent);
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--color-brand) 6%, transparent);
+    pointer-events: none;
+  }
   .map-pin.is-selected { z-index: 2; transform: translateY(-3px) scale(1.12); }
   .map-pin.is-selected .map-pin-tile { border-color: var(--color-brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand) 35%, transparent), 0 6px 14px -3px rgb(16 18 31 / 0.4); }
   .map-pin.is-selected .map-pin-price { background: var(--color-brand); color: var(--color-brand-ink); }

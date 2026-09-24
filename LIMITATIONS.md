@@ -134,3 +134,12 @@ Více provozoven na účet je podporováno přepínačem v partnerské části. 
 - Mapa dostává stejnou odpověď jako feed, jen s vyšším stropem (300 řádků místo 50). Při pilotním objemu (315 rezervovatelných FLEKů u 17 podniků) na ně dosáhne každé řazení, ale je to strop, ne řešení: až bude nabídek řádově víc, bude mapa potřebovat vlastní čtecí RPC, které vrátí jeden řádek na adresu, ne všechny termíny. Strop RPC `search_offers` je proto 300 a výš by se neměl zvedat bez té funkce.
 - Body se při hustém pohledu rozmisťují kolem své skutečné polohy nejvýš o 88 px. V extrémně husté skupině (desítky podniků v jednom bloku) se proto i body překryjí; žádný z nich ale nezmizí a všechny zůstávají dosažitelné klávesnicí. Dál od skutečné polohy se špendlík posouvat nebude — vypadal by, že patří do jiné čtvrti.
 - Přepnutí mezi špendlíky a body se rozhoduje ze vzdáleností na obrazovce, takže posun mapou jím nehne; mění se jen při přiblížení. Při oddáleném pohledu není na mapě vidět cena — ta se vrátí po přiblížení nebo klepnutím na vybraný bod.
+
+## Poloha a hlídač FLEKů (24. 9. 2026)
+
+- Dojezd je odhad vzdušnou čarou (pěšky 75 m za minutu, MHD nebo kolo 200 m za minutu), ne trasa: řeka, kopec nebo přestup ho prodlouží. Skutečný čas cesty by potřeboval routovací službu s klíčem a novou doménou v CSP.
+- Prohlížeč na pozadí polohu nesleduje. Hlídač „kde právě jsem“ se posune, jen když zákazník otevře mapu (a pohne se o víc než 300 m); jinak hlídá místo, kde byl naposledy.
+- Upozornění na telefon potřebuje zapnutá oznámení v tomto prohlížeči (na iPhonu jen v aplikaci přidané na plochu). Bez nich hlídač zapisuje jen do zvonku v aplikaci.
+- Hlídá se jen to, co přibude po založení nebo přesunu hlídače, a jen termíny do 48 hodin. FLEK, který se uvolní zrušením rezervace, se neohlásí znovu, pokud ho hlídač už jednou ohlásil.
+- Hlídač chodí e-mailem jen po zapnutí v Profilu; WhatsAppem nechodí vůbec (Meta by šablonu nabídek posuzovala jako marketing).
+- Skenování běží každých 5 minut v databázi (`flek-watch-scan`). Při tisících hlídačů by potřebovalo index nebo dávkování podle oblasti.

@@ -25,18 +25,29 @@ self.addEventListener('activate', (event) => {
 // request itself, so there is still no cache anywhere in the path.
 self.addEventListener('fetch', () => {});
 
+// Only addresses FLEK itself produces are ever opened: a push payload is data, not a URL to trust.
+const WATCH_URL = /^\/(nabidka\/[0-9a-f-]{36}|mapa\?hlidac=[0-9a-f-]{36})$/;
+function target(url) {
+  if (url === '/partner/rezervace' || url === '/partner/rezervace?notifications=1') return '/partner/rezervace?notifications=1';
+  if (typeof url === 'string' && WATCH_URL.test(url)) return url;
+  return '/rezervace?notifications=1';
+}
+
 self.addEventListener('push', event => {
   // No booking details on a shared lock screen; read the authorised inbox after opening.
   let data = {};
   try { data = event.data?.json() ?? {}; } catch {}
-  const partner = data.url === '/partner/rezervace';
-  const url = partner ? '/partner/rezervace?notifications=1' : '/rezervace?notifications=1';
+  const url = target(data.url);
+  const partner = url.startsWith('/partner/');
+  const watch = WATCH_URL.test(url);
   event.waitUntil(self.registration.showNotification('FLEK', {
-    body: partner ? 'V aplikaci máte nové upozornění na rezervaci.' : 'V aplikaci máš nové upozornění na rezervaci.',
-    icon: '/icon.svg', badge: '/favicon.svg', tag: data.id || 'flek-reservations', data: { url },
+    body: watch
+      ? 'V okolí se uvolnil nový FLEK podle tvého hlídače.'
+      : partner ? 'V aplikaci máte nové upozornění na rezervaci.' : 'V aplikaci máš nové upozornění na rezervaci.',
+    icon: '/icon.svg', badge: '/favicon.svg', tag: data.id || (watch ? 'flek-watch' : 'flek-reservations'), data: { url },
   }));
 });
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-  event.waitUntil(self.clients.openWindow(new URL(event.notification.data?.url === '/partner/rezervace?notifications=1' ? '/partner/rezervace?notifications=1' : '/rezervace?notifications=1', self.location.origin).href));
+  event.waitUntil(self.clients.openWindow(new URL(target(event.notification.data?.url), self.location.origin).href));
 });

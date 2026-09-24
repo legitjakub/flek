@@ -64,6 +64,15 @@ describe('booking e-mails', () => {
     expect(email.text.trim().endsWith('FLEK')).toBe(true);
     expect(email.html).toContain('Otevřít provozovnu');
   });
+
+  it('points a watch alert at the FLEK or the map, not at bookings', () => {
+    const one = composeEmail({ title: 'Nový FLEK v okolí · Moje okolí', body: 'Masáž · Studio · dnes 17:30 · 490 Kč', href: '/nabidka/0b9d8f7e-1c2a-4b3c-8d4e-5f6a7b8c9d0e' }, null);
+    expect(one.html).toContain('Zobrazit FLEK');
+    expect(one.text).toContain('https://www.app-flek.eu/nabidka/0b9d8f7e-1c2a-4b3c-8d4e-5f6a7b8c9d0e');
+    const many = composeEmail({ title: '3 nové FLEKy v okolí · Moje okolí', body: 'Masáž · a 2 další', href: '/mapa?hlidac=0b9d8f7e-1c2a-4b3c-8d4e-5f6a7b8c9d0e' }, null);
+    expect(many.html).toContain('Zobrazit na mapě');
+    expect(many.html).not.toContain('Otevřít rezervace');
+  });
 });
 
 describe('ARES', () => {

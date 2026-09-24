@@ -311,3 +311,13 @@ Nahrazuje rozhodnutí „Kompaktní FLEK body při oddálení“ z 21. 9., kter�
 - Migrace mění jen přesně známé staré katalogové adresy. Vlastní fotografie ve Storage nikdy nepřepisuje a ve všech zobrazeních má přednost. Poškozené nebo nedostupné URL končí stejným neutrálním placeholderem.
 - U detailu má fotografie na telefonu 180 px a rezervace tvoří jediný souvislý blok. Vybraný termín a jeho cena jsou nahoře, další volby pod nimi. Spodní akce používá barvu značky. Mapa se na telefonu načte až po výslovném otevření, protože dříve prodlužovala stránku před rozhodnutím o rezervaci.
 - Obecné ukázkové popisy a text provozovny se nevykreslují jako popis konkrétní služby. Konkrétní informace o službě zůstávají viditelné.
+
+## Poloha a hlídač FLEKů — 24. 9. 2026
+
+- Tečka polohy se na mapě zapne sama jen tehdy, když prohlížeč polohu už povolil; jinak až po klepnutí na „Moje poloha“. Dotaz na polohu hned při otevření mapy učí lidi klepat na „Blokovat“.
+- Tečka má kruh nejistoty v metrech. Telefon uvnitř budovy bývá o desítky metrů vedle a tečka bez kruhu by tvrdila přesnost, kterou nemá. Poloha zůstává v prohlížeči; server ji nevidí, dokud si zákazník nezaloží hlídač.
+- Hlídač měří dojezd v minutách, ne v kilometrech, protože tak lidé přemýšlejí („do 20 minut pěšky“), ale počítá vzdušnou čarou a v aplikaci to říká („zhruba 1,5 km vzdušnou čarou“). Routovací služba by znamenala klíč, cenu a novou externí doménu kvůli číslu, které je stejně odhad.
+- Skenuje se v databázi cronem po 5 minutách, ne triggerem při zveřejnění nabídky: víc termínů naráz (typicky celý den jednoho podniku) přijde v jedné zprávě, a brzdy (30 minut, šest denně, noc bez oznámení) se hlídají na jednom místě.
+- Ohlašuje se jen to, co přibude po založení nebo přesunu hlídače. Co v okolí už je, zákazník vidí na mapě ve chvíli, kdy hlídač zakládá; zahltit ho hned první zprávou by hlídač zabilo.
+- Místo hlídače se ukládá zaokrouhlené na tři desetinná místa (asi 100 m). Pro okruh v kilometrech víc netřeba a přesná adresa bydliště na serveru nemá co dělat.
+- Filtr hlídače se předvyplní z filtru nad mapou a ve formuláři je sbalený do jednoho řádku se souhrnem: většina lidí ho nemění a čtyři další přepínače by okno na telefonu zdvojnásobily.

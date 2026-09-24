@@ -163,7 +163,7 @@ export function activeChips(filters: Filters, categoryLabel: (slug: string) => s
   if (filters.radius_m !== DEFAULT_FILTERS.radius_m)
     chips.push({
       key: 'radius',
-      label: RADIUS_LABELS.find(([m]) => m === filters.radius_m)?.[1] ?? `Do ${filters.radius_m / 1000} km`,
+      label: RADIUS_LABELS.find(([m]) => m === filters.radius_m)?.[1] ?? `Do ${(Math.round(filters.radius_m / 100) / 10).toLocaleString('cs-CZ')} km`,
       clear: (f) => ({ ...f, radius_m: DEFAULT_FILTERS.radius_m }),
     });
   if (filters.min_discount_pct > 0)

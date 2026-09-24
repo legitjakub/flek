@@ -593,3 +593,24 @@ export type AresLookup =
       dic: string | null;
       ended: boolean;
     };
+
+/** A saved FLEK watch (`my_watches`). The point is stored rounded to about 100 m. */
+export type FlekWatch = {
+  id: string;
+  label: string;
+  lat: number;
+  lng: number;
+  travel_mode: 'walk' | 'ride';
+  travel_minutes: 10 | 20 | 30;
+  radius_m: number;
+  category: string | null;
+  max_price_cents: number | null;
+  min_discount_pct: number;
+  daypart: 'morning' | 'afternoon' | 'evening' | null;
+  follow_me: boolean;
+  paused: boolean;
+  created_at: string;
+  last_alert_at: string | null;
+  /** Bookable FLEKs the watch would match right now (next 48 hours). */
+  matching_now: number;
+};

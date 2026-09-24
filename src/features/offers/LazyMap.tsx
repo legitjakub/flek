@@ -20,6 +20,8 @@ type Props = {
   framePadding?: { top: number; right: number; bottom: number; left: number };
   focusId?: string;
   focusArea?: { top: number; bottom: number };
+  userLocation?: { lat: number; lng: number; accuracy: number } | null;
+  area?: { lat: number; lng: number; radius_m: number } | null;
 };
 
 /**

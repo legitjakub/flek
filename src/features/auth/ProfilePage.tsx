@@ -12,6 +12,7 @@ import { Link } from '../../app/router';
 import { useSession } from './session';
 import { useSignOut } from './SignOutButton';
 import { CustomerFlekStats } from '../profile/CustomerFlekStats';
+import { WatchList } from '../watches/WatchList';
 import { ReferralInvite } from '../profile/ReferralInvite';
 import { useInstallMode } from '../pwa/InstallPrompt';
 import { promptInstall } from '../pwa/install';
@@ -67,6 +68,8 @@ export function ProfilePage() {
           zablokují.
         </Banner>
       ) : null}
+
+      <WatchList />
 
       <ReferralInvite userId={userId} />
 

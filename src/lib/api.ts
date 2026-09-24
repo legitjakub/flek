@@ -2,7 +2,7 @@ import { FunctionsHttpError } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { result } from './errors';
 import { noteServerNow } from './clock';
-import type { AdminBooking, AdminBusiness, AdminMetrics, AdminUser, Business, BookingStatus, Category, ConfirmationDecision, ConfirmationQuote, CustomerBooking, CustomerMetrics, FavoriteBusiness, FavoriteOffer, MerchantBooking, MerchantBookingDetail, MerchantMetrics, MerchantOffer, OfferDetail, Payment, Profile, PublicBusiness, ReferralClaim, ReferralStats, PaymentsMode, PaymentState, BusinessPaymentsStatus, SearchRow, ServicePhoto, Service, SortKey, BusinessBilling, AdminAuditEntry, WhatsAppPairing, WhatsAppSettings, LegalInfo, BusinessProvider, ContentReportReason, AdminContentReport, Dac7Row, AresLookup, BusinessReview, AdminContentModeration, ContentModerationStatus } from '../types/database';
+import type { AdminBooking, AdminBusiness, AdminMetrics, AdminUser, Business, BookingStatus, Category, ConfirmationDecision, ConfirmationQuote, CustomerBooking, CustomerMetrics, FavoriteBusiness, FavoriteOffer, MerchantBooking, MerchantBookingDetail, MerchantMetrics, MerchantOffer, OfferDetail, Payment, Profile, PublicBusiness, ReferralClaim, ReferralStats, PaymentsMode, PaymentState, BusinessPaymentsStatus, SearchRow, ServicePhoto, Service, SortKey, BusinessBilling, AdminAuditEntry, WhatsAppPairing, WhatsAppSettings, LegalInfo, BusinessProvider, ContentReportReason, AdminContentReport, Dac7Row, AresLookup, BusinessReview, AdminContentModeration, ContentModerationStatus, FlekWatch } from '../types/database';
 
 /** Records the server clock carried by any payload that exposes it. */
 function withClock<T extends { server_now?: string }>(rows: T[]): T[] {
@@ -655,4 +655,39 @@ export async function claimReferral(code: string): Promise<ReferralClaim> {
       reason: 'unknown_code',
     }
   );
+}
+
+/* ------------------------------------------------------------ FLEK watches */
+
+export type WatchInput = Omit<FlekWatch, 'id' | 'radius_m' | 'created_at' | 'last_alert_at' | 'matching_now'>;
+
+export async function myWatches(): Promise<FlekWatch[]> {
+  return (await result<FlekWatch[]>(supabase.rpc('my_watches'))) ?? [];
+}
+
+/** Creates a watch (no id) or replaces one; the server derives the radius from the travel time. */
+export async function saveWatch(input: WatchInput, id: string | null = null): Promise<string> {
+  return (await result<string>(supabase.rpc('save_watch', {
+    p_id: id,
+    p_label: input.label,
+    p_lat: input.lat,
+    p_lng: input.lng,
+    p_travel_mode: input.travel_mode,
+    p_travel_minutes: input.travel_minutes,
+    p_category: input.category,
+    p_max_price_cents: input.max_price_cents,
+    p_min_discount_pct: input.min_discount_pct,
+    p_daypart: input.daypart,
+    p_follow_me: input.follow_me,
+    p_paused: input.paused,
+  })))!;
+}
+
+export async function deleteWatch(id: string): Promise<void> {
+  await result(supabase.rpc('delete_watch', { p_id: id }));
+}
+
+/** Moves a „follow me" watch to where the customer opened the map; the server ignores GPS jitter. */
+export async function moveWatch(id: string, lat: number, lng: number): Promise<void> {
+  await result(supabase.rpc('move_watch', { p_id: id, p_lat: lat, p_lng: lng }));
 }

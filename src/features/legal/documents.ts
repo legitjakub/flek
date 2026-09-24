@@ -17,7 +17,7 @@ export type LegalDocument = {
 export const LEGAL_DOCUMENTS: Record<LegalKind, LegalDocument> = {
   customer_terms: { kind: 'customer_terms', path: '/podminky', label: 'Obchodní podmínky', version: '1.0', source: customerTerms },
   merchant_terms: { kind: 'merchant_terms', path: '/podminky-podniky', label: 'Podmínky pro podniky', version: '1.0', source: merchantTerms },
-  privacy: { kind: 'privacy', path: '/soukromi', label: 'Ochrana osobních údajů', version: '1.1', source: privacy },
+  privacy: { kind: 'privacy', path: '/soukromi', label: 'Ochrana osobních údajů', version: '1.2', source: privacy },
 };
 
 export const LEGAL_ORDER: LegalKind[] = ['customer_terms', 'privacy', 'merchant_terms'];

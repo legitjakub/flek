@@ -18,7 +18,7 @@ type Notice = {
 };
 
 type Preference = {
-  event: 'requested' | 'confirmed' | 'cancelled' | 'review_requested';
+  event: 'requested' | 'confirmed' | 'cancelled' | 'review_requested' | 'watch';
   email: boolean;
   push: boolean;
   /** On unless switched off; messages go only to a verified number. */
@@ -29,7 +29,13 @@ type Channel = 'email' | 'push' | 'whatsapp';
 
 const DEFAULTS: Record<Channel, boolean> = { email: true, push: false, whatsapp: true };
 
-const NOTIFICATIONS_ENABLED = import.meta.env.VITE_NOTIFICATIONS_ENABLED === 'true';
+export const NOTIFICATIONS_ENABLED = import.meta.env.VITE_NOTIFICATIONS_ENABLED === 'true';
+
+/*
+ * A watch is the one thing FLEK sends on its own initiative, so it starts the other way round:
+ * on the phone by default (that is what makes it useful), by e-mail only when switched on.
+ */
+const WATCH_DEFAULTS: Record<Channel, boolean> = { email: false, push: true, whatsapp: false };
 
 async function rpc<T>(name: string, args: Record<string, unknown> = {}): Promise<T> {
   const { data, error } = await supabase.rpc(name, args);
@@ -139,6 +145,36 @@ function applicationServerKey(value: string): Uint8Array<ArrayBuffer> {
   return Uint8Array.from(binary, (character) => character.charCodeAt(0));
 }
 
+/** Whether this device already sends FLEK's notifications to the phone. */
+export async function devicePushEnabled(): Promise<boolean> {
+  try {
+    if (!NOTIFICATIONS_ENABLED || !('serviceWorker' in navigator) || !('Notification' in window)) return false;
+    if (Notification.permission !== 'granted') return false;
+    const registration = await navigator.serviceWorker.getRegistration();
+    return Boolean(await registration?.pushManager?.getSubscription());
+  } catch {
+    return false;
+  }
+}
+
+/** Asks for permission and registers this device for push. Throws a sentence the screen can show. */
+export async function enableDevicePush() {
+  if (!('Notification' in window) || !('PushManager' in window) || !('serviceWorker' in navigator)) {
+    throw new Error('Tento prohlížeč oznámení nepodporuje. Na iPhonu přidej FLEK na plochu a otevři ho odtud. E-mail zůstává dostupný.');
+  }
+  const publicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+  if (!publicKey) throw new Error('Oznámení na telefonu ještě nejsou aktivovaná. Použij zatím e-mail a centrum upozornění.');
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') throw new Error('Oznámení nejsou povolená. Povolení můžeš změnit v nastavení prohlížeče.');
+  const registration = await navigator.serviceWorker.ready;
+  const existing = await registration.pushManager.getSubscription();
+  const subscription = existing ?? await registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: applicationServerKey(publicKey),
+  });
+  await rpc('save_push_subscription', { p_subscription: subscription.toJSON() });
+}
+
 export function NotificationSettings({ businessId }: { businessId?: string }) {
   const { userId } = useSession();
   const scope = businessId ?? 'customer';
@@ -164,24 +200,9 @@ export function NotificationSettings({ businessId }: { businessId?: string }) {
     setBusy(true);
     setMessage('');
     try {
-      if (channel === 'push' && value) {
-        if (!('Notification' in window) || !('PushManager' in window) || !('serviceWorker' in navigator)) {
-          throw new Error('Tento prohlížeč oznámení nepodporuje. Na iPhonu přidej FLEK na plochu a otevři ho odtud. E-mail zůstává dostupný.');
-        }
-        const publicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
-        if (!publicKey) throw new Error('Oznámení na telefonu ještě nejsou aktivovaná. Použij zatím e-mail a centrum upozornění.');
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') throw new Error('Oznámení nejsou povolená. Povolení můžeš změnit v nastavení prohlížeče.');
-        const registration = await navigator.serviceWorker.ready;
-        const existing = await registration.pushManager.getSubscription();
-        const subscription = existing ?? await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: applicationServerKey(publicKey),
-        });
-        await rpc('save_push_subscription', { p_subscription: subscription.toJSON() });
-      }
+      if (channel === 'push' && value) await enableDevicePush();
 
-      const current = query.data?.find((preference) => preference.event === event) ?? DEFAULTS;
+      const current = query.data?.find((preference) => preference.event === event) ?? (event === 'watch' ? WATCH_DEFAULTS : DEFAULTS);
       await rpc('save_notification_preference', {
         p_scope: scope,
         p_event: event,
@@ -200,7 +221,7 @@ export function NotificationSettings({ businessId }: { businessId?: string }) {
 
   return (
     <section className="rounded-2xl bg-card p-5 shadow-card sm:p-6">
-      <h2 className="text-lg font-extrabold tracking-tight text-ink">Upozornění na rezervace</h2>
+      <h2 className="text-lg font-extrabold tracking-tight text-ink">{formal ? 'Upozornění na rezervace' : 'Upozornění'}</h2>
       <p className="mt-1 text-sm text-muted">
         {formal ? 'Vyberte, jak vás upozorníme.' : 'Vyber si, jak tě upozorníme.'} Zprávy v aplikaci zůstávají dostupné vždy.
         {emailLocked ? ' E-mail o potvrzení a zrušení rezervace ti pošleme vždy, je to potvrzení tvé rezervace.' : ''}
@@ -212,26 +233,29 @@ export function NotificationSettings({ businessId }: { businessId?: string }) {
           <Button variant="ghost" className="mt-2" onClick={() => void query.refetch()}>Zkusit znovu</Button>
         </div>
       ) : (
-        (formal ? ['requested', 'confirmed', 'cancelled'] as const : ['confirmed', 'cancelled', 'review_requested'] as const).map((event) => {
+        (formal ? ['requested', 'confirmed', 'cancelled'] as const : ['confirmed', 'cancelled', 'review_requested', 'watch'] as const).map((event) => {
           const current = query.data?.find((preference) => preference.event === event);
-          const eventChannels: Channel[] = event === 'review_requested' ? ['push'] : channels;
+          const eventChannels: Channel[] = event === 'review_requested' ? ['push'] : event === 'watch' ? ['push', 'email'] : channels;
+          const defaults = event === 'watch' ? WATCH_DEFAULTS : DEFAULTS;
           return (
             <fieldset key={event} className="mt-4 border-t border-line pt-3">
               <legend className="font-bold text-ink">
                 {event === 'requested' ? 'Nová žádost o rezervaci'
                   : event === 'confirmed' ? 'Potvrzená rezervace'
-                    : event === 'cancelled' ? 'Zrušená rezervace' : 'Připomenutí hodnocení'}
+                    : event === 'cancelled' ? 'Zrušená rezervace'
+                      : event === 'watch' ? 'Hlídač FLEKů v okolí' : 'Připomenutí hodnocení'}
               </legend>
               {event === 'review_requested' ? <p className="mt-1 text-xs text-muted">V aplikaci se připomenutí ukáže vždy. E-mail ani WhatsApp neposíláme.</p> : null}
+              {event === 'watch' ? <p className="mt-1 text-xs text-muted">Nejvýš jedna zpráva za půl hodiny na hlídač, od 22 do 7 hodin jen v aplikaci.</p> : null}
               <div className="mt-1 flex flex-wrap gap-x-5">
                 {eventChannels.map((channel) => {
-                  const locked = channel === 'email' && emailLocked;
+                  const locked = channel === 'email' && emailLocked && event !== 'watch';
                   return (
                     <label key={channel} className={`flex min-h-11 items-center gap-2 text-sm font-medium text-ink ${locked ? '' : 'cursor-pointer'}`}>
                       <input
                         type="checkbox"
                         className="size-5 accent-accent"
-                        checked={locked || (current?.[channel] ?? DEFAULTS[channel])}
+                        checked={locked || (current?.[channel] ?? defaults[channel])}
                         disabled={locked || busy || query.isPending}
                         onChange={(eventTarget) => void save(event, channel, eventTarget.target.checked)}
                       />

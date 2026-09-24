@@ -3,6 +3,7 @@
 import './mapWorker';
 import { DOT_SIZE, spreadPins } from '../discovery/mapClusters';
 import { categoryGlyph } from '../../lib/categoryGlyphs';
+import { circleDiameterPx } from '../../lib/mapGeometry';
 import { useEffect, useRef } from 'react';
 import { LngLatBounds, Map as MapLibreMap, Marker, NavigationControl, type MapOptions, type StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -104,6 +105,8 @@ export function MapCanvas({
   framePadding = { top: 88, right: 72, bottom: 52, left: 72 },
   focusId,
   focusArea,
+  userLocation,
+  area,
   ariaLabel,
 }: {
   center: { lat: number; lng: number };
@@ -121,6 +124,10 @@ export function MapCanvas({
   focusId?: string;
   /** How much of the map, from the top and the bottom, is covered while `focusId` is shown. */
   focusArea?: { top: number; bottom: number };
+  /** Where the customer is right now, drawn as a dot with a halo as wide as the fix is unsure. */
+  userLocation?: { lat: number; lng: number; accuracy: number } | null;
+  /** A circle of `radius_m` metres, e.g. the area a FLEK watch covers. */
+  area?: { lat: number; lng: number; radius_m: number } | null;
   ariaLabel: string;
 }) {
   const container = useRef<HTMLDivElement>(null);
@@ -310,6 +317,65 @@ export function MapCanvas({
       drawn.current = [];
     };
   }, [markers, selectable]);
+
+  /*
+   * The customer's own position: a dot in the brand's bright blue with a white ring, over a halo
+   * as wide as the browser says the fix is unsure — a phone indoors can be 60 m off, and a dot
+   * without its halo would claim a precision it does not have. Both are DOM markers, like the pins,
+   * so they survive the raster fallback's setStyle; the halo is resized while zooming.
+   */
+  useEffect(() => {
+    const instance = map.current;
+    if (!instance || !userLocation) return;
+    const halo = document.createElement('span');
+    halo.className = 'user-halo';
+    halo.setAttribute('aria-hidden', 'true');
+    const dot = document.createElement('span');
+    dot.className = 'user-dot';
+    dot.setAttribute('role', 'img');
+    dot.setAttribute('aria-label', 'Tvoje poloha');
+    const at: [number, number] = [userLocation.lng, userLocation.lat];
+    const haloMarker = new Marker({ element: halo }).setLngLat(at).addTo(instance);
+    const dotMarker = new Marker({ element: dot }).setLngLat(at).addTo(instance);
+    // Below the pins: the dot says where you are, the pins are what you came for.
+    haloMarker.getElement().style.zIndex = '0';
+    dotMarker.getElement().style.zIndex = '0';
+    const size = () => {
+      const diameter = Math.min(circleDiameterPx(userLocation.lat, instance.getZoom(), userLocation.accuracy), 2000);
+      halo.style.width = `${diameter}px`;
+      halo.style.height = `${diameter}px`;
+      halo.hidden = diameter < 26;
+    };
+    size();
+    instance.on('zoom', size);
+    return () => {
+      instance.off('zoom', size);
+      haloMarker.remove();
+      dotMarker.remove();
+    };
+  }, [userLocation?.lat, userLocation?.lng, userLocation?.accuracy]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The area a watch covers, drawn the same way: a DOM circle kept at its real size in metres.
+  useEffect(() => {
+    const instance = map.current;
+    if (!instance || !area) return;
+    const ring = document.createElement('span');
+    ring.className = 'watch-area';
+    ring.setAttribute('aria-hidden', 'true');
+    const marker = new Marker({ element: ring }).setLngLat([area.lng, area.lat]).addTo(instance);
+    marker.getElement().style.zIndex = '0';
+    const size = () => {
+      const diameter = Math.min(circleDiameterPx(area.lat, instance.getZoom(), area.radius_m), 6000);
+      ring.style.width = `${diameter}px`;
+      ring.style.height = `${diameter}px`;
+    };
+    size();
+    instance.on('zoom', size);
+    return () => {
+      instance.off('zoom', size);
+      marker.remove();
+    };
+  }, [area?.lat, area?.lng, area?.radius_m]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const instance = map.current;

@@ -171,6 +171,8 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 - [ ] Nahrávání vlastních fotek podnikem s přepočtem, odstraněním EXIF a limitem rozměrů
 - [ ] Google hodnocení s cache, rate limitem a hlídáním rozpočtu (dnes nenasazené)
 - [x] Web push upozornění pro podnik i zákazníka (13. 9.)
+- [x] Poloha na mapě a hlídač FLEKů v okolí s upozorněním (24. 9.)
+- [ ] Hlídač: skutečný čas cesty místo odhadu vzdušnou čarou (potřebuje routovací službu)
 - [ ] Kredit za doporučení
 - [ ] Menší balík aplikace (mapa 979 kB, Temporal 325 kB) a měření Lighthouse
 - [ ] Napojení na rezervační systémy podniků, další města
@@ -196,6 +198,7 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 5. Dostane rezervační kód a QR, najde je v Rezervacích. O potvrzení a zrušení ví ze zvonku v aplikaci, e-mailem, (když si zapne) oznámením na telefonu a na WhatsApp, jakmile si jedním klepnutím ověří číslo (výchozí zapnuto, vypíná se v Profilu).
 6. Zdarma může zrušit do 60 minut před začátkem (podnik si lhůtu může změnit) nebo do 10 minut od rezervace, podle toho, co nastane později.
 7. Oblíbené podniky může sledovat a vidí u nich nové FLEKy; může pozvat kamaráda odkazem `/r/kód` a nainstalovat si appku na plochu.
+8. Na mapě vidí, kde právě je (modrá tečka), a může si zapnout **hlídač FLEKů**: zvolí místo, dojezd (10–30 min pěšky nebo MHD/kolem) a filtr a FLEK mu dá vědět, když se v okolí objeví nový termín na nejbližší dva dny. Hlídače spravuje v Profilu.
 
 ### Podnik (`/partner`)
 
@@ -331,6 +334,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 24. 9. 2026 | Mapa ukazuje, kde právě jsi, a hlídač FLEKů ti dá vědět, když se do 10–30 minut cesty uvolní nový FLEK podle tvého filtru. |
 | 23. 9. 2026 | Detail služby na telefonu má kratší fotografii, přehlednější termín, cenu a výběr dalších časů, ultramarínovou akci a mapu otevřenou až po klepnutí. Všech 37 katalogových aktivit má dvě varianty: skutečné ověřené fotografie, případně neutrální FLEK. Generované soubory byly odstraněny a demo katalog aktualizovaly dvě cílené migrace. |
 | 22. 9. 2026 | Podnik může nahrát fotku provozovny přímo v Provozovně; zákazník ji vidí nahoře na stránce podniku. |
 | 22. 9. 2026 | Mapa ukazuje všechny podniky i při oddáleném pohledu: server posílá mapě celou odpověď (dřív 50 řádků z jednoho konce města) a když špendlíky nemají kam, překreslí se všechny jako body. |

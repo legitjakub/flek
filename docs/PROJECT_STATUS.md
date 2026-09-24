@@ -30,6 +30,8 @@ Demo účty a jejich omezení jsou v [README.md](../README.md). Produkční hesl
 - Spodní náhled mapy je na telefonu kompaktní řádek vysoký 136 px: malá fotografie, služba, podnik, nejbližší termín a konečná cena. Celá karta vede na detail; další údaje a rezervace jsou až tam.
 - Více služeb na jednom místě má horizontální snap carousel s číslováním. Krátké gesto i šipka klávesnice posunou právě o jednu službu; vybraný bod zůstává nad skutečně změřenou výškou karty.
 - Mapa má ovládání „Moje poloha“, seznamový režim a krátkou nápovědu.
+- **Tečka „tady jsi“** (24. 9.): jakmile zákazník povolí polohu (klepnutím na „Moje poloha“ nebo dřív v tomto prohlížeči), mapa ukazuje jeho polohu jako modrou tečku s pulzem a průhledným kruhem nejistoty v metrech. Poloha zůstává jen v prohlížeči; hledání se k ní posune až po klepnutí. Tlačítko polohy zmodrá, když mapa polohu zná.
+- **Hlídač FLEKů** (24. 9.): zvoneček na mapě (a tlačítko „Dej mi vědět, až tu něco bude“ v prázdné mapě) založí hlídač — místo („kde právě jsem“ nebo místo hledání), dojezd (pěšky nebo MHD/kolo, 10/20/30 minut, odhad vzdušnou čarou 75 m/min a 200 m/min) a filtr převzatý z mapy (aktivita, cena, sleva, část dne). Server každých 5 minut najde nově zveřejněné rezervovatelné FLEKy do 48 hodin v okruhu a pošle jedno souhrnné upozornění: nejvýš jedno za 30 minut a šest denně na hlídač, od 22 do 7 jen v aplikaci. Upozornění vede na FLEK, nebo při víc nálezech na mapu s okruhem hlídače. Tři hlídače na účet, správa v Profilu (přepínač zapnuto/vypnuto, úprava, na mapě). Hlídač „kde právě jsem“ se posune, když zákazník otevře mapu jinde (nad 300 m).
 
 ### První návštěva
 
@@ -181,6 +183,7 @@ Nejdůležitější migrace:
 | `20260921212301_map_search_limit_300.sql` | strop `search_offers` z 100 na 300 řádků, aby mapa dosáhla na všechny podniky; tělo funkce beze změny |
 | `20260923095229_replace_generated_activity_photos.sql` | výměna pouze přesně známých ilustračních URL v katalogu a demo službách; vlastní fotografie ve Storage zůstávají |
 | `20260923100358_adjust_wellness_rest_photos.sql` | náhrada dvou zavádějících wellness snímků odpočinku neutrálnějšími skutečnými fotografiemi |
+| `20260924130650_flek_watches.sql` | hlídač FLEKů: `private.flek_watches` a `flek_watch_hits`, RPC `my_watches`, `save_watch`, `delete_watch`, `move_watch`, cron `flek-watch-scan` (5 min) a úklid záznamů po 30 dnech, událost upozornění `watch` (odkaz na `/nabidka/…` nebo `/mapa?hlidac=…`), předvolby e-mail/push pro hlídač, zásady 1.2 |
 
 ## Ověření a otevřené body
 
@@ -212,6 +215,7 @@ Podrobné důkazy jsou v [VERIFICATION.md](../VERIFICATION.md), omezení v [LIMI
 
 | Datum | Změna | Stav |
 | --- | --- | --- |
+| 24. 9. 2026 | **Poloha na mapě a hlídač FLEKů.** Modrá tečka s kruhem přesnosti ukazuje, kde zákazník je (jen v prohlížeči). Hlídač hlídá nové FLEKy do 10–30 minut pěšky nebo MHD/kolem podle filtru a upozorní v aplikaci, na telefonu a volitelně e-mailem; jedna souhrnná zpráva nejvýš za 30 minut, v noci jen v aplikaci. Zásady ochrany osobních údajů 1.2 popisují uložené místo hlídače. | migrace `20260924130650` v produkci; `tests/watches.sql` PASS s rollbackem (oprávnění, limit 3, zaokrouhlení na ~100 m, pozastavení, brzda 30 min, přesun nad 300 m, bez e-mailu bez zapnutí); build a 160 unit testů; vykresleno na 390 a 1280 px bez přetečení, všechny ovládací prvky ≥ 44 px |
 | 23. 9. 2026 | Nový vzhled rezervačního bloku: vybraný termín je jediná ultramarínová plocha, dny mají podtrženou navigaci a další časy ukazují především čas a cenu. Odstraněny počty u dnů, opakované slevy a stín obalu. | build a 154 unit testů; 375/390 px a desktop 1280 px, změna dne a nabídky s cenou; měřený blok 289 px, dotykové plochy alespoň 44 px, bez chyb konzole |
 | 23. 9. 2026 | Mobilní detail má 180px fotografii, kratší záhlaví a rezervační celek bez vnořených karet; obecné popisy se nezobrazují a mapa se otevírá až na požádání. Katalog 37 aktivit přešel z generovaných obrázků na 69 použití skutečných fotografií a pět neutrálních placeholderů. Zdroj a licence jsou v `docs/assets/activity-photo-sources.json`; staré veřejné soubory byly odstraněny. | migrace `20260923095229` a `20260923100358` v hostované DB; mobil 375/390 px a desktop 1280 px bez přetečení, náhradní obrázek a změna termínu ověřeny; build a unit testy viz `VERIFICATION.md` |
 | 22. 9. 2026 | Fotka provozovny jde nahrát přímo v Provozovně (stejnou cestou přes kontrolu obsahu jako fotka služby) a zákazník ji vidí nahoře na stránce podniku. Přibyly české hlášky pro `IMAGE_REUPLOAD_REQUIRED`, `CONTENT_PENDING` a `MODERATION_UNAVAILABLE`. | build a 156 unit testů; skutečné nahrání odsud vyzkoušet nejde (kontejner nemá síť ven), ověří ho člověk na demo podniku |

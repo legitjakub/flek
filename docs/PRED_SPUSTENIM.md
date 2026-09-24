@@ -149,6 +149,7 @@ Texty napsal agent podle skutečného chování FLEKu (18. 9. 2026): `src/conten
   - **DAC7:** registrace provozovatele a roční oznámení; podklad stáhne admin v Administraci → Metriky.
   - **Zásady ochrany osobních údajů:** právní základy, doby uchování, zpracovatelé a předávání mimo EU.
   - **Automatická moderace a recenze:** verze zásad 1.1 popisuje anonymní ověřené recenze a odeslání veřejných textů a fotografií do OpenAI k bezpečnostní kontrole; potvrdit oprávněný zájem, dobu uchování a předávání mimo EU.
+  - **Hlídač FLEKů:** verze zásad 1.2 (24. 9.) přidává uložení místa hlídače na serveru (zaokrouhleno na zhruba 100 m, u „kde právě jsem“ poslední místo otevření mapy) a upozornění z něj. Potvrdit právní základ (souhlas založením hlídače), dobu uchování a že upozornění na nové nabídky nejsou obchodním sdělením podle zákona o některých službách informační společnosti — zákazník si je výslovně zapíná a e-mailem chodí jen po samostatném zapnutí.
   - Po kontrole: každá změna textu zvedne verzi (viz `AGENTS.md`).
 - [ ] **Obory živnosti.** Ověřit v živnostenském rejstříku, že živnost pokrývá zprostředkování obchodu a služeb, případně obor doplnit.
 - [ ] **DAC7** (s daňovým poradcem): registrace u Specializovaného finančního úřadu a oznámení do konce ledna za předchozí rok. Podniky zadávají datum narození (OSVČ), stát a adresu sídla ve fakturačních údajích.

@@ -16,9 +16,10 @@ Správcem je **{{spravce}}**. S čímkoli ohledně osobních údajů piš na {{e
 | Přihlášení přes Google nebo Apple: jméno, e-mail (u Applu případně skrytá adresa) a identifikátor účtu | přihlášení a vedení účtu | plnění smlouvy | do smazání účtu |
 | Rezervace a platby: služba, podnik, termín, ceny, rezervační kód, stav platby a vratky, souhlas s podmínkami a jeho verze | rezervace, platby, vratky, řešení sporů, účetnictví a daně | plnění smlouvy, právní povinnost, oprávněný zájem | 10 let kvůli daňovým a účetním předpisům; po smazání účtu bez jména, e-mailu a telefonu |
 | Údaje o platební kartě | platba | zpracovává je jen Stripe, FLEK je nevidí | podle pravidel Stripe |
-| Poloha | nabídky v okolí | tvoje volba (povolení v prohlížeči), oprávněný zájem | přesnou polohu na serveru neukládáme; v analytice zaokrouhlenou na zhruba 1 km 180 dní |
+| Poloha | nabídky v okolí a tvoje tečka na mapě | tvoje volba (povolení v prohlížeči), oprávněný zájem | přesnou polohu na serveru neukládáme, tečka na mapě se kreslí jen v tvém prohlížeči; v analytice zaokrouhlenou na zhruba 1 km 180 dní |
+| Hlídač FLEKů: místo hlídání zaokrouhlené na zhruba 100 m, dojezd, filtr (aktivita, cena, sleva, část dne), název a čas posledního upozornění; u hlídače „kde právě jsem“ i poslední místo, kde jsi otevřel/a mapu | upozornění na nové FLEKy v okolí | tvoje volba (založení hlídače) | do smazání hlídače nebo účtu; záznam, na který FLEK už hlídač upozornil, 30 dní |
 | Oblíbené podniky | zobrazení nových FLEKů u podniků, které sleduješ | plnění smlouvy | do odebrání nebo smazání účtu |
-| Upozornění: zprávy v aplikaci, záznamy o doručení e-mailů, adresa pro oznámení na telefonu | informace o rezervacích | plnění smlouvy; oznámení na telefonu jen po zapnutí | zprávy v aplikaci 12 měsíců, záznamy o doručení 90 dní, adresa pro oznámení do vypnutí |
+| Upozornění: zprávy v aplikaci, záznamy o doručení e-mailů, adresa pro oznámení na telefonu | informace o rezervacích a nových FLEKech z tvého hlídače | plnění smlouvy; oznámení na telefonu a upozornění z hlídače jen po zapnutí | zprávy v aplikaci 12 měsíců, záznamy o doručení 90 dní, adresa pro oznámení do vypnutí |
 | WhatsApp: telefon, ověření čísla, souhlas a jeho verze, odeslané zprávy | upozornění a potvrzování rezervací na WhatsApp | tvoje volba (ověření čísla), plnění smlouvy | kontakt do vypnutí nebo smazání účtu, zprávy 90 dní, přijaté události 30 dní |
 | Analytika: hledání, zobrazené nabídky, průběh rezervace, oblíbené, sdílení; u přihlášených s ID účtu | zlepšování služby a rozšiřování nabídky | oprávněný zájem | 180 dní |
 | Pozvánky: tvůj kód, kdo koho pozval, první dokončená rezervace | program pozvánek | oprávněný zájem | do smazání účtu |
@@ -31,7 +32,7 @@ Správcem je **{{spravce}}**. S čímkoli ohledně osobních údajů piš na {{e
 
 Oprávněným zájmem je spolehlivý a bezpečný provoz FLEKu, jeho zlepšování a obrana právních nároků. Proti zpracování na tomto základě můžeš vznést námitku.
 
-E-mail, jméno a telefon potřebujeme k uzavření a plnění smlouvy, bez nich rezervovat nejde. Ostatní údaje, jako poloha, oznámení na telefonu nebo WhatsApp, jsou dobrovolné.
+E-mail, jméno a telefon potřebujeme k uzavření a plnění smlouvy, bez nich rezervovat nejde. Ostatní údaje, jako poloha, hlídač FLEKů, oznámení na telefonu nebo WhatsApp, jsou dobrovolné.
 
 ## 3. Komu údaje předáváme
 
