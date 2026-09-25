@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { BellOff, BellRing, Check, Clock3, Info, Volume2, X } from 'lucide-react';
+import { BellOff, Check, Clock3, Info, ShieldCheck, Volume2, X } from 'lucide-react';
 import { respondToBooking } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
@@ -9,7 +9,7 @@ import { clockTime, dayLabel, duration } from '../../lib/time';
 import { useServerNow } from '../../lib/clock';
 import { cx } from '../../components/ui';
 import type { BookingStatus } from '../../types/database';
-import { startsInLine, timeLeft } from '../bookings/confirmationView';
+import { timeLeft } from '../bookings/confirmationView';
 import { isMuted, muteRequests, unlockSound, unmuteRequests } from './ringer';
 import {
   decisionOutcome,
@@ -18,6 +18,7 @@ import {
   moreShort,
   moreWaiting,
   onScreen,
+  startsIn,
   subscribeTakeover,
   takeoverVersion,
   timeShare,
@@ -207,21 +208,20 @@ export function IncomingRequest({
         if (outcome) proceed();
         else later();
       }}
-      className="fixed inset-0 m-0 h-full max-h-none w-full max-w-none border-0 bg-transparent p-0 text-brand-ink backdrop:bg-ink/60"
+      className="fixed inset-0 m-0 h-full max-h-none w-full max-w-none border-0 bg-transparent p-0 text-ink backdrop:bg-ink/60"
     >
       {shown ? (
-        <div ref={scroller} className="takeover relative isolate flex h-full flex-col overflow-y-auto overscroll-contain">
+        <div ref={scroller} className="takeover relative isolate flex h-full flex-col overflow-y-auto overscroll-contain split:flex-row split:overflow-hidden">
           <Aurora />
-          <div className="relative mx-auto flex w-full max-w-5xl items-center justify-between gap-2 px-4 pt-[max(1rem,env(safe-area-inset-top))] sm:px-6 flat:pt-[max(0.5rem,env(safe-area-inset-top))]">
+          <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between gap-2 px-4 pt-[max(1rem,env(safe-area-inset-top))] sm:px-6 split:max-lg:right-1/2">
             {!outcome && others.length ? (
               // Requests behind this one, where they take no line from the request itself.
-              <p className="inline-flex min-h-9 min-w-0 items-center gap-1.5 rounded-full bg-ink/30 px-3 text-sm font-extrabold">
-                <BellRing size={15} aria-hidden="true" className="shrink-0" />
+              <p className="inline-flex min-h-9 min-w-0 items-center rounded-full bg-ink/30 px-3 text-sm font-extrabold text-brand-ink">
                 <span aria-hidden="true" className="truncate">{moreShort(others.length)}</span>
                 <span className="sr-only">{moreWaiting(others.length)}</span>
               </p>
             ) : (
-              <p className="min-w-0 truncate text-sm font-extrabold">
+              <p className="min-w-0 truncate text-sm font-extrabold text-brand-ink">
                 <span className="short:hidden">FLEK Partner</span>
                 {/* A short screen has no line to spare for the venue in the hero, so it moves up here. */}
                 <span className="hidden short:inline">{venue}</span>
@@ -230,38 +230,32 @@ export function IncomingRequest({
             <div className="flex shrink-0 items-center gap-2">
               {waiting.length ? <SoundButton ring={ring} ids={waiting.map((request) => request.id)} onBlocked={setBlocked} /> : null}
               {!outcome ? (
-                <button type="button" onClick={later} className="takeover-quiet inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-sm font-bold">
+                <button
+                  type="button"
+                  onClick={later}
+                  aria-label="Později"
+                  className={cx(
+                    'takeover-quiet inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-full px-3.5 text-sm font-bold lg:bg-surface lg:text-ink lg:ring-1 lg:ring-line lg:hover:bg-line',
+                    others.length > 0 && 'max-[389px]:px-0',
+                  )}
+                >
                   <X size={17} aria-hidden="true" />
-                  Později
+                  {/* A small phone keeps the cross only while the count of waiting requests needs the room. */}
+                  <span aria-hidden="true" className={cx(others.length > 0 && 'max-[389px]:hidden')}>Později</span>
                 </button>
               ) : null}
             </div>
           </div>
-          {blocked && !ring.ready ? (
-            <p role="status" className="relative mx-auto mt-2 w-full max-w-5xl px-4 text-right text-sm text-brand-ink/90 sm:px-6">
-              Prohlížeč zvuk blokuje. Zkontrolujte hlasitost a že karta není ztlumená.
-            </p>
-          ) : null}
 
-          {outcome ? (
-            <div className="relative mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6">
-              <OutcomeView
-                key={`${shown.id}:done`}
-                outcome={outcome}
-                request={shown}
-                now={now}
-                heading={heading}
-                more={others.length}
-                onNext={proceed}
-              />
-            </div>
-          ) : (
-            <div
-              key={shown.id}
-              className="relative mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 pt-4 sm:px-6 flat:grid flat:max-w-3xl flat:grid-cols-2 flat:items-center flat:gap-8 flat:pt-2 lg:grid lg:max-w-5xl lg:grid-cols-2 lg:items-center lg:gap-16 lg:pb-10"
-            >
-              {/* On a short screen the pin sits beside the heading instead of above it. */}
-              <div className="flex flex-col items-center text-center short:flex-row short:gap-4 short:text-left">
+          {/* The call: FLEK's logo ringing on the night blue. */}
+          <section
+            key={`hero:${shown.id}:${outcome ? 'done' : 'open'}`}
+            className="relative flex shrink-0 grow flex-col items-center justify-center px-4 pt-[calc(max(1rem,env(safe-area-inset-top))+3.75rem)] pb-14 text-center text-brand-ink sm:px-6 short:flex-row short:gap-4 short:pb-12 short:text-left split:w-1/2 split:shrink split:overflow-y-auto split:pb-10"
+          >
+            {outcome ? (
+              <OutcomeHero outcome={outcome} heading={heading} />
+            ) : (
+              <>
                 <p className="takeover-rise max-w-full truncate text-sm font-bold text-brand-ink/85 short:hidden">{venue}</p>
                 <Beacon share={timeShare(shown, now)} urgent={urgent} pulsing={pulsing && !overdue} />
                 <div className="flex min-w-0 flex-col items-center short:items-start">
@@ -274,84 +268,92 @@ export function IncomingRequest({
                   >
                     Nová žádost o rezervaci
                   </h1>
-                  <p
-                    role="timer"
-                    aria-live="off"
-                    className={cx(
-                      'takeover-rise tnum mt-3 inline-flex min-h-10 items-center gap-2 rounded-full px-4 text-lg font-extrabold whitespace-nowrap short:mt-2 short:min-h-9 short:px-3 short:text-base',
-                      urgent ? 'bg-warning-soft text-warning' : 'bg-brand-ink/12 text-brand-ink',
-                    )}
-                    style={{ animationDelay: '120ms' }}
-                  >
-                    <Clock3 size={18} aria-hidden="true" />
-                    {overdue ? 'Čas na potvrzení vypršel' : `Potvrďte do ${left?.clock ?? '–'}`}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-col">
-                <RequestCard request={shown} now={now} />
-                <p className="takeover-rise mt-3 px-1 text-center text-sm text-brand-ink/85 short:mt-2 flat:hidden lg:text-left" style={{ animationDelay: '190ms' }}>
-                  Zákazník má platbu autorizovanou. Peníze strhneme, až rezervaci potvrdíte.
-                </p>
-                {/* The answer stays in reach on a short phone: the buttons stick to the bottom edge. */}
-                <div
-                  className={cx(overflowing && 'takeover-dock', 'takeover-rise sticky bottom-0 z-10 -mx-4 mt-2 px-4 pt-5 pb-[max(1rem,env(safe-area-inset-bottom))] short:pt-3 short:pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:-mx-6 sm:px-6 flat:static flat:mx-0 flat:mt-2 flat:px-0 flat:pt-0 flat:pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:static lg:mx-0 lg:mt-5 lg:p-0')}
-                  style={{ animationDelay: '220ms' }}
-                >
-                  {overdue ? null : declining ? (
-                    <div role="group" aria-labelledby="prichozi-odmitnout" className="rounded-2xl bg-ink/40 p-4 text-left">
-                      <p id="prichozi-odmitnout" className="text-base font-extrabold">Opravdu odmítnout?</p>
-                      <p className="mt-1 text-sm text-brand-ink/90">Zákazník nic nezaplatí a místo se vrátí do nabídky.</p>
-                      <div className="mt-3 grid grid-cols-2 gap-2">
-                        <button type="button" onClick={() => setDeclining(false)} disabled={decision.isPending} className="takeover-quiet min-h-13 rounded-xl text-base font-bold">
-                          Zpět
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => decide(false)}
-                          disabled={decision.isPending}
-                          aria-busy={decision.isPending || undefined}
-                          className="min-h-13 rounded-xl bg-card text-base font-extrabold text-danger disabled:opacity-70"
-                        >
-                          {decision.isPending ? 'Odmítáme…' : 'Odmítnout'}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className={cx('grid gap-3 short:gap-2', armed ? '' : 'pointer-events-none')}>
-                      <button
-                        type="button"
-                        onClick={() => decide(true)}
-                        disabled={decision.isPending}
-                        aria-busy={decision.isPending || undefined}
-                        className="relative inline-flex min-h-16 items-center justify-center overflow-hidden rounded-2xl bg-card px-5 text-lg font-extrabold text-brand shadow-lift disabled:opacity-80 short:min-h-14"
-                      >
-                        {!decision.isPending ? <span aria-hidden="true" className="takeover-sheen" /> : null}
-                        <span className="relative inline-flex items-center gap-2">
-                          <Check size={22} strokeWidth={3} aria-hidden="true" />
-                          {decision.isPending ? 'Potvrzujeme…' : 'Potvrdit rezervaci'}
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => armed && setDeclining(true)}
-                        disabled={decision.isPending}
-                        className="takeover-quiet min-h-13 rounded-2xl px-5 text-base font-bold short:min-h-12"
-                      >
-                        Nemohu přijmout
-                      </button>
-                    </div>
-                  )}
-                  {decision.isError ? (
-                    <p role="alert" className="mt-3 rounded-xl bg-card px-4 py-3 text-left text-sm font-bold text-danger">
-                      {errorMessage(decision.error, 'merchant')}
+                  {blocked && !ring.ready ? (
+                    <p role="status" className="mt-2 max-w-xs text-sm text-brand-ink/90">
+                      Prohlížeč zvuk blokuje. Zkontrolujte hlasitost a že karta není ztlumená.
                     </p>
                   ) : null}
                 </div>
-              </div>
+              </>
+            )}
+          </section>
+
+          {/* One white sheet, anchored to the bottom (the right half on a tablet): what it is, and the answer. */}
+          <section className="takeover-sheet relative z-10 -mt-8 flex shrink-0 flex-col rounded-t-[2rem] bg-card px-5 pt-6 pb-[max(1rem,env(safe-area-inset-bottom))] text-ink sm:px-8 short:pt-5 split:mt-0 split:w-1/2 split:shrink split:justify-center split:overflow-y-auto split:rounded-none split:px-8 lg:px-10 lg:pt-24">
+            <div key={`sheet:${shown.id}:${outcome ? 'done' : 'open'}`} className="mx-auto w-full max-w-md">
+              {outcome ? (
+                <OutcomeSheet outcome={outcome} request={shown} now={now} more={others.length} onNext={proceed} />
+              ) : (
+                <>
+                  <RequestDetails request={shown} now={now} left={left} urgent={urgent} overdue={overdue} />
+                  {/* The answer stays in reach on a short phone: the buttons stick to the bottom edge. */}
+                  <div
+                    className={cx(
+                      overflowing && 'takeover-dock',
+                      'takeover-rise sticky bottom-0 z-10 -mx-5 mt-5 bg-card px-5 pt-1 sm:-mx-8 sm:px-8 short:mt-4 split:static split:mx-0 split:px-0 lg:mt-8',
+                    )}
+                    style={{ animationDelay: '240ms' }}
+                  >
+                    {overdue ? null : declining ? (
+                      <div role="group" aria-labelledby="prichozi-odmitnout" className="rounded-2xl bg-danger-soft p-4">
+                        <p id="prichozi-odmitnout" className="text-base font-extrabold">Opravdu odmítnout?</p>
+                        <p className="mt-1 text-sm text-ink/80">Zákazník nic nezaplatí a místo se vrátí do nabídky.</p>
+                        <div className="mt-3 grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setDeclining(false)}
+                            disabled={decision.isPending}
+                            className="min-h-13 rounded-xl border border-line bg-card text-base font-bold hover:bg-surface disabled:opacity-60"
+                          >
+                            Zpět
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => decide(false)}
+                            disabled={decision.isPending}
+                            aria-busy={decision.isPending || undefined}
+                            className="min-h-13 rounded-xl bg-danger text-base font-extrabold text-card disabled:opacity-70"
+                          >
+                            {decision.isPending ? 'Odmítáme…' : 'Odmítnout'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      // One strong button; declining is a quiet text button under it.
+                      <div className={cx('grid gap-1', armed ? '' : 'pointer-events-none')}>
+                        <button
+                          type="button"
+                          onClick={() => decide(true)}
+                          disabled={decision.isPending}
+                          aria-busy={decision.isPending || undefined}
+                          className="relative inline-flex min-h-15 items-center justify-center overflow-hidden rounded-2xl bg-brand px-6 text-lg font-extrabold text-brand-ink shadow-lift transition-colors hover:bg-accent disabled:opacity-80 short:min-h-14"
+                        >
+                          {!decision.isPending ? <span aria-hidden="true" className="takeover-sheen" /> : null}
+                          <span className="relative inline-flex items-center gap-2">
+                            <Check size={22} strokeWidth={3} aria-hidden="true" />
+                            {decision.isPending ? 'Potvrzujeme…' : 'Potvrdit rezervaci'}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => armed && setDeclining(true)}
+                          disabled={decision.isPending}
+                          className="min-h-12 rounded-2xl px-5 text-base font-bold text-muted transition-colors hover:bg-surface hover:text-ink disabled:opacity-60"
+                        >
+                          Nemohu přijmout
+                        </button>
+                      </div>
+                    )}
+                    {decision.isError ? (
+                      <p role="alert" className="mt-3 rounded-2xl bg-danger-soft px-4 py-3 text-sm font-bold text-danger">
+                        {errorMessage(decision.error, 'merchant')}
+                      </p>
+                    ) : null}
+                  </div>
+                </>
+              )}
             </div>
-          )}
+          </section>
         </div>
       ) : null}
     </dialog>,
@@ -371,8 +373,8 @@ function Aurora() {
 }
 
 /**
- * FLEK's pin — a place and a time — in a white disc. While it rings, its three rays flash and two
- * sonar rings leave it on each chord of the ring; the circle around it is the time left to answer.
+ * FLEK's logo in a white disc. While it rings, the rays of the pin on its "k" flash, the pin hops and
+ * two sonar rings leave the disc on each chord of the ring; the circle around it is the time left.
  */
 function Beacon({ share, urgent, pulsing }: { share: number; urgent: boolean; pulsing: boolean }) {
   const circumference = 2 * Math.PI * 46;
@@ -395,42 +397,83 @@ function Beacon({ share, urgent, pulsing }: { share: number; urgent: boolean; pu
         />
       </svg>
       <span className="takeover-disc grid place-items-center rounded-full bg-card shadow-lift">
-        <svg viewBox="0 0 36 32" aria-hidden="true" className="takeover-pin translate-x-[6%]">
-          <path d="M12 30.6s11-11.8 11-17.6a11 11 0 1 0-22 0c0 5.8 11 17.6 11 17.6z" className="fill-brand" />
-          <circle cx="12" cy="13" r="6.6" className="fill-card" />
-          <path d="M12 8.4v4.6l3.5 2" fill="none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="stroke-ink" />
-          <g fill="none" strokeWidth="3.2" strokeLinecap="round" className="stroke-brand">
-            <path className="takeover-ray" d="M26.2 7.6 30.8 2.8" />
-            <path className="takeover-ray takeover-ray-2" d="M28.4 13 34.2 10.6" />
-            <path className="takeover-ray takeover-ray-3" d="M28.6 18.6 34.6 18" />
-          </g>
-        </svg>
+        {/* The wordmark as Wordmark draws it, with the pin's rays free to move. */}
+        <span className="takeover-logo inline-flex items-start text-ink" aria-hidden="true">
+          <span className="leading-none font-extrabold lowercase" style={{ letterSpacing: '-0.055em' }}>flek</span>
+          <svg viewBox="0 0 36 32" className="takeover-pin mt-[-0.26em] ml-[-0.26em] h-[1.2em] w-[1.35em] shrink-0 overflow-visible">
+            <path d="M12 30.6s11-11.8 11-17.6a11 11 0 1 0-22 0c0 5.8 11 17.6 11 17.6z" className="fill-brand" />
+            <circle cx="12" cy="13" r="6.6" className="fill-card" />
+            <path d="M12 8.4v4.6l3.5 2" fill="none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="stroke-ink" />
+            <g fill="none" strokeWidth="3.2" strokeLinecap="round" className="stroke-brand">
+              <path className="takeover-ray" d="M26.2 7.6 30.8 2.8" />
+              <path className="takeover-ray takeover-ray-2" d="M28.4 13 34.2 10.6" />
+              <path className="takeover-ray takeover-ray-3" d="M28.6 18.6 34.6 18" />
+            </g>
+          </svg>
+        </span>
       </span>
     </div>
   );
 }
 
-function RequestCard({ request, now }: { request: WaitingRequest; now: string }) {
-  const starts = startsInLine(request.startAt, now);
+/**
+ * The request in the app's own reading colours: the time left and how soon it starts, then when and
+ * what in large type, then who and how much, and that the money is already held.
+ */
+function RequestDetails({
+  request,
+  now,
+  left,
+  urgent,
+  overdue,
+}: {
+  request: WaitingRequest;
+  now: string;
+  left: ReturnType<typeof timeLeft>;
+  urgent: boolean;
+  overdue: boolean;
+}) {
+  const starts = startsIn(request.startAt, now);
   return (
-    <div id="prichozi-detail" className="takeover-rise mt-5 w-full rounded-3xl bg-card p-5 text-left text-ink shadow-lift short:mt-4 short:p-4 lg:mt-0" style={{ animationDelay: '160ms' }}>
-      <p className={cx('tnum text-sm font-bold', starts.urgent ? 'text-warning' : 'text-muted')}>{starts.text}</p>
-      <p className="tnum mt-1 text-xl leading-tight font-extrabold">
-        {dayLabel(request.startAt, now)} {clockTime(request.startAt)}
+    <div id="prichozi-detail">
+      <p
+        role="timer"
+        aria-live="off"
+        className={cx(
+          'takeover-rise tnum inline-flex min-h-8 items-center gap-1.5 rounded-full px-3 text-sm font-extrabold whitespace-nowrap',
+          urgent ? 'bg-warning-soft text-warning' : 'bg-brand-soft text-accent',
+        )}
+        style={{ animationDelay: '120ms' }}
+      >
+        <Clock3 size={15} aria-hidden="true" />
+        {overdue ? 'Čas na potvrzení vypršel' : `Potvrďte do ${left?.clock ?? '–'}`}
       </p>
-      <p className="mt-0.5 text-base font-bold">
-        {request.service} <span className="font-normal text-muted">{duration(request.startAt, request.endAt)} min</span>
+      {/* When, and how soon: the one thing a venue checks first. */}
+      <p className="takeover-rise mt-4 flex flex-wrap items-baseline gap-x-2.5 short:mt-3" style={{ animationDelay: '150ms' }}>
+        <span className="tnum text-2xl leading-none font-extrabold">
+          {dayLabel(request.startAt, now)} {clockTime(request.startAt)}
+        </span>
+        <span className={cx('tnum text-base font-bold', starts.urgent ? 'text-warning' : 'text-muted')}>
+          {starts.urgent ? '🔥 ' : ''}{starts.text}
+        </span>
       </p>
-      <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-line pt-4 short:mt-3 short:pt-3">
+      <p className="takeover-rise mt-2 text-base font-bold" style={{ animationDelay: '170ms' }}>
+        {request.service} <span className="font-normal text-muted">· {duration(request.startAt, request.endAt)} min</span>
+      </p>
+      <dl className="takeover-rise mt-4 grid grid-cols-2 gap-3 border-t border-line pt-4 short:mt-3 short:pt-3" style={{ animationDelay: '190ms' }}>
         <div className="min-w-0">
           <dt className="text-sm text-muted">Zákazník</dt>
           <dd className="truncate text-base font-bold">{request.customer}</dd>
         </div>
-        <div>
+        <div className="text-right">
           <dt className="text-sm text-muted">Vy dostanete</dt>
           <dd className="tnum text-xl leading-tight font-extrabold">{money(request.payoutCents)}</dd>
         </div>
       </dl>
+      <p className="takeover-rise mt-3 flex items-start gap-1.5 text-sm text-muted" style={{ animationDelay: '210ms' }}>
+        <ShieldCheck size={16} aria-hidden="true" className="mt-0.5 shrink-0 text-brand" />
+        Platba je autorizovaná, strhneme ji po potvrzení.
+      </p>
     </div>
   );
 }
@@ -439,12 +482,18 @@ function RequestCard({ request, now }: { request: WaitingRequest; now: string })
  * Ring on, off, or still blocked by the browser. Unlike the ring bar, turning the sound on here
  * lets the request on screen ring: it is not answered yet, and ringing until it is is the point.
  * The whole dialog is left out of the tap-anywhere unlock, so this tap is the one that decides.
+ * On a tablet or computer the buttons sit over the white half, so they take its colours there.
  */
 function SoundButton({ ring, ids, onBlocked }: { ring: Ring; ids: string[]; onBlocked: (blocked: boolean) => void }) {
-  const base = 'inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-sm font-bold';
+  const base = 'inline-flex min-h-11 items-center gap-1.5 rounded-full px-3.5 text-sm font-bold';
+  const onWhite = 'lg:bg-surface lg:text-ink lg:ring-1 lg:ring-line lg:hover:bg-line';
   if (!ring.ready) {
     return (
-      <button type="button" onClick={() => void unlockSound().then((ok) => onBlocked(!ok))} className={cx(base, 'takeover-call bg-card text-brand')}>
+      <button
+        type="button"
+        onClick={() => void unlockSound().then((ok) => onBlocked(!ok))}
+        className={cx(base, 'takeover-call bg-card text-brand lg:bg-brand lg:text-brand-ink')}
+      >
         <Volume2 size={17} aria-hidden="true" />
         Zapnout zvuk
       </button>
@@ -452,36 +501,23 @@ function SoundButton({ ring, ids, onBlocked }: { ring: Ring; ids: string[]; onBl
   }
   const silenced = ids.every((id) => isMuted(id));
   return silenced ? (
-    <button type="button" aria-pressed="true" onClick={() => ring.unmute(ids)} className={cx(base, 'takeover-quiet')}>
+    <button type="button" aria-pressed="true" onClick={() => ring.unmute(ids)} className={cx(base, 'takeover-quiet', onWhite)}>
       <BellOff size={17} aria-hidden="true" />
       Ztlumeno
     </button>
   ) : (
-    <button type="button" aria-pressed="false" onClick={ring.mute} className={cx(base, 'takeover-quiet')}>
+    <button type="button" aria-pressed="false" onClick={ring.mute} className={cx(base, 'takeover-quiet', onWhite)}>
       <BellOff size={17} aria-hidden="true" />
       Ztlumit
     </button>
   );
 }
 
-function OutcomeView({
-  outcome,
-  request,
-  now,
-  heading,
-  more,
-  onNext,
-}: {
-  outcome: Outcome;
-  request: WaitingRequest;
-  now: string;
-  heading: React.RefObject<HTMLHeadingElement | null>;
-  more: number;
-  onNext: () => void;
-}) {
+/** How the request ended, drawn where the logo rang: a check that draws itself, or a quiet icon. */
+function OutcomeHero({ outcome, heading }: { outcome: Outcome; heading: React.RefObject<HTMLHeadingElement | null> }) {
   const Icon = outcome.tone === 'declined' ? X : outcome.tone === 'warning' ? Clock3 : Info;
   return (
-    <div className="flex flex-col items-center text-center">
+    <>
       <div className="takeover-beacon takeover-pop relative grid place-items-center">
         {outcome.tone === 'success' ? (
           <>
@@ -495,31 +531,56 @@ function OutcomeView({
           </>
         ) : (
           <span className="takeover-disc grid place-items-center rounded-full bg-card shadow-lift">
-            <Icon size={52} strokeWidth={2.5} aria-hidden="true" className={outcome.tone === 'warning' ? 'text-warning' : 'text-brand'} />
+            <Icon aria-hidden="true" strokeWidth={2.5} className={cx('size-2/5', outcome.tone === 'warning' ? 'text-warning' : 'text-brand')} />
           </span>
         )}
       </div>
-      <h1 ref={heading} tabIndex={-1} id="prichozi-nadpis" className="takeover-rise mt-7 text-2xl leading-tight font-extrabold outline-none" style={{ animationDelay: '120ms' }}>
+      <h1
+        ref={heading}
+        tabIndex={-1}
+        id="prichozi-nadpis"
+        className="takeover-rise mt-5 text-2xl leading-tight font-extrabold outline-none short:mt-0 short:text-xl lg:mt-8"
+        style={{ animationDelay: '120ms' }}
+      >
         {outcome.title}
       </h1>
-      <p id="prichozi-vysledek" className="takeover-rise mt-2 max-w-sm text-base text-brand-ink/90" style={{ animationDelay: '160ms' }}>
+    </>
+  );
+}
+
+function OutcomeSheet({
+  outcome,
+  request,
+  now,
+  more,
+  onNext,
+}: {
+  outcome: Outcome;
+  request: WaitingRequest;
+  now: string;
+  more: number;
+  onNext: () => void;
+}) {
+  return (
+    <>
+      <p id="prichozi-vysledek" className="takeover-rise text-base" style={{ animationDelay: '140ms' }}>
         {outcome.text}
       </p>
-      <p className="takeover-rise tnum mt-4 max-w-full truncate rounded-full bg-ink/25 px-4 py-2 text-sm font-bold" style={{ animationDelay: '200ms' }}>
+      <p className="takeover-rise tnum mt-3 truncate text-sm font-bold text-muted" style={{ animationDelay: '170ms' }}>
         {dayLabel(request.startAt, now)} {clockTime(request.startAt)} · {request.service} · {request.customer}
       </p>
       <button
         type="button"
         onClick={onNext}
-        className="takeover-rise relative mt-8 inline-flex min-h-14 w-full max-w-sm items-center justify-center overflow-hidden rounded-2xl bg-card px-5 text-lg font-extrabold text-brand shadow-lift"
-        style={{ animationDelay: '260ms' }}
+        className="takeover-rise relative mt-5 inline-flex min-h-14 w-full items-center justify-center overflow-hidden rounded-2xl bg-brand px-6 text-lg font-extrabold text-brand-ink shadow-lift transition-colors hover:bg-accent"
+        style={{ animationDelay: '200ms' }}
       >
         {outcome.autoClose ? (
-          <span aria-hidden="true" className="takeover-countdown absolute inset-y-0 left-0 bg-brand-soft" style={{ animationDuration: `${AUTO_CLOSE_MS}ms` }} />
+          <span aria-hidden="true" className="takeover-countdown absolute inset-y-0 left-0 bg-accent" style={{ animationDuration: `${AUTO_CLOSE_MS}ms` }} />
         ) : null}
         <span className="relative">{more ? 'Další žádost' : outcome.autoClose ? 'Hotovo' : 'Zavřít'}</span>
       </button>
-    </div>
+    </>
   );
 }
 

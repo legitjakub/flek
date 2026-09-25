@@ -7,6 +7,7 @@ import {
   moreWaiting,
   onScreen,
   showRequests,
+  startsIn,
   takeoverVersion,
   timeShare,
 } from '../src/features/merchant/incomingRequest';
@@ -113,5 +114,20 @@ describe('moreShort', () => {
     expect(moreShort(1)).toBe('+1 žádost');
     expect(moreShort(4)).toBe('+4 žádosti');
     expect(moreShort(5)).toBe('+5 žádostí');
+  });
+});
+
+describe('startsIn', () => {
+  const now = '2026-09-24T12:00:00Z';
+  const at = (minutes: number) => new Date(Date.parse(now) + minutes * 60_000).toISOString();
+  it('says how soon the FLEK starts, short enough to sit beside its time', () => {
+    expect(startsIn(at(0), now)).toEqual({ text: 'začíná teď', urgent: true });
+    expect(startsIn(at(18), now)).toEqual({ text: 'za 18 min', urgent: true });
+    expect(startsIn(at(90), now)).toEqual({ text: 'za 90 min', urgent: false });
+    expect(startsIn(at(180), now).text).toBe('za 3 hodiny');
+    expect(startsIn(at(300), now).text).toBe('za 5 hodin');
+    expect(startsIn(at(26 * 60), now).text).toBe('za 1 den');
+    expect(startsIn(at(3 * 24 * 60), now).text).toBe('za 3 dny');
+    expect(startsIn(at(6 * 24 * 60), now).text).toBe('za 6 dní');
   });
 });

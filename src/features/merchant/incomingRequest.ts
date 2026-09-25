@@ -139,3 +139,14 @@ export function moreShort(count: number): string {
   if (count < 5) return `+${count} žádosti`;
   return `+${count} žádostí`;
 }
+
+/** How soon the FLEK starts, short enough to sit beside its time: "za 18 min", "za 3 hodiny", "za 2 dny". */
+export function startsIn(startAt: string, now: string): { text: string; urgent: boolean } {
+  const minutes = Math.max(0, Math.round((Date.parse(startAt) - Date.parse(now)) / 60_000));
+  if (minutes === 0) return { text: 'začíná teď', urgent: true };
+  if (minutes < 120) return { text: `za ${minutes} min`, urgent: minutes < 30 };
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return { text: `za ${hours} ${hours < 5 ? 'hodiny' : 'hodin'}`, urgent: false };
+  const days = Math.round(hours / 24);
+  return { text: `za ${days} ${days === 1 ? 'den' : days < 5 ? 'dny' : 'dní'}`, urgent: false };
+}

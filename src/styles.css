@@ -390,49 +390,66 @@
 
 /*
  * Příchozí žádost přes celou obrazovku (IncomingRequest.tsx), jako tablety rozvozových služeb na
- * pultu. Noční ultramarín značky se světlem, které pomalu pluje; špendlík FLEKu uprostřed pulzuje
- * v rytmu zvonění (cyklus 2,6 s, akord v 0 a 0,95 s, tedy 36,5 %). Animuje se jen transform a
- * opacity. Při omezeném pohybu vše skončí v klidové poloze (pravidlo nahoře).
+ * pultu a výzva k jízdě v aplikacích pro řidiče: nahoře v noční modré FLEKu „volá“ logo, dole jeden
+ * bílý panel ukotvený k okraji s tím, co je potřeba k rozhodnutí, a jedním tlačítkem. Na tabletu a
+ * počítači napůl vedle sebe. Logo pulzuje v rytmu zvonění (cyklus 2,6 s, akord v 0 a 0,95 s, tedy
+ * 36,5 %). Animuje se jen transform a opacity. Při omezeném pohybu vše skončí v klidu (pravidlo nahoře).
  *
- * Kontrast: bílý text na nejsvětlejším místě pozadí (nahoře) 6,7 : 1, bílá na 80 % 4,9 : 1.
+ * Kontrast: bílý text na nejsvětlejším místě modré (nahoře) 6,7 : 1, bílá na 80 % 4,9 : 1; v panelu
+ * barvy aplikace.
  */
-/* Small phones and phones on their side (not a laptop, which has room for two columns): the takeover
-   drops its big hero so the answer stays on screen. */
+/* Small phones and phones on their side (not a laptop, which has room for two halves): the hero puts
+   the logo beside the heading so the answer stays on screen. */
 @custom-variant short (@media (max-height: 760px) and (max-width: 1023px));
-/* A phone on its side: the hero and the answer sit side by side, like on a tablet. */
-@custom-variant flat (@media (orientation: landscape) and (max-height: 600px) and (min-width: 600px));
+/* Room for the call and the answer side by side: a tablet or computer, or a phone on its side. */
+@custom-variant split {
+  @media (min-width: 1024px) {
+    @slot;
+  }
+  @media (orientation: landscape) and (max-height: 600px) and (min-width: 600px) {
+    @slot;
+  }
+}
 
 @layer components {
   /* The disc and the ring around it; smaller where the screen is short. */
   .takeover-beacon { --beacon: 11rem; --disc: 8rem; width: var(--beacon); height: var(--beacon); flex: none; }
   .takeover-disc { width: var(--disc); height: var(--disc); }
-  .takeover-pin { width: 56%; height: auto; }
   @media (max-height: 900px) {
     .takeover-beacon { --beacon: 9.5rem; --disc: 7rem; }
   }
   @media (max-height: 760px) and (max-width: 1023px) {
     .takeover-beacon { --beacon: 5.75rem; --disc: 4.25rem; }
   }
-  /* Behind the stuck buttons, only while the page scrolls: a smoky tray that fades up and to the
-     sides, so it reads on any part of the drifting background. */
-  .takeover-dock::before {
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    background: linear-gradient(to top, rgb(16 18 31 / 0.6), rgb(16 18 31 / 0.35) 65%, transparent);
-    -webkit-mask-image: linear-gradient(to right, transparent, #000 1rem, #000 calc(100% - 1rem), transparent);
-    mask-image: linear-gradient(to right, transparent, #000 1rem, #000 calc(100% - 1rem), transparent);
-    content: '';
-    pointer-events: none;
-  }
+  /* FLEK's wordmark sized to the disc, nudged so the word, not the pin above it, sits in the middle. */
+  .takeover-logo { font-size: calc(var(--disc) * 0.25); translate: 0.06em 0.14em; }
+
   .takeover {
     background:
       radial-gradient(120% 70% at 50% 0%, color-mix(in srgb, var(--color-brand-bright) 45%, transparent), transparent 70%),
       linear-gradient(165deg, var(--color-brand) 0%, var(--color-accent) 60%, color-mix(in srgb, var(--color-accent) 70%, var(--color-ink)) 100%);
     animation: takeover-in 260ms ease-out both;
   }
-  /* The console's ink focus ring disappears on night blue. */
+  /* The console's ink focus ring disappears on night blue; in the white sheet it is right again. */
   .takeover :focus-visible { outline-color: var(--color-brand-ink); }
+  .takeover .takeover-sheet :focus-visible { outline-color: var(--color-ink); }
+
+  /* The sheet rises from the bottom edge like a phone's own sheets; its shadow falls onto the blue. */
+  .takeover-sheet {
+    box-shadow: 0 -24px 48px -24px rgb(16 18 31 / 0.5);
+    animation: takeover-sheet 560ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+  }
+  /* Only while the page scrolls under the stuck buttons: a white fade above them. */
+  .takeover-dock::before {
+    position: absolute;
+    right: 0;
+    bottom: 100%;
+    left: 0;
+    height: 1.5rem;
+    background: linear-gradient(to top, var(--color-card), transparent);
+    content: '';
+    pointer-events: none;
+  }
 
   .takeover-blob {
     position: absolute;
@@ -463,7 +480,7 @@
     animation: takeover-drift-c 26s ease-in-out infinite alternate;
   }
 
-  /* Secondary actions on the night blue: a pane of light, not a white slab. */
+  /* Buttons on the night blue: a pane of light, not a white slab. */
   .takeover-quiet {
     background: color-mix(in srgb, var(--color-brand-ink) 12%, transparent);
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-brand-ink) 32%, transparent);
@@ -505,10 +522,11 @@
   /* The last minute of the countdown. */
   .takeover-urgent { animation: takeover-urgent 1s ease-in-out infinite; }
 
+  /* A glint across "Potvrdit", in time with the ring. */
   .takeover-sheen {
     position: absolute;
     inset: 0;
-    background: linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--color-brand-soft) 95%, transparent) 50%, transparent 70%);
+    background: linear-gradient(100deg, transparent 30%, rgb(255 255 255 / 0.28) 50%, transparent 70%);
     transform: translateX(-100%);
     animation: takeover-sheen 2.6s ease-in-out 1s infinite;
     pointer-events: none;
@@ -536,6 +554,7 @@
 }
 
 @keyframes takeover-in { from { opacity: 0; } }
+@keyframes takeover-sheet { from { opacity: 0; transform: translateY(48px); } to { opacity: 1; transform: none; } }
 @keyframes takeover-pop { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
 @keyframes takeover-rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
 @keyframes takeover-drift-a { to { transform: translate(12vmax, 10vmax) scale(1.15); } }

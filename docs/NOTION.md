@@ -12,7 +12,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 | Web | https://www.app-flek.eu (původní https://flek-nine.vercel.app funguje dál) |
 | Kód | https://github.com/legitjakub/flek (větev `main`) |
 | Poslední nasazení | web a migrace fotografií 23. 9. 2026 (`e9fd9cb`); Vercel, GitHub CI a Supabase Preview úspěšné, produkční detail ověřen na 375/390 px. `content-moderation` nasazený 21. 9. |
-| Testy | 190 unit testů a build (25. 9.), SQL testy potvrzování, WhatsAppu, právního minima a ověřených recenzí/moderace; změny v hostované DB se při SQL testech celé vracejí rollbackem |
+| Testy | 191 unit testů a build (25. 9.), SQL testy potvrzování, WhatsAppu, právního minima a ověřených recenzí/moderace; změny v hostované DB se při SQL testech celé vracejí rollbackem |
 | Potvrzování rezervací podnikem | **zapnuté pro všechny podniky** od 15. 9. 15:54 (předtím demo: akceptace 106/106 a průchod se skutečnými testovacími platbami) |
 | WhatsApp | u Mety platný trvalý token, aplikace FLEK přihlášená k odběru, webhook ověřený, profil s logem, číslo FLEKu uložené; chybí schválení pěti šablon a zkouška na telefonu, do té doby je kanál serverově vypnutý a v UI skrytý |
 | Recenze a moderace | ověřené anonymní hvězdičky a komentáře po dokončené rezervaci; komentáře, vlastní veřejné texty a fotografie čekají na kontrolu. Funkce je nasazená, ale OpenAI 21. 9. vrací HTTP 429, takže nové podklady zatím bezpečně zůstávají neveřejné v admin frontě |
@@ -338,6 +338,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 25. 9. 2026 | Žádost přes celou obrazovku má nový vzhled: nahoře modrá výzva s logem FLEKu, které „zvoní“, dole jeden bílý panel se vším podstatným a jedním tlačítkem „Potvrdit rezervaci“ (na tabletu a počítači napůl vedle sebe). Běžná cena u nabídek zůstává, jak byla. |
 | 25. 9. 2026 | Nová žádost o rezervaci se podniku ukáže přes celou obrazovku v barvách FLEKu, jako na tabletech rozvozových služeb: pulzující špendlík v rytmu zvonění, kruh s odpočtem, karta rezervace a velké „Potvrdit rezervaci“. Po potvrzení krátká animace a další žádost; „Později“ ji schová do lišty. Otestováno na telefonu, tabletu i počítači. |
 | 25. 9. 2026 | Náhled služby na mapě má stín, který pod kartou plynule mizí místo ostrého řezu nad spodním menu. |
 | 25. 9. 2026 | Karta „Tvůj FLEK“ v Profilu vypadá jako útržek voucheru: velké číslo ušetřené za měsíc, pod perforací počet FLEKů, nejlepší úlovek a součet od začátku (v prvním měsíci skrytý, aby se čísla neopakovala). |
