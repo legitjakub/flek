@@ -11,5 +11,7 @@ export function dayKey(instant:string):string{return Temporal.Instant.from(insta
 export function dayBounds(serverNow:string,days=0){const d=Temporal.Instant.from(serverNow).toZonedDateTimeISO(ZONE).toPlainDate().add({days});return {from:d.toZonedDateTime(ZONE).toInstant().toString(),until:d.add({days:1}).toZonedDateTime(ZONE).toInstant().toString()};}
 export function dayLabel(instant:string,serverNow:string){const d=dayKey(instant),today=dayKey(serverNow);if(d===today)return 'Dnes';if(d===Temporal.PlainDate.from(today).add({days:1}).toString())return 'Zítra';return new Intl.DateTimeFormat('cs-CZ',{timeZone:ZONE,day:'numeric',month:'numeric'}).format(new Date(instant));}
 export function clockTime(instant:string){return new Intl.DateTimeFormat('cs-CZ',{timeZone:ZONE,hour:'2-digit',minute:'2-digit'}).format(new Date(instant));}
+// A deadline always says its day: a bare "do 17:30" at 18:16 read as a time already gone when it meant tomorrow.
+export function untilLabel(instant:string,serverNow:string){const day=dayLabel(instant,serverNow),time=clockTime(instant);return day==='Dnes'?`dnes do ${time}`:day==='Zítra'?`do zítřka ${time}`:`do ${day} ${time}`;}
 export function addMinutes(instant:string,minutes:number){return Temporal.Instant.from(instant).add({minutes}).toString();}
 export function duration(start:string,end:string){return Math.round((Date.parse(end)-Date.parse(start))/60000);}

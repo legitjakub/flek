@@ -7,7 +7,7 @@ import { track } from '../../lib/analytics';
 import { relativeTime, useServerNow } from '../../lib/clock';
 import { money, distance as formatDistance } from '../../lib/format';
 import { DiscountBadge, OriginalPrice } from '../../components/Price';
-import { clockTime, dayLabel, duration } from '../../lib/time';
+import { clockTime, dayLabel, duration, untilLabel } from '../../lib/time';
 import { DEFAULT_POINT, storedPoint } from '../../lib/geo';
 import { Button, ErrorState, Skeleton, cx } from '../../components/ui';
 import { bookingIcs, icsHref } from '../../lib/calendar';
@@ -192,7 +192,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
   const graceCopy = manual ? '10 minut od potvrzení' : '10 minut od rezervace';
   const cancellationCopy = Date.parse(cancellationAt) <= Date.parse(now)
     ? graceCopy
-    : `do ${clockTime(cancellationAt)}`;
+    : untilLabel(cancellationAt, now);
 
   const hasPhoto = Boolean(image);
   const reason = unavailableReason(offer, now);

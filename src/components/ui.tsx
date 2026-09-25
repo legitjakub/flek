@@ -1,6 +1,6 @@
 import { Dialog } from '@base-ui/react/dialog';
 import { ChevronDown, ChevronRight, Star, X } from 'lucide-react';
-import { useRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from 'react';
+import { useCallback, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from 'react';
 import { errorMessage } from '../lib/errors';
 import { Link } from '../app/router';
 
@@ -313,6 +313,7 @@ export function Sheet({
   children,
   footer,
   returnFocus,
+  tone = 'card',
 }: {
   open: boolean;
   onClose: () => void;
@@ -320,8 +321,25 @@ export function Sheet({
   children: ReactNode;
   footer?: ReactNode;
   returnFocus?: () => HTMLElement | null;
+  /** `surface` greys the scrolling body so cards inside it (a ticket, a list) stand out. */
+  tone?: 'card' | 'surface';
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  /*
+   * A body that scrolls but holds nothing focusable could not be scrolled from the keyboard:
+   * focus sat on the close button in the header, outside it. Then the body itself takes focus.
+   * Only then, so a sheet that fits has no empty stop in its tab order.
+   */
+  const [scrolls, setScrolls] = useState(false);
+  const measure = useCallback((body: HTMLDivElement | null) => {
+    if (!body) return;
+    const check = () => setScrolls(body.scrollHeight > body.clientHeight + 1);
+    const observer = new ResizeObserver(check);
+    observer.observe(body);
+    if (body.firstElementChild) observer.observe(body.firstElementChild);
+    check();
+    return () => observer.disconnect();
+  }, []);
   return (
     <Dialog.Root open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
       <Dialog.Portal>
@@ -332,7 +350,13 @@ export function Sheet({
               <Dialog.Title className="text-lg font-extrabold tracking-tight">{title}</Dialog.Title>
               <Dialog.Close aria-label="Zavřít" className="grid size-11 shrink-0 place-items-center rounded-xl text-muted hover:bg-surface"><X size={20} aria-hidden="true" /></Dialog.Close>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5">{children}</div>
+            <div
+              ref={measure}
+              tabIndex={scrolls ? 0 : undefined}
+              className={cx('min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 focus-visible:-outline-offset-4', tone === 'surface' && 'bg-surface')}
+            >
+              <div>{children}</div>
+            </div>
             {footer ? <div className="border-t border-line px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">{footer}</div> : null}
           </Dialog.Popup>
         </Dialog.Viewport>

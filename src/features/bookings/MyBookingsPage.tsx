@@ -4,7 +4,7 @@ import { CheckCircle2, Phone, QrCode, Star, Ticket, X } from 'lucide-react';
 import { cancelBooking, cancelPendingBooking, myBookings, submitBookingReview } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
-import { clockTime, dayLabel } from '../../lib/time';
+import { clockTime, dayLabel, untilLabel } from '../../lib/time';
 import { useServerNow } from '../../lib/clock';
 import { Banner, Button, EmptyState, ErrorState, LoadingList, PinMark, PromoCard, Sheet, Tabs, Textarea, buttonClass, cx } from '../../components/ui';
 import { Link, useRouter } from '../../app/router';
@@ -287,7 +287,7 @@ export function MyBookingsPage() {
                     </div>
                     <p className="tnum mt-2 text-xs text-muted">
                       {booking.can_cancel
-                        ? `Zrušit můžeš zdarma do ${clockTime(booking.cancellation_deadline)}`
+                        ? `Zrušit můžeš zdarma ${untilLabel(booking.cancellation_deadline, now)}`
                         : 'Rezervaci už nejde zrušit online.'}
                     </p>
                   </div>
