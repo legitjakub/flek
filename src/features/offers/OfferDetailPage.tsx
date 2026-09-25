@@ -340,7 +340,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           y=755. Grouping them fixes the collision by construction, not by nudging offsets.
         */}
         <aside
-          className="rounded-3xl border border-brand/10 bg-card p-3 md:sticky md:top-24 md:col-start-2 md:row-start-1 md:row-span-2 md:p-4"
+          className="min-w-0 rounded-3xl border border-brand/10 bg-card p-3 md:sticky md:top-24 md:col-start-2 md:row-start-1 md:row-span-2 md:p-4"
           aria-label="Vybraný termín"
         >
           {/* The selected appointment is the only filled surface; alternatives stay quiet. A time

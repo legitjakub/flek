@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { timeRow, visibleCount } from '../src/features/offers/timeRows';
+import { timeRow } from '../src/features/offers/timeRows';
 import type { SearchRow } from '../src/types/database';
 
 const NOW = '2026-09-25T12:00:00Z'; // 14:00 in Prague
@@ -35,15 +35,5 @@ describe('time row', () => {
     const row = timeRow(slot({ original_price_cents: 22300 }), NOW);
     expect(row.savedCents).toBe(0);
     expect(row.spoken).not.toMatch(/ušetříš/);
-  });
-});
-
-describe('rows to show', () => {
-  it('keeps the chosen time in view', () => {
-    expect(visibleCount(10, 6, false)).toBe(7);
-    expect(visibleCount(10, 1, false)).toBe(4);
-    expect(visibleCount(3, 0, false)).toBe(3);
-    expect(visibleCount(10, -1, false)).toBe(4);
-    expect(visibleCount(10, 2, true)).toBe(10);
   });
 });

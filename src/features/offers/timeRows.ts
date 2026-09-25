@@ -8,7 +8,7 @@ import type { SearchRow } from '../../types/database';
 /** How soon a time counts as "soon" enough to say so on its row. */
 const SOON_MINUTES = 120;
 
-/** One row of the time picker: the whole range, the price and what it saves, in words a row can hold. */
+/** One time in the picker: the whole range, the price and what it saves, in words a small card can hold. */
 export type TimeRow = {
   id: string;
   /** "16:00–16:30": the start alone said nothing about how long it ran. */
@@ -38,13 +38,4 @@ export function timeRow(slot: SearchRow, now: string): TimeRow {
     last ? 'poslední místo' : null,
   ].filter(Boolean).join(', ');
   return { id: slot.id, range: `${start}–${end}`, priceCents: slot.deal_price_cents, savedCents, note, spoken };
-}
-
-/**
- * How many rows of a day to show: the first four, but never fewer than reach the chosen time,
- * so the selection is not hidden behind "Zobrazit další časy".
- */
-export function visibleCount(total: number, selectedIndex: number, expanded: boolean, base = 4): number {
-  if (expanded) return total;
-  return Math.min(total, Math.max(base, selectedIndex + 1));
 }
