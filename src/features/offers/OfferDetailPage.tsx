@@ -1,7 +1,7 @@
 import { ArrowLeft, CalendarDays, CalendarPlus, ChevronDown, Clock3, Info, MapPin, Check, ShieldCheck, Ban } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { activityPhotoSrcSet } from '../../lib/activityGalleries';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { businessOffers, confirmationQuote, getOfferDetail, setFavorite } from '../../lib/api';
 import { track } from '../../lib/analytics';
 import { relativeTime, useServerNow } from '../../lib/clock';
@@ -48,6 +48,9 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
   const [desktopMap, setDesktopMap] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches);
   const { userId } = useSession();
   const queryClient = useQueryClient();
+  // The time the page opened with. Picking another one keeps this component, so the card can tell
+  // a switch (which it animates) from arriving (which it does not).
+  const openedWith = useRef(offerId);
 
   useEffect(() => {
     const media = window.matchMedia('(min-width: 768px)');
@@ -353,7 +356,8 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
               )}
               <span className="tnum inline-flex items-center gap-1.5"><Clock3 size={13} aria-hidden="true" />{duration(offer.start_at, offer.end_at)} min</span>
             </div>
-            <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+            {/* A new time slides in instead of snapping: the one thing that changes on a switch. */}
+            <div key={offer.id} className={cx('flex flex-wrap items-end justify-between gap-x-4 gap-y-3', offer.id !== openedWith.current && 'animate-[flek-swap_260ms_cubic-bezier(0.2,0.8,0.2,1)]')}>
               <div className="min-w-0">
                 <p className="inline-flex items-center gap-1.5 text-sm font-semibold">
                   <CalendarDays size={15} aria-hidden="true" />
@@ -405,6 +409,8 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             now={now}
             pendingId={switchingTo}
             onPick={(id) => void pickTime(id)}
+            // Fetched while the finger is on its way, so the tap usually finds the page ready.
+            onIntent={(id) => void queryClient.prefetchQuery({ queryKey: ['offer', id], queryFn: () => getOfferDetail(id, point), staleTime: 30_000 })}
           />
 
           {/* No sticky bar when there is nothing to book: a permanently disabled button is a
@@ -420,7 +426,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             */}
             <div className="mx-auto flex max-w-xl items-center gap-3 md:block md:max-w-none">
               {/* Keep the mobile action to one row; the selected summary explains the discount. */}
-              <p className="tnum flex min-w-0 flex-wrap items-baseline gap-x-1.5 md:hidden">
+              <p key={offer.id} className={cx('tnum flex min-w-0 flex-wrap items-baseline gap-x-1.5 md:hidden', offer.id !== openedWith.current && 'animate-[flek-swap_260ms_cubic-bezier(0.2,0.8,0.2,1)]')}>
                 <span className="text-lg leading-none font-extrabold">{money(offer.deal_price_cents)}</span>
                 {savings > 0 ? <OriginalPrice cents={offer.original_price_cents} className="text-xs" /> : null}
               </p>

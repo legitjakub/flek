@@ -373,6 +373,12 @@
   .map-page { height: calc(100dvh - 69px); min-height: 480px; }
 }
 
+/* A value replaced in place (another time picked on the offer page) rises into view instead of snapping. */
+@keyframes flek-swap {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
 /* Outside any layer on purpose: MapLibre's own stylesheet is unlayered, and a layered rule
    loses to it whatever its specificity. */
 .maplibregl-map .maplibregl-ctrl-group button { width: 44px; height: 44px; }
