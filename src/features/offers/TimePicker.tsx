@@ -1,20 +1,21 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
-import { dayKey } from '../../lib/time';
+import { useEffect, useMemo, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
+import { clockTime, dayKey, dayLabel } from '../../lib/time';
+import { relativeTime } from '../../lib/clock';
 import { money } from '../../lib/format';
-import { Chip, cx } from '../../components/ui';
-import { slotsByDay } from '../discovery/slots';
+import { cx } from '../../components/ui';
+import { OriginalPrice } from '../../components/Price';
+import { slotLabels, slotsByDay } from '../discovery/slots';
 import type { OfferDetail, SearchRow } from '../../types/database';
-import { timeRow } from './timeRows';
+
+/** Four compact choices fill two rows on a phone; more stay one tap away. */
+const SHOWN_PER_DAY = 4;
+const SOON_MINUTES = 120;
 
 /**
- * The times of one service as a strip of small cards, like showtimes: each card says the whole
- * range, the price and what that time saves, and the chosen one is filled in the brand colour,
- * the same colour as "Tvůj termín" above it.
- *
- * The chosen time stays in the strip. It used to be taken out, so a tap made the tapped tile
- * vanish, the rest shuffle into its place and the card above change without a transition: the
- * whole block jumped. Now the colour moves from one card to the other at once (a short fade and
- * lift), while the page loads that time; nothing else on the screen moves.
+ * A mobile-first time chooser for one service. The day is chosen once in the rail and the service
+ * duration stays in the selected-FLEK summary above, so neither has to be repeated on every tile.
+ * Price remains on each tile because it can change from one last-minute slot to another.
  */
 export function TimePicker({
   offer,
@@ -29,138 +30,135 @@ export function TimePicker({
   now: string;
   pendingId: string | null;
   onPick: (id: string) => void;
-  /** A finger or pointer on its way to a card: time to fetch that time's page. */
+  /** A finger or pointer on its way to a time: its page is fetched before the tap lands. */
   onIntent?: (id: string) => void;
 }) {
   const current = slots.some((slot) => slot.id === offer.id);
-  const days = useMemo(() => slotsByDay(slots, now), [slots, now]);
+  // The current slot already has a complete summary above this chooser. Showing it again here
+  // made the phone screen feel like two competing selections, so this list contains alternatives.
+  const times = slots.filter((slot) => slot.id !== offer.id);
+  const days = useMemo(() => slotsByDay(times, now), [times, now]);
   const offerDay = dayKey(offer.start_at);
   const selectedDay = days.some((day) => day.key === offerDay) ? offerDay : days[0]?.key;
   const [activeDay, setActiveDay] = useState(selectedDay ?? '');
-  // The card just tapped is marked before its page arrives; the page then confirms it.
-  const [chosen, setChosen] = useState<string | null>(null);
-  const strip = useRef<HTMLDivElement>(null);
+  const [expandedDay, setExpandedDay] = useState<string | null>(null);
 
   useEffect(() => {
     if (selectedDay) setActiveDay(selectedDay);
   }, [selectedDay]);
-  useEffect(() => {
-    setChosen(null);
-  }, [offer.id]);
+
+  if (times.length === 0 || days.length === 0) return null;
 
   const active = days.find((day) => day.key === activeDay) ?? days[0];
-  const selectedId = chosen ?? pendingId ?? (current ? offer.id : null);
-
-  // On a phone, where the strip scrolls sideways, the chosen card is scrolled into view only as far
-  // as needed: pulling it to the start hid the earlier times, which read as if they had gone.
-  useEffect(() => {
-    const rail = strip.current;
-    const card = rail?.querySelector<HTMLElement>('[aria-checked="true"]');
-    if (!rail || !card || rail.scrollWidth <= rail.clientWidth) return;
-    const left = card.offsetLeft - rail.offsetLeft;
-    const right = left + card.offsetWidth;
-    if (left < rail.scrollLeft) rail.scrollTo({ left: Math.max(0, left - 8) });
-    else if (right > rail.scrollLeft + rail.clientWidth) rail.scrollTo({ left: right - rail.clientWidth + 8 });
-  }, [active?.key, offer.id]);
-
-  // Only the time already on screen: a single card would offer nothing to choose.
-  if (!active || (current && slots.length === 1)) return null;
-
-  // One stop in the tab order for the whole strip, as radio buttons have; arrows move within it.
-  const focusable = active.slots.some((slot) => slot.id === selectedId) ? selectedId : active.slots[0]?.id;
-
-  function pick(id: string) {
-    if (id === selectedId) return;
-    setChosen(id);
-    onPick(id);
-  }
-
-  function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-    const keys: Record<string, number> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
-    if (!(event.key in keys)) return;
-    const cards = [...(strip.current?.querySelectorAll<HTMLButtonElement>('[role="radio"]') ?? [])];
-    const index = cards.indexOf(document.activeElement as HTMLButtonElement);
-    if (index < 0) return;
-    event.preventDefault();
-    cards[(index + keys[event.key] + cards.length) % cards.length]?.focus();
-  }
+  const isExpanded = expandedDay === active.key;
+  const visible = isExpanded ? active.slots : active.slots.slice(0, SHOWN_PER_DAY);
+  const remaining = active.slots.length - visible.length;
+  const last = new Map(slotLabels(times, now).map((label) => [label.id, label.last]));
 
   return (
     <section className="mt-4 px-1" aria-labelledby="vyber-casu">
-      <h3 id="vyber-casu" className="text-sm font-bold text-ink">
-        {current ? 'Vyber si čas' : 'Volné termíny'}
-      </h3>
+      <div className="flex items-baseline justify-between gap-3">
+        <h3 id="vyber-casu" className="text-sm font-bold text-ink">
+          {current ? 'Další termíny' : 'Volné termíny'}
+        </h3>
+      </div>
 
       {days.length > 1 ? (
-        <div role="group" aria-label="Den" className="rail mt-2 flex gap-2 overflow-x-auto">
+        <div
+          role="group"
+          aria-label="Den termínu"
+          className="mt-1 flex snap-x gap-5 overflow-x-auto border-b border-line [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
           {days.map((day) => {
             const selected = day.key === active.key;
             return (
-              <Chip
+              <button
                 key={day.key}
-                active={selected}
-                aria-label={`${day.title}, počet časů: ${day.slots.length}`}
-                onClick={() => setActiveDay(day.key)}
+                type="button"
+                aria-pressed={selected}
+                aria-label={`${day.title}, počet termínů: ${day.slots.length}`}
+                onClick={() => {
+                  setActiveDay(day.key);
+                  setExpandedDay(null);
+                }}
+                className={cx(
+                  'min-h-11 min-w-11 shrink-0 snap-start border-b-2 px-1 text-sm font-bold transition-colors',
+                  selected
+                    ? 'border-brand text-brand'
+                    : 'border-transparent text-muted hover:border-brand/30 hover:text-accent',
+                )}
               >
                 {day.title}
-                <span className={cx('tnum ml-1.5 font-normal', selected ? 'text-surface/70' : 'text-muted')}>{day.slots.length}</span>
-              </Chip>
+              </button>
             );
           })}
         </div>
       ) : (
-        <p className="mt-1 text-sm font-bold text-accent">{active.title}</p>
+        <p className="mt-2.5 text-sm font-bold text-accent">{active.title}</p>
       )}
 
-      {/* Sideways on a phone, wrapped on a computer, where a sideways strip needs a wheel to reach. */}
       <div
-        ref={strip}
-        role="radiogroup"
-        aria-labelledby="vyber-casu"
-        onKeyDown={onKeyDown}
-        className="rail -mx-1 mt-2 flex snap-x gap-2 overflow-x-auto px-1 pt-1 pb-3 md:grid md:grid-cols-2 md:overflow-visible"
+        role="group"
+        aria-label={`${active.title}: dostupné časy`}
+        className="mt-3 grid grid-cols-2 gap-2"
       >
-        {active.slots.map((slot) => {
-          const row = timeRow(slot, now);
-          const selected = slot.id === selectedId;
-          const loading = selected && slot.id !== offer.id;
+        {visible.map((slot) => {
+          const pending = slot.id === pendingId;
+          const minutesAway = Math.round((Date.parse(slot.start_at) - Date.parse(now)) / 60000);
+          const soon = minutesAway > 0 && minutesAway <= SOON_MINUTES;
+          const lastSeat = last.get(slot.id) ?? false;
           return (
             <button
               key={slot.id}
               type="button"
-              role="radio"
-              aria-checked={selected}
-              aria-label={row.spoken}
-              aria-busy={loading || undefined}
-              tabIndex={slot.id === focusable ? 0 : -1}
+              aria-label={[
+                `${dayLabel(slot.start_at, now).toLocaleLowerCase('cs-CZ')} ${clockTime(slot.start_at)}`,
+                money(slot.deal_price_cents),
+                slot.original_price_cents > slot.deal_price_cents ? `běžně ${money(slot.original_price_cents)}` : null,
+                slot.discount_pct > 0 ? `sleva ${slot.discount_pct} procent` : null,
+                lastSeat ? 'poslední místo' : null,
+              ].filter(Boolean).join(', ')}
+              aria-busy={pending || undefined}
+              disabled={pendingId !== null && !pending}
               onPointerEnter={() => onIntent?.(slot.id)}
               onTouchStart={() => onIntent?.(slot.id)}
               onFocus={() => onIntent?.(slot.id)}
-              onClick={() => pick(slot.id)}
+              onClick={() => onPick(slot.id)}
               className={cx(
-                'flex min-h-24 w-[7.75rem] shrink-0 snap-start flex-col items-start justify-center rounded-2xl px-3 py-2.5 text-left md:w-auto',
-                'transition-[background-color,color,box-shadow,transform] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] active:scale-95',
-                // A small shadow that fits inside the strip's padding: a larger one was cut off by the scroll box.
-                selected ? 'bg-brand text-brand-ink shadow-[0_6px_12px_-6px_rgb(44_38_210/0.55)]' : 'scale-[0.97] bg-surface text-ink hover:bg-brand-soft',
-                loading && 'animate-pulse',
+                'relative min-h-14 rounded-xl px-3 py-2.5 text-left transition-[background-color,transform] active:scale-[0.98] disabled:opacity-55',
+                'bg-surface hover:bg-brand-soft',
+                pending && 'animate-pulse',
               )}
             >
-              {row.note ? (
-                <span className={cx('mb-0.5 text-[0.6875rem] leading-tight font-bold', selected ? 'text-brand-ink/85' : row.note.tone === 'last' ? 'text-warning' : 'text-accent')}>
-                  {row.note.text}
+              <span className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
+                <span className="tnum text-base leading-none font-extrabold">{clockTime(slot.start_at)}</span>
+                <span className="tnum flex items-baseline gap-1.5 text-xs">
+                  <span className="font-semibold text-muted">{money(slot.deal_price_cents)}</span>
+                  {slot.original_price_cents > slot.deal_price_cents ? (
+                    <OriginalPrice cents={slot.original_price_cents} className="text-[0.6875rem]" />
+                  ) : null}
                 </span>
-              ) : null}
-              <span className="tnum text-sm leading-tight font-extrabold">{row.range}</span>
-              <span className="tnum mt-1 text-lg leading-none font-extrabold">{money(row.priceCents)}</span>
-              {row.savedCents > 0 ? (
-                <span className={cx('tnum mt-1 text-[0.6875rem] leading-tight font-bold', selected ? 'text-brand-ink/85' : 'text-accent')}>
-                  ušetříš {money(row.savedCents)}
+              </span>
+              {soon || lastSeat ? (
+                <span className={cx('mt-1 block text-[0.6875rem] font-bold', lastSeat ? 'text-warning' : 'text-accent')}>
+                  {lastSeat ? 'Poslední místo' : relativeTime(slot.start_at, now)}
                 </span>
               ) : null}
             </button>
           );
         })}
       </div>
+
+      {remaining > 0 ? (
+        <button
+          type="button"
+          onClick={() => setExpandedDay(active.key)}
+          className="mt-2 inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl text-sm font-bold text-accent hover:bg-brand-soft"
+        >
+          Zobrazit další časy ({remaining})
+          <ChevronDown size={16} aria-hidden="true" />
+        </button>
+      ) : null}
     </section>
   );
 }
