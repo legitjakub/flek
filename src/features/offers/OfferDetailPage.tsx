@@ -1,4 +1,4 @@
-import { ArrowLeft, CalendarDays, CalendarPlus, ChevronDown, Clock3, Info, MapPin, Check, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, CalendarDays, CalendarPlus, ChevronDown, Clock3, Info, MapPin, Check, ShieldCheck, Ban } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { activityPhotoSrcSet } from '../../lib/activityGalleries';
 import { useEffect, useState, type ReactNode } from 'react';
@@ -22,7 +22,7 @@ import { navigationHref } from '../../lib/maps';
 import { LazyMap } from './LazyMap';
 import { ShareOfferButton } from './ShareOfferButton';
 import { UnavailableOfferRecovery } from './UnavailableOfferRecovery';
-import { unavailableReason } from './unavailable';
+import { unavailableCopy, unavailableReason } from './unavailable';
 import { GooglePlaceRating } from '../ratings/GooglePlaceRating';
 import { FlekRatingSummary } from '../ratings/FlekReviews';
 import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
@@ -152,7 +152,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
     return (
       <main className="page-container py-10 text-center">
         <p className="text-base font-bold text-ink">Tento termín už bohužel není volný.</p>
-        <Link to="/" className="mt-4 inline-block text-base font-bold underline underline-offset-4">
+        <Link to="/" className="mt-4 inline-flex min-h-11 items-center text-base font-bold underline underline-offset-4">
           Zpět na nabídky
         </Link>
       </main>
@@ -278,7 +278,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-bold [overflow-wrap:anywhere]">
             <Link
               to={`/podnik/${offer.business_id}?from=${encodeURIComponent(`/nabidka/${offer.id}`)}`}
-              className="inline-flex min-h-8 items-center underline decoration-line underline-offset-4 hover:text-accent hover:decoration-accent"
+              className="inline-flex min-h-11 items-center underline decoration-line underline-offset-4 hover:text-accent hover:decoration-accent"
             >
               {offer.business_name}
             </Link>
@@ -340,10 +340,17 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           className="rounded-3xl border border-brand/10 bg-card p-3 md:sticky md:top-24 md:col-start-2 md:row-start-1 md:row-span-2 md:p-4"
           aria-label="Vybraný termín"
         >
-          {/* The selected appointment is the only filled surface; alternatives stay quiet. */}
-          <div className="rounded-2xl bg-brand px-4 py-3.5 text-brand-ink">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs font-medium">
-              <h2 className="inline-flex items-center gap-1.5"><Check size={14} aria-hidden="true" />Tvůj termín</h2>
+          {/* The selected appointment is the only filled surface; alternatives stay quiet. A time
+              that can no longer be booked loses the fill and the tick, and says so right here: on a
+              computer the reason further down the page sat below the fold while this card, beside
+              it, still read "Tvůj termín ✓". */}
+          <div className={cx('rounded-2xl px-4 py-3.5', offer.bookable ? 'bg-brand text-brand-ink' : 'bg-surface text-ink')}>
+            <div className={cx('mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs font-medium', !offer.bookable && 'text-muted')}>
+              {offer.bookable ? (
+                <h2 className="inline-flex items-center gap-1.5"><Check size={14} aria-hidden="true" />Tvůj termín</h2>
+              ) : (
+                <h2 className="inline-flex items-center gap-1.5 font-bold"><Ban size={14} aria-hidden="true" />Tenhle čas už nejde rezervovat</h2>
+              )}
               <span className="tnum inline-flex items-center gap-1.5"><Clock3 size={13} aria-hidden="true" />{duration(offer.start_at, offer.end_at)} min</span>
             </div>
             <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
@@ -370,7 +377,15 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             </div>
           </div>
 
-          {(minutesAway > 0 && minutesAway <= 120) || (offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60) || showCapacity ? (
+          {!offer.bookable && reason ? (
+            <p className="mt-2.5 text-sm font-bold text-ink">
+              {unavailableCopy(reason).title}{' '}
+              <a href="#recovery-title" className="inline-flex min-h-11 items-center font-bold text-accent underline underline-offset-4">
+                Co teď?
+              </a>
+            </p>
+          ) : null}
+          {offer.bookable && ((minutesAway > 0 && minutesAway <= 120) || (cutoffMinutes > 0 && cutoffMinutes <= 60) || showCapacity) ? (
             <p className="tnum mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
               {minutesAway > 0 && minutesAway <= 120 ? <span className="font-bold text-accent">Začíná {relativeTime(offer.start_at, now)}</span> : null}
               {minutesAway > 0 && minutesAway <= 120 && offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60 ? <span aria-hidden="true">·</span> : null}

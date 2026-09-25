@@ -8,7 +8,7 @@ import type { OfferDetail } from '../../types/database';
  * reason behind a `bookable: false` the server has already decided, so the page can say
  * something true instead of greying a button out.
  */
-export type UnavailableReason = 'cancelled' | 'caught' | 'started' | 'closed' | 'unknown';
+export type UnavailableReason = 'cancelled' | 'caught' | 'started' | 'ended' | 'closed' | 'unknown';
 
 /**
  * Order is the whole design here, because more than one fact can be true at once and only
@@ -17,17 +17,18 @@ export type UnavailableReason = 'cancelled' | 'caught' | 'started' | 'closed' | 
  * A venue cancellation outranks everything: the slot never went to anyone. An empty capacity
  * genuinely means somebody took it, which stays true even after the appointment has passed,
  * so it outranks the clock. Only when seats were still free does time get to speak — first
- * the appointment itself, then the booking cutoff.
+ * the appointment itself, then the booking cutoff. An appointment that is still running has
+ * not "taken place" yet, so it is only started; it has ended once its end has passed.
  */
 export function unavailableReason(
-  offer: Pick<OfferDetail, 'status' | 'capacity_remaining' | 'booking_cutoff_at' | 'start_at' | 'bookable'>,
+  offer: Pick<OfferDetail, 'status' | 'capacity_remaining' | 'booking_cutoff_at' | 'start_at' | 'bookable'> & { end_at?: string },
   serverNow: string,
 ): UnavailableReason | null {
   if (offer.bookable) return null;
   const now = Date.parse(serverNow);
   if (offer.status === 'cancelled') return 'cancelled';
   if (offer.capacity_remaining <= 0) return 'caught';
-  if (Date.parse(offer.start_at) <= now) return 'started';
+  if (Date.parse(offer.start_at) <= now) return offer.end_at && Date.parse(offer.end_at) <= now ? 'ended' : 'started';
   if (Date.parse(offer.booking_cutoff_at) <= now) return 'closed';
   // Something the client cannot see (a draft, a suspended venue). Say nothing specific.
   return 'unknown';
@@ -47,6 +48,11 @@ export function unavailableCopy(reason: UnavailableReason): { title: string; bod
         body: 'Další se může objevit kdykoliv — nejčastěji pár hodin předem.',
       };
     case 'started':
+      return {
+        title: 'Tenhle FLEK už začal.',
+        body: 'Termín právě běží, takže se na něj rezervovat nedá. Volné FLEKy přibývají každý den.',
+      };
+    case 'ended':
       return {
         title: 'Tenhle FLEK už proběhl.',
         body: 'Termín, na který odkaz mířil, je minulostí. Volné FLEKy přibývají každý den.',

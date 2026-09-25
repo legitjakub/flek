@@ -217,7 +217,7 @@ export function MyBookingsPage() {
                   <div className="mt-4 border-t border-line pt-3">
                     {booking.rating ? (
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="inline-flex items-center gap-1 text-sm font-bold text-ink" aria-label={`${booking.rating} z 5 hvězd`}>
+                        <span role="img" className="inline-flex items-center gap-1 text-sm font-bold text-ink" aria-label={`${booking.rating} z 5 hvězd`}>
                           {Array.from({ length: 5 }, (_, index) => (
                             <Star key={index} size={16} aria-hidden="true" className={index < booking.rating! ? 'fill-brand text-brand' : 'text-line'} />
                           ))}

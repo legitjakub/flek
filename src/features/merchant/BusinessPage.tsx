@@ -664,7 +664,7 @@ function BusinessForm({ business }: { business?: Business }) {
         {/* The timestamp is written by the server, not sent by the browser: a moment a client
             can choose is not a record of anything. */}
         <div>
-          <label htmlFor="b-terms" className="flex items-start gap-3 text-sm text-ink">
+          <label htmlFor="b-terms" className="flex min-h-11 cursor-pointer items-start gap-3 py-2 text-sm text-ink">
             <input
               id="b-terms"
               type="checkbox"

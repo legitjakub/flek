@@ -55,7 +55,7 @@ function Metric({ label, value, note }: { label: string; value: number | string;
       <dt className="text-xs text-muted">{label}</dt>
       <dd className="tnum mt-1 text-xl font-extrabold text-ink">{value}</dd>
       {/* Five of these are month-to-date and one is all-time, and nothing said so. */}
-      <p className="mt-0.5 text-xs text-muted">{note}</p>
+      <dd className="mt-0.5 text-xs text-muted">{note}</dd>
     </div>
   );
 }

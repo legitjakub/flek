@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { unavailableReason } from '../src/features/offers/unavailable';
+import { unavailableCopy, unavailableReason } from '../src/features/offers/unavailable';
 
 const NOW = '2026-09-09T12:00:00.000Z';
 
@@ -38,6 +38,14 @@ describe('unavailableReason', () => {
   it('reports a started appointment as started', () => {
     const started = offer({ start_at: '2026-09-09T11:00:00.000Z', booking_cutoff_at: '2026-09-09T10:45:00.000Z' });
     expect(unavailableReason(started, NOW)).toBe('started');
+  });
+
+  it('says a running appointment started, and only a finished one ended', () => {
+    const running = offer({ start_at: '2026-09-09T11:30:00.000Z', end_at: '2026-09-09T12:30:00.000Z', booking_cutoff_at: '2026-09-09T11:15:00.000Z' });
+    expect(unavailableReason(running, NOW)).toBe('started');
+    expect(unavailableCopy('started').title).not.toMatch(/proběhl/);
+    const finished = offer({ start_at: '2026-09-09T11:00:00.000Z', end_at: '2026-09-09T12:00:00.000Z', booking_cutoff_at: '2026-09-09T10:45:00.000Z' });
+    expect(unavailableReason(finished, NOW)).toBe('ended');
   });
 
   it('never blames a customer when the venue cancelled', () => {

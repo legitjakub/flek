@@ -279,6 +279,7 @@ export function MapCanvas({
         el.className = mark ? 'map-pin map-pin--mark' : 'map-pin';
         if (position.offsetX || position.offsetY) el.classList.add('is-displaced');
         el.setAttribute('aria-label', entry.description ?? label);
+        if (!selectable) el.setAttribute('role', 'img');
         if (mark) {
           const pinMark = document.createElement('span');
           pinMark.className = 'map-pin-markwrap';

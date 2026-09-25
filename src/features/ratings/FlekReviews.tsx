@@ -29,7 +29,7 @@ export function FlekRatingSummary({
     <Link
       to={href}
       aria-label={`${average} z 5, ${count} ověřených hodnocení na FLEKu`}
-      className="inline-flex min-h-8 items-center gap-1 font-bold text-ink underline decoration-line underline-offset-4 hover:text-accent"
+      className="inline-flex min-h-11 items-center gap-1 font-bold text-ink underline decoration-line underline-offset-4 hover:text-accent"
     >
       {content}
     </Link>
@@ -71,7 +71,7 @@ export function BusinessReviews({ businessId, average, count }: {
           {query.data.map((review) => (
             <li key={review.review_id} className="rounded-2xl bg-card p-4 shadow-card">
               <div className="flex items-center justify-between gap-3">
-                <span className="flex items-center gap-0.5" aria-label={`${review.rating} z 5 hvězd`}>
+                <span role="img" className="flex items-center gap-0.5" aria-label={`${review.rating} z 5 hvězd`}>
                   {Array.from({ length: 5 }, (_, index) => (
                     <Star key={index} size={16} aria-hidden="true" className={index < review.rating ? 'fill-brand text-brand' : 'text-line'} />
                   ))}

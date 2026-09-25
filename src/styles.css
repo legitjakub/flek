@@ -375,7 +375,9 @@
 
 /* Outside any layer on purpose: MapLibre's own stylesheet is unlayered, and a layered rule
    loses to it whatever its specificity. */
-.maplibregl-ctrl-group button { width: 44px; height: 44px; }
+.maplibregl-map .maplibregl-ctrl-group button { width: 44px; height: 44px; }
+/* The attribution toggle keeps its small look but gets a 44 px place to tap. */
+.maplibregl-map .maplibregl-ctrl-attrib-button::after { position: absolute; inset: -10px; content: ''; }
 @media (max-width: 767px) {
   .map-full .maplibregl-ctrl-bottom-right { bottom: calc(5.25rem + max(0.75rem, env(safe-area-inset-bottom))); }
   .map-full .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group { display: none; }
