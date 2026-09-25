@@ -30,6 +30,10 @@ type Preference = {
 type Channel = 'email' | 'push' | 'whatsapp';
 
 const DEFAULTS: Record<Channel, boolean> = { email: true, push: false, whatsapp: true };
+/* A venue's bookings reach its phone unless it switches that off, the same default the server
+   applies (private.booking_notification): a request that waits minutes for an answer is the one
+   thing a venue must not miss. The phone still has to be allowed and registered first. */
+const BUSINESS_DEFAULTS: Record<Channel, boolean> = { email: true, push: true, whatsapp: true };
 
 export const NOTIFICATIONS_ENABLED = import.meta.env.VITE_NOTIFICATIONS_ENABLED === 'true';
 
@@ -231,7 +235,7 @@ function usePreferences(businessId?: string) {
   const queue = useRef<Promise<void>>(Promise.resolve());
   const pending = useRef(0);
 
-  const defaultsFor = (event: Preference['event']): Preference => ({ event, ...(event === 'watch' ? WATCH_DEFAULTS : DEFAULTS) });
+  const defaultsFor = (event: Preference['event']): Preference => ({ event, ...(event === 'watch' ? WATCH_DEFAULTS : formal ? BUSINESS_DEFAULTS : DEFAULTS) });
   const sendPreference = (row: Preference) => rpc('save_notification_preference', {
     p_scope: scope, p_event: row.event, p_email: row.email, p_push: row.push, p_whatsapp: row.whatsapp,
   });
@@ -349,7 +353,7 @@ function PreferenceTable({ preferences }: { preferences: Preferences }) {
       <tbody>
         {events.map((event) => {
           const current = query.data?.find((preference) => preference.event === event);
-          const defaults = event === 'watch' ? WATCH_DEFAULTS : DEFAULTS;
+          const defaults = event === 'watch' ? WATCH_DEFAULTS : formal ? BUSINESS_DEFAULTS : DEFAULTS;
           return (
             <tr key={event} className="border-t border-line">
               <th scope="row" className="py-1 pr-2 text-sm leading-snug font-bold text-ink">{EVENT_LABELS[event]}</th>

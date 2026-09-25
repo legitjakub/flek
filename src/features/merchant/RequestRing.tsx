@@ -21,6 +21,7 @@ import {
   wakeLockSupported,
 } from './ringer';
 import { showRequests } from './incomingRequest';
+import { RingSetup } from './RingSetup';
 
 /** A request that still waits for the venue's answer, with what the full screen shows about it. */
 export type WaitingRequest = {
@@ -178,9 +179,10 @@ export function RingSettings() {
       {heard === false ? (
         <p role="status" className="mt-2 text-sm text-danger">Prohlížeč zvuk zablokoval. Zkontrolujte hlasitost a že karta není ztlumená.</p>
       ) : null}
+      <RingSetup inline />
       <p className="mt-3 text-xs leading-relaxed text-muted">
-        Když je aplikace zavřená, přijde e-mail a oznámení na telefon (zapnete níž), které zůstane na obrazovce, dokud na něj
-        neklepnete.
+        Když je aplikace zavřená, přijde oznámení na telefon, které zůstane na obrazovce, dokud na něj neklepnete, a e-mail.
+        Co kam chodí, upravíte níž.
       </p>
     </section>
   );

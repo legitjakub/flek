@@ -9,7 +9,7 @@ import { money, distance as formatDistance } from '../../lib/format';
 import { DiscountBadge, OriginalPrice } from '../../components/Price';
 import { clockTime, dayLabel, duration, untilLabel } from '../../lib/time';
 import { DEFAULT_POINT, storedPoint } from '../../lib/geo';
-import { Button, ErrorState, Skeleton, cx } from '../../components/ui';
+import { Button, ErrorState, Skeleton, cx, IconTile } from '../../components/ui';
 import { bookingIcs, icsHref } from '../../lib/calendar';
 import { Link, useRouter } from '../../app/router';
 import { BookingSheet, cancellationDeadline } from '../bookings/BookingSheet';
@@ -538,16 +538,7 @@ function Section({
   return (
     <section id={id} className="mt-4 scroll-mt-24 border-t border-line pt-4 md:rounded-2xl md:border-0 md:bg-card md:p-5 md:shadow-card">
       <h2 className="flex items-center gap-2.5 text-lg font-extrabold">
-        <span
-          className={cx(
-            'grid size-8 shrink-0 place-items-center rounded-lg',
-            tone === 'accent' && 'bg-accent-soft text-accent',
-            tone === 'brand' && 'bg-brand-soft text-brand',
-            tone === 'positive' && 'bg-positive/10 text-positive',
-          )}
-        >
-          {icon}
-        </span>
+        <IconTile icon={icon} tone={tone} size="sm" />
         {title}
       </h2>
       <div className="mt-3">{children}</div>

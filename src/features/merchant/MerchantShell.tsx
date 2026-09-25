@@ -9,6 +9,7 @@ import { PartnerLanding } from './PartnerLanding';
 import { useBookingAlerts, useUnreadBookings, type BookingAlert } from './useBookingAlerts';
 import { RingBar, useRequestRing } from './RequestRing';
 import { IncomingRequest } from './IncomingRequest';
+import { RingSetup } from './RingSetup';
 import { money } from '../../lib/format';
 import { clockTime, dayLabel } from '../../lib/time';
 import { serverNow, useServerNow } from '../../lib/clock';
@@ -174,6 +175,8 @@ function ApprovedFrame({ business, path }: { business: Business; path: string })
           </button>
         </div>
       ) : null}
+      {/* Ringing is on by default; this asks once for the permission it needs on this device. */}
+      <RingSetup />
       {/* A new request takes the whole screen until it is answered, runs out or is put off. */}
       <IncomingRequest waiting={waiting} statusOf={statusOf} ring={ring} venue={business.display_name} />
       <div aria-live="polite" className="empty:hidden mb-4 flex flex-col gap-2">

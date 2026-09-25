@@ -563,6 +563,41 @@ function choiceIndex(key: string, current: number, length: number): number | nul
   return null;
 }
 
+/**
+ * A glyph in a coloured square: what a card or a row is about before its words say it. The
+ * offer page drew these by hand for its sections; the partner console uses the same ones.
+ */
+export function IconTile({
+  icon,
+  tone = 'brand',
+  size = 'md',
+  className,
+}: {
+  icon: ReactNode;
+  tone?: 'brand' | 'accent' | 'positive' | 'warning' | 'danger' | 'ink';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cx(
+        'grid shrink-0 place-items-center',
+        size === 'sm' ? 'size-8 rounded-lg' : size === 'lg' ? 'size-12 rounded-2xl' : 'size-10 rounded-xl',
+        tone === 'brand' && 'bg-brand-soft text-brand',
+        tone === 'accent' && 'bg-accent-soft text-accent',
+        tone === 'positive' && 'bg-positive/10 text-positive',
+        tone === 'warning' && 'bg-warning-soft text-warning',
+        tone === 'danger' && 'bg-danger-soft text-danger',
+        tone === 'ink' && 'bg-ink text-brand-on-dark',
+        className,
+      )}
+    >
+      {icon}
+    </span>
+  );
+}
+
 /* ------------------------------------------------------- colour blocks and lists */
 
 /**
