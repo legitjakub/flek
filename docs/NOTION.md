@@ -12,7 +12,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 | Web | https://www.app-flek.eu (původní https://flek-nine.vercel.app funguje dál) |
 | Kód | https://github.com/legitjakub/flek (větev `main`) |
 | Poslední nasazení | web a migrace fotografií 23. 9. 2026 (`e9fd9cb`); Vercel, GitHub CI a Supabase Preview úspěšné, produkční detail ověřen na 375/390 px. `content-moderation` nasazený 21. 9. |
-| Testy | 199 unit testů a build (25. 9.), SQL testy potvrzování, WhatsAppu, právního minima a ověřených recenzí/moderace; změny v hostované DB se při SQL testech celé vracejí rollbackem |
+| Testy | 201 unit testů a build (25. 9.), SQL testy potvrzování, WhatsAppu, právního minima a ověřených recenzí/moderace; změny v hostované DB se při SQL testech celé vracejí rollbackem |
 | Potvrzování rezervací podnikem | **zapnuté pro všechny podniky** od 15. 9. 15:54 (předtím demo: akceptace 106/106 a průchod se skutečnými testovacími platbami) |
 | WhatsApp | u Mety platný trvalý token, aplikace FLEK přihlášená k odběru, webhook ověřený, profil s logem, číslo FLEKu uložené; chybí schválení pěti šablon, které Meta nezačne, dokud není vyplněný profil firmy, platební metoda a ověření firmy (25. 9.), a zkouška na telefonu, do té doby je kanál serverově vypnutý a v UI skrytý |
 | Recenze a moderace | ověřené anonymní hvězdičky a komentáře po dokončené rezervaci; komentáře, vlastní veřejné texty a fotografie čekají na kontrolu. Funkce je nasazená, ale OpenAI 21. 9. vrací HTTP 429, takže nové podklady zatím bezpečně zůstávají neveřejné v admin frontě |
@@ -340,7 +340,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
-| 25. 9. 2026 | Potvrzení rezervace má nový vzhled: FLEK jako tmavý lístek s časem, službou a podnikem, pod perforací cena s úsporou, pak tři jasné kroky (zrušení zdarma, blokace platby, potvrzení podnikem) a modré tlačítko s částkou. Lhůta pro zrušení zdarma všude říká i den („do zítřka 17:30“), aby nevypadala jako propásnutá. |
+| 25. 9. 2026 | Potvrzení rezervace má nový vzhled: nahoře světlá karta s kalendářním listem, službou, časem a podnikem, pod ní cena s úsporou, pak tři jasné kroky (zrušení zdarma, blokace platby, potvrzení podnikem) a modré tlačítko s částkou. Lhůta pro zrušení zdarma všude říká i den („do zítřka 17:30“), aby nevypadala jako propásnutá. |
 | 25. 9. 2026 | UX/UI audit celé zákaznické části na telefonu, tabletu i počítači: bez chyb v konzoli, rozbitých obrázků a problémů s kontrastem. Opraveno: hlavička na tabletu přetékala, malé odkazy a tlačítka mapy mají 44 px, štítek „ilustrační foto“ je čitelný na každé fotce, detail termínu, který už nejde rezervovat, to řekne hned v kartě a termín, který právě běží, se už nehlásí jako „proběhl“. |
 | 25. 9. 2026 | WhatsApp: zjištěno, proč Meta šablony neschvaluje. Účet je blokovaný, dokud nebude vyplněný profil firmy, přidaná platební metoda a ověřená firma; administrace to ukazuje v řádku „Účet u Mety“ a postup je v úkolech pro Jakuba. |
 | 25. 9. 2026 | Žádost přes celou obrazovku má nový vzhled: nahoře modrá výzva s logem FLEKu, které „zvoní“, dole jeden bílý panel se vším podstatným a jedním tlačítkem „Potvrdit rezervaci“ (na tabletu a počítači napůl vedle sebe). Běžná cena u nabídek zůstává, jak byla. |

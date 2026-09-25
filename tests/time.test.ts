@@ -1,5 +1,5 @@
 import { describe,expect,it } from 'vitest';
-import { dayBounds,dayLabel,localInput,localToInstant,untilLabel } from '../src/lib/time';
+import { calendarDay,dayBounds,dayLabel,localInput,localToInstant,untilLabel } from '../src/lib/time';
 import { czkToCents,money } from '../src/lib/format';
 describe('Prague time independent of device timezone',()=>{
  it('23:50 followed by 00:30 is tomorrow',()=>expect(dayLabel('2026-09-08T00:30:00+02:00','2026-09-07T23:50:00+02:00')).toBe('Zítra'));
@@ -15,4 +15,9 @@ describe('deadline with its day',()=>{
  it('today says dnes',()=>expect(untilLabel('2026-09-25T17:30:00Z',now)).toBe('dnes do 19:30'));
  it('tomorrow is never a bare time',()=>expect(untilLabel('2026-09-26T15:30:00Z',now)).toBe('do zítřka 17:30'));
  it('later days carry the date',()=>expect(untilLabel('2026-09-28T07:00:00Z',now)).toBe('do 28. 9. 09:00'));
+});
+
+describe('calendar page',()=>{
+ it('names the Prague day',()=>expect(calendarDay('2026-09-26T16:30:00Z')).toEqual({weekday:'so',day:'26',month:'zář',long:'sobota 26. 9.'}));
+ it('half past midnight in Prague is already the next day',()=>expect(calendarDay('2026-09-26T22:30:00Z')).toMatchObject({weekday:'ne',day:'27'}));
 });

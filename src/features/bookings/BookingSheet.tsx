@@ -3,14 +3,14 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
-import { BellRing, Dumbbell, Flower2, Hand, Lock, ShieldCheck, Scissors, Sparkles, Ticket, Waves, type LucideIcon } from 'lucide-react';
+import { BellRing, Lock, ShieldCheck, Ticket, type LucideIcon } from 'lucide-react';
 import { confirmationQuote, openCheckout, paymentsMode, saveProfile, startPayment } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
 import { profileSchema } from '../../lib/schemas';
-import { clockTime, dayLabel, duration, untilLabel } from '../../lib/time';
+import { calendarDay, clockTime, dayLabel, duration, untilLabel } from '../../lib/time';
 import { track } from '../../lib/analytics';
-import { Banner, Button, Field, Input, PinMark, Sheet, Skeleton, cx } from '../../components/ui';
+import { Banner, Button, Field, Input, Sheet, Skeleton, cx } from '../../components/ui';
 import { OriginalPrice, savings } from '../../components/Price';
 import { hasPhone, useSession } from '../auth/session';
 import { useRouter } from '../../app/router';
@@ -127,11 +127,10 @@ export function BookingSheet({
   };
 
   /*
-   * A ticket rather than a form. The sheet used to be a table of "Co / Kde / Kdy" with the values
-   * pushed to the right edge, a grey box of payment prose and two notices of equal weight, so the
-   * one thing that matters (when, what, for how much) read no louder than the small print. Now the
-   * FLEK is a stub like "Tvůj FLEK" in the profile: time and service on the night top, the money
-   * under the tear, and what happens next as three short steps.
+   * The sheet used to be a table of "Co / Kde / Kdy" with the values pushed to the right edge, a
+   * grey box of payment prose and two notices of equal weight, so the one thing that matters (when,
+   * what, for how much) read no louder than the small print. Now one light card says what and when
+   * with the day as a calendar page, the money under it, and what happens next as three short steps.
    */
   return (
     <Sheet
@@ -160,7 +159,7 @@ export function BookingSheet({
         </>
       }
     >
-      <FlekTicket offer={offer} now={now} />
+      <BookingSummary offer={offer} now={now} />
 
       {needsPhone ? (
         <form className="mt-4 flex flex-col gap-3 rounded-3xl bg-card p-4 shadow-card" noValidate onSubmit={(event) => { event.preventDefault(); pay(); }}>
@@ -248,44 +247,42 @@ export function BookingSheet({
   );
 }
 
-/** The trade on the ticket, in the lucide shapes the map pins draw (`categoryGlyphs.ts`). */
-const TRADE_ICONS: Record<string, LucideIcon> = { vlasy: Scissors, masaze: Hand, krasa: Sparkles, sport: Dumbbell, joga: Flower2, wellness: Waves };
-
-/** The FLEK being booked, as a stub: when and what on the night top, the money under the tear. */
-function FlekTicket({ offer, now }: { offer: OfferDetail; now: string }) {
-  const Trade = TRADE_ICONS[offer.category_slug];
+/**
+ * What is being booked, on one light card: the day as a calendar page, the service and the time
+ * beside it, the venue under them and the money below a hairline.
+ */
+function BookingSummary({ offer, now }: { offer: OfferDetail; now: string }) {
   const saved = savings(offer.original_price_cents, offer.deal_price_cents);
   const itemised = offer.service_fee_cents > 0;
+  const day = calendarDay(offer.start_at);
   return (
-    <section aria-label="Tvůj FLEK" className="overflow-hidden rounded-3xl bg-card shadow-card">
-      <div className="relative bg-ink px-5 pt-4 pb-5 text-card">
-        <PinMark tone="dark" className="pointer-events-none absolute top-3.5 right-4 h-7 w-8" />
-        <p className="tnum text-xs font-bold tracking-[0.06em] text-brand-on-dark uppercase">Tvůj FLEK · {duration(offer.start_at, offer.end_at)} min</p>
-        <p className="tnum mt-2 text-[1.625rem] leading-tight font-extrabold tracking-tight">
-          <span className="text-brand-on-dark">{dayLabel(offer.start_at, now)}</span> {clockTime(offer.start_at)}–{clockTime(offer.end_at)}
-        </p>
-        <div className="mt-4 flex items-start gap-3">
-          <span aria-hidden="true" className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand text-brand-ink">
-            {Trade ? <Trade size={22} strokeWidth={2} /> : <PinMark tone="dark" className="h-7 w-8" />}
-          </span>
-          <div className="min-w-0">
-            <p className="text-base leading-snug font-bold [overflow-wrap:anywhere]">{offer.service_name}</p>
-            <p className="mt-0.5 text-sm text-card/80 [overflow-wrap:anywhere]">{offer.business_name}</p>
-            <p className="text-sm text-card/65 [overflow-wrap:anywhere]">{offer.address_line}, {offer.district || offer.city}</p>
-          </div>
+    <section aria-label="Tvoje rezervace" className="rounded-3xl bg-card p-4 shadow-card">
+      <div className="flex items-start gap-3.5">
+        {/* A calendar page, as invitations show a date: the weekday on the brand band, the day under it. */}
+        <span aria-hidden="true" className="flex w-14 shrink-0 flex-col overflow-hidden rounded-2xl bg-brand-soft text-center">
+          <span className="bg-brand py-1 text-[11px] leading-none font-extrabold tracking-[0.08em] text-brand-ink uppercase">{day.weekday}</span>
+          <span className="tnum pt-1.5 text-2xl leading-none font-extrabold text-ink">{day.day}</span>
+          <span className="pt-0.5 pb-1.5 text-[11px] leading-none font-bold text-accent">{day.month}</span>
+        </span>
+        <div className="min-w-0">
+          <p className="text-lg leading-snug font-extrabold text-ink [overflow-wrap:anywhere]">{offer.service_name}</p>
+          <p className="tnum mt-0.5 text-base font-bold text-accent">
+            {dayLabel(offer.start_at, now)} {clockTime(offer.start_at)}–{clockTime(offer.end_at)}
+            <span className="sr-only">, {day.long}</span>
+            {/* A pill rather than "· 60 min": on a narrow phone it moves to the next line whole. */}
+            {' '}<span className="ml-0.5 inline-block rounded-full bg-surface px-2 py-0.5 align-[2px] text-xs font-bold whitespace-nowrap text-muted">{duration(offer.start_at, offer.end_at)} min</span>
+          </p>
+          <p className="mt-1 text-sm leading-snug text-muted [overflow-wrap:anywhere]">
+            {offer.business_name}, {offer.address_line}, {offer.district || offer.city}
+          </p>
         </div>
-      </div>
-      {/* The perforation: a dashed tear line with a bite out of each edge in the sheet's colour. */}
-      <div aria-hidden="true" className="relative border-t-2 border-dashed border-line">
-        <span className="absolute -top-[11px] -left-2.5 size-5 rounded-full bg-surface" />
-        <span className="absolute -top-[11px] -right-2.5 size-5 rounded-full bg-surface" />
       </div>
       {/*
         The same number the customer has seen on every screen since the feed — deal_price_cents
         is the all-in price. The split is disclosure, not a surprise: nothing is added here that
         was not already in the price on the card.
       */}
-      <dl className="tnum px-5 pt-3 pb-4 text-sm">
+      <dl className="tnum mt-4 border-t border-line pt-3 text-sm">
         {itemised ? (
           <>
             <div className="flex items-baseline justify-between gap-4 py-1">
@@ -298,7 +295,7 @@ function FlekTicket({ offer, now }: { offer: OfferDetail; now: string }) {
             </div>
           </>
         ) : null}
-        <div className={cx('flex items-baseline justify-between gap-4', itemised && 'mt-2 border-t border-line pt-3')}>
+        <div className={cx('flex items-baseline justify-between gap-4', itemised && 'mt-1.5 pt-1')}>
           <dt className="text-base font-bold text-ink">Celkem</dt>
           <dd className="text-xl font-extrabold text-ink">{money(offer.deal_price_cents)}</dd>
         </div>
