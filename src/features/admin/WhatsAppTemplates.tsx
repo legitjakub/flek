@@ -14,6 +14,7 @@ import {
 } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { Banner, Button, cx } from '../../components/ui';
+import { isMetaTestNumber, metaBlockers, metaCanSend } from './whatsappHealth';
 
 /**
  * WhatsApp od začátku do konce na jednom místě. Stav se čte přímo od Mety přes
@@ -63,7 +64,12 @@ export function WhatsAppSetup() {
   const allApproved = Boolean(done?.templates.length) && done!.templates.every((row) => row.status === 'APPROVED');
   const toCreate = done?.templates.some((row) => row.action === 'would_create') ?? false;
   const rejected = done?.templates.some((row) => row.status === 'REJECTED') ?? false;
-  const ready = numberSaved && webhookOk && subscribed && allApproved && missingSecrets.length === 0;
+  // Meta blocks the whole account for things only the owner can fix (payment, business info, verification).
+  const accountKnown = Boolean(done?.account && 'health' in done.account && done.account.health && !metaFailed(done.account.health));
+  const canSend = done ? metaCanSend(done) : false;
+  const blockers = done ? metaBlockers(done) : [];
+  const testNumber = isMetaTestNumber(phone);
+  const ready = canSend && numberSaved && webhookOk && subscribed && allApproved && missingSecrets.length === 0;
 
   return (
     <section className="mt-8 flex flex-col gap-4 rounded-2xl bg-card p-5 shadow-card" aria-labelledby="whatsapp-nastaveni">
@@ -90,6 +96,27 @@ export function WhatsAppSetup() {
 
       {done && !run.isPending ? (
         <ol className="flex flex-col divide-y divide-line">
+          <Row ok={canSend} title="Účet u Mety">
+            {!accountKnown ? (
+              'Meta stav účtu nevrátila; zkontrolujte ho v Meta Business Suite.'
+            ) : canSend ? (
+              'Meta dovoluje FLEKu posílat zprávy.'
+            ) : (
+              <>
+                Meta zatím zprávy od FLEKu neposílá. Tohle jde vyřešit jen v Meta Business Suite (platba a doklady); pak se
+                rozběhne i schvalování šablon.
+                <ul className="mt-2 flex flex-col gap-2">
+                  {blockers.map((blocker) => (
+                    <li key={blocker.code ?? blocker.title}>
+                      <p className="font-bold text-ink">{blocker.title}</p>
+                      {blocker.fix ? <p>{blocker.fix}</p> : null}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </Row>
+
           <Row ok={missingSecrets.length === 0} title="Tajné klíče v Supabase">
             {missingSecrets.length === 0 ? 'Všechny vyplněné.' : `Chybí: ${missingSecrets.join(', ')}. Šablona bez klíče se jen přeskočí.`}
           </Row>
@@ -102,6 +129,12 @@ export function WhatsAppSetup() {
                 U Mety <span className="tnum font-bold text-ink">{phone.display_phone_number}</span>
                 {phone.verified_name ? <> ({phone.verified_name}{phone.name_status ? `, jméno ${nameStatus(phone.name_status)}` : ''})</> : null}.{' '}
                 {storedNumber ? <>Ve FLEKu <span className="tnum font-bold text-ink">{storedNumber}</span>.</> : 'Ve FLEKu zatím žádné.'}
+                {testNumber ? (
+                  <p className="mt-1">
+                    Je to testovací číslo Mety: posílá jen na nejvýš pět čísel přidaných v API Setup → To. Pro podniky a zákazníky
+                    je potřeba přidat vlastní číslo FLEKu (WhatsApp Manager → Telefonní čísla → Přidat).
+                  </p>
+                ) : null}
                 {!numberSaved && metaNumber ? (
                   <div className="mt-2">
                     <Button size="sm" loading={saveNumber.isPending} onClick={() => saveNumber.mutate(metaNumber)}>
@@ -216,7 +249,9 @@ export function WhatsAppSetup() {
           <div className="rounded-xl border border-line bg-surface p-3">
             <p className="text-sm text-muted">
               {ready
-                ? 'Vše je připravené. Po zpřístupnění uvidí podniky i zákazníci „Ověřit ve WhatsAppu“. Nejdřív si ho ověřte na svém čísle a pošlete si testovací žádost.'
+                ? testNumber
+                  ? 'Vše je připravené, ale číslo je testovací: po zpřístupnění ho zkoušejte jen na čísle přidaném v API Setup → To. Pro podniky a zákazníky přidejte vlastní číslo.'
+                  : 'Vše je připravené. Po zpřístupnění uvidí podniky i zákazníci „Ověřit ve WhatsAppu“. Nejdřív si ho ověřte na svém čísle a pošlete si testovací žádost.'
                 : 'Zpřístupnit půjde, až budou všechny řádky výš v pořádku.'}
             </p>
             <Button className="mt-3" disabled={!ready} loading={activate.isPending} onClick={() => activate.mutate()}>
