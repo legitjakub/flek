@@ -387,3 +387,192 @@
   8%, 24%, 40% { transform: rotate(-14deg); }
   16%, 32%, 48% { transform: rotate(14deg); }
 }
+
+/*
+ * Příchozí žádost přes celou obrazovku (IncomingRequest.tsx), jako tablety rozvozových služeb na
+ * pultu. Noční ultramarín značky se světlem, které pomalu pluje; špendlík FLEKu uprostřed pulzuje
+ * v rytmu zvonění (cyklus 2,6 s, akord v 0 a 0,95 s, tedy 36,5 %). Animuje se jen transform a
+ * opacity. Při omezeném pohybu vše skončí v klidové poloze (pravidlo nahoře).
+ *
+ * Kontrast: bílý text na nejsvětlejším místě pozadí (nahoře) 6,7 : 1, bílá na 80 % 4,9 : 1.
+ */
+/* Small phones and phones on their side (not a laptop, which has room for two columns): the takeover
+   drops its big hero so the answer stays on screen. */
+@custom-variant short (@media (max-height: 760px) and (max-width: 1023px));
+/* A phone on its side: the hero and the answer sit side by side, like on a tablet. */
+@custom-variant flat (@media (orientation: landscape) and (max-height: 600px) and (min-width: 600px));
+
+@layer components {
+  /* The disc and the ring around it; smaller where the screen is short. */
+  .takeover-beacon { --beacon: 11rem; --disc: 8rem; width: var(--beacon); height: var(--beacon); flex: none; }
+  .takeover-disc { width: var(--disc); height: var(--disc); }
+  .takeover-pin { width: 56%; height: auto; }
+  @media (max-height: 900px) {
+    .takeover-beacon { --beacon: 9.5rem; --disc: 7rem; }
+  }
+  @media (max-height: 760px) and (max-width: 1023px) {
+    .takeover-beacon { --beacon: 5.75rem; --disc: 4.25rem; }
+  }
+  /* Behind the stuck buttons, only while the page scrolls: a smoky tray that fades up and to the
+     sides, so it reads on any part of the drifting background. */
+  .takeover-dock::before {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(to top, rgb(16 18 31 / 0.6), rgb(16 18 31 / 0.35) 65%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 1rem, #000 calc(100% - 1rem), transparent);
+    mask-image: linear-gradient(to right, transparent, #000 1rem, #000 calc(100% - 1rem), transparent);
+    content: '';
+    pointer-events: none;
+  }
+  .takeover {
+    background:
+      radial-gradient(120% 70% at 50% 0%, color-mix(in srgb, var(--color-brand-bright) 45%, transparent), transparent 70%),
+      linear-gradient(165deg, var(--color-brand) 0%, var(--color-accent) 60%, color-mix(in srgb, var(--color-accent) 70%, var(--color-ink)) 100%);
+    animation: takeover-in 260ms ease-out both;
+  }
+  /* The console's ink focus ring disappears on night blue. */
+  .takeover :focus-visible { outline-color: var(--color-brand-ink); }
+
+  .takeover-blob {
+    position: absolute;
+    width: 70vmax;
+    height: 70vmax;
+    border-radius: 9999px;
+    opacity: 0.55;
+    will-change: transform;
+  }
+  .takeover-blob-a {
+    top: -30vmax;
+    left: -25vmax;
+    background: radial-gradient(circle, color-mix(in srgb, var(--color-brand-bright) 70%, transparent), transparent 62%);
+    animation: takeover-drift-a 18s ease-in-out infinite alternate;
+  }
+  .takeover-blob-b {
+    right: -30vmax;
+    bottom: -35vmax;
+    background: radial-gradient(circle, color-mix(in srgb, var(--color-brand-on-dark) 45%, transparent), transparent 60%);
+    animation: takeover-drift-b 22s ease-in-out infinite alternate;
+  }
+  .takeover-blob-c {
+    top: 30%;
+    left: 40%;
+    width: 45vmax;
+    height: 45vmax;
+    background: radial-gradient(circle, color-mix(in srgb, var(--color-promo) 22%, transparent), transparent 60%);
+    animation: takeover-drift-c 26s ease-in-out infinite alternate;
+  }
+
+  /* Secondary actions on the night blue: a pane of light, not a white slab. */
+  .takeover-quiet {
+    background: color-mix(in srgb, var(--color-brand-ink) 12%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-brand-ink) 32%, transparent);
+    color: var(--color-brand-ink);
+    transition: background-color 150ms;
+  }
+  .takeover-quiet:hover { background: color-mix(in srgb, var(--color-brand-ink) 20%, transparent); }
+  .takeover-quiet:disabled { opacity: 0.6; }
+
+  /* "Zapnout zvuk" calls for the one tap the browser needs. */
+  .takeover-call { animation: takeover-call 1.6s ease-out infinite; }
+
+  .takeover-pop { animation: takeover-pop 640ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+  .takeover-rise { animation: takeover-rise 520ms cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+
+  /* Sonar rings leave the disc on each chord; muted, the disc only breathes. */
+  .takeover-sonar {
+    position: absolute;
+    inset: calc((var(--beacon) - var(--disc)) / 2);
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--color-brand-ink) 30%, transparent);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .is-ringing .takeover-sonar { animation: takeover-sonar 2.6s cubic-bezier(0.2, 0.6, 0.35, 1) infinite; }
+  .is-ringing .takeover-sonar-2 { animation-delay: 0.95s; }
+  .is-calm .takeover-sonar { animation: takeover-breathe 4s ease-in-out infinite; }
+  .is-calm .takeover-sonar-2 { display: none; }
+  .takeover-sonar-once { animation: takeover-sonar 1.2s cubic-bezier(0.2, 0.6, 0.35, 1) 1 both; }
+
+  /* The pin's three rays are the sound: they flash with each chord and fade until the next. */
+  .takeover-ray { transform-box: fill-box; transform-origin: 0% 100%; }
+  .is-ringing .takeover-ray { animation: takeover-ray 2.6s ease-out infinite; }
+  .is-ringing .takeover-ray-2 { animation-delay: 60ms; }
+  .is-ringing .takeover-ray-3 { animation-delay: 120ms; }
+  .takeover-pin { transform-origin: 33% 95%; }
+  .is-ringing .takeover-pin { animation: takeover-hop 2.6s cubic-bezier(0.3, 0.7, 0.4, 1) infinite; }
+
+  /* The last minute of the countdown. */
+  .takeover-urgent { animation: takeover-urgent 1s ease-in-out infinite; }
+
+  .takeover-sheen {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--color-brand-soft) 95%, transparent) 50%, transparent 70%);
+    transform: translateX(-100%);
+    animation: takeover-sheen 2.6s ease-in-out 1s infinite;
+    pointer-events: none;
+  }
+
+  .takeover-check {
+    stroke-dasharray: 38;
+    stroke-dashoffset: 38;
+    animation: takeover-check 460ms cubic-bezier(0.65, 0, 0.35, 1) 220ms forwards;
+  }
+  /* FLEK's motion dashes flying out of a confirmed request. */
+  .takeover-dash {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 18px;
+    height: 5px;
+    margin: -2.5px 0 0 -9px;
+    border-radius: 9999px;
+    opacity: 0;
+    animation: takeover-dash 900ms cubic-bezier(0.15, 0.7, 0.3, 1) both;
+  }
+  /* The next step comes by itself: the button fills up until it does. */
+  .takeover-countdown { width: 0; animation: takeover-fill linear forwards; }
+}
+
+@keyframes takeover-in { from { opacity: 0; } }
+@keyframes takeover-pop { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
+@keyframes takeover-rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+@keyframes takeover-drift-a { to { transform: translate(12vmax, 10vmax) scale(1.15); } }
+@keyframes takeover-drift-b { to { transform: translate(-14vmax, -8vmax) scale(1.1); } }
+@keyframes takeover-drift-c { to { transform: translate(-20vmax, 12vmax) scale(0.85); } }
+@keyframes takeover-call {
+  0% { box-shadow: 0 0 0 0 rgb(255 255 255 / 0.6); }
+  100% { box-shadow: 0 0 0 10px rgb(255 255 255 / 0); }
+}
+@keyframes takeover-sonar {
+  0% { opacity: 0.6; transform: scale(1); }
+  75%, 100% { opacity: 0; transform: scale(2.3); }
+}
+@keyframes takeover-breathe {
+  0%, 100% { opacity: 0; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(1.18); }
+}
+@keyframes takeover-ray {
+  0%, 36.5% { opacity: 0.45; transform: translateX(-3px); }
+  5%, 41.5% { opacity: 1; transform: translateX(1.5px); }
+  12%, 48.5% { opacity: 1; transform: none; }
+  100% { opacity: 0.45; transform: translateX(-3px); }
+}
+@keyframes takeover-hop {
+  0%, 30%, 36.5%, 66%, 100% { transform: none; }
+  6%, 42.5% { transform: rotate(-6deg) scale(1.07); }
+  14%, 50.5% { transform: rotate(3deg); }
+}
+@keyframes takeover-urgent { 50% { opacity: 0.45; } }
+@keyframes takeover-sheen {
+  0% { transform: translateX(-100%); }
+  35%, 100% { transform: translateX(100%); }
+}
+@keyframes takeover-check { to { stroke-dashoffset: 0; } }
+@keyframes takeover-dash {
+  0% { opacity: 1; transform: rotate(var(--angle)) translateX(56px) scaleX(0.3); }
+  45% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(var(--angle)) translateX(104px) scaleX(1); }
+}
+@keyframes takeover-fill { to { width: 100%; } }

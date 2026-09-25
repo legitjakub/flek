@@ -21,6 +21,8 @@ let vibration: number | null = null;
 let wakeLock: WakeLockSentinel | null = null;
 let keepAwake = false;
 const muted = new Set<string>();
+/** Bumped on every mute change, so a screen can tell that `isMuted` answers differently now. */
+let mutedStamp = 0;
 const listeners = new Set<Listener>();
 
 function emit() {
@@ -185,18 +187,24 @@ export async function ringOnce(): Promise<boolean> {
 /** Requests already heard and silenced; a new request rings again. */
 export function muteRequests(ids: string[]) {
   ids.forEach((id) => muted.add(id));
+  mutedStamp += 1;
   stopRinging();
   emit();
 }
 
-/** Takes back a mute, when "Zapnout zvuk" found the sound still blocked. */
+/** Takes back a mute: "Zapnout zvuk" found the sound still blocked, or the venue wants the ring back. */
 export function unmuteRequests(ids: string[]) {
   ids.forEach((id) => muted.delete(id));
+  mutedStamp += 1;
   emit();
 }
 
 export function isMuted(id: string): boolean {
   return muted.has(id);
+}
+
+export function mutedVersion(): number {
+  return mutedStamp;
 }
 
 /*

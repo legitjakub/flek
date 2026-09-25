@@ -8,6 +8,7 @@ import { useMyBusinesses } from './useBusiness';
 import { PartnerLanding } from './PartnerLanding';
 import { useBookingAlerts, useUnreadBookings, type BookingAlert } from './useBookingAlerts';
 import { RingBar, useRequestRing } from './RequestRing';
+import { IncomingRequest } from './IncomingRequest';
 import { money } from '../../lib/format';
 import { clockTime, dayLabel } from '../../lib/time';
 import { serverNow, useServerNow } from '../../lib/clock';
@@ -136,7 +137,7 @@ function PendingNotice({ business }: { business: Business }) {
 }
 
 function ApprovedFrame({ business, path }: { business: Business; path: string }) {
-  const { alerts, unread, markRead, dismiss, waiting } = useBookingAlerts(business.id);
+  const { alerts, unread, markRead, dismiss, waiting, statusOf } = useBookingAlerts(business.id);
   const ring = useRequestRing(waiting);
   const [celebrate, setCelebrate] = useState(() => {
     try {
@@ -173,9 +174,11 @@ function ApprovedFrame({ business, path }: { business: Business; path: string })
           </button>
         </div>
       ) : null}
+      {/* A new request takes the whole screen until it is answered, runs out or is put off. */}
+      <IncomingRequest waiting={waiting} statusOf={statusOf} ring={ring} venue={business.display_name} />
       <div aria-live="polite" className="empty:hidden mb-4 flex flex-col gap-2">
-        {/* Rings on every partner page until the request is answered, runs out or is muted. */}
-        <RingBar ring={ring} showOpen={!REQUEST_PAGES.includes(path)} />
+        {/* A request put off with "Později" keeps ringing here, on every partner page, until it is answered, runs out or is muted. */}
+        <RingBar ring={ring} />
         {/* Přehled and Rezervace list the requests at the top themselves; a banner there would say it twice.
             A request that still rings is already announced by the ring bar above. */}
         {alerts.filter((alert) => alert.kind !== 'request' || (!REQUEST_PAGES.includes(path) && !ring.loud.some((request) => request.id === alert.id))).map((alert) => (
