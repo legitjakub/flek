@@ -267,10 +267,32 @@ Deno.serve(async (request) => {
       }, failure)
     : null;
 
+  // Proč šablony nebo zprávy stojí: kontrola účtu, ověření firmy, režim čísla a „zdraví“ podle Mety
+  // (co brání posílání a jak to vyřešit). Každý dotaz zvlášť, aby jedno nepodporované pole nesmazalo zbytek.
+  const account = await metaApi(`${waba}?fields=name,account_review_status,business_verification_status,ownership_type`)
+    .then((data) => ({
+      name: data?.name ?? null,
+      account_review_status: data?.account_review_status ?? null,
+      business_verification_status: data?.business_verification_status ?? null,
+      ownership_type: data?.ownership_type ?? null,
+    }), failure);
+  const accountHealth = await metaApi(`${waba}?fields=health_status`).then((data) => data?.health_status ?? null, failure);
+  const phoneStatus = phoneNumberId
+    ? await metaApi(`${phoneNumberId}?fields=status,account_mode,messaging_limit_tier,platform_type`)
+      .then((data) => ({
+        status: data?.status ?? null,
+        account_mode: data?.account_mode ?? null,
+        messaging_limit_tier: data?.messaging_limit_tier ?? null,
+        platform_type: data?.platform_type ?? null,
+      }), failure)
+    : null;
+  const phoneHealth = phoneNumberId ? await metaApi(`${phoneNumberId}?fields=health_status`).then((data) => data?.health_status ?? null, failure) : null;
+
   // Jméno tajného klíče u každé šablony: podle něj se doplní zbytek nastavení v Supabase.
   return json({
     language, graph_version: version, dry_run: Boolean(body.dry_run), created, failed, templates: results,
     secrets, callback_url: callbackUrl, token_app: tokenApp,
     phone, numbers, subscription, app_subscriptions: appSubscriptions, profile, actions, brand_profile: PROFILE,
+    account: { ...account, health: accountHealth }, phone_status: phoneStatus, phone_health: phoneHealth,
   }, failed ? 207 : 200);
 });
