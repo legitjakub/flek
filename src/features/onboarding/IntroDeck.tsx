@@ -8,15 +8,16 @@ import { ACTIVITY_GALLERIES, activityPhotoSrcSet } from '../../lib/activityGalle
  * that does not exist as if it were a real offer. Service, district and time are enough
  * to show what the product is — and the spread of prices and discounts is the point.
  *
- * The five verified photographs share the activity catalogue and use CDN widths so the
+ * One of each trade (hair, massage, wellness, sport, beauty), so the only picture in the intro
+ * shows the whole range. The photographs share the activity catalogue and use CDN widths so the
  * first visit does not download full-size files.
  */
 const DECK = [
-  { image: ACTIVITY_GALLERIES['sport-padel'][0], service: 'Padel na hodinu', place: 'Holešovice', time: 'Dnes 18:30', price: 390, was: 650 },
+  { image: ACTIVITY_GALLERIES['vlasy-damsky-strih'][0], service: 'Dámský střih', place: 'Vinohrady', time: 'Dnes 17:30', price: 450, was: 750 },
+  { image: ACTIVITY_GALLERIES['masaze-zada-sije'][0], service: 'Masáž zad a šíje', place: 'Karlín', time: 'Dnes 19:00', price: 590, was: 890 },
   { image: ACTIVITY_GALLERIES['wellness-privatni-sauna'][0], service: 'Privátní sauna', place: 'Dejvice', time: 'Dnes 20:00', price: 225, was: 450 },
-  { image: ACTIVITY_GALLERIES['joga-zacatecnici'][0], service: 'Jóga pro začátečníky', place: 'Karlín', time: 'Dnes 17:00', price: 180, was: 240 },
-  { image: ACTIVITY_GALLERIES['sport-osobni-trenink'][0], service: 'Osobní trénink', place: 'Vinohrady', time: 'Zítra 7:30', price: 585, was: 900 },
-  { image: ACTIVITY_GALLERIES['sport-tenis'][0], service: 'Tenisový kurt', place: 'Letná', time: 'Dnes 19:00', price: 320, was: 460 },
+  { image: ACTIVITY_GALLERIES['sport-padel'][0], service: 'Padel na hodinu', place: 'Holešovice', time: 'Dnes 18:30', price: 390, was: 650 },
+  { image: ACTIVITY_GALLERIES['krasa-manikura'][0], service: 'Manikúra', place: 'Smíchov', time: 'Zítra 9:00', price: 360, was: 520 },
 ] as const;
 
 const INTERVAL_MS = 2600;
@@ -33,7 +34,7 @@ const VISIBLE_BEHIND = 2;
  * intro closes — and never for someone who has asked for reduced motion, who gets the same
  * deck standing still.
  */
-export function IntroDeck({ playing }: { playing: boolean }) {
+export function IntroDeck({ playing, className = 'w-full max-w-sm' }: { playing: boolean; className?: string }) {
   // One state, pure updaters: the card that leaves is always the one that was in front.
   const [{ front, leaving }, setDeck] = useState<{ front: number; leaving: number | null }>({ front: 0, leaving: null });
   const [still] = useState(
@@ -54,7 +55,7 @@ export function IntroDeck({ playing }: { playing: boolean }) {
   }, [playing, still]);
 
   return (
-    <div className="relative mx-auto aspect-[5/4] w-full max-w-sm" aria-hidden="true">
+    <div className={`relative mx-auto aspect-[5/4] ${className}`} aria-hidden="true">
       {DECK.map((card, index) => {
         const position = (index - front + DECK.length) % DECK.length;
         const exiting = index === leaving;

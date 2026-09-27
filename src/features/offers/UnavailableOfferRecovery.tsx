@@ -64,7 +64,7 @@ export function UnavailableOfferRecovery({
 
   return (
     <section aria-labelledby="recovery-title" className="rounded-2xl bg-card p-5 shadow-card">
-      <h2 id="recovery-title" className="text-lg font-extrabold tracking-tight">
+      <h2 id="recovery-title" className="scroll-mt-24 text-lg font-extrabold tracking-tight">
         {copy.title}
       </h2>
       <p className="mt-2 text-base leading-relaxed text-muted">{copy.body}</p>

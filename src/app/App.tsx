@@ -155,7 +155,7 @@ function Routes() {
     <CustomerShell>
       <main className="mx-auto w-full max-w-2xl px-4 py-16 text-center">
         <h1 className="text-2xl font-extrabold text-ink">Tuhle stránku neznáme.</h1>
-        <Link to="/" className="mt-4 inline-block text-sm font-bold underline underline-offset-4">
+        <Link to="/" className="mt-4 inline-flex min-h-11 items-center text-base font-bold underline underline-offset-4">
           Zpět na nabídky
         </Link>
       </main>

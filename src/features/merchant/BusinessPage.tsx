@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Clock3, Store, Upload } from 'lucide-react';
 import { aresLookup, businessBilling, createBusiness, listCategories, saveBusinessBilling, updateBusiness, uploadBusinessCover } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
-import { Banner, Button, cx, Field, Input, Segmented, Select, Textarea } from '../../components/ui';
+import { Banner, Button, cx, Field, IconTile, Input, Segmented, Select, Textarea } from '../../components/ui';
 import { MerchantShell } from './MerchantShell';
 import { AddressField } from './AddressField';
 import { MoneyExplainer } from './MoneyExplainer';
@@ -356,7 +356,7 @@ function BusinessForm({ business }: { business?: Business }) {
 
   const body = (
     <form
-      className="flex flex-col gap-4"
+      className={cx('flex flex-col gap-4', business && 'rounded-3xl bg-card p-5 shadow-card sm:p-6')}
       onSubmit={(event) => {
         event.preventDefault();
         setAttempted(true);
@@ -369,7 +369,10 @@ function BusinessForm({ business }: { business?: Business }) {
       noValidate
     >
       {business ? (
-        <h2 id="udaje" className="scroll-mt-24 text-lg font-extrabold tracking-tight text-ink">Údaje o provozovně</h2>
+        <h2 id="udaje" className="flex scroll-mt-28 items-center gap-3 text-lg font-extrabold tracking-tight text-ink">
+          <IconTile icon={<Store size={20} />} />
+          Údaje o provozovně
+        </h2>
       ) : (
         <h1 className="text-2xl font-extrabold tracking-tight text-ink">Registrace provozovny</h1>
       )}
@@ -664,7 +667,7 @@ function BusinessForm({ business }: { business?: Business }) {
         {/* The timestamp is written by the server, not sent by the browser: a moment a client
             can choose is not a record of anything. */}
         <div>
-          <label htmlFor="b-terms" className="flex items-start gap-3 text-sm text-ink">
+          <label htmlFor="b-terms" className="flex min-h-11 cursor-pointer items-start gap-3 py-2 text-sm text-ink">
             <input
               id="b-terms"
               type="checkbox"

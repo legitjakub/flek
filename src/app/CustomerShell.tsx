@@ -35,6 +35,7 @@ export function CustomerShell({ children }: { children: ReactNode }) {
     return NAV.map(({ to, label, icon: Icon }) => {
       const active = to === '/' ? path === '/' : path.startsWith(to);
       const badge = to === '/oblibene' ? (newCount.data ?? 0) : 0;
+      const count = badge > 9 ? '9+' : String(badge);
       return (
         <li key={to} className={mobile ? 'flex-1' : ''}>
           <Link
@@ -42,27 +43,31 @@ export function CustomerShell({ children }: { children: ReactNode }) {
             aria-current={active ? 'page' : undefined}
             className={cx(
               'flex items-center justify-center font-bold transition-colors',
-              mobile ? 'min-h-15 flex-col gap-0.5 text-xs' : 'min-h-11 gap-2 rounded-full px-4 text-sm',
+              // On a tablet the five labels, the logo and "Pro podniky" only fit without icons.
+              mobile ? 'min-h-15 flex-col gap-0.5 text-xs' : 'min-h-11 gap-2 rounded-full px-3 text-sm lg:px-4',
               active ? 'text-ink' : 'text-muted hover:text-ink',
               !mobile && active && 'bg-accent-soft',
             )}
           >
-            {/* On a phone the active tab carries the brand pill behind its icon. */}
-            <span className={cx('relative inline-flex items-center justify-center', mobile && 'h-8 w-14 rounded-full transition-colors', mobile && active && 'bg-brand text-brand-ink')}>
-              <Icon size={mobile ? 21 : 18} aria-hidden="true" strokeWidth={active ? 2.3 : 1.8} />
-              {badge > 0 ? (
-                <span
-                  className={cx(
-                    'tnum absolute grid min-h-4 min-w-4 place-items-center rounded-full px-1 text-[10px] font-bold',
-                    mobile ? 'top-0 right-2.5 bg-ink text-card ring-2 ring-card' : '-top-1.5 -right-2 bg-brand text-brand-ink',
-                  )}
-                  aria-label={`${badge} nových`}
-                >
-                  {badge > 9 ? '9+' : badge}
-                </span>
-              ) : null}
-            </span>
+            {mobile ? (
+              /* On a phone the active tab carries the brand pill behind its icon. */
+              <span className={cx('relative inline-flex h-8 w-14 items-center justify-center rounded-full transition-colors', active && 'bg-brand text-brand-ink')}>
+                <Icon size={21} aria-hidden="true" strokeWidth={active ? 2.3 : 1.8} />
+                {badge > 0 ? (
+                  <span className="tnum absolute top-0 right-2.5 grid min-h-4 min-w-4 place-items-center rounded-full bg-ink px-1 text-[10px] font-bold text-card ring-2 ring-card" aria-label={`${badge} nových`}>
+                    {count}
+                  </span>
+                ) : null}
+              </span>
+            ) : (
+              <Icon size={18} aria-hidden="true" strokeWidth={active ? 2.3 : 1.8} className="hidden lg:block" />
+            )}
             {label}
+            {!mobile && badge > 0 ? (
+              <span className="tnum grid min-h-5 min-w-5 place-items-center rounded-full bg-brand px-1 text-[11px] font-bold text-brand-ink" aria-label={`${badge} nových`}>
+                {count}
+              </span>
+            ) : null}
           </Link>
         </li>
       );

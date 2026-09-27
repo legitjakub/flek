@@ -125,7 +125,17 @@ export function useBookingAlerts(businessId: string) {
   const waiting: WaitingRequest[] = (poll.data ?? [])
     .filter((row) => row.business_id === businessId && row.confirmation_version === 1 && row.status === 'pending_merchant'
       && Boolean(row.authorized_at) && Date.parse(row.confirmation_expires_at ?? '') > Date.parse(now))
-    .map((row) => ({ id: row.id, deadline: row.confirmation_expires_at ?? null }));
+    .map((row) => ({
+      id: row.id,
+      deadline: row.confirmation_expires_at ?? null,
+      authorizedAt: row.authorized_at ?? null,
+      service: row.service_name_snapshot,
+      startAt: row.start_at_snapshot,
+      endAt: row.end_at_snapshot,
+      customer: row.customer_label,
+      payoutCents: row.merchant_payout_cents,
+    }))
+    .sort((a, b) => Date.parse(a.deadline ?? '') - Date.parse(b.deadline ?? ''));
 
   useEffect(() => {
     const previous = document.title;
@@ -135,6 +145,8 @@ export function useBookingAlerts(businessId: string) {
 
   return {
     waiting,
+    /** Where a request ended up once it stopped waiting, as the last read saw it. */
+    statusOf: (id: string) => poll.data?.find((row) => row.id === id)?.status,
     alerts: state.alerts,
     unread: state.unreadIds.length,
     markRead: () => bookingAlerts.markRead(scope),

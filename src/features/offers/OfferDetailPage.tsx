@@ -1,15 +1,15 @@
-import { ArrowLeft, CalendarDays, CalendarPlus, ChevronDown, Clock3, Info, MapPin, Check, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, CalendarDays, CalendarPlus, ChevronDown, Clock3, Info, MapPin, Check, ShieldCheck, Ban } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { activityPhotoSrcSet } from '../../lib/activityGalleries';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { businessOffers, confirmationQuote, getOfferDetail, setFavorite } from '../../lib/api';
 import { track } from '../../lib/analytics';
 import { relativeTime, useServerNow } from '../../lib/clock';
 import { money, distance as formatDistance } from '../../lib/format';
 import { DiscountBadge, OriginalPrice } from '../../components/Price';
-import { clockTime, dayLabel, duration } from '../../lib/time';
+import { clockTime, dayLabel, duration, untilLabel } from '../../lib/time';
 import { DEFAULT_POINT, storedPoint } from '../../lib/geo';
-import { Button, ErrorState, Skeleton, cx } from '../../components/ui';
+import { Button, ErrorState, Skeleton, cx, IconTile } from '../../components/ui';
 import { bookingIcs, icsHref } from '../../lib/calendar';
 import { Link, useRouter } from '../../app/router';
 import { BookingSheet, cancellationDeadline } from '../bookings/BookingSheet';
@@ -22,7 +22,7 @@ import { navigationHref } from '../../lib/maps';
 import { LazyMap } from './LazyMap';
 import { ShareOfferButton } from './ShareOfferButton';
 import { UnavailableOfferRecovery } from './UnavailableOfferRecovery';
-import { unavailableReason } from './unavailable';
+import { unavailableCopy, unavailableReason } from './unavailable';
 import { GooglePlaceRating } from '../ratings/GooglePlaceRating';
 import { FlekRatingSummary } from '../ratings/FlekReviews';
 import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
@@ -48,6 +48,9 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
   const [desktopMap, setDesktopMap] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches);
   const { userId } = useSession();
   const queryClient = useQueryClient();
+  // The time the page opened with. Picking another one keeps this component, so the card can tell
+  // a switch (which it animates) from arriving (which it does not).
+  const openedWith = useRef(offerId);
 
   useEffect(() => {
     const media = window.matchMedia('(min-width: 768px)');
@@ -152,7 +155,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
     return (
       <main className="page-container py-10 text-center">
         <p className="text-base font-bold text-ink">Tento termín už bohužel není volný.</p>
-        <Link to="/" className="mt-4 inline-block text-base font-bold underline underline-offset-4">
+        <Link to="/" className="mt-4 inline-flex min-h-11 items-center text-base font-bold underline underline-offset-4">
           Zpět na nabídky
         </Link>
       </main>
@@ -192,7 +195,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
   const graceCopy = manual ? '10 minut od potvrzení' : '10 minut od rezervace';
   const cancellationCopy = Date.parse(cancellationAt) <= Date.parse(now)
     ? graceCopy
-    : `do ${clockTime(cancellationAt)}`;
+    : untilLabel(cancellationAt, now);
 
   const hasPhoto = Boolean(image);
   const reason = unavailableReason(offer, now);
@@ -278,7 +281,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-bold [overflow-wrap:anywhere]">
             <Link
               to={`/podnik/${offer.business_id}?from=${encodeURIComponent(`/nabidka/${offer.id}`)}`}
-              className="inline-flex min-h-8 items-center underline decoration-line underline-offset-4 hover:text-accent hover:decoration-accent"
+              className="inline-flex min-h-11 items-center underline decoration-line underline-offset-4 hover:text-accent hover:decoration-accent"
             >
               {offer.business_name}
             </Link>
@@ -337,16 +340,24 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           y=755. Grouping them fixes the collision by construction, not by nudging offsets.
         */}
         <aside
-          className="rounded-3xl border border-brand/10 bg-card p-3 md:sticky md:top-24 md:col-start-2 md:row-start-1 md:row-span-2 md:p-4"
+          className="min-w-0 rounded-3xl border border-brand/10 bg-card p-3 md:sticky md:top-24 md:col-start-2 md:row-start-1 md:row-span-2 md:p-4"
           aria-label="Vybraný termín"
         >
-          {/* The selected appointment is the only filled surface; alternatives stay quiet. */}
-          <div className="rounded-2xl bg-brand px-4 py-3.5 text-brand-ink">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs font-medium">
-              <h2 className="inline-flex items-center gap-1.5"><Check size={14} aria-hidden="true" />Tvůj termín</h2>
+          {/* The selected appointment is the only filled surface; alternatives stay quiet. A time
+              that can no longer be booked loses the fill and the tick, and says so right here: on a
+              computer the reason further down the page sat below the fold while this card, beside
+              it, still read "Tvůj termín ✓". */}
+          <div className={cx('rounded-2xl px-4 py-3.5', offer.bookable ? 'bg-brand text-brand-ink' : 'bg-surface text-ink')}>
+            <div className={cx('mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs font-medium', !offer.bookable && 'text-muted')}>
+              {offer.bookable ? (
+                <h2 className="inline-flex items-center gap-1.5"><Check size={14} aria-hidden="true" />Tvůj termín</h2>
+              ) : (
+                <h2 className="inline-flex items-center gap-1.5 font-bold"><Ban size={14} aria-hidden="true" />Tenhle čas už nejde rezervovat</h2>
+              )}
               <span className="tnum inline-flex items-center gap-1.5"><Clock3 size={13} aria-hidden="true" />{duration(offer.start_at, offer.end_at)} min</span>
             </div>
-            <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+            {/* A new time slides in instead of snapping: the one thing that changes on a switch. */}
+            <div key={offer.id} className={cx('flex flex-wrap items-end justify-between gap-x-4 gap-y-3', offer.id !== openedWith.current && 'animate-[flek-swap_260ms_cubic-bezier(0.2,0.8,0.2,1)]')}>
               <div className="min-w-0">
                 <p className="inline-flex items-center gap-1.5 text-sm font-semibold">
                   <CalendarDays size={15} aria-hidden="true" />
@@ -370,7 +381,15 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             </div>
           </div>
 
-          {(minutesAway > 0 && minutesAway <= 120) || (offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60) || showCapacity ? (
+          {!offer.bookable && reason ? (
+            <p className="mt-2.5 text-sm font-bold text-ink">
+              {unavailableCopy(reason).title}{' '}
+              <a href="#recovery-title" className="inline-flex min-h-11 items-center font-bold text-accent underline underline-offset-4">
+                Co teď?
+              </a>
+            </p>
+          ) : null}
+          {offer.bookable && ((minutesAway > 0 && minutesAway <= 120) || (cutoffMinutes > 0 && cutoffMinutes <= 60) || showCapacity) ? (
             <p className="tnum mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
               {minutesAway > 0 && minutesAway <= 120 ? <span className="font-bold text-accent">Začíná {relativeTime(offer.start_at, now)}</span> : null}
               {minutesAway > 0 && minutesAway <= 120 && offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60 ? <span aria-hidden="true">·</span> : null}
@@ -390,6 +409,8 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             now={now}
             pendingId={switchingTo}
             onPick={(id) => void pickTime(id)}
+            // Fetched while the finger is on its way, so the tap usually finds the page ready.
+            onIntent={(id) => void queryClient.prefetchQuery({ queryKey: ['offer', id], queryFn: () => getOfferDetail(id, point), staleTime: 30_000 })}
           />
 
           {/* No sticky bar when there is nothing to book: a permanently disabled button is a
@@ -405,7 +426,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             */}
             <div className="mx-auto flex max-w-xl items-center gap-3 md:block md:max-w-none">
               {/* Keep the mobile action to one row; the selected summary explains the discount. */}
-              <p className="tnum flex min-w-0 flex-wrap items-baseline gap-x-1.5 md:hidden">
+              <p key={offer.id} className={cx('tnum flex min-w-0 flex-wrap items-baseline gap-x-1.5 md:hidden', offer.id !== openedWith.current && 'animate-[flek-swap_260ms_cubic-bezier(0.2,0.8,0.2,1)]')}>
                 <span className="text-lg leading-none font-extrabold">{money(offer.deal_price_cents)}</span>
                 {savings > 0 ? <OriginalPrice cents={offer.original_price_cents} className="text-xs" /> : null}
               </p>
@@ -517,16 +538,7 @@ function Section({
   return (
     <section id={id} className="mt-4 scroll-mt-24 border-t border-line pt-4 md:rounded-2xl md:border-0 md:bg-card md:p-5 md:shadow-card">
       <h2 className="flex items-center gap-2.5 text-lg font-extrabold">
-        <span
-          className={cx(
-            'grid size-8 shrink-0 place-items-center rounded-lg',
-            tone === 'accent' && 'bg-accent-soft text-accent',
-            tone === 'brand' && 'bg-brand-soft text-brand',
-            tone === 'positive' && 'bg-positive/10 text-positive',
-          )}
-        >
-          {icon}
-        </span>
+        <IconTile icon={icon} tone={tone} size="sm" />
         {title}
       </h2>
       <div className="mt-3">{children}</div>

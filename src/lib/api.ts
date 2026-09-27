@@ -622,6 +622,28 @@ export type WhatsAppTemplateSetup = {
   profile?: WhatsAppProfileState | MetaFailure | null;
   actions?: Partial<Record<WhatsAppSetupAction, { ok: true } | MetaFailure>>;
   brand_profile?: { about: string; description: string; websites: string[]; vertical: string };
+  /** Kontrola účtu, ověření firmy a „zdraví“ podle Mety: co posílání brání a jak to vyřešit. */
+  account?: (WhatsAppAccountState | MetaFailure) & { health?: MetaHealth | MetaFailure | null };
+  phone_status?: { status: string | null; account_mode: string | null; messaging_limit_tier: string | null; platform_type: string | null } | MetaFailure | null;
+  phone_health?: MetaHealth | MetaFailure | null;
+};
+
+export type WhatsAppAccountState = {
+  name: string | null;
+  account_review_status: string | null;
+  business_verification_status: string | null;
+  ownership_type: string | null;
+};
+
+/** `health_status` od Mety: u každé části (firma, účet, aplikace, číslo) zda smí posílat a co brání. */
+export type MetaHealth = {
+  can_send_message?: string;
+  entities?: {
+    id?: string;
+    entity_type?: string;
+    can_send_message?: string;
+    errors?: { error_code?: number; error_description?: string; possible_solution?: string }[];
+  }[];
 };
 
 /** Co funkce udělá u Mety na výslovné klepnutí; bez nich jen čte stav. */

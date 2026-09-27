@@ -4,7 +4,7 @@ import { ArrowUpRight, CreditCard } from 'lucide-react';
 import { businessPaymentsStatus, stripeConnect } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { useRouter } from '../../app/router';
-import { Banner, Button, Spinner } from '../../components/ui';
+import { Banner, Button, IconTile, Spinner } from '../../components/ui';
 import type { Business } from '../../types/database';
 
 /**
@@ -62,10 +62,10 @@ export function StripePayouts({ business }: { business: Business }) {
   const connected = Boolean(data?.connected);
 
   return (
-    <section className="flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-card sm:p-6" aria-labelledby="platby-vyplaty">
+    <section className="flex flex-col gap-3 rounded-3xl bg-card p-5 shadow-card sm:p-6" aria-labelledby="platby-vyplaty">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id="platby-vyplaty" className="flex items-center gap-2 text-lg font-extrabold tracking-tight text-ink">
-          <CreditCard size={20} aria-hidden="true" />
+        <h2 id="platby-vyplaty" className="flex items-center gap-3 text-lg font-extrabold tracking-tight text-ink">
+          <IconTile icon={<CreditCard size={20} />} />
           Platby a výplaty
         </h2>
         {status.isPending || refresh.isPending ? (

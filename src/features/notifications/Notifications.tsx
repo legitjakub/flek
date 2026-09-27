@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell } from 'lucide-react';
 import { Link } from '../../app/router';
-import { Button, SettingsRow, Sheet } from '../../components/ui';
+import { Button, IconTile, SettingsRow, Sheet } from '../../components/ui';
 import { supabase } from '../../lib/supabase';
 import { errorMessage } from '../../lib/errors';
+import { pushProblem, registerDevicePush } from './devicePush';
 import { useSession } from '../auth/session';
 import { WhatsAppSettingsSection, useWhatsAppSettings } from './WhatsApp';
 
@@ -29,6 +30,10 @@ type Preference = {
 type Channel = 'email' | 'push' | 'whatsapp';
 
 const DEFAULTS: Record<Channel, boolean> = { email: true, push: false, whatsapp: true };
+/* A venue's bookings reach its phone unless it switches that off, the same default the server
+   applies (private.booking_notification): a request that waits minutes for an answer is the one
+   thing a venue must not miss. The phone still has to be allowed and registered first. */
+const BUSINESS_DEFAULTS: Record<Channel, boolean> = { email: true, push: true, whatsapp: true };
 
 export const NOTIFICATIONS_ENABLED = import.meta.env.VITE_NOTIFICATIONS_ENABLED === 'true';
 
@@ -140,60 +145,6 @@ export async function disableDevicePush() {
   await subscription.unsubscribe();
 }
 
-function applicationServerKey(value: string): Uint8Array<ArrayBuffer> {
-  const padded = `${value.replace(/-/g, '+').replace(/_/g, '/')}${'='.repeat((4 - value.length % 4) % 4)}`;
-  const binary = atob(padded);
-  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
-}
-
-function sameKey(current: ArrayBuffer | null | undefined, wanted: Uint8Array): boolean {
-  if (!current) return false;
-  const bytes = new Uint8Array(current);
-  return bytes.length === wanted.length && bytes.every((byte, index) => byte === wanted[index]);
-}
-
-/** Why this device could not be registered; the screen turns it into a sentence for its audience. */
-class PushSetupError extends Error {
-  constructor(readonly reason: 'unsupported' | 'not-configured' | 'denied' | 'registration') {
-    super(`PUSH_${reason.toUpperCase()}`);
-  }
-}
-
-/**
- * What went wrong with notifications on this device, in the screen's own voice. The browser's own
- * text ("Registration failed - could not retrieve the public key") reached people untranslated.
- */
-export function pushProblem(error: unknown, formal: boolean): string {
-  const reason = error instanceof PushSetupError ? error.reason : null;
-  const message = error instanceof Error ? error.message : '';
-  if (reason === 'unsupported') {
-    return formal
-      ? 'Tento prohlížeč oznámení nepodporuje. Na iPhonu si FLEK přidejte na plochu a otevřete ho odtud.'
-      : 'Tenhle prohlížeč oznámení nepodporuje. Na iPhonu si FLEK přidej na plochu a otevři ho odtud.';
-  }
-  if (reason === 'not-configured') return formal ? 'Oznámení na telefonu zatím nejsou aktivovaná.' : 'Oznámení na telefonu zatím nejsou aktivovaná.';
-  if (reason === 'denied') {
-    return formal
-      ? 'Prohlížeč má oznámení pro FLEK zakázaná. Povolíte je v nastavení prohlížeče u www.app-flek.eu.'
-      : 'Prohlížeč má oznámení pro FLEK zakázaná. Povolíš je v nastavení prohlížeče u www.app-flek.eu.';
-  }
-  if (reason === 'registration') {
-    return formal
-      ? 'Prohlížeč oznámení nezaregistroval. V nastavení prohlížeče u www.app-flek.eu oznámení zakažte a znovu povolte, nebo použijte Chrome či Safari.'
-      : 'Prohlížeč oznámení nezaregistroval. V nastavení prohlížeče u www.app-flek.eu oznámení zakaž a znovu povol, nebo použij Chrome či Safari.';
-  }
-  if (message.includes('DEVICE_LIMIT')) {
-    return formal ? 'Oznámení máte zapnutá už na 10 zařízeních. Na některém je odpojte.' : 'Oznámení máš zapnutá už na 10 zařízeních. Na některém je odpoj.';
-  }
-  if (message.includes('SUBSCRIPTION_OWNED_BY_ANOTHER_USER')) {
-    return formal ? 'Na tomto zařízení má oznámení zapnutá jiný účet.' : 'Na tomhle zařízení má oznámení zapnutá jiný účet.';
-  }
-  if (message.includes('INVALID_SUBSCRIPTION')) {
-    return formal ? 'Tento prohlížeč posílá oznámení službou, kterou FLEK nepodporuje. Použijte Chrome, Firefox nebo Safari.' : 'Tenhle prohlížeč posílá oznámení službou, kterou FLEK nepodporuje. Použij Chrome, Firefox nebo Safari.';
-  }
-  return errorMessage(error, formal ? 'merchant' : 'customer');
-}
-
 /** Whether this device already sends FLEK's notifications to the phone. */
 export async function devicePushEnabled(): Promise<boolean> {
   try {
@@ -206,43 +157,11 @@ export async function devicePushEnabled(): Promise<boolean> {
   }
 }
 
-/**
- * Asks for permission and registers this device for push. The permission prompt comes first,
- * before anything else is awaited: Safari shows it only straight from a tap.
- */
+export { pushProblem } from './devicePush';
+
+/** Asks for permission and registers this device for push (see `devicePush.ts`). */
 export async function enableDevicePush() {
-  if (!('Notification' in window) || !('PushManager' in window) || !('serviceWorker' in navigator)) {
-    throw new PushSetupError('unsupported');
-  }
-  const publicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
-  if (!publicKey) throw new PushSetupError('not-configured');
-  const permission = await Notification.requestPermission();
-  if (permission !== 'granted') throw new PushSetupError('denied');
-  const registration = await navigator.serviceWorker.ready;
-  const key = applicationServerKey(publicKey);
-  let subscription = await registration.pushManager.getSubscription().catch(() => null);
-  // A registration made with another key can never deliver ours, and it blocks a new one.
-  if (subscription && !sameKey(subscription.options.applicationServerKey, key)) {
-    await subscription.unsubscribe().catch(() => false);
-    subscription = null;
-  }
-  if (!subscription) {
-    const options = { userVisibleOnly: true, applicationServerKey: key };
-    try {
-      subscription = await registration.pushManager.subscribe(options);
-    } catch {
-      // Chrome answers a broken earlier registration with "could not retrieve the public key":
-      // drop whatever is left and try once more before giving up.
-      const stale = await registration.pushManager.getSubscription().catch(() => null);
-      await stale?.unsubscribe().catch(() => false);
-      try {
-        subscription = await registration.pushManager.subscribe(options);
-      } catch {
-        throw new PushSetupError('registration');
-      }
-    }
-  }
-  await rpc('save_push_subscription', { p_subscription: subscription.toJSON() });
+  await registerDevicePush(import.meta.env.VITE_VAPID_PUBLIC_KEY, (subscription) => rpc('save_push_subscription', { p_subscription: subscription }));
 }
 
 const EVENT_LABELS: Record<Preference['event'], string> = {
@@ -316,7 +235,7 @@ function usePreferences(businessId?: string) {
   const queue = useRef<Promise<void>>(Promise.resolve());
   const pending = useRef(0);
 
-  const defaultsFor = (event: Preference['event']): Preference => ({ event, ...(event === 'watch' ? WATCH_DEFAULTS : DEFAULTS) });
+  const defaultsFor = (event: Preference['event']): Preference => ({ event, ...(event === 'watch' ? WATCH_DEFAULTS : formal ? BUSINESS_DEFAULTS : DEFAULTS) });
   const sendPreference = (row: Preference) => rpc('save_notification_preference', {
     p_scope: scope, p_event: row.event, p_email: row.email, p_push: row.push, p_whatsapp: row.whatsapp,
   });
@@ -434,7 +353,7 @@ function PreferenceTable({ preferences }: { preferences: Preferences }) {
       <tbody>
         {events.map((event) => {
           const current = query.data?.find((preference) => preference.event === event);
-          const defaults = event === 'watch' ? WATCH_DEFAULTS : DEFAULTS;
+          const defaults = event === 'watch' ? WATCH_DEFAULTS : formal ? BUSINESS_DEFAULTS : DEFAULTS;
           return (
             <tr key={event} className="border-t border-line">
               <th scope="row" className="py-1 pr-2 text-sm leading-snug font-bold text-ink">{EVENT_LABELS[event]}</th>
@@ -475,12 +394,11 @@ function PreferenceNotes({ preferences }: { preferences: Preferences }) {
   const { formal, whatsapp, device, busy, message, deviceOn, deviceOff } = preferences;
   return (
     <>
-      {device.on === false ? (
+      {/* A venue switches this device on in "Zvonění v aplikaci" right above; a second button here only repeated it. */}
+      {device.on === false && !formal ? (
         <div className="mt-3 flex items-center gap-3 rounded-2xl bg-surface p-3">
-          <p className="min-w-0 flex-1 text-sm text-ink">
-            {formal ? 'Na tomto zařízení máte oznámení vypnutá.' : 'Na tomhle zařízení máš oznámení vypnutá.'}
-          </p>
-          <Button size="sm" variant="brand" shape={formal ? 'rounded' : 'pill'} disabled={busy} onClick={() => void deviceOn()}>
+          <p className="min-w-0 flex-1 text-sm text-ink">Na tomhle zařízení máš oznámení vypnutá.</p>
+          <Button size="sm" variant="brand" shape="pill" disabled={busy} onClick={() => void deviceOn()}>
             Zapnout
           </Button>
         </div>
@@ -508,9 +426,12 @@ export function NotificationSettings({ businessId }: { businessId: string }) {
   const preferences = usePreferences(businessId);
   if (!NOTIFICATIONS_ENABLED || !userId) return null;
   return (
-    <section className="rounded-2xl bg-card p-5 shadow-card sm:p-6">
-      <h2 className="text-lg font-extrabold tracking-tight text-ink">Upozornění na rezervace</h2>
-      <p className="mt-1 mb-3 text-sm text-muted">Vyberte, jak vás upozorníme. Zprávy v aplikaci zůstávají dostupné vždy.</p>
+    <section className="rounded-3xl bg-card p-5 shadow-card sm:p-6" aria-labelledby="upozorneni-nadpis">
+      <h2 id="upozorneni-nadpis" className="flex items-center gap-3 text-lg font-extrabold tracking-tight text-ink">
+        <IconTile icon={<Bell size={20} />} />
+        Upozornění na rezervace
+      </h2>
+      <p className="mt-3 mb-3 text-sm text-muted">Vyberte, jak vás upozorníme. Zprávy v aplikaci zůstávají dostupné vždy.</p>
       <PreferenceTable preferences={preferences} />
       <PreferenceNotes preferences={preferences} />
     </section>

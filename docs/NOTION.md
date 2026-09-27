@@ -11,10 +11,10 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 | Fáze | Fáze 1 — demo pilot (běží veřejně, platby přes Stripe v testovacím režimu) |
 | Web | https://www.app-flek.eu (původní https://flek-nine.vercel.app funguje dál) |
 | Kód | https://github.com/legitjakub/flek (větev `main`) |
-| Poslední nasazení | web a migrace fotografií 23. 9. 2026 (`e9fd9cb`); Vercel, GitHub CI a Supabase Preview úspěšné, produkční detail ověřen na 375/390 px. `content-moderation` nasazený 21. 9. |
-| Testy | 184 unit testů a build (27. 9.); skutečný Checkout sandbox → autorizace → potvrzení → capture → kód → storno → refund 402 Kč; SQL regrese potvrzování, vratek a povinného emailu s rollbackem; UI 320/375/390/1280 px |
+| Poslední nasazení | web 25. 9. 2026 (nový vzhled partnerské části, zvonění a oznámení pro podniky zapnuté s povolením, úvod pro zákazníky na jedné obrazovce) a migrace `20260925205632_merchant_push_default` v hostované DB; předtím web a migrace fotografií 23. 9. (`e9fd9cb`). `content-moderation` nasazený 21. 9. |
+| Testy | 226 unit testů a build po sloučení aktuálního main (27. 9.); skutečný Checkout sandbox → autorizace → potvrzení → capture → kód → storno → refund 402 Kč; SQL regrese potvrzování, vratek a povinného emailu s rollbackem; UI 320/375/390/1280 px |
 | Potvrzování rezervací podnikem | **zapnuté pro všechny podniky** od 15. 9. 15:54 (předtím demo: akceptace 106/106 a průchod se skutečnými testovacími platbami) |
-| WhatsApp | u Mety platný trvalý token, aplikace FLEK přihlášená k odběru, webhook ověřený, profil s logem, číslo FLEKu uložené; chybí schválení pěti šablon a zkouška na telefonu, do té doby je kanál serverově vypnutý a v UI skrytý |
+| WhatsApp | u Mety platný trvalý token, aplikace FLEK přihlášená k odběru, webhook ověřený, profil s logem, číslo FLEKu uložené; všech pět šablon Meta 27. 9. schválila; odesílání ale dál blokuje, dokud není přidaná platební metoda, vyplněný profil firmy a ověřená firma, a chybí zkouška na telefonu, do té doby je kanál serverově vypnutý a v UI skrytý |
 | Recenze a moderace | ověřené anonymní hvězdičky a komentáře po dokončené rezervaci; komentáře, vlastní veřejné texty a fotografie čekají na kontrolu. Funkce je nasazená, ale OpenAI 21. 9. vrací HTTP 429, takže nové podklady zatím bezpečně zůstávají neveřejné v admin frontě |
 | Právní texty | **zásady ochrany osobních údajů jsou od 20. 9. zveřejněné** (správce Jakub Hrnčíř jako fyzická osoba, kontakt jakub@app-flek.eu); obchodní podmínky pro zákazníky i pro podniky ve verzi 1.0 čekají na IČO. Všechny texty před ostrým provozem zkontroluje právník |
 | Přihlášení | e-mail a heslo; **Google od 20. 9. funguje** (v Google Cloud zatím režim Testing, přihlásí se jen účty v seznamu test users); Apple čeká na placené členství v Apple Developer Program |
@@ -44,7 +44,9 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 - [ ] **Dokončit WhatsApp u Meta.** Hotovo 18. 9. (Claude s tvým svolením): podmínky Meta pro WhatsApp odsouhlasené, založený testovací WhatsApp účet s testovacím číslem +1 555 156 7838; Phone Number ID a ID účtu ti Claude napsal do chatu (do repozitáře nepatří). **Stav 24. 9. ve 23:30:** trvalý token systémového uživatele funguje. Claude přihlásil aplikaci FLEK k odběru zpráv, nastavil profil na WhatsAppu (texty, web, e-mail podpory, logo) a uložil číslo FLEKu do aplikace. Všech pět šablon čeká na schválení u Mety (jednu Meta zamítla, má nové znění a je znovu ve schvalování). Zbývá:
   1. ~~`WHATSAPP_VERIFY_TOKEN` do Supabase~~ hotovo 24. 9. ve 23:33, Claude nastavil webhook a Meta ho ověřila.
   2. developers.facebook.com → FLEK → WhatsApp → API Setup → pole „To“ → Manage phone number list: tvoje číslo (případně demo telefon podniku, nejvýš 5 čísel), potvrdit kódem. Testovací číslo píše jen na tato čísla.
-  3. Až Meta šablony schválí (minuty až hodiny), Claude kanál zpřístupní a ty na telefonu vyzkoušíš „Ověřit ve WhatsAppu“ v Profilu i v Provozovně a zkušební rezervaci. Stav ukáže i administrace (Nastavení → WhatsApp → Zkontrolovat stav).
+  3. **Šablony Meta 27. 9. schválila (všech pět).** Posílat je ale nezačne, protože pořád blokuje celý účet (zjištěno 25. 9., 27. 9. beze změny). Odblokuje ho, až v Meta Business Suite vyplníš **Informace o firmě** (právní název, země Česko, web https://www.app-flek.eu), přidáš **platební metodu** k WhatsApp účtu a ověříš firmu (doklad s IČO). Přesný postup je v `docs/PRED_SPUSTENIM.md`, stav ukazuje administrace v řádku „Účet u Mety“.
+  4. Pro skutečné podniky a zákazníky přidat vlastní telefonní číslo (testovací píše jen na 5 čísel ze seznamu „To“).
+  5. Až Meta účet odblokuje (nejdřív platební metoda), Claude kanál na tvůj pokyn zpřístupní a ty na telefonu vyzkoušíš „Ověřit ve WhatsAppu“ v Profilu i v Provozovně a zkušební rezervaci. Stav ukáže i administrace (Nastavení → WhatsApp → Zkontrolovat stav).
 - [x] **Zkontrolovat SMTP odesílatele v Supabase Auth.** Uložené správně (15. 9.): zapnuté, odesílatel `ucet@mail.app-flek.eu`, jméno FLEK, uživatel `resend`, port 465.
 - [ ] **Vyzkoušet registraci nové adresy** s odkazem otevřeným v jiném prohlížeči (agent účty zakládat nesmí).
 - [x] **Odpojit uspanou databázi od projektu ve Vercelu.** Hotovo 18. 9.: po tvém souhlasu Claude odpojil nepoužívanou databázi `supabase-cerulean-village` od projektu flek (Storage → Projects → Remove Project Connection; databáze zůstala a jde znovu připojit). Nasazení commitu 060491e prošlo a na www.app-flek.eu běží nová verze.
@@ -82,6 +84,9 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 
 ## Todolist
 
+- [x] Partnerská část v brandu FLEKu: modré hlavní akce, karty s barevným okrajem podle stavu, seznamy po dnech, záložky s počty, Nabídky jako diář, modrá karta nejbližší rezervace na Přehledu a „Ověřit rezervaci“ s načtením QR kódu (25. 9. 2026)
+- [x] Zvonění a oznámení na telefon pro podniky zapnuté samy, podnik jen jednou klepnutím povolí na svém zařízení (25. 9. 2026)
+- [x] Úvod pro zákazníky zkrácený na jednu obrazovku s tím nejdůležitějším (25. 9. 2026)
 - [x] Zpřehlednit výběr termínu: jeden výrazný souhrn v ultramarínu, podtržené dny a klidnější volby času s cenou (23. 9. 2026)
 
 - [x] Nahradit nevhodnou resortovou fotografii wellness služeb neutrálním spa snímkem; jednorázová migrace opravuje katalog i existující služby a obálky (14. 9. 2026)
@@ -174,6 +179,7 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 - [x] Revize hlídače: noční klid s ranní zprávou, brzda 15 min, sleva ve zprávě, mazání se smazáním účtu, pozvánka z Objevit a Rezervací (24. 9.)
 - [x] Úvod pro nové zákazníky a stránka pro podniky podle dnešní aplikace; přeškrtnutá běžná cena všude, kde zákazník vidí cenu (24. 9.)
 - [x] Zvonění nové žádosti v partnerské části, dokud ji podnik nevyřídí; oznámení o žádosti zůstane na obrazovce (25. 9.)
+- [x] Nová žádost přes celou obrazovku s odpočtem, animací v rytmu zvonění a velkým „Potvrdit“ (25. 9.)
 - [x] Nastavení upozornění reaguje hned a uloží se i tam, kde prohlížeč oznámení odmítne (25. 9.)
 - [x] Průvodce „Začínáme“ pro nové podniky, přehlednější Provozovna a nápověda „Jak FLEK funguje“ na vyžádání (24. 9.)
 - [ ] WhatsApp: vlastní číslo do „To“ (Jakub), schválení šablon u Mety, zpřístupnění a zkouška na telefonu (token, odběr, webhook, profil s logem a číslo hotové 24. 9.)
@@ -210,8 +216,8 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 1. Registruje provozovnu, admin ji schválí.
 2. Přidá služby z připravených šablon podle kategorie nebo vlastní.
 3. Zveřejní FLEK: čas, kapacita a částka, kterou chce dostat. Sleva pro zákazníka musí být aspoň 10 % a cena aspoň 15 % běžné ceny; server hlídá i kolize termínů.
-4. Dostane upozornění na novou rezervaci a storno (v aplikaci vždy, e-mail a push podle nastavení v Provozovně), u pultu ověří kód zákazníka, případně označí „Nedorazil“.
-   - Potvrzování (od 15. 9.): nová žádost se ukáže nahoře na Přehledu a v Rezervacích s odpočtem („Potvrďte do 04:18“) a tlačítky Potvrdit / Nemohu přijmout, a aplikace zvoní (jako tablet rozvozové služby), dokud žádost nepotvrdí, neodmítne, nevyprší nebo ji neztlumí; oznámení na telefonu u žádosti zůstane na obrazovce do klepnutí. Po ověření WhatsAppu v Provozovně (jedno klepnutí, číslo provozovny je předvyplněné) přijde žádost i tam a jde vyřídit tlačítkem ve zprávě; přijdou tam i zrušení a vypršení.
+4. Dostane upozornění na novou rezervaci a storno (v aplikaci vždy, e-mail a oznámení na telefon jsou zapnuté samy a dají se změnit v Provozovně). Oznámení chodí jen na zařízení, kde podnik jednou klepnutím povolí zvonění a oznámení (karta „Zapněte zvonění na tomto zařízení“); o vlastním potvrzení nebo odmítnutí zprávu nedostane. U pultu načte QR kód zákazníka (nebo kód opíše) a aplikace hned řekne, jestli rezervace na dnes platí; případně označí „Nedorazil“.
+   - Potvrzování (od 15. 9.): nová žádost převezme celou obrazovku (od 25. 9.) s odpočtem („Potvrďte do 04:18“), kartou rezervace a tlačítky Potvrdit rezervaci / Nemohu přijmout, a aplikace zvoní (jako tablet rozvozové služby), dokud žádost nepotvrdí, neodmítne, nevyprší nebo ji neztlumí. „Později“ ji schová do lišty nahoře; na Přehledu a v Rezervacích zůstává i jako karta; oznámení na telefonu u žádosti zůstane na obrazovce do klepnutí. Po ověření WhatsAppu v Provozovně (jedno klepnutí, číslo provozovny je předvyplněné) přijde žádost i tam a jde vyřídit tlačítkem ve zprávě; přijdou tam i zrušení a vypršení.
 5. Vidí metriky: rezervace, výplaty a naplněnost.
 
 ### Admin (`/admin`)
@@ -340,6 +346,16 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 | Datum | Změna |
 | --- | --- |
 | 27. 9. 2026 | Skutečný Checkout test v sandboxu prošel včetně autorizace, potvrzení podnikem, capture, kódu, storna a refundu 402 Kč. V pracovní kopii zjednodušené Discovery a Zopakovat/recent služby, opravené peněžní texty. Build + 184 unit testů a mobilní/desktop kontroly PASS. Zbývá fyzické doručení email/push na nedemo účtu. |
+| 27. 9. 2026 | WhatsApp: Meta schválila všech pět šablon zpráv. Posílat je začne, až bude u WhatsApp účtu platební metoda, vyplněný profil firmy (právní název, země, web) a ověřená firma; do té doby zůstává WhatsApp ve FLEKu vypnutý. |
+| 25. 9. 2026 | Partnerská část má nový vzhled v barvách FLEKu. Nabídky jsou diář po dnech (Nadcházející a Ukončené místo tří záložek), každá karta má vlevo čas, barvou a slovem stav (Aktivní, Vyprodáno, Uzavřeno…), výrazně „Vy dostanete“, proužek obsazenosti a dole Zopakovat, Upravit, Zrušit. Přehled ukazuje modrou kartu nejbližší rezervace a kdo ještě dnes přijde. Rezervace začínají kartou „Ověřit rezervaci“ s modrým „Načíst QR kód“ a po načtení hned řeknou, jestli rezervace platí. Služby, Provozovna a Metriky mají hlavičky s ikonami, Metriky modrou kartu s výdělkem. |
+| 25. 9. 2026 | Zvonění a oznámení na telefon jsou pro podniky zapnuté samy. Podnik jen jednou klepne na „Povolit zvonění a oznámení“: prohlížeč se zeptá na povolení, zařízení se zaregistruje, jednou zazvoní na zkoušku a displej zůstane rozsvícený. Na iPhonu aplikace poradí přidání na plochu, při zamítnutí řekne, jak povolení vrátit. |
+| 25. 9. 2026 | Výběr času v detailu nabídky zůstává v původní podobě (dvě nové podoby se nelíbily); nově se další čas načítá dopředu a karta s vybraným termínem se po přepnutí plynule prolne místo skoku. |
+| 25. 9. 2026 | Úvod pro nové zákazníky je jedna obrazovka: balíček nabídek, „Volné FLEKy. Se slevou.“, jedna věta, co FLEK je, tři důvody a tlačítko „Najít svůj FLEK“. |
+| 25. 9. 2026 | Potvrzení rezervace má nový vzhled: nahoře světlá karta s kalendářním listem, službou, časem a podnikem, pod ní cena s úsporou, pak tři jasné kroky (zrušení zdarma, blokace platby, potvrzení podnikem) a modré tlačítko s částkou. Lhůta pro zrušení zdarma všude říká i den („do zítřka 17:30“), aby nevypadala jako propásnutá. |
+| 25. 9. 2026 | UX/UI audit celé zákaznické části na telefonu, tabletu i počítači: bez chyb v konzoli, rozbitých obrázků a problémů s kontrastem. Opraveno: hlavička na tabletu přetékala, malé odkazy a tlačítka mapy mají 44 px, štítek „ilustrační foto“ je čitelný na každé fotce, detail termínu, který už nejde rezervovat, to řekne hned v kartě a termín, který právě běží, se už nehlásí jako „proběhl“. |
+| 25. 9. 2026 | WhatsApp: zjištěno, proč Meta šablony neschvaluje. Účet je blokovaný, dokud nebude vyplněný profil firmy, přidaná platební metoda a ověřená firma; administrace to ukazuje v řádku „Účet u Mety“ a postup je v úkolech pro Jakuba. |
+| 25. 9. 2026 | Žádost přes celou obrazovku má nový vzhled: nahoře modrá výzva s logem FLEKu, které „zvoní“, dole jeden bílý panel se vším podstatným a jedním tlačítkem „Potvrdit rezervaci“ (na tabletu a počítači napůl vedle sebe). Běžná cena u nabídek zůstává, jak byla. |
+| 25. 9. 2026 | Nová žádost o rezervaci se podniku ukáže přes celou obrazovku v barvách FLEKu, jako na tabletech rozvozových služeb: pulzující špendlík v rytmu zvonění, kruh s odpočtem, karta rezervace a velké „Potvrdit rezervaci“. Po potvrzení krátká animace a další žádost; „Později“ ji schová do lišty. Otestováno na telefonu, tabletu i počítači. |
 | 25. 9. 2026 | Náhled služby na mapě má stín, který pod kartou plynule mizí místo ostrého řezu nad spodním menu. |
 | 25. 9. 2026 | Karta „Tvůj FLEK“ v Profilu vypadá jako útržek voucheru: velké číslo ušetřené za měsíc, pod perforací počet FLEKů, nejlepší úlovek a součet od začátku (v prvním měsíci skrytý, aby se čísla neopakovala). |
 | 25. 9. 2026 | Partnerská aplikace při nové žádosti o rezervaci zvoní, dokud ji podnik nepotvrdí nebo neodmítne (jde ztlumit a vyzkoušet v Provozovně, displej může zůstat rozsvícený). Zaškrtávání upozornění v Profilu a Provozovně reaguje hned a „Zapnout“ zapne i oznámení na telefonu. |

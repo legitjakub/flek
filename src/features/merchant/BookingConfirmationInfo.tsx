@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown } from 'lucide-react';
+import { CalendarCheck, ChevronDown } from 'lucide-react';
 import { businessPaymentsStatus } from '../../lib/api';
 import type { Business } from '../../types/database';
 import { ConfirmationWindows } from './PartnerHelp';
+import { SectionTitle } from './partnerUi';
 
 /**
  * How new bookings reach the venue now that each one waits for its answer. Shown only when the
@@ -14,9 +15,9 @@ export function BookingConfirmationInfo({ business }: { business: Business }) {
   const status = useQuery({ queryKey: ['business-payments', business.id], queryFn: () => businessPaymentsStatus(business.id) });
   if (!status.data?.manual_confirmation) return null;
   return (
-    <section id="potvrzovani" className="scroll-mt-24 rounded-2xl bg-card p-5 shadow-card sm:p-6" aria-labelledby="potvrzovani-nadpis">
-      <h2 id="potvrzovani-nadpis" className="text-lg font-extrabold tracking-tight text-ink">Potvrzování rezervací</h2>
-      <p className="mt-1 text-base leading-relaxed text-muted">
+    <section id="potvrzovani" className="scroll-mt-24 rounded-3xl bg-card p-5 shadow-card sm:p-6" aria-labelledby="potvrzovani-nadpis">
+      <SectionTitle id="potvrzovani-nadpis" icon={<CalendarCheck size={20} />} title="Potvrzování rezervací" />
+      <p className="mt-3 text-base leading-relaxed text-muted">
         Každou novou rezervaci potvrzujete vy. Do potvrzení je částka zákazníkovi jen zablokovaná na kartě. Když
         rezervaci odmítnete nebo ji nestihnete potvrdit, blokace se uvolní a zákazník nic nezaplatí.
       </p>

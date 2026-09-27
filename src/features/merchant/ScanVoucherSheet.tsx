@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { Camera } from 'lucide-react';
 import { Banner, Button, Sheet } from '../../components/ui';
 
 /**
@@ -188,15 +187,5 @@ export function ScanVoucherSheet({
         Zadat kód ručně
       </Button>
     </Sheet>
-  );
-}
-
-/** The control that opens the scanner. Kept next to the manual field, never instead of it. */
-export function ScanButton({ onClick }: { onClick: () => void }) {
-  return (
-    <Button type="button" variant="secondary" onClick={onClick}>
-      <Camera size={17} aria-hidden="true" />
-      Načíst QR
-    </Button>
   );
 }

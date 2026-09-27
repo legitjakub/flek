@@ -23,12 +23,15 @@ export function TimePicker({
   now,
   pendingId,
   onPick,
+  onIntent,
 }: {
   offer: OfferDetail;
   slots: SearchRow[];
   now: string;
   pendingId: string | null;
   onPick: (id: string) => void;
+  /** A finger or pointer on its way to a time: its page is fetched before the tap lands. */
+  onIntent?: (id: string) => void;
 }) {
   const current = slots.some((slot) => slot.id === offer.id);
   // The current slot already has a complete summary above this chooser. Showing it again here
@@ -117,6 +120,9 @@ export function TimePicker({
               ].filter(Boolean).join(', ')}
               aria-busy={pending || undefined}
               disabled={pendingId !== null && !pending}
+              onPointerEnter={() => onIntent?.(slot.id)}
+              onTouchStart={() => onIntent?.(slot.id)}
+              onFocus={() => onIntent?.(slot.id)}
               onClick={() => onPick(slot.id)}
               className={cx(
                 'relative min-h-14 rounded-xl px-3 py-2.5 text-left transition-[background-color,transform] active:scale-[0.98] disabled:opacity-55',

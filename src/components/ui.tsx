@@ -1,6 +1,6 @@
 import { Dialog } from '@base-ui/react/dialog';
 import { ChevronDown, ChevronRight, Star, X } from 'lucide-react';
-import { useRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from 'react';
+import { useCallback, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from 'react';
 import { errorMessage } from '../lib/errors';
 import { Link } from '../app/router';
 
@@ -259,7 +259,8 @@ export function EmptyState({
     );
   }
   return (
-    <div className="rounded-2xl bg-card shadow-card px-5 py-10 text-center">
+    <div className="rounded-3xl bg-card shadow-card px-5 py-10 text-center">
+      {icon ? <IconTile icon={icon} size="lg" className="mx-auto mb-3" /> : null}
       <p className="text-base font-bold text-ink">{title}</p>
       {body ? <p className="mx-auto mt-1 max-w-xs text-sm text-muted">{body}</p> : null}
       {action ? <div className="mt-4 flex justify-center">{action}</div> : null}
@@ -313,6 +314,7 @@ export function Sheet({
   children,
   footer,
   returnFocus,
+  tone = 'card',
 }: {
   open: boolean;
   onClose: () => void;
@@ -320,8 +322,25 @@ export function Sheet({
   children: ReactNode;
   footer?: ReactNode;
   returnFocus?: () => HTMLElement | null;
+  /** `surface` greys the scrolling body so cards inside it (a ticket, a list) stand out. */
+  tone?: 'card' | 'surface';
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  /*
+   * A body that scrolls but holds nothing focusable could not be scrolled from the keyboard:
+   * focus sat on the close button in the header, outside it. Then the body itself takes focus.
+   * Only then, so a sheet that fits has no empty stop in its tab order.
+   */
+  const [scrolls, setScrolls] = useState(false);
+  const measure = useCallback((body: HTMLDivElement | null) => {
+    if (!body) return;
+    const check = () => setScrolls(body.scrollHeight > body.clientHeight + 1);
+    const observer = new ResizeObserver(check);
+    observer.observe(body);
+    if (body.firstElementChild) observer.observe(body.firstElementChild);
+    check();
+    return () => observer.disconnect();
+  }, []);
   return (
     <Dialog.Root open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
       <Dialog.Portal>
@@ -332,7 +351,13 @@ export function Sheet({
               <Dialog.Title className="text-lg font-extrabold tracking-tight">{title}</Dialog.Title>
               <Dialog.Close aria-label="Zavřít" className="grid size-11 shrink-0 place-items-center rounded-xl text-muted hover:bg-surface"><X size={20} aria-hidden="true" /></Dialog.Close>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5">{children}</div>
+            <div
+              ref={measure}
+              tabIndex={scrolls ? 0 : undefined}
+              className={cx('min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 focus-visible:-outline-offset-4', tone === 'surface' && 'bg-surface')}
+            >
+              <div>{children}</div>
+            </div>
             {footer ? <div className="border-t border-line px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">{footer}</div> : null}
           </Dialog.Popup>
         </Dialog.Viewport>
@@ -352,7 +377,8 @@ export function Tabs<T extends string>({
 }: {
   value: T;
   onChange: (next: T) => void;
-  items: { value: T; label: string }[];
+  /** `count`, when given, sits beside the label: how many rows the tab holds, before it is opened. */
+  items: { value: T; label: string; count?: number }[];
   label: string;
   /** Rounded, equal-width tabs for the customer app. */
   pill?: boolean;
@@ -375,12 +401,23 @@ export function Tabs<T extends string>({
           }}
           onClick={() => onChange(item.value)}
           className={cx(
-            'min-h-11 shrink-0 px-3 text-sm font-bold whitespace-nowrap transition-colors',
-            pill ? 'flex-1 rounded-full' : 'rounded-lg',
+            'min-h-11 shrink-0 text-sm font-bold whitespace-nowrap transition-colors',
+            // Three labels with counts have to fit 288 px of a 320 px phone.
+            pill ? 'flex-1 rounded-full px-2 sm:px-3' : 'rounded-lg px-3',
             value === item.value ? 'bg-card text-ink shadow-sm' : 'text-muted hover:text-ink',
           )}
         >
           {item.label}
+          {item.count !== undefined ? (
+            <span
+              className={cx(
+                'tnum ml-1 inline-grid min-h-[1.125rem] min-w-[1.125rem] place-items-center rounded-full px-1 text-[11px] font-extrabold',
+                value === item.value ? 'bg-brand text-brand-ink' : 'bg-card/70 text-muted',
+              )}
+            >
+              {item.count}
+            </span>
+          ) : null}
         </button>
       ))}
     </div>
@@ -537,6 +574,41 @@ function choiceIndex(key: string, current: number, length: number): number | nul
   if (key === 'ArrowRight' || key === 'ArrowDown') return (current + 1) % length;
   if (key === 'ArrowLeft' || key === 'ArrowUp') return (current - 1 + length) % length;
   return null;
+}
+
+/**
+ * A glyph in a coloured square: what a card or a row is about before its words say it. The
+ * offer page drew these by hand for its sections; the partner console uses the same ones.
+ */
+export function IconTile({
+  icon,
+  tone = 'brand',
+  size = 'md',
+  className,
+}: {
+  icon: ReactNode;
+  tone?: 'brand' | 'accent' | 'positive' | 'warning' | 'danger' | 'ink';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cx(
+        'grid shrink-0 place-items-center',
+        size === 'sm' ? 'size-8 rounded-lg' : size === 'lg' ? 'size-12 rounded-2xl' : 'size-10 rounded-xl',
+        tone === 'brand' && 'bg-brand-soft text-brand',
+        tone === 'accent' && 'bg-accent-soft text-accent',
+        tone === 'positive' && 'bg-positive/10 text-positive',
+        tone === 'warning' && 'bg-warning-soft text-warning',
+        tone === 'danger' && 'bg-danger-soft text-danger',
+        tone === 'ink' && 'bg-ink text-brand-on-dark',
+        className,
+      )}
+    >
+      {icon}
+    </span>
+  );
 }
 
 /* ------------------------------------------------------- colour blocks and lists */
