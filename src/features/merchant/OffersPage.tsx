@@ -3,21 +3,22 @@ import { useState } from 'react';
 import { merchantCancelOffer, merchantOffers, updateOffer } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
-import { clockTime, dayLabel } from '../../lib/time';
+import { duration } from '../../lib/time';
 import { serverNow, useServerNow } from '../../lib/clock';
 import { Banner, Button, EmptyState, ErrorState, Field, Input, LoadingList, Sheet, Tabs } from '../../components/ui';
 import { MerchantShell } from './MerchantShell';
 import { Link } from '../../app/router';
-import { Plus } from 'lucide-react';
+import { BellRing, CalendarPlus, ChevronRight, Pencil, Plus, Repeat2, X } from 'lucide-react';
 import { CreateOfferSheet, cutoffFor, type OfferDraft } from './CreateOfferSheet';
 import { localInput, localToInstant } from '../../lib/time';
 import { useServices } from './useBusiness';
-import { StatusBadge } from '../../components/StatusBadge';
+import { StatusBadge, type AppStatus } from '../../components/StatusBadge';
 import { discountPct, priceProblem, quote } from '../../lib/pricing';
 import type { Business, MerchantOffer } from '../../types/database';
 import { SetupNotice, usePublishReadiness } from './SetupGuide';
+import { CapacityMeter, CardAction, DayHeading, PageHeader, TimeCard, dayHeading, groupByDay, type Tone } from './partnerUi';
 
-type Tab = 'active' | 'upcoming' | 'ended';
+type Tab = 'upcoming' | 'ended';
 
 export function MerchantOffersPage() {
   return (
@@ -31,7 +32,7 @@ function Offers({ business }: { business: Business }) {
   const businessId = business.id;
   const readiness = usePublishReadiness(business);
   const now = useServerNow();
-  const [tab, setTab] = useState<Tab>('active');
+  const [tab, setTab] = useState<Tab>('upcoming');
   const [draft, setDraft] = useState<OfferDraft>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [published, setPublished] = useState<string | null>(null);
@@ -46,38 +47,42 @@ function Offers({ business }: { business: Business }) {
   });
 
   const all = query.data ?? [];
-  const rows = all.filter((offer) => {
+  /*
+   * Everything still ahead is one diary, day by day: what customers can book, what is full and
+   * what closed, each marked on its card. Split across "Aktivní" and "Nadcházející", tomorrow's
+   * schedule sat in two tabs.
+   */
+  const tabOf = (offer: MerchantOffer): Tab | null => {
     const started = Date.parse(offer.start_at) <= Date.parse(now);
-    if (tab === 'active') return offer.bookable;
-    if (tab === 'upcoming') return !started && offer.status === 'published' && !offer.bookable;
-    return started || offer.status === 'cancelled';
-  });
+    if (!started && offer.status === 'published') return 'upcoming';
+    return started || offer.status === 'cancelled' ? 'ended' : null;
+  };
+  // The server sends the newest first. What is still ahead reads like a diary, soonest at the top.
+  const rows = all.filter((offer) => tabOf(offer) === tab);
+  if (tab === 'upcoming') rows.reverse();
+  const count = (which: Tab) => all.filter((offer) => tabOf(offer) === which).length;
+  const addOffer = () => {
+    setDraft(null);
+    setSheetOpen(true);
+  };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       {published ? (
-        <div className="mb-4">
-          <Banner tone="success">
-            Nabídka je aktivní. <span className="tnum">{published}</span>{' '}
-            <button type="button" onClick={() => setPublished(null)} className="font-bold underline underline-offset-4">Skrýt</button>
-          </Banner>
-        </div>
+        <Banner tone="success">
+          Nabídka je aktivní. <span className="tnum">{published}</span>{' '}
+          <button type="button" onClick={() => setPublished(null)} className="font-bold underline underline-offset-4">Skrýt</button>
+        </Banner>
       ) : null}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-extrabold tracking-tight text-ink">Nabídky</h1>
-        {readiness.canPublish ? (
-          <Button
-            size="lg"
-            className="w-full sm:w-auto"
-            onClick={() => {
-              setDraft(null);
-              setSheetOpen(true);
-            }}
-          >
+      <PageHeader
+        title="Nabídky"
+        subtitle="Volné termíny, které teď zákazníci vidí, a ty, které už proběhly."
+        action={readiness.canPublish ? (
+          <Button variant="brand" size="lg" className="w-full sm:w-auto" onClick={addOffer}>
             <Plus size={20} aria-hidden="true" />Přidat volný termín
           </Button>
         ) : null}
-      </div>
+      />
       {/* A button that opened a sheet only to fail at the end said nothing about why; this says what is missing. */}
       <SetupNotice business={business} />
 
@@ -85,11 +90,11 @@ function Offers({ business }: { business: Business }) {
       {query.isSuccess && all.length === 0 ? null : (
         <Tabs
           label="Nabídky"
+          pill
           value={tab}
           onChange={setTab}
           items={[
-            { value: 'active', label: 'Aktivní' },
-            { value: 'upcoming', label: 'Nadcházející' },
+            { value: 'upcoming', label: 'Nadcházející', count: query.isSuccess ? count('upcoming') : undefined },
             { value: 'ended', label: 'Ukončené' },
           ]}
         />
@@ -99,98 +104,106 @@ function Offers({ business }: { business: Business }) {
       {query.isError ? <ErrorState error={query.error} onRetry={() => query.refetch()} /> : null}
       {query.isSuccess && rows.length === 0 ? (
         all.length === 0 && !readiness.canPublish ? (
-          <EmptyState title="Zatím tu nejsou žádné FLEKy." body="Až dokončíte nastavení, zveřejníte volný termín za půl minuty." />
+          <EmptyState icon={<CalendarPlus size={24} />} title="Zatím tu nejsou žádné FLEKy." body="Až dokončíte nastavení, zveřejníte volný termín za půl minuty." />
         ) : (
           <EmptyState
-            title="V tomto přehledu zatím nemáte žádnou nabídku."
-            body="Prázdný termín zveřejníte za půl minuty."
+            icon={<CalendarPlus size={24} />}
+            title={tab === 'upcoming' ? 'Teď nemáte žádný nadcházející FLEK.' : 'Zatím tu nic není.'}
+            body={tab === 'upcoming' ? 'Prázdný termín zveřejníte za půl minuty.' : 'Proběhlé a zrušené nabídky se objeví tady.'}
             action={
-              readiness.canPublish ? (
-                <Button onClick={() => { setDraft(null); setSheetOpen(true); }}><Plus size={20} aria-hidden="true" />Přidat volný termín</Button>
+              readiness.canPublish && tab === 'upcoming' ? (
+                <Button variant="brand" onClick={addOffer}><Plus size={20} aria-hidden="true" />Přidat volný termín</Button>
               ) : undefined
             }
           />
         )
       ) : null}
 
-      <ul className="flex flex-col gap-3">
-        {rows.map((offer) => (
-          <li key={offer.id} className="rounded-2xl bg-card shadow-card p-5 xl:grid xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center xl:gap-6">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-base font-bold text-ink">{offer.service_name}</p>
-                <p className="tnum text-sm text-muted">
-                  {dayLabel(offer.start_at, now)} {clockTime(offer.start_at)}–{clockTime(offer.end_at)}
-                </p>
-                {/* The merchant's number first — what they are paid per booked seat — and the
-                    price customers actually see beside it, so neither is a surprise later. */}
-                <p className="tnum mt-1 text-sm text-muted">
-                  Vy dostanete <span className="text-base font-extrabold text-ink">{money(offer.merchant_price_cents)}</span>
-                  {' · '}zákazník platí <span className="font-bold text-ink">{money(offer.deal_price_cents)}</span>
-                  {' · '}ušetří {discountPct(offer.original_price_cents, offer.deal_price_cents)} %
-                </p>
-              </div>
-              {/*
-                One row, and a badge in the shared colours. On a phone this column wrapped under
-                the price and its right-aligned "Aktivní" drifted to a stray indent; and
-                "Neaktivní" did not say why — sold out and closed for booking look the same.
-              */}
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="tnum text-sm font-bold text-ink">
-                  {offer.booked}/{offer.capacity_total} obsazeno
-                </p>
-                {offer.pending_requests ? (
-                  <Link to="/partner/rezervace" className="tnum inline-flex min-h-11 items-center rounded-full px-1 text-sm font-bold text-brand underline underline-offset-4">
-                    {requestsWaiting(offer.pending_requests)}
-                  </Link>
-                ) : null}
-                {offer.status === 'cancelled' ? (
-                  <StatusBadge status="cancelled" />
-                ) : offer.bookable ? (
-                  <StatusBadge status="published" label="Aktivní" />
-                ) : (
-                  <StatusBadge status="draft" label={offer.capacity_remaining === 0 ? 'Vyprodáno' : 'Uzavřeno'} />
-                )}
-              </div>
-            </div>
-
-            {offer.cancellation_reason ? (
-              <p className="mt-2 text-sm text-accent">Důvod zrušení: {offer.cancellation_reason}</p>
-            ) : null}
-
-            <div className="mt-4 flex flex-wrap gap-2 xl:mt-0">
-              {/* Not on a suspended or unapproved venue: the sheet opened, the form filled
-                  in, and the publish then failed with BUSINESS_NOT_APPROVED. */}
-              {readiness.canPublish ? (
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setDraft({
-                      service_id: offer.service_id,
-                      merchant_price_cents: offer.merchant_price_cents,
-                      start_at: offer.start_at,
-                      capacity_total: offer.capacity_total,
-                    });
-                    setSheetOpen(true);
-                  }}
-                >
-                  Zopakovat
-                </Button>
-              ) : null}
-              {offer.status === 'published' && Date.parse(offer.start_at) > Date.parse(now) ? (
-                <>
-                  <Button variant="secondary" onClick={() => setToEdit(offer)}>
-                    Upravit
-                  </Button>
-                  <Button variant="danger" onClick={() => setToCancel(offer)}>
-                    Zrušit
-                  </Button>
-                </>
-              ) : null}
-            </div>
-          </li>
-        ))}
-      </ul>
+      {groupByDay(rows, (offer) => offer.start_at).map((day) => (
+        <section key={day.key} className="flex flex-col gap-3" aria-label={dayHeading(day.start, now)}>
+          <DayHeading instant={day.start} now={now} />
+          <ul className="grid gap-3 xl:grid-cols-2">
+            {day.rows.map((offer) => {
+              const ahead = offer.status === 'published' && Date.parse(offer.start_at) > Date.parse(now);
+              const state = offerState(offer, now);
+              return (
+                <li key={offer.id}>
+                  <TimeCard
+                    start={offer.start_at}
+                    end={offer.end_at}
+                    tone={state.tone}
+                    dimmed={state.tone === 'muted' || state.tone === 'danger'}
+                    actions={readiness.canPublish || ahead ? (
+                      <>
+                        {/* Not on a suspended or unapproved venue: the sheet opened, the form filled
+                            in, and the publish then failed with BUSINESS_NOT_APPROVED. */}
+                        {readiness.canPublish ? (
+                          <CardAction
+                            icon={<Repeat2 size={18} />}
+                            label="Zopakovat"
+                            onClick={() => {
+                              setDraft({
+                                service_id: offer.service_id,
+                                merchant_price_cents: offer.merchant_price_cents,
+                                start_at: offer.start_at,
+                                capacity_total: offer.capacity_total,
+                              });
+                              setSheetOpen(true);
+                            }}
+                          />
+                        ) : null}
+                        {ahead ? (
+                          <>
+                            <CardAction icon={<Pencil size={17} />} label="Upravit" onClick={() => setToEdit(offer)} />
+                            <CardAction icon={<X size={18} />} label="Zrušit" tone="danger" onClick={() => setToCancel(offer)} />
+                          </>
+                        ) : null}
+                      </>
+                    ) : undefined}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="text-base leading-snug font-extrabold text-ink">{offer.service_name}</h3>
+                        <p className="tnum text-sm text-muted">{duration(offer.start_at, offer.end_at)} min</p>
+                      </div>
+                      {/* "Neaktivní" did not say why: sold out and closed for booking look the same. */}
+                      <StatusBadge status={state.status} label={state.label} />
+                    </div>
+                    {/* The merchant's number first — what they are paid per booked seat — and the
+                        price customers actually see beside it, so neither is a surprise later. */}
+                    <div className="mt-3 flex flex-wrap items-end gap-x-4 gap-y-1">
+                      <p className="flex flex-col">
+                        <span className="text-xs font-bold text-muted">Vy dostanete</span>
+                        <span className="tnum text-xl leading-tight font-extrabold text-ink">{money(offer.merchant_price_cents)}</span>
+                      </p>
+                      <p className="tnum pb-0.5 text-sm text-muted">
+                        zákazník platí <span className="font-bold text-ink">{money(offer.deal_price_cents)}</span>
+                        {' · '}ušetří {discountPct(offer.original_price_cents, offer.deal_price_cents)} %
+                      </p>
+                    </div>
+                    <div className="mt-3">
+                      <CapacityMeter booked={offer.booked} total={offer.capacity_total} />
+                    </div>
+                    {offer.pending_requests ? (
+                      <Link
+                        to="/partner/rezervace"
+                        className="tnum mt-3 flex min-h-11 items-center gap-2 rounded-2xl bg-brand-soft px-3 py-2 text-sm font-bold text-accent hover:bg-promo"
+                      >
+                        <BellRing size={16} aria-hidden="true" className="shrink-0" />
+                        <span className="min-w-0 flex-1">{requestsWaiting(offer.pending_requests)}</span>
+                        <ChevronRight size={16} aria-hidden="true" className="shrink-0" />
+                      </Link>
+                    ) : null}
+                    {offer.cancellation_reason ? (
+                      <p className="mt-2 text-sm text-danger">Důvod zrušení: {offer.cancellation_reason}</p>
+                    ) : null}
+                  </TimeCard>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))}
 
       {sheetOpen ? <CreateOfferSheet onPublished={setPublished}
         key={draft?.service_id ?? 'new'}
@@ -208,6 +221,16 @@ function Offers({ business }: { business: Business }) {
       {toEdit ? <EditOfferSheet key={toEdit.id} offer={toEdit} onClose={() => setToEdit(null)} /> : null}
     </div>
   );
+}
+
+/** What an offer's card says about it, in words and in the colour of its edge. */
+function offerState(offer: MerchantOffer, now: string): { status: AppStatus; label?: string; tone: Tone } {
+  if (offer.status === 'cancelled') return { status: 'cancelled', tone: 'danger' };
+  if (offer.bookable) return { status: 'published', label: 'Aktivní', tone: 'brand' };
+  if (offer.capacity_remaining === 0) return { status: 'confirmed', label: 'Vyprodáno', tone: 'positive' };
+  if (Date.parse(offer.end_at) <= Date.parse(now)) return { status: 'draft', label: 'Proběhlo', tone: 'muted' };
+  if (Date.parse(offer.start_at) <= Date.parse(now)) return { status: 'draft', label: 'Probíhá', tone: 'muted' };
+  return { status: 'draft', label: 'Uzavřeno', tone: 'muted' };
 }
 
 function CancelOfferSheet({ offer, onClose }: { offer: MerchantOffer | null; onClose: () => void }) {

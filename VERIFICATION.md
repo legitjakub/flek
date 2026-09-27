@@ -455,3 +455,22 @@ Lokální Docker integrační sada, fyzický iPhone/Safari, skutečná kamera, n
 - Náhled `BookingSheet` se skutečnou komponentou a podvrženými odpověďmi (`payments_mode` test, `confirmation_quote` s potvrzováním i bez, `business_provider` ukázkový podnik, podmínky zapnuté i vypnuté) na 320×568, 375×667, 390×844 a 1280×800: bez vodorovného přetečení; tlačítko „Pokračovat k platbě 526 Kč“ na jednom řádku i na 320 px (zámek se pod 360 px skryje), přístupný název s mezerou před částkou; dlouhý název služby se zalomí bez osiřelé délky; bez servisního poplatku zůstane jen „Celkem“; po lhůtě zrušení „Zrušení zdarma do 10 minut od potvrzení“.
 - axe-core (WCAG 2.1 A/AA a best practices) nad otevřeným oknem ve čtyřech variantách: 0 porušení. Předtím hlásil `scrollable-region-focusable`: rolovaný obsah bez odkazů nešel projít klávesnicí. `Sheet` teď obsah zařadí do pořadí Tab jen tehdy, když se opravdu roluje (ověřeno: Tab → obsah, šipky a PageDown rolují až na konec; na vysoké obrazovce bez rolování žádná zarážka navíc). Dotykové plochy ≥ 44 px; hlídač FLEKů ve stejné komponentě vypadá beze změny.
 - Světlá karta místo tmavého lístku (na Jakubův pokyn): build a 201 unit testů PASS (nové testy `calendarDay`: pražský den i půl hodiny po půlnoci). Náhled na 320×568, 375×667, 390×844 a 1280×800 bez přetečení; délka v bublince se na 320 px přesune celá na další řádek; obsah okna se na 390 px roluje o 170 px místo 226 px. axe-core ve čtyřech variantách 0 porušení, tlačítko na jednom řádku.
+
+## Partnerská část, zvonění s povolením, úvod a výběr času — 25.–26. 9. 2026
+
+- Build a 205 unit testů PASS (nové `tests/ringSetup.test.ts`: zeptat se, skrýt, zamítnuto, iPhone bez plochy, prohlížeč bez web push).
+- `tests/merchant-push.sql` proti hostované databázi v transakci s rollbackem PASS (26. 9. znovu po restartu): člen podniku se zaregistrovaným zařízením a bez uložené volby dostane push o žádosti; o vlastním potvrzení ani odmítnutí ne; zákazník bez volby ne; o zrušení zákazníkem podnik ano; uložené `push = false` platí. Po testu v databázi nezůstala testovací provozovna ani registrace a `worker_secret` je na místě. Migrace `20260925205632 merchant_push_default` je v `supabase_migrations.schema_migrations`.
+- Náhled partnerské části se skutečnými komponentami a podvrženými odpověďmi: nový, čekající a zaběhnutý podnik (zaběhnutý s osmi nabídkami a šesti rezervacemi přes několik dní, pevný čas sobota 10:20), šest stránek na 320, 375 a 1280 px (54 vykreslení): vodorovné přetečení 0, axe-core 0 porušení, žádný ovládací prvek pod 44 px kromě odkazu „Přeskočit na obsah“ (skrytý do fokusu) a skrytého pole pro nahrání fotky. Záložky se na 320 px vejdou (šířka obsahu = šířka lišty = 288 px).
+- Během ověření nalezeno a opraveno:
+  - tři záložky Nabídek i Rezervací s počty přetékaly na 320 px o 24–52 px → Nabídky mají dvě záložky a pilulkové záložky užší okraje;
+  - skončené karty zprůhledněné na 70 % měly šedý text pod kontrastem AA (axe `color-contrast`) → tišší šedým okrajem a časem, bez průhlednosti;
+  - v Provozovně byla výzva k povolení zvonění třikrát (horní karta, sekce Zvonění a „Zapnout“ pod tabulkou upozornění) → jednou, v sekci Zvonění;
+  - chyba při označení „Nedorazil“ se vypisovala za otevřeným oknem → v okně;
+  - odkaz na telefon zákazníka po ověření kódu měl 18 px → 44 px.
+- Scénáře v Chromiu (Playwright): celá obrazovka příchozí žádosti 71/71, zvonění 25/25, karta povolení 15/15, předvolby upozornění 18/18. Scénář F předvoleb je upravený na nový výchozí stav: telefon je pro podnik zaškrtnutý sám, v Provozovně je jedno tlačítko povolení a chyba prohlížeče je vykáním.
+- Karta žádosti k potvrzení po „Později“ na 375 a 320 px: bez přetečení, axe 0, čas žádosti na jednom řádku i na 320 px.
+- Ověření kódu (`?kod=` jako po naskenování QR): verdikt „Platná rezervace na dnes“ a karta s kontaktem, axe 0.
+- Úvod pro zákazníky na 320 × 568, 375 × 667, 390 × 844 a 1280 × 900: bez přetečení a bez rolování uvnitř okna, fokus na okně, axe 0.
+- Přepnutí času v detailu na 375 a 1280 px: adresa se přepne na zvolený čas, prolnutí `flek-swap` začne do 120 ms od klepnutí, stránka zůstane na místě, konzole bez chyb.
+- Zákaznické obrazovky se sdílenými záložkami a prázdnými stavy (Rezervace, Profil, detail) na 320 a 375 px beze změny: přetečení 0, axe 0.
+- Neověřeno: skutečné doručení push na fyzický iPhone a Android po klepnutí na „Povolit zvonění a oznámení“ (v Chromiu je `Notification` i `pushManager` napodobený).

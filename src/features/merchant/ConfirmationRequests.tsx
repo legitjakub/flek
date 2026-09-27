@@ -1,12 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { BellRing } from 'lucide-react';
+import { BellRing, Check, CheckCircle2 } from 'lucide-react';
 import { respondToBooking } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
 import { clockTime, dayLabel, duration } from '../../lib/time';
 import { useServerNow } from '../../lib/clock';
-import { Banner, Button, cx } from '../../components/ui';
+import { Banner, Button, IconTile, cx } from '../../components/ui';
 import { startsInLine, timeLeft } from '../bookings/confirmationView';
 import type { ConfirmationDecision, MerchantBooking } from '../../types/database';
 
@@ -92,22 +92,25 @@ function ConfirmationRequestCard({ booking }: { booking: MerchantBooking }) {
   const answered = decision.data !== undefined;
 
   return (
-    <article className={cx('rounded-2xl bg-card p-4 shadow-card ring-2 sm:p-5', capturing ? 'ring-positive/40' : 'ring-brand')}>
+    <article className={cx('rounded-3xl bg-card p-5 shadow-card ring-2 sm:p-6', capturing ? 'ring-positive/40' : 'ring-brand')}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-base font-extrabold text-ink">{capturing ? 'Potvrzená rezervace' : 'Nová rezervace'}</p>
+        <p className="flex items-center gap-3 text-base font-extrabold text-ink">
+          <IconTile icon={capturing ? <CheckCircle2 size={20} /> : <BellRing size={20} />} tone={capturing ? 'positive' : 'brand'} />
+          {capturing ? 'Potvrzená rezervace' : 'Nová rezervace'}
+        </p>
         <p className={cx('tnum text-sm font-bold', starts.urgent ? 'text-warning' : 'text-muted')}>{starts.text}</p>
       </div>
-      <p className="tnum mt-2 text-lg leading-snug font-extrabold text-ink">
-        {dayLabel(booking.start_at_snapshot, now)} {clockTime(booking.start_at_snapshot)}
+      <p className="tnum mt-4 text-xl leading-tight font-extrabold tracking-tight text-ink sm:text-2xl">
+        {dayLabel(booking.start_at_snapshot, now)} {clockTime(booking.start_at_snapshot)}–{clockTime(booking.end_at_snapshot)}
       </p>
-      <p className="text-base font-bold text-ink">
-        {booking.service_name_snapshot} <span className="font-normal text-muted">{duration(booking.start_at_snapshot, booking.end_at_snapshot)} min</span>
+      <p className="mt-2 text-base font-bold text-ink">
+        {booking.service_name_snapshot} <span className="tnum font-normal text-muted">· {duration(booking.start_at_snapshot, booking.end_at_snapshot)} min</span>
       </p>
-      <dl className="mt-2 grid gap-1 text-sm">
-        <div className="flex gap-2"><dt className="text-muted">Zákazník:</dt><dd className="font-bold text-ink">{booking.customer_label}</dd></div>
-        <div className="flex gap-2"><dt className="text-muted">Vy dostanete:</dt><dd className="tnum font-bold text-ink">{money(booking.merchant_payout_cents)}</dd></div>
+      <dl className="mt-3 grid grid-cols-2 gap-3 rounded-2xl bg-surface p-3 text-sm">
+        <div><dt className="text-xs text-muted">Zákazník</dt><dd className="font-bold text-ink">{booking.customer_label}</dd></div>
+        <div><dt className="text-xs text-muted">Vy dostanete</dt><dd className="tnum font-bold text-ink">{money(booking.merchant_payout_cents)}</dd></div>
       </dl>
-      <p className="mt-2 text-sm text-muted">
+      <p className="mt-3 text-sm text-muted">
         {capturing ? 'Dokončujeme platbu zákazníka. Rezervační kód uvidíte za pár sekund.' : 'Zákazník má platbu autorizovanou. Peníze strhneme, až rezervaci potvrdíte.'}
       </p>
 
@@ -117,7 +120,8 @@ function ConfirmationRequestCard({ booking }: { booking: MerchantBooking }) {
             {overdue ? 'Čas na potvrzení vypršel' : `Potvrďte do ${left?.clock ?? '–'}`}
           </p>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            <Button size="lg" loading={decision.isPending && decision.variables === true} disabled={decision.isPending || overdue || answered} onClick={() => decision.mutate(true)}>
+            <Button size="lg" variant="brand" loading={decision.isPending && decision.variables === true} disabled={decision.isPending || overdue || answered} onClick={() => decision.mutate(true)}>
+              <Check size={20} aria-hidden="true" />
               Potvrdit
             </Button>
             <Button size="lg" variant="secondary" loading={decision.isPending && decision.variables === false} disabled={decision.isPending || overdue || answered} onClick={() => decision.mutate(false)}>

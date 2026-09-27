@@ -72,6 +72,20 @@ export function RingSetup({ inline = false }: { inline?: boolean }) {
   }
   if (state === 'hidden' || (hidden && !inline)) return null;
 
+  // In Provozovna the section above already says what ringing does; one line and the button do.
+  if (inline && state === 'ask') {
+    return (
+      <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl bg-surface p-3">
+        <p className="min-w-0 flex-1 basis-48 text-sm text-ink">Na tomto zařízení zatím nejsou zvonění a oznámení povolená.</p>
+        <Button variant="brand" size="sm" loading={busy} onClick={() => void allow()}>
+          <BellRing size={17} aria-hidden="true" />
+          Povolit zvonění a oznámení
+        </Button>
+        {message ? <p role="alert" className="basis-full text-sm text-danger">{message}</p> : null}
+      </div>
+    );
+  }
+
   const title = state === 'denied' ? 'Oznámení máte v prohlížeči zakázaná'
     : state === 'install' ? 'Přidejte si FLEK Partner na plochu'
       : state === 'unsupported' ? 'Tento prohlížeč oznámení neumí'

@@ -5,7 +5,7 @@ import { whatsappDisable, whatsappSettings, whatsappStartPairing } from '../../l
 import { errorMessage } from '../../lib/errors';
 import { useServerNow } from '../../lib/clock';
 import { displayPhone, pairingCode, whatsappLink } from '../../lib/phone';
-import { Banner, Button, Field, Input, buttonClass } from '../../components/ui';
+import { Banner, Button, Field, IconTile, Input, buttonClass } from '../../components/ui';
 import { timeLeft } from '../bookings/confirmationView';
 import { useSession } from '../auth/session';
 import type { WhatsAppPairing, WhatsAppSettings } from '../../types/database';
@@ -124,7 +124,7 @@ export function WhatsAppSettingsSection({ businessId, embedded = false }: { busi
   const verified = data.status === 'verified';
   return (
     <section
-      className={embedded ? 'mt-5 border-t border-line pt-4' : 'rounded-2xl bg-card p-5 shadow-card sm:p-6'}
+      className={embedded ? 'mt-5 border-t border-line pt-4' : 'rounded-3xl bg-card p-5 shadow-card sm:p-6'}
       aria-labelledby="whatsapp"
     >
       {embedded ? (
@@ -133,12 +133,12 @@ export function WhatsAppSettingsSection({ businessId, embedded = false }: { busi
           {flow.copy.title}
         </h3>
       ) : (
-        <h2 id="whatsapp" className="flex items-center gap-2 text-lg font-extrabold tracking-tight text-ink">
-          <MessageCircle size={20} aria-hidden="true" />
+        <h2 id="whatsapp" className="flex items-center gap-3 text-lg font-extrabold tracking-tight text-ink">
+          <IconTile icon={<MessageCircle size={20} />} tone="positive" />
           {flow.copy.title}
         </h2>
       )}
-      <p className="mt-1 text-sm text-muted">
+      <p className={embedded ? 'mt-1 text-sm text-muted' : 'mt-3 text-sm text-muted'}>
         {data.available
           ? flow.copy.purpose
           : 'WhatsApp upozornění zatím nejsou aktivní. Nové žádosti o rezervaci uvidíte tady v aplikaci, a pokud máte zapnutý e-mail nebo oznámení na telefonu, přijdou vám i tam.'}

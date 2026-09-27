@@ -22,6 +22,7 @@ import {
 } from './ringer';
 import { showRequests } from './incomingRequest';
 import { RingSetup } from './RingSetup';
+import { SectionTitle } from './partnerUi';
 
 /** A request that still waits for the venue's answer, with what the full screen shows about it. */
 export type WaitingRequest = {
@@ -158,9 +159,9 @@ export function RingSettings() {
   const awake = useSyncExternalStore(subscribeRinger, screenKeptOn, () => false);
   const [heard, setHeard] = useState<boolean | null>(null);
   return (
-    <section className="rounded-2xl bg-card p-5 shadow-card sm:p-6" aria-labelledby="zvoneni-nadpis">
-      <h2 id="zvoneni-nadpis" className="text-lg font-extrabold tracking-tight text-ink">Zvonění v aplikaci</h2>
-      <p className="mt-1 text-sm leading-relaxed text-muted">
+    <section className="rounded-3xl bg-card p-5 shadow-card sm:p-6" aria-labelledby="zvoneni-nadpis">
+      <SectionTitle id="zvoneni-nadpis" icon={<BellRing size={20} />} title="Zvonění v aplikaci" />
+      <p className="mt-3 text-sm leading-relaxed text-muted">
         Nová žádost o rezervaci se ukáže přes celou obrazovku a FLEK Partner zvoní, dokud ji nepotvrdíte, neodmítnete
         nebo nevyprší. Nechte ho otevřený na telefonu nebo tabletu u recepce.
       </p>

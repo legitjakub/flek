@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell } from 'lucide-react';
 import { Link } from '../../app/router';
-import { Button, SettingsRow, Sheet } from '../../components/ui';
+import { Button, IconTile, SettingsRow, Sheet } from '../../components/ui';
 import { supabase } from '../../lib/supabase';
 import { errorMessage } from '../../lib/errors';
 import { pushProblem, registerDevicePush } from './devicePush';
@@ -394,12 +394,11 @@ function PreferenceNotes({ preferences }: { preferences: Preferences }) {
   const { formal, whatsapp, device, busy, message, deviceOn, deviceOff } = preferences;
   return (
     <>
-      {device.on === false ? (
+      {/* A venue switches this device on in "Zvonění v aplikaci" right above; a second button here only repeated it. */}
+      {device.on === false && !formal ? (
         <div className="mt-3 flex items-center gap-3 rounded-2xl bg-surface p-3">
-          <p className="min-w-0 flex-1 text-sm text-ink">
-            {formal ? 'Na tomto zařízení máte oznámení vypnutá.' : 'Na tomhle zařízení máš oznámení vypnutá.'}
-          </p>
-          <Button size="sm" variant="brand" shape={formal ? 'rounded' : 'pill'} disabled={busy} onClick={() => void deviceOn()}>
+          <p className="min-w-0 flex-1 text-sm text-ink">Na tomhle zařízení máš oznámení vypnutá.</p>
+          <Button size="sm" variant="brand" shape="pill" disabled={busy} onClick={() => void deviceOn()}>
             Zapnout
           </Button>
         </div>
@@ -427,9 +426,12 @@ export function NotificationSettings({ businessId }: { businessId: string }) {
   const preferences = usePreferences(businessId);
   if (!NOTIFICATIONS_ENABLED || !userId) return null;
   return (
-    <section className="rounded-2xl bg-card p-5 shadow-card sm:p-6">
-      <h2 className="text-lg font-extrabold tracking-tight text-ink">Upozornění na rezervace</h2>
-      <p className="mt-1 mb-3 text-sm text-muted">Vyberte, jak vás upozorníme. Zprávy v aplikaci zůstávají dostupné vždy.</p>
+    <section className="rounded-3xl bg-card p-5 shadow-card sm:p-6" aria-labelledby="upozorneni-nadpis">
+      <h2 id="upozorneni-nadpis" className="flex items-center gap-3 text-lg font-extrabold tracking-tight text-ink">
+        <IconTile icon={<Bell size={20} />} />
+        Upozornění na rezervace
+      </h2>
+      <p className="mt-3 mb-3 text-sm text-muted">Vyberte, jak vás upozorníme. Zprávy v aplikaci zůstávají dostupné vždy.</p>
       <PreferenceTable preferences={preferences} />
       <PreferenceNotes preferences={preferences} />
     </section>

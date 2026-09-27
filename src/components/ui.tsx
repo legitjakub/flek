@@ -259,7 +259,8 @@ export function EmptyState({
     );
   }
   return (
-    <div className="rounded-2xl bg-card shadow-card px-5 py-10 text-center">
+    <div className="rounded-3xl bg-card shadow-card px-5 py-10 text-center">
+      {icon ? <IconTile icon={icon} size="lg" className="mx-auto mb-3" /> : null}
       <p className="text-base font-bold text-ink">{title}</p>
       {body ? <p className="mx-auto mt-1 max-w-xs text-sm text-muted">{body}</p> : null}
       {action ? <div className="mt-4 flex justify-center">{action}</div> : null}
@@ -376,7 +377,8 @@ export function Tabs<T extends string>({
 }: {
   value: T;
   onChange: (next: T) => void;
-  items: { value: T; label: string }[];
+  /** `count`, when given, sits beside the label: how many rows the tab holds, before it is opened. */
+  items: { value: T; label: string; count?: number }[];
   label: string;
   /** Rounded, equal-width tabs for the customer app. */
   pill?: boolean;
@@ -399,12 +401,23 @@ export function Tabs<T extends string>({
           }}
           onClick={() => onChange(item.value)}
           className={cx(
-            'min-h-11 shrink-0 px-3 text-sm font-bold whitespace-nowrap transition-colors',
-            pill ? 'flex-1 rounded-full' : 'rounded-lg',
+            'min-h-11 shrink-0 text-sm font-bold whitespace-nowrap transition-colors',
+            // Three labels with counts have to fit 288 px of a 320 px phone.
+            pill ? 'flex-1 rounded-full px-2 sm:px-3' : 'rounded-lg px-3',
             value === item.value ? 'bg-card text-ink shadow-sm' : 'text-muted hover:text-ink',
           )}
         >
           {item.label}
+          {item.count !== undefined ? (
+            <span
+              className={cx(
+                'tnum ml-1 inline-grid min-h-[1.125rem] min-w-[1.125rem] place-items-center rounded-full px-1 text-[11px] font-extrabold',
+                value === item.value ? 'bg-brand text-brand-ink' : 'bg-card/70 text-muted',
+              )}
+            >
+              {item.count}
+            </span>
+          ) : null}
         </button>
       ))}
     </div>

@@ -147,3 +147,11 @@ Více provozoven na účet je podporováno přepínačem v partnerské části. 
 - Pozvánka k hlídači v Objevit a v Rezervacích nezná polohu telefonu, dokud ji zákazník v okně nepovolí; do té doby nabízí místo hledání (uložené místo, jinak centrum Prahy).
 - Zvonění žádosti o rezervaci funguje jen s otevřenou partnerskou částí (i v kartě na pozadí). Zavřená aplikace zvonit neumí; zbývá oznámení na telefonu, které u žádosti zůstane na obrazovce, e-mail a WhatsApp. Na iPhonu hraje zvuk jen při otevřené aplikaci a starší Safari (před 16.4) ho ztlumí přepínačem tichého režimu. Rozsvícený displej (Wake Lock) podporují Chrome, Edge a Safari 16.4+.
 - Žádost přes celou obrazovku se ukáže jen v otevřené partnerské části. Ve Safari starším než 15.4 (bez modálního `<dialog>`) zakryje obrazovku taky, ale stránka pod ní zůstane dosažitelná klávesnicí. Na nejmenších telefonech (asi 320×568) se bílý panel posouvá a tlačítka zůstanou přilepená dole. Ztlumení a „Později“ platí jen do zavření nebo obnovení stránky.
+
+## Zvonění s povolením a partnerská část (25. 9. 2026)
+
+- Výchozí zapnuté oznámení na telefon pro podnik nic nepošle, dokud člen podniku na svém zařízení neklepne na „Povolit zvonění a oznámení“ a prohlížeč povolení nedá. Každé zařízení (telefon u recepce, tablet, počítač) se povoluje zvlášť. Kdo povolení v prohlížeči zamítl, musí ho vrátit v nastavení prohlížeče; aplikace se znovu zeptat nemůže.
+- Zvuk v otevřené partnerské části prohlížeč odemkne až prvním klepnutím kamkoli po každém otevření nebo obnovení stránky (dělá to `armRinger`, „Povolit zvonění a oznámení“ ho odemkne taky). Když žádost přijde dřív, ukáže se přes celou obrazovku a lišta nabídne zapnutí zvuku, ale zazvoní až po klepnutí.
+- Na iPhonu chodí oznámení jen z aplikace přidané na plochu (iOS 16.4+). V Safari karta místo tlačítka ukáže návod „Sdílet → Přidat na plochu“.
+- „Teď ne“ kartu zvonění schová jen do dalšího načtení stránky; nic se neukládá, takže se po obnovení ukáže znovu, dokud zařízení povolení nemá.
+- Nabídky už nemají záložku „Aktivní“: rezervovatelné termíny jsou v „Nadcházející“ spolu s vyprodanými a uzavřenými a poznají se podle štítku a barvy okraje. Počet u záložky počítá všechny nadcházející, ne jen rezervovatelné.

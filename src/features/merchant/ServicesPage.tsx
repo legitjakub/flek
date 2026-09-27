@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { Check, ChevronDown, ImageOff } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, ImageOff, Plus, Scissors } from 'lucide-react';
 import { listCategories, saveService } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
 import { Banner, Button, Chip, EmptyState, Field, Input, LoadingList, Select, Sheet, Textarea, cx } from '../../components/ui';
 import { MerchantShell } from './MerchantShell';
+import { PageHeader } from './partnerUi';
 import { useRouter } from '../../app/router';
 import { ActivitySuggestions, ServicePhotoPicker } from './ActivityPicker';
 import { useServices } from './useBusiness';
@@ -39,20 +40,23 @@ function Services({ business }: { business: Business }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-ink">Služby</h1>
-          <p className="mt-1 text-sm text-muted">Co nabízíte, jak dlouho to trvá a jaká je běžná cena.</p>
-        </div>
-        <Button onClick={add}>+ Přidat službu</Button>
-      </div>
+      <PageHeader
+        title="Služby"
+        subtitle="Co nabízíte, jak dlouho to trvá a jaká je běžná cena."
+        action={
+          <Button variant="brand" size="lg" className="w-full sm:w-auto" onClick={add}>
+            <Plus size={20} aria-hidden="true" />Přidat službu
+          </Button>
+        }
+      />
 
       {services.isPending ? <LoadingList /> : null}
       {services.isSuccess && services.data.length === 0 ? (
         <EmptyState
+          icon={<Scissors size={24} />}
           title="Zatím nemáte žádnou službu"
           body="Vyberte připravený typ služby, nebo si vytvořte vlastní."
-          action={<Button onClick={add}>+ Přidat službu</Button>}
+          action={<Button variant="brand" onClick={add}><Plus size={20} aria-hidden="true" />Přidat službu</Button>}
         />
       ) : null}
 
@@ -67,22 +71,22 @@ function Services({ business }: { business: Business }) {
                   setEditing(service);
                   setOpen(true);
                 }}
-                className="flex min-h-24 w-full items-center gap-3 rounded-2xl bg-card p-3 text-left shadow-card transition-transform hover:-translate-y-0.5"
+                className="flex min-h-24 w-full items-center gap-4 rounded-3xl bg-card p-3 pr-4 text-left shadow-card transition-transform hover:-translate-y-0.5"
               >
                 {image ? (
-                  <span className="relative size-20 shrink-0 overflow-hidden rounded-xl">
+                  <span className="relative size-20 shrink-0 overflow-hidden rounded-2xl">
                     <img src={image} alt="" className="size-full object-cover" />
                     {isIllustrativeServiceImage(image) ? <IllustrativePhotoLabel compact className="right-1 bottom-1" /> : null}
                   </span>
                 ) : (
-                  <span className="grid size-20 shrink-0 place-items-center rounded-xl bg-surface text-muted">
+                  <span className="grid size-20 shrink-0 place-items-center rounded-2xl bg-surface text-muted">
                     <ImageOff size={22} aria-hidden="true" />
                   </span>
                 )}
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-base font-bold text-ink">{service.name}</span>
-                  <span className="tnum mt-1 block text-sm text-muted">
-                    {service.duration_minutes} min · {money(service.normal_price_cents)}
+                  <span className="tnum mt-0.5 block text-sm text-muted">
+                    {service.duration_minutes} min · běžně {money(service.normal_price_cents)}
                   </span>
                   <span className={cx(
                     'mt-2 inline-flex rounded-md px-2 py-0.5 text-xs font-bold',
@@ -95,7 +99,8 @@ function Services({ business }: { business: Business }) {
                         : service.is_active ? 'Aktivní' : 'Neaktivní'}
                   </span>
                 </span>
-                <span className="text-sm font-bold text-accent">Upravit</span>
+                <span className="sr-only">Upravit</span>
+                <ChevronRight size={20} aria-hidden="true" className="shrink-0 text-muted" />
               </button>
             </li>
           );
