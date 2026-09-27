@@ -12,6 +12,7 @@ export type ConfirmationKind =
   | 'waiting'
   | 'capturing'
   | 'confirmed'
+  | 'past'
   | 'rejected'
   | 'timeout'
   | 'checkout_timeout'
@@ -20,7 +21,8 @@ export type ConfirmationKind =
   | 'capture_failed'
   | 'payment_failed'
   | 'not_finished'
-  | 'refunding';
+  | 'refunding'
+  | 'refunded';
 
 export type ConfirmationView = {
   kind: ConfirmationKind;
@@ -36,32 +38,43 @@ type Facts = Pick<PaymentState, 'status' | 'refund_requested' | 'failure_reason'
   booking_status?: BookingStatus | null;
   merchant_decided_at?: string | null;
   authorized_at?: string | null;
+  refund_status?: PaymentState['refund_status'];
+  authorization_state?: PaymentState['authorization_state'];
 };
 
-const RELEASE = 'Platbu jsme nezachytili a blokaci částky na kartě uvolňujeme.';
+const RELEASE = 'Nic jsme nestrhli a blokaci částky na kartě uvolňujeme.';
 
 export function confirmationView(state: Facts | null | undefined, returnedWithoutPaying = false): ConfirmationView {
   if (!state) return { kind: 'verifying', title: 'Ověřujeme platbu', body: 'Obvykle to trvá pár sekund.', live: true, action: null };
-  if (state.reservation_code) {
+  const release = state.authorization_state === 'released' ? 'Nic jsme nestrhli. Blokaci jsme uvolnili; její zobrazení na výpisu závisí na bance.' : RELEASE;
+  // A cancelled booking can retain a historical code. Money/outcome takes precedence.
+  if (state.status === 'refunded') {
+    return { kind: 'refunded', title: 'Platba je vrácená', body: 'Celou částku jsme vrátili na kartu. Připsání na výpisu závisí na bance.', live: false, action: 'find_other' };
+  }
+  if (state.refund_requested || (state.status === 'paid' && state.booking_status?.startsWith('cancelled'))) {
+    const failed = state.refund_status === 'failed' || state.refund_status === 'canceled';
+    return {
+      kind: 'refunding', title: state.booking_status?.startsWith('cancelled') ? 'Rezervace je zrušená' : 'Rezervaci se nepodařilo dokončit',
+      body: failed ? 'Platbu se na kartu vrátit nepodařilo. Peníze nepropadly, vrácení vyřešíme s tebou ručně.'
+        : 'Platbu jsme už strhli, a proto ti ji celou vracíme na kartu. Na výpisu se obvykle objeví do 5–10 pracovních dnů.',
+      live: !failed, action: 'find_other',
+    };
+  }
+  if (state.reservation_code && state.booking_status === 'confirmed' && state.status === 'paid') {
     return { kind: 'confirmed', title: '🔥 FLEK je tvůj!', body: 'Podnik rezervaci potvrdil.', live: false, action: 'bookings' };
   }
-  // Captured money that could not become a booking is the one case that is a refund.
-  if (state.refund_requested || state.status === 'refunded') {
-    return {
-      kind: 'refunding', title: 'Rezervaci se nepodařilo dokončit',
-      body: 'Platbu jsme už zachytili, a proto ti ji celou vracíme na kartu. Na výpisu se obvykle objeví do 5–10 pracovních dnů.',
-      live: false, action: 'find_other',
-    };
+  if (state.status === 'paid' && (state.booking_status === 'completed' || state.booking_status === 'no_show')) {
+    return { kind: 'past', title: 'Termín už proběhl', body: 'Platba byla stržená. Podrobnosti najdeš v historii rezervací.', live: false, action: 'bookings' };
   }
   switch (state.booking_status) {
     case 'pending_payment':
       return returnedWithoutPaying
-        ? { kind: 'not_finished', title: 'Platba nebyla dokončena', body: 'Nic jsme nestrhli a termín ti už nedržíme.', live: false, action: 'retry' }
+        ? { kind: 'verifying', title: 'Ověřujeme ukončení platby', body: 'Rušíme nedokončenou žádost. Pokud se částka mezitím zablokovala, blokaci uvolníme.', live: true, action: null }
         : { kind: 'verifying', title: 'Ověřujeme platbu', body: 'Obvykle to trvá pár sekund. Potom pošleme rezervaci podniku k potvrzení.', live: true, action: null };
     case 'pending_merchant':
       return {
         kind: 'waiting', title: 'Čekáme na potvrzení podniku',
-        body: 'Držíme ti tenhle FLEK. Částku máš na kartě jen zablokovanou; strhneme ji, až podnik rezervaci potvrdí.',
+        body: 'Držíme ti tenhle FLEK. Částku máš na kartě jen zablokovanou; strhneme ji, až podnik rezervaci potvrdí. Když nepotvrdí včas, blokaci uvolníme.',
         live: true, action: 'cancel_request',
       };
     case 'capturing':
@@ -70,24 +83,24 @@ export function confirmationView(state: Facts | null | undefined, returnedWithou
         body: 'Podnik rezervaci potvrdil. Dokončujeme platbu a za pár sekund uvidíš rezervační kód.', live: true, action: null,
       };
     case 'rejected':
-      return { kind: 'rejected', title: 'Tentokrát to nevyšlo', body: `Podnik rezervaci nepotvrdil. ${RELEASE}`, live: false, action: 'find_other' };
+      return { kind: 'rejected', title: 'Tentokrát to nevyšlo', body: `Podnik rezervaci nepotvrdil. ${release}`, live: false, action: 'find_other' };
     case 'expired':
       return state.authorized_at
-        ? { kind: 'timeout', title: 'Podnik nepotvrdil včas', body: `Čas na potvrzení vypršel. ${RELEASE}`, live: false, action: 'find_other' }
+        ? { kind: 'timeout', title: 'Podnik nepotvrdil včas', body: `Čas na potvrzení vypršel. ${release}`, live: false, action: 'find_other' }
         : {
           kind: 'checkout_timeout', title: 'Čas na zaplacení vypršel',
           body: 'Termín jsme ti drželi jen pár minut. Nic jsme nestrhli, a pokud se částka na kartě přesto zablokovala, blokace se uvolní.',
           live: false, action: 'retry',
         };
     case 'cancelled_by_customer':
-      return { kind: 'customer_cancelled', title: 'Žádost je zrušená', body: RELEASE, live: false, action: 'find_other' };
+      return { kind: 'customer_cancelled', title: 'Žádost je zrušená', body: release, live: false, action: 'find_other' };
     case 'cancelled_by_merchant':
-      return { kind: 'offer_cancelled', title: 'Podnik termín zrušil', body: RELEASE, live: false, action: 'find_other' };
+      return { kind: 'offer_cancelled', title: 'Podnik termín zrušil', body: release, live: false, action: 'find_other' };
     case 'payment_failed':
       return state.merchant_decided_at || state.failure_reason === 'CAPTURE_FAILED'
         ? {
           kind: 'capture_failed', title: 'Podnik potvrdil, ale platbu se nepodařilo dokončit',
-          body: 'Nic jsme nestrhli a blokaci na kartě uvolňujeme. Zkus to prosím znovu, případně s jinou kartou.',
+          body: `${release} Zkus to prosím znovu, případně s jinou kartou.`,
           live: false, action: 'retry',
         }
         : { kind: 'payment_failed', title: 'Platbu se nepodařilo dokončit', body: 'Nic jsme nestrhli. Zkus to prosím znovu.', live: false, action: 'retry' };
@@ -119,7 +132,7 @@ export function timeLeft(deadline: string | null | undefined, now: string): { la
 export function waitingLine(state: { confirmation_expires_at?: string | null; start_at?: string | null; authorized_at?: string | null }, now: string): string | null {
   const left = timeLeft(state.confirmation_expires_at, now);
   if (!left) return null;
-  if (left.seconds === 0) return 'Čas na potvrzení vypršel. Uvolňujeme blokaci…';
+  if (left.seconds === 0) return 'Čas na potvrzení vypršel. Ověřujeme výsledek…';
   const startsSoon = state.start_at && state.authorized_at
     && Date.parse(state.start_at) - Date.parse(state.authorized_at) <= 30 * 60_000;
   return startsSoon
@@ -140,4 +153,20 @@ function minutesWord(n: number): string {
   if (n === 1) return 'minutu';
   if (n >= 2 && n <= 4) return 'minuty';
   return 'minut';
+}
+
+/** The amount and its state stay together in the reservations list. */
+export function bookingMoneyLabel(booking: {
+  status: BookingStatus;
+  payment_status: PaymentState['status'] | null;
+  authorization_state?: PaymentState['authorization_state'];
+}, amount: string): string | undefined {
+  if (booking.payment_status === 'refunded') return `${amount} vráceno`;
+  if (booking.payment_status === 'paid') return booking.status.startsWith('cancelled') ? `Vracíme ${amount}` : `Zaplaceno ${amount}`;
+  if (booking.status === 'capturing') return 'Dokončujeme platbu';
+  if (booking.authorization_state === 'release_pending') return 'Uvolňujeme blokaci';
+  if (booking.authorization_state === 'released') return 'Blokace uvolněna';
+  if (booking.authorization_state === 'authorized') return `Zablokováno ${amount}`;
+  if (booking.payment_status === 'pending') return 'Ověřujeme platbu';
+  return undefined;
 }

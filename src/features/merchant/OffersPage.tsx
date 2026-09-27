@@ -12,6 +12,7 @@ import { Plus } from 'lucide-react';
 import { CreateOfferSheet, cutoffFor, type OfferDraft } from './CreateOfferSheet';
 import { localInput, localToInstant } from '../../lib/time';
 import { useServices } from './useBusiness';
+import { recentOffers, repeatDraft } from './offerDraft';
 import { StatusBadge } from '../../components/StatusBadge';
 import { discountPct, priceProblem, quote } from '../../lib/pricing';
 import type { Business, MerchantOffer } from '../../types/database';
@@ -165,12 +166,7 @@ function Offers({ business }: { business: Business }) {
                 <Button
                   variant="secondary"
                   onClick={() => {
-                    setDraft({
-                      service_id: offer.service_id,
-                      merchant_price_cents: offer.merchant_price_cents,
-                      start_at: offer.start_at,
-                      capacity_total: offer.capacity_total,
-                    });
+                    setDraft(repeatDraft(offer));
                     setSheetOpen(true);
                   }}
                 >
@@ -198,6 +194,7 @@ function Offers({ business }: { business: Business }) {
         onClose={() => setSheetOpen(false)}
         services={services.data ?? []}
         draft={draft}
+        recent={recentOffers(all, services.data ?? [])}
       /> : null}
       <CancelOfferSheet offer={toCancel} onClose={() => setToCancel(null)} />
       {/*

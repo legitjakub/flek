@@ -9,7 +9,7 @@ import { money } from '../../lib/format';
 import { profileSchema } from '../../lib/schemas';
 import { clockTime, dayLabel } from '../../lib/time';
 import { track } from '../../lib/analytics';
-import { Banner, Button, Field, Input, Sheet } from '../../components/ui';
+import { Banner, Button, ErrorState, Field, Input, Sheet } from '../../components/ui';
 import { OriginalPrice } from '../../components/Price';
 import { hasPhone, useSession } from '../auth/session';
 import { useRouter } from '../../app/router';
@@ -126,6 +126,7 @@ export function BookingSheet({
           size="lg"
           className="w-full"
           loading={book.isPending}
+          disabled={!quote.data || quote.isError}
           onClick={() => {
             setFailure(null);
             if (needsPhone) void form.handleSubmit((values) => book.mutate(values))();
@@ -198,12 +199,16 @@ export function BookingSheet({
         </form>
       ) : null}
 
-      {quote.data?.manual ? (
+      {!quote.data || quote.isError ? (
+        <div className="mt-5 text-sm text-muted">
+          {quote.isError ? <ErrorState error={quote.error} onRetry={() => quote.refetch()} /> : <p>Ověřujeme podmínky platby…</p>}
+        </div>
+      ) : quote.data.manual ? (
         <div className="mt-5 rounded-xl bg-surface px-3 py-2 text-sm text-muted">
           <p>
-            Částku {money(offer.deal_price_cents)} nejdřív jen zablokujeme na kartě, Apple Pay nebo Google Pay.
+            Částku {money(offer.deal_price_cents)} nejdřív jen zablokujeme na kartě, Apple Pay nebo Google Pay. Strhneme ji až po potvrzení podnikem.
             {windowMinutes ? ` Podnik má na potvrzení až ${windowMinutes} ${minutesWord(windowMinutes)}.` : ' Podnik má na potvrzení pár minut.'}
-            {' '}Když rezervaci nepotvrdí, platbu nezachytíme a blokaci uvolníme.
+            {' '}Když rezervaci nepotvrdí, nic nestrhneme a blokaci uvolníme.
           </p>
           <p className="mt-1">Na zaplacení máš {holdMinutes} {minutesWord(holdMinutes)}, termín ti mezitím držíme.</p>
         </div>

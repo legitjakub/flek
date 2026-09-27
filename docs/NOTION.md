@@ -1,6 +1,6 @@
 # FLEK — přehled projektu
 
-> Aktualizováno 25. 9. 2026. Zdroj pravdy je repozitář (`docs/NOTION.md`). Stránku aktualizuje agent na požádání; ruční úpravy tady se při další aktualizaci přepíšou.
+> Aktualizováno 27. 9. 2026. Zdroj pravdy je repozitář (`docs/NOTION.md`). Stránku aktualizuje agent na požádání; ruční úpravy tady se při další aktualizaci přepíšou.
 
 ## Ve zkratce
 
@@ -12,7 +12,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 | Web | https://www.app-flek.eu (původní https://flek-nine.vercel.app funguje dál) |
 | Kód | https://github.com/legitjakub/flek (větev `main`) |
 | Poslední nasazení | web a migrace fotografií 23. 9. 2026 (`e9fd9cb`); Vercel, GitHub CI a Supabase Preview úspěšné, produkční detail ověřen na 375/390 px. `content-moderation` nasazený 21. 9. |
-| Testy | 163 unit testů a build (25. 9.), SQL testy potvrzování, WhatsAppu, právního minima a ověřených recenzí/moderace; změny v hostované DB se při SQL testech celé vracejí rollbackem |
+| Testy | 184 unit testů a build (27. 9.); skutečný Checkout sandbox → autorizace → potvrzení → capture → kód → storno → refund 402 Kč; SQL regrese potvrzování, vratek a povinného emailu s rollbackem; UI 320/375/390/1280 px |
 | Potvrzování rezervací podnikem | **zapnuté pro všechny podniky** od 15. 9. 15:54 (předtím demo: akceptace 106/106 a průchod se skutečnými testovacími platbami) |
 | WhatsApp | u Mety platný trvalý token, aplikace FLEK přihlášená k odběru, webhook ověřený, profil s logem, číslo FLEKu uložené; chybí schválení pěti šablon a zkouška na telefonu, do té doby je kanál serverově vypnutý a v UI skrytý |
 | Recenze a moderace | ověřené anonymní hvězdičky a komentáře po dokončené rezervaci; komentáře, vlastní veřejné texty a fotografie čekají na kontrolu. Funkce je nasazená, ale OpenAI 21. 9. vrací HTTP 429, takže nové podklady zatím bezpečně zůstávají neveřejné v admin frontě |
@@ -33,10 +33,8 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
   3. Potom v Resendu smaž oba staré klíče („FLEK production“ a „FLEK production rotated“). Objevily se v záznamu Codexu.
 - [ ] **Aktivovat a otočit klíč pro automatickou moderaci.** V OpenAI projektu ověř limity/billing pro API; nasazený požadavek na bezplatný Moderation endpoint vrací HTTP 429. Vytvoř nový omezený klíč, vlož ho jako `OPENAI_API_KEY` pouze do Supabase Edge Functions secrets a starý smaž. Potom agent provede bezpečný a závadný test. Bez toho se nic závadného nezveřejní, ale bezpečný nový obsah čeká na ruční kontrolu.
 - [x] **Vyzkoušet e-maily.** Claude 13. 9. poslal na jakub.hrncir24@gmail.com „Obnova hesla — FLEK“ a „Zkušební upozornění — FLEK“, Resend oba hlásí Delivered. Zkontroluj, že nepadly do spamu. Odkaz z obnovy hesla použít nemusíš.
-- [ ] **Vyzkoušet platbu a upozornění.**
-  1. Rezervuj FLEK u demo podniku a zaplať testovací kartou 4242 4242 4242 4242 (libovolné budoucí datum a CVC).
-  2. Zkontroluj kód rezervace, zvonek v aplikaci a e-mail „Tvůj FLEK je rezervovaný“.
-  3. Rezervaci zruš a ověř vratku a e-mail o zrušení.
+- [x] **Platba přes skutečný Stripe Checkout.** Agent 27. 9. prošel standardní testovací kartou celý tok blokace → potvrzení podnikem → stržení → kód/QR → storno → skutečná vratka 402 Kč. Notifikace v aplikaci vznikly správně; testovací nabídky jsou uklizené.
+- [ ] **Doručení emailu a push — MANUAL VERIFICATION REQUIRED.** Na vlastním nedemo účtu s povoleným push proveď testovací rezervaci u demo podniku, nech ji potvrdit a zkontroluj povinný email a oznámení telefonu. Demo účty email záměrně nedostávají; vznik povinného jobu a příjemce ověřil SQL test, fyzické doručení tím prokázané není.
 - [x] **Uložit VAPID klíče do správce hesel.** Hotovo 15. 9.: Jakub je uložil a dočasný soubor s klíči smazal (ověřeno, soubor už neexistuje).
 - [x] **Propojit podnik „Kubova“ se Stripe.** Hotovo 14. 9.: platby, výplaty i údaje u Stripe potvrzené (ověřeno 15. 9. v databázi). Tenis kurt propojený zatím není.
 - [x] **Odhlásit se z Endory.** Přihlášení už vypršelo (13. 9.), DNS záznamy pro Resend jsou uložené a ověřené.
@@ -108,6 +106,10 @@ Rozdělení vychází z auditu 13. 9. 2026 (bezpečnostní audit ChatGPT ověře
 - [x] Nový vzhled zákaznické appky, volné FLEKy, přehled v Notionu a `AGENTS.md` (13. 9.)
 
 ### Fáze B — nutné před ostrým pilotem
+
+- [x] Discovery: čtyři hlavní časy, advanced volby ve Filtrech s viditelnými chips a badge (pracovní kopie 27. 9., čeká na nasazení).
+- [x] Partner: Zopakovat → nový čas → Zveřejnit, poslední 3 služby bez nového backendu (pracovní kopie 27. 9., čeká na nasazení).
+- [x] Money UX: rozlišení blokace/stržení/uvolnění/refundu, historický kód nepřebije storno a vratku (pracovní kopie 27. 9., čeká na nasazení).
 
 Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spuštění) je v `docs/PRED_SPUSTENIM.md`.
 
@@ -337,6 +339,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 27. 9. 2026 | Skutečný Checkout test v sandboxu prošel včetně autorizace, potvrzení podnikem, capture, kódu, storna a refundu 402 Kč. V pracovní kopii zjednodušené Discovery a Zopakovat/recent služby, opravené peněžní texty. Build + 184 unit testů a mobilní/desktop kontroly PASS. Zbývá fyzické doručení email/push na nedemo účtu. |
 | 25. 9. 2026 | Náhled služby na mapě má stín, který pod kartou plynule mizí místo ostrého řezu nad spodním menu. |
 | 25. 9. 2026 | Karta „Tvůj FLEK“ v Profilu vypadá jako útržek voucheru: velké číslo ušetřené za měsíc, pod perforací počet FLEKů, nejlepší úlovek a součet od začátku (v prvním měsíci skrytý, aby se čísla neopakovala). |
 | 25. 9. 2026 | Partnerská aplikace při nové žádosti o rezervaci zvoní, dokud ji podnik nepotvrdí nebo neodmítne (jde ztlumit a vyzkoušet v Provozovně, displej může zůstat rozsvícený). Zaškrtávání upozornění v Profilu a Provozovně reaguje hned a „Zapnout“ zapne i oznámení na telefonu. |

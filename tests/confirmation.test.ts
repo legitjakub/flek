@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { capacityLabel } from '../src/components/CapacityLabel';
-import { confirmationView, startsInLine, timeLeft, waitingLine } from '../src/features/bookings/confirmationView';
+import { bookingMoneyLabel, confirmationView, startsInLine, timeLeft, waitingLine } from '../src/features/bookings/confirmationView';
 import { decisionMessage, isConfirmationRequest, visibleToMerchant } from '../src/features/merchant/ConfirmationRequests';
 
 const facts = (extra: Record<string, unknown>) => ({
@@ -31,16 +31,16 @@ describe('what the customer is told', () => {
     expect(waitingLine(waiting, '2026-09-14T17:00:42Z')).toBe('Podnik má na potvrzení ještě 4:18');
     const soon = { confirmation_expires_at: '2026-09-14T17:03:00Z', start_at: '2026-09-14T17:20:00Z', authorized_at: '2026-09-14T17:00:00Z' };
     expect(waitingLine(soon, '2026-09-14T17:01:18Z')).toBe('Tenhle FLEK začíná brzy, takže podnik má na potvrzení 1:42');
-    expect(waitingLine(waiting, '2026-09-14T17:06:00Z')).toBe('Čas na potvrzení vypršel. Uvolňujeme blokaci…');
+    expect(waitingLine(waiting, '2026-09-14T17:06:00Z')).toBe('Čas na potvrzení vypršel. Ověřujeme výsledek…');
   });
 
   it('maps every server state to one screen, and never promises a refund for money never taken', () => {
     expect(confirmationView(undefined).kind).toBe('verifying');
     expect(confirmationView(facts({ booking_status: 'pending_payment' })).kind).toBe('verifying');
-    expect(confirmationView(facts({ booking_status: 'pending_payment' }), true)).toMatchObject({ kind: 'not_finished', action: 'retry' });
+    expect(confirmationView(facts({ booking_status: 'pending_payment' }), true)).toMatchObject({ kind: 'verifying', live: true, action: null });
     expect(confirmationView(facts({ booking_status: 'pending_merchant' }))).toMatchObject({ kind: 'waiting', live: true, action: 'cancel_request' });
     expect(confirmationView(facts({ booking_status: 'capturing' }))).toMatchObject({ kind: 'capturing', title: 'Potvrzujeme FLEK…', live: true });
-    expect(confirmationView(facts({ booking_status: 'confirmed', reservation_code: 'FLEK-ABC123' })))
+    expect(confirmationView(facts({ status: 'paid', booking_status: 'confirmed', reservation_code: 'FLEK-ABC123' })))
       .toMatchObject({ kind: 'confirmed', title: '🔥 FLEK je tvůj!', body: 'Podnik rezervaci potvrdil.' });
 
     const released = [
@@ -101,5 +101,35 @@ describe('what the venue is told', () => {
     expect(decisionMessage({ status: 'cancelled_by_customer', decided: false, confirmation_expires_at: at }, true).text).toBe('Zákazník žádost mezitím zrušil.');
     // Confirmed on WhatsApp a moment earlier.
     expect(decisionMessage({ status: 'capturing', decided: false, confirmation_expires_at: at }, false).tone).toBe('warning');
+  });
+});
+
+describe('money regressions', () => {
+  it('does not revive a completed or missed appointment through an old checkout URL', () => {
+    for (const booking_status of ['completed', 'no_show']) {
+      expect(confirmationView(facts({ status: 'paid', booking_status, reservation_code: 'FLEK-ABC123' })))
+        .toMatchObject({ kind: 'past', live: false, action: 'bookings' });
+    }
+  });
+  it('explains timeout release while waiting and reflects a completed release', () => {
+    expect(confirmationView(facts({ booking_status: 'pending_merchant' })).body).toContain('Když nepotvrdí včas, blokaci uvolníme');
+    expect(confirmationView(facts({ booking_status: 'rejected', authorization_state: 'released' })).body).toContain('Blokaci jsme uvolnili');
+    expect(confirmationView(facts({ booking_status: 'payment_failed', failure_reason: 'CAPTURE_FAILED', authorization_state: 'released' })).body).not.toContain('uvolňujeme');
+  });
+  it('does not turn a historical reservation code into success after cancellation', () => {
+    const cancelled = facts({ status: 'paid', booking_status: 'cancelled_by_customer', reservation_code: 'FLEK-ABC123', refund_requested: true });
+    expect(confirmationView(cancelled)).toMatchObject({ kind: 'refunding', live: true });
+    expect(confirmationView({ ...cancelled!, status: 'refunded' })).toMatchObject({ kind: 'refunded', live: false });
+    expect(confirmationView({ ...cancelled!, refund_status: 'failed' }).body).not.toContain('celou vracíme');
+  });
+  it('never describes an unfinished release as completed or an authorization as paid', () => {
+    const booking = { status: 'pending_merchant' as const, payment_status: 'pending' as const, authorization_state: 'authorized' as const };
+    expect(bookingMoneyLabel(booking, '390 Kč')).toBe('Zablokováno 390 Kč');
+    expect(bookingMoneyLabel({ ...booking, authorization_state: 'release_pending' }, '390 Kč')).toBe('Uvolňujeme blokaci');
+    expect(bookingMoneyLabel({ ...booking, authorization_state: 'released' }, '390 Kč')).toBe('Blokace uvolněna');
+    expect(bookingMoneyLabel({ ...booking, status: 'capturing' }, '390 Kč')).toBe('Dokončujeme platbu');
+    expect(bookingMoneyLabel({ ...booking, status: 'confirmed', payment_status: 'paid', authorization_state: 'captured' }, '390 Kč')).toBe('Zaplaceno 390 Kč');
+    expect(bookingMoneyLabel({ ...booking, status: 'cancelled_by_customer', payment_status: 'paid', authorization_state: 'captured' }, '390 Kč')).toBe('Vracíme 390 Kč');
+    expect(bookingMoneyLabel({ ...booking, status: 'cancelled_by_customer', payment_status: 'refunded', authorization_state: 'captured' }, '390 Kč')).toBe('390 Kč vráceno');
   });
 });

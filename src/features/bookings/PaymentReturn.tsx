@@ -52,10 +52,10 @@ export function PaymentReturn({
   }, [cancelled, data?.booking_id, data?.booking_status]);
 
   useEffect(() => {
-    if (!data?.reservation_code) return;
+    if (view.kind !== 'confirmed' || !data?.reservation_code) return;
     void queryClient.invalidateQueries();
     onBooked(data.reservation_code, data.confirmation_version === 1);
-  }, [data?.reservation_code]);
+  }, [data?.reservation_code, view.kind]);
 
   const withdraw = useMutation({
     mutationFn: () => cancelPendingBooking(data!.booking_id!),
@@ -73,13 +73,13 @@ export function PaymentReturn({
     );
   }
 
-  if (view.live && gaveUp) {
+  if (view.live && gaveUp && view.kind !== 'refunding') {
     return (
       <main className="mx-auto flex w-full max-w-md flex-col items-center px-4 py-12 text-center" aria-live="polite">
         <span className="grid size-14 place-items-center rounded-full bg-surface text-ink"><CircleAlert size={26} aria-hidden="true" /></span>
         <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-ink">Pořád na tom pracujeme</h1>
         <p className="mt-2 text-base leading-relaxed text-muted">
-          Jak to dopadlo, uvidíš v Rezervacích. Dokud rezervace není potvrzená, nic ti nestrhneme.
+          Stav platby ještě ověřujeme. Výsledek najdeš v Rezervacích; platbu zatím neopakuj.
         </p>
         <Link to="/rezervace" className={buttonClass({ shape: 'pill' }) + ' mt-6'}>Moje rezervace</Link>
       </main>
@@ -87,7 +87,7 @@ export function PaymentReturn({
   }
 
   const line = view.kind === 'waiting' && data ? waitingLine(data, now) : null;
-  const icon = view.kind === 'refunding' ? <RotateCcw size={26} aria-hidden="true" />
+  const icon = view.kind === 'refunding' || view.kind === 'refunded' ? <RotateCcw size={26} aria-hidden="true" />
     : view.kind === 'waiting' ? <Clock3 size={26} aria-hidden="true" />
       : view.live ? <Spinner label={view.title} /> : <CircleAlert size={26} aria-hidden="true" />;
 
@@ -100,10 +100,8 @@ export function PaymentReturn({
       {view.kind === 'waiting' && data ? (
         <p className="tnum mt-1 text-sm text-muted">Zablokováno {money(data.amount_cents)}</p>
       ) : null}
-      {view.kind === 'refunding' && (data?.refund_status === 'failed' || data?.refund_status === 'canceled') ? (
-        <div className="mt-3 w-full text-left">
-          <Banner tone="warning">Platbu se na kartu vrátit nepodařilo. Peníze nepropadly, vrácení vyřešíme s tebou ručně.</Banner>
-        </div>
+      {data && (view.kind === 'refunded' || (view.kind === 'refunding' && data.refund_status !== 'failed' && data.refund_status !== 'canceled')) ? (
+        <p className="tnum mt-2 font-bold text-ink">{view.kind === 'refunded' ? `${money(data.amount_cents)} vráceno` : `Vracíme ${money(data.amount_cents)}`}</p>
       ) : null}
       {withdraw.isError ? (
         <div className="mt-3 w-full text-left"><Banner tone="warning">{errorMessage(withdraw.error)}</Banner></div>
@@ -120,6 +118,8 @@ export function PaymentReturn({
         </div>
       ) : view.action === 'find_other' ? (
         <Link to="/" className={buttonClass({ shape: 'pill' }) + ' mt-6'}>Najít jiný FLEK</Link>
+      ) : view.action === 'bookings' ? (
+        <Link to="/rezervace" className={buttonClass({ shape: 'pill' }) + ' mt-6'}>Moje rezervace</Link>
       ) : null}
       {view.kind === 'waiting' ? <div className="mt-8 w-full"><WhatsAppPrompt context="waiting" /></div> : null}
     </main>

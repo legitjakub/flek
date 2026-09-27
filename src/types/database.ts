@@ -132,6 +132,8 @@ export type OfferDetail = SearchRow & {
 
 export type CustomerBooking = {
   id: string;
+  /** Returned by my_bookings; used to read the existing detailed refund state. */
+  payment_id?: string | null;
   offer_id: string;
   business_id: string;
   reservation_code: string;

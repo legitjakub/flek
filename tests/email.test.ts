@@ -43,6 +43,15 @@ describe('booking e-mails', () => {
     expect(byLabel['Důvod']).toBe('Podnik rezervaci nepotvrdil.');
   });
 
+  it('distinguishes captured refunds from released holds, including failed refunds', () => {
+    const cancelled = { ...confirmed, status: 'cancelled_by_customer' };
+    const label = (value: Contract) => Object.fromEntries(contractDetails(value).rows)['Platba'];
+    expect(label(cancelled)).toContain('Vracíme celou částku');
+    expect(label({ ...cancelled, payment_status: 'refunded', refund_status: 'succeeded' })).toContain('vrátili');
+    expect(label({ ...cancelled, refund_status: 'failed' })).toContain('nepodařilo');
+    expect(label({ ...cancelled, payment_status: 'pending', authorization_state: 'release_pending' })).toContain('Nic neplatíš');
+  });
+
   it('keeps the public demo from posing as a provider', () => {
     const { rows } = contractDetails({ ...confirmed, provider: { name: 'Studio Dobrá hodina', ico: null, address: null, demo: true } });
     expect(Object.fromEntries(rows)['Poskytovatel']).toBeUndefined();

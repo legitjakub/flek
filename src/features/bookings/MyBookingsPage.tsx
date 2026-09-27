@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, Phone, QrCode, Star, Ticket, X } from 'lucide-react';
-import { cancelBooking, cancelPendingBooking, myBookings, submitBookingReview } from '../../lib/api';
+import { cancelBooking, cancelPendingBooking, myBookings, paymentState, submitBookingReview } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
 import { clockTime, dayLabel } from '../../lib/time';
@@ -13,7 +13,7 @@ import { Voucher } from './Voucher';
 import { StatusBadge } from '../../components/StatusBadge';
 import { OriginalPrice } from '../../components/Price';
 import type { CustomerBooking } from '../../types/database';
-import { confirmationView, waitingLine } from './confirmationView';
+import { bookingMoneyLabel, confirmationView, waitingLine } from './confirmationView';
 import { DEFAULT_POINT, storedPoint } from '../../lib/geo';
 import { DEFAULT_FILTERS } from '../discovery/filters';
 import { plural } from '../discovery/FilterBar';
@@ -40,7 +40,7 @@ export function MyBookingsPage() {
     queryFn: myBookings,
     enabled: Boolean(userId),
     refetchOnWindowFocus: true,
-    refetchInterval: (current) => current.state.data?.some((row) => row.status === 'pending_payment' || row.status === 'pending_merchant' || row.status === 'capturing') ? 3_000 : false,
+    refetchInterval: (current) => current.state.data?.some((row) => row.status === 'pending_payment' || row.status === 'pending_merchant' || row.status === 'capturing' || row.authorization_state === 'release_pending') ? 3_000 : false,
   });
 
   const cancel = useMutation({
@@ -175,18 +175,12 @@ export function MyBookingsPage() {
                       {clockTime(booking.end_at_snapshot)}
                     </p>
                   </div>
-                  <span className="flex shrink-0 flex-wrap justify-end gap-1.5">
+                  <span className="flex max-w-full shrink-0 flex-wrap justify-end gap-1.5">
                     <StatusBadge status={booking.status} />
-                    {booking.payment_status === 'paid' && booking.status.startsWith('cancelled') ? (
-                      // The refund is on its way but Stripe has not confirmed it yet.
-                      <StatusBadge status="refunded" label="Vracíme peníze" />
+                    {booking.payment_status === 'paid' && booking.status.startsWith('cancelled') && booking.payment_id ? (
+                      <RefundStatus paymentId={booking.payment_id} amount={money(booking.price_cents)} />
                     ) : booking.payment_status ? (
-                      <StatusBadge
-                        status={booking.payment_status}
-                        label={booking.authorization_state === 'authorized' ? 'Částka blokována'
-                          : booking.authorization_state === 'release_pending' || booking.authorization_state === 'released' ? 'Blokace uvolněna'
-                            : booking.payment_status === 'pending' ? 'Čeká na platbu' : undefined}
-                      />
+                      <StatusBadge status={booking.payment_status} label={bookingMoneyLabel(booking, money(booking.price_cents))} />
                     ) : null}
                   </span>
                 </div>
@@ -489,15 +483,30 @@ function TicketPreview() {
   );
 }
 
-/**
- * A booking that waited (or still waits) for the merchant. Its outcome is told in the same words as the
- * page the customer returns to from Stripe, so the two never disagree.
- */
+/** Only unresolved captured refunds need the more detailed existing payment RPC. */
+function RefundStatus({ paymentId, amount }: { paymentId: string; amount: string }) {
+  const queryClient = useQueryClient();
+  const state = useQuery({
+    queryKey: ['payment-state', paymentId],
+    queryFn: () => paymentState(paymentId),
+    refetchInterval: (query) => confirmationView(query.state.data).live ? 3_000 : false,
+  });
+  useEffect(() => {
+    if (state.data?.status === 'refunded') void queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+  }, [state.data?.status, queryClient]);
+  const failed = state.data?.refund_status === 'failed' || state.data?.refund_status === 'canceled';
+  const label = state.isError || !state.data ? 'Ověřujeme vrácení platby'
+    : state.data.status === 'refunded' ? `${amount} vráceno`
+      : failed ? 'Vrácení platby řešíme ručně' : `Vracíme ${amount}`;
+  return <StatusBadge status={failed ? 'failed' : state.data?.status === 'refunded' ? 'refunded' : 'pending'} label={label} />;
+}
+
+/** The request outcome uses the same words here and on the return from Stripe. */
 function RequestState({ booking, now, onCancel }: { booking: CustomerBooking; now: string; onCancel: () => void }) {
   const view = confirmationView({
     status: booking.payment_status ?? 'pending', refund_requested: booking.payment_status === 'paid' && booking.status !== 'confirmed',
     failure_reason: null, reservation_code: null, booking_status: booking.status,
-    merchant_decided_at: booking.merchant_decided_at, authorized_at: booking.authorized_at,
+    merchant_decided_at: booking.merchant_decided_at, authorized_at: booking.authorized_at, authorization_state: booking.authorization_state,
   });
   const line = booking.status === 'pending_merchant' ? waitingLine({ ...booking, start_at: booking.start_at_snapshot }, now) : null;
   const holdLeft = booking.status === 'pending_payment' && booking.checkout_expires_at && Date.parse(booking.checkout_expires_at) > Date.parse(now)
@@ -505,7 +514,7 @@ function RequestState({ booking, now, onCancel }: { booking: CustomerBooking; no
   return (
     <div className={cx('mt-4 rounded-xl p-3 text-sm', view.live ? 'bg-accent-soft text-ink' : 'bg-surface text-ink')}>
       <p className="font-bold">{booking.status === 'pending_payment' ? 'Dokončuješ platbu' : view.title}</p>
-      <p className="mt-1 text-muted">{booking.status === 'pending_payment' ? 'Na kartě zatím nic není. Po zaplacení pošleme rezervaci podniku k potvrzení.' : view.body}</p>
+      <p className="mt-1 text-muted">{booking.status === 'pending_payment' ? 'Ověřujeme platbu. Po ověření blokace částky pošleme rezervaci podniku k potvrzení.' : view.body}</p>
       {line ? <p className="tnum mt-2 font-bold" role="timer">{line}</p> : null}
       {holdLeft ? <p className="tnum mt-2 font-bold">{holdLeft}</p> : null}
       {booking.status === 'pending_merchant' || booking.status === 'pending_payment' ? (

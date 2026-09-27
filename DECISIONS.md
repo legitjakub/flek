@@ -371,3 +371,8 @@ Nahrazuje rozhodnutí „Kompaktní FLEK body při oddálení“ z 21. 9., kter�
 - **Zavřená aplikace zvonit nemůže.** Web neumí zvonit bez otevřené stránky. Proto push o žádosti nese `kind: request` a zůstane na obrazovce, dokud na něj nikdo neklepne, a v Provozovně jde nechat displej rozsvícený.
 - **Volba upozornění a zařízení jsou dvě věci.** Zaškrtnutí „Telefon“ dřív nejdřív registrovalo zařízení a když to prohlížeč odmítl, neuložilo nic a políčko skočilo zpátky. Teď se volba uloží vždy (políčko se přepne hned, ukládá se po jednom), zařízení ohlásí svůj problém česky vedle. „Zapnout“ znamená telefon, proto zapne i sloupec Telefon u událostí, které člověk nikdy nenastavil.
 
+
+## Menší počet rozhodnutí při hledání a zveřejnění (27. 9. 2026)
+
+- Primární časové volby jsou Vše / Teď / Dnes / Zítra. Do 2 h a denní doby zůstávají ve Filtrech a jako odebratelné chips s počtem; soon nikdy neoznačí jiný primární čas. Cold-start hledání beze změny dál vysvětluje případné rozšíření.
+- Zopakovat zachovává bezpečné vstupy původní nabídky, ale neplatný čas nechá prázdný. Nedávné služby odvozujeme z posledních publikací aktivních služeb (nejvýš 3), bez nové perzistence; kopíruje se celková kapacita, nikdy zbývající inventář či stav.

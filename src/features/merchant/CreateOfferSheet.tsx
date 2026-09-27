@@ -9,16 +9,12 @@ import { clockTime, dayLabel, localInput, localToInstant, ZONE } from '../../lib
 import { serverNow } from '../../lib/clock';
 import { Banner, Button, Chip, Field, Input, Sheet } from '../../components/ui';
 import { Link } from '../../app/router';
-import type { Service } from '../../types/database';
+import type { MerchantOffer, Service } from '../../types/database';
 import { serviceIllustration } from '../../lib/serviceIllustrations';
 
-/** A previous FLEK to repeat: the merchant's own price, not the customer's. */
-export type OfferDraft = { service_id: string; merchant_price_cents: number; start_at?: string; capacity_total?: number } | null;
+import { MAX_DAYS_AHEAD, MIN_MINUTES_AHEAD, repeatSlot, type OfferDraft } from './offerDraft';
+export type { OfferDraft } from './offerDraft';
 
-/** validate_flek refuses anything further out; the picker should refuse it first. */
-const MAX_DAYS_AHEAD = 7;
-/** publish_flek wants a cutoff at least five minutes out, so the start needs headroom. */
-const MIN_MINUTES_AHEAD = 10;
 const CUTOFF_MINUTES = 15;
 
 /**
@@ -41,18 +37,20 @@ export function CreateOfferSheet({
   services,
   draft,
   onPublished,
+  recent = [],
 }: {
   open: boolean;
   onClose: () => void;
   services: Service[];
   draft?: OfferDraft;
+  recent?: MerchantOffer[];
   /** Confirmation belongs on the page behind the sheet, not in one more screen to dismiss. */
   onPublished?: (summary: string) => void;
 }) {
   const queryClient = useQueryClient();
   const active = useMemo(() => services.filter((s) => s.is_active), [services]);
   const [serviceId, setServiceId] = useState<string | null>(draft?.service_id ?? active[0]?.id ?? null);
-  const [start, setStartValue] = useState<string>(() => (draft?.start_at ? repeatSlot(draft.start_at, serverNow()) : nextSlot(serverNow())));
+  const [start, setStartValue] = useState<string>(() => (draft ? repeatSlot(draft.start_at, serverNow()) : nextSlot(serverNow())));
   /*
    * Prefilled from what this merchant asked for last time on this service. A barber who
    * offers the same cut at the same price every day should publish in seconds, not retype
@@ -64,8 +62,9 @@ export function CreateOfferSheet({
     return cents ? String(cents / 100) : '';
   });
   const [capacity, setCapacity] = useState(draft?.capacity_total ?? initialService?.default_capacity ?? 1);
-  const [priceTouched, setPriceTouched] = useState(Boolean(draft));
-  const [capacityTouched, setCapacityTouched] = useState(Boolean(draft?.capacity_total));
+  const [compact, setCompact] = useState(Boolean(draft));
+  const [changeService, setChangeService] = useState(false);
+  const [editPrice, setEditPrice] = useState(false);
   const [attempted, setAttempted] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const [overlap, setOverlap] = useState(false);
@@ -81,15 +80,14 @@ export function CreateOfferSheet({
   }
   function setPrice(value: string) {
     setOverlap(false);
-    setPriceTouched(true);
     setPriceValue(value);
   }
   function changeCapacity(next: number) {
-    setCapacityTouched(true);
+    setOverlap(false);
     setCapacity(next);
   }
 
-  const service = active.find((s) => s.id === serviceId) ?? active[0] ?? null;
+  const service = active.find((s) => s.id === serviceId) ?? null;
   const normal = service?.normal_price_cents ?? 0;
   const merchantCents = /^\d+$/.test(price) ? Number(price) * 100 : 0;
   // The live preview mirrors the server's fee; what is charged is decided by publish_flek.
@@ -164,6 +162,7 @@ export function CreateOfferSheet({
     setAttempted(true);
     setFailure(null);
     if (!valid) {
+      if (priceError) setEditPrice(true);
       const first = startError ? 'offer-start' : 'offer-price';
       window.setTimeout(() => document.getElementById(first)?.focus(), 0);
       return;
@@ -178,13 +177,29 @@ export function CreateOfferSheet({
     onClose();
   }
 
-  const day = start.slice(0, 10);
+  function selectService(item: Service, previous?: MerchantOffer) {
+    setOverlap(false);
+    setFailure(null);
+    setServiceId(item.id);
+    const cents = previous?.merchant_price_cents ?? item.default_merchant_price_cents;
+    setPriceValue(cents ? String(cents / 100) : '');
+    setCapacity(previous?.capacity_total ?? item.default_capacity ?? 1);
+    setChangeService(false);
+    if (previous) {
+      setCompact(true);
+      setEditPrice(false);
+      setStartValue('');
+      window.setTimeout(() => document.getElementById('offer-start')?.focus(), 0);
+    }
+  }
+
+  const day = start.slice(0, 10) || localInput(serverNow()).slice(0, 10);
 
   return (
     <Sheet
       open={open}
       onClose={close}
-      title="Přidat volný termín"
+      title={draft ? 'Zopakovat FLEK' : 'Přidat volný termín'}
       footer={
         <Button size="lg" className="w-full" loading={publish.isPending} disabled={!service} onClick={submit}>
           {overlap ? 'Zveřejnit i tak' : 'Zveřejnit nabídku'}
@@ -197,6 +212,28 @@ export function CreateOfferSheet({
         </Banner>
       ) : (
         <div className="flex flex-col gap-5">
+          {!compact && recent.length > 0 ? (
+            <fieldset className="flex flex-col gap-2">
+              <legend className="mb-2 text-sm font-bold text-ink">Naposledy použité</legend>
+              <div className="flex flex-wrap gap-2">
+                {recent.map((offer) => (
+                  <Chip key={offer.service_id} active={false} onClick={() => {
+                    const item = active.find((s) => s.id === offer.service_id);
+                    if (item) selectService(item, offer);
+                  }}>{offer.service_name}</Chip>
+                ))}
+              </div>
+            </fieldset>
+          ) : null}
+          {compact && !changeService && service ? (
+            <div className="flex items-center justify-between gap-3 rounded-xl bg-surface p-3">
+              <div className="min-w-0">
+                <p className="font-bold text-ink">{service.name}</p>
+                <p className="text-sm text-muted">{service.duration_minutes} min · běžně {money(service.normal_price_cents)}</p>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setChangeService(true)}>Změnit</Button>
+            </div>
+          ) : (
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-2 text-base font-bold text-ink">Služba</legend>
             <div className="flex flex-wrap gap-2">
@@ -204,12 +241,7 @@ export function CreateOfferSheet({
                 <Chip
                   key={item.id}
                   active={item.id === service?.id}
-                  onClick={() => {
-                    setOverlap(false);
-                    setServiceId(item.id);
-                    if (!priceTouched) setPriceValue(item.default_merchant_price_cents ? String(item.default_merchant_price_cents / 100) : '');
-                    if (!capacityTouched) setCapacity(item.default_capacity ?? 1);
-                  }}
+                  onClick={() => selectService(item)}
                 >
                   {item.name} · {item.duration_minutes} min
                 </Chip>
@@ -250,9 +282,12 @@ export function CreateOfferSheet({
               </div>
             ) : null}
           </fieldset>
+          )}
+          {draft && !service ? <Banner tone="warning">Původní služba už není aktivní. Vyberte jinou službu.</Banner> : null}
 
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-2 text-base font-bold text-ink">Začátek</legend>
+            {compact && !start ? <p className="text-sm text-muted">Vyberte nový čas. Cena a počet míst jsou předvyplněné.</p> : null}
             {/*
               A day row above the hours. There was none: the chips offered +1 h, +2 h and
               four fixed evening times, so after seven in the evening only two chips were
@@ -279,6 +314,7 @@ export function CreateOfferSheet({
             <Field id="offer-start" label="Přesný začátek" error={attempted ? startError : undefined}>
               <Input
                 id="offer-start"
+                data-autofocus={compact || undefined}
                 type="datetime-local"
                 value={start}
                 onChange={(event) => setStart(event.target.value)}
@@ -286,6 +322,16 @@ export function CreateOfferSheet({
             </Field>
           </fieldset>
 
+          {compact ? (
+            <button type="button" aria-expanded={editPrice} onClick={() => setEditPrice(!editPrice)} className="flex min-h-11 items-center justify-between gap-3 rounded-xl bg-surface p-3 text-left">
+              <span className="text-sm text-ink">
+                <span className="block font-bold">Vy dostanete {money(merchantCents)} · {capacity} {capacity === 1 ? 'místo' : capacity < 5 ? 'místa' : 'míst'}</span>
+                {q ? <span>Zákazník platí {money(q.customerCents)} · ušetří {q.discountPct} %</span> : null}
+              </span>
+              <span className="text-sm font-bold text-accent">{editPrice ? 'Skrýt' : 'Upravit'}</span>
+            </button>
+          ) : null}
+          <div className={compact && !editPrice ? 'hidden' : 'flex flex-col gap-5'}>
           {/*
             The merchant names what they want to receive and never does the fee arithmetic:
             the preview shows both sides of it live — what they get, what the customer sees.
@@ -361,6 +407,8 @@ export function CreateOfferSheet({
             ) : null}
           </fieldset>
 
+          </div>
+
           {overlap ? <Banner tone="warning">Ve stejnou dobu už máte jinou nabídku. Máte dostatečnou kapacitu?</Banner> : null}
           {failure ? <Banner tone="warning">{failure}</Banner> : null}
         </div>
@@ -421,16 +469,6 @@ function PricingExplainer() {
       </div>
     </details>
   );
-}
-
-/**
- * Repeating an offer keeps its time of day and moves it to the next day that is still in
- * the future — a barber repeating tomorrow's 18:00 does not mean "in thirty minutes".
- */
-export function repeatSlot(previousStart: string, now: string): string {
-  let candidate = Date.parse(previousStart);
-  while (candidate <= Date.parse(now)) candidate += 24 * 3600_000;
-  return localInput(new Date(candidate).toISOString());
 }
 
 /** Next half-hour in Prague wall-clock, as a `datetime-local` value. */

@@ -1,5 +1,72 @@
 # Ověření FLEK
 
+## Checkout, Discovery a rychlé zveřejnění — 27. 9. 2026
+
+Ověřený frontend: místní pracovní kopie v Chrome/Playwright na `127.0.0.1:5173`. Backend: skutečný hostovaný projekt `yupkrntknbkvmlajwlph`, existující nasazené Edge Functions a Stripe **TEST MODE**. Přihlášení vložením session demo zákazníka `demo-6@flek.test` a podniku `demo-merchant@flek.test`; bez hesel v testovacím formuláři. Nastavení `stripe_test_mode=true` a `manual_confirmation_enabled=true` bylo ověřeno před i po testu. Žádné klíče ani produkční secrets se neměnily. Změny této pracovní kopie zatím nejsou nasazené.
+
+### Skutečný money flow — PASS
+
+Čerstvý Pánský střih v demo podniku Studio Dobrá hodina, 30. 9. 2026 18:56–19:41 (Praha), kapacita 1, běžně 650 Kč, konečná cena 402 Kč (podnik 377 Kč + poplatek 25 Kč), úspora 248 Kč. Nabídka vznikla skutečným kliknutím v partnerském formuláři přes recent-service shortcut. Termín umožnil storno zdarma.
+
+| Krok | Výsledek a důkaz |
+| --- | --- |
+| Nabídka + BookingSheet | PASS: podnik, termín, běžná/konečná cena, úspora a storno; před Checkoutem vysvětlená blokace a stržení až po potvrzení podniku, lhůta 10 minut. |
+| Checkout | PASS: skutečný formulář `checkout.stripe.com`, sandbox, karta 4242, budoucí datum/CVC, cena 402 Kč a vysvětlení blokace. Žádný mock ani `stripe-test-pay`. |
+| Autorizace | PASS: 27. 9. 08:23:11 UTC; skutečné podepsané webhooky `payment_intent.amount_capturable_updated` a `checkout.session.completed`, `livemode=false`, bez chyby. Payment `pending`, authorization `authorized`, booking `pending_merchant`, veřejný kód `null`, deadline 08:33:11 UTC. |
+| Zákazník čeká | PASS: návrat z Checkoutu i Moje rezervace ukázaly čekání, „Zablokováno 402 Kč“ a serverový odpočet. Doplněna věta, že timeout blokaci uvolní. |
+| Potvrzení podnikem | PASS: skutečné tlačítko Potvrdit; `respond_to_booking` vrátil `decided=true, status=capturing` v 08:25:20 UTC. |
+| Capture | PASS: worker dokončen na první pokus, payment `paid`, authorization `captured`, booking `confirmed` v 08:25:24 UTC; zpracovaný testovací webhook `payment_intent.succeeded`. |
+| Kód | PASS: „🔥 FLEK je tvůj!“, kód a QR, „Zaplaceno 402 Kč“, termín, podnik, adresa a instrukce ukázat kód/QR. Partner viděl Potvrzeno / Zaplaceno. |
+| Storno | PASS: skutečné zákaznické tlačítko a potvrzovací sheet vysvětlily vrácení celé zaplacené částky; booking `cancelled_by_customer`, `refund_requested_at=08:26:04 UTC`. |
+| Refund | PASS: Stripe refund `succeeded`, payment `refunded`; testovací webhooky `refund.created`, `refund.updated`, `charge.refunded` zpracované bez chyby 08:26:09–10 UTC. Vrácena celá částka 402 Kč. |
+| Finální UI + kapacita | PASS: Historie „402 Kč vráceno“, starý návratový odkaz ukazuje „Platba je vrácená“ místo historického kódu; partner ve zrušených rezervacích „Vráceno / bez výplaty“. Kapacita po stornu 1/1. |
+| Notifikace | PASS: merchant `requested`, customer + merchant `confirmed`, customer + merchant `cancelled`, bez duplicit. Fyzické doručení viz níže. |
+
+Dohledatelné identifikátory:
+
+- Offer `ae1b86b8-b6f1-40ff-b9c6-69492f00a279`.
+- Booking `e9ecc9b5-7754-4df1-abee-54af204c6103`.
+- Payment `4fe4b5c0-6f89-43fc-a516-722b3b018fc0`.
+- Checkout `cs_test_a1NowVUxnTKWgu4Uo1BlO1GqUs2mOrdHMk8pTWuocpJiL5NIg6jo9Z7Y7x`.
+- PaymentIntent `pi_3UKDMWFB6rpi2pX51xicwnCQ`.
+- Refund `re_3UKDMWFB6rpi2pX51oWb3YTU`.
+
+Přechodné „Vracíme“ pokrývá serverový čas žádosti před skutečným refundem a unit testy; než byla po stornu pořízena kontrola UI, rychlá testovací vratka už doběhla. Netvrdíme zachycení screenshotu mezistavu. Platební krok žádný lidský zásah nevyžadoval.
+
+Úklid přes běžné RPC: po ověření refundu byla nabídka zrušena přes `merchant_cancel_offer`. Druhá nabídka `18a517a9-80b5-4454-b12a-d30d57b3d887`, vytvořená standardním formulářem bez repeat/recent zkratky (2. 10., 365 + 25 Kč, 1 místo), také zrušena. Obě mají `cancelled`, kapacitu 1/1; platební a rezervační historie zůstává pro audit. Žádné přímé klientské zápisy kapacity/cen/stavů.
+
+### Notifikace a regresní důkazy
+
+- Demo příjemci `@flek.test` mají podle existujícího triggeru e-mail záměrně vynechaný; během hlavního E2E vzniklo pět inbox událostí, ale žádný email/push delivery job. Oba účty měly **0 push subscriptions**. To není důkaz doručení.
+- `tests/legal.sql` na hostované DB **PASS**: v transakci vytvořen email job pro nedemo testovací adresu i při vypnuté email preferenci zákazníka, ověřen event/příjemce a povinný kontrakt; partnerské preference respektované. Odesílání workeru test blokuje a vše končí rollbackem, nic nebylo posláno na smyšlený mailbox.
+- `tests/manual-confirmation.sql` na hostované DB **PASS**: hold, autorizace, závody/deadline, odmítnutí, timeout, release bez refundu, capture failure bez falešného potvrzení, pozdní capture a oprávnění; rollback.
+- `tests/stripe-refunds.sql` na hostované DB **PASS**: pending/requires_action nejsou refunded, failed, succeeded, opožděné a duplicitní zprávy, klientská oprávnění; rollback.
+- **MANUAL VERIFICATION REQUIRED:** fyzické doručení povinného potvrzovacího e-mailu a push na vlastním nedemo účtu a přihlášeném zařízení. Standardní karta a skutečný money flow už prošly. Apple Pay/Google Pay na fyzickém telefonu zůstávají dřívějším samostatným pilotním bodem.
+
+### Money UX matrix
+
+| Serverový stav | Peníze | Zákaznický text |
+| --- | --- | --- |
+| Před Checkoutem | nic strženo | Částku nejdřív zablokujeme; strhneme až po potvrzení. Do načtení quote se CTA neodemkne. |
+| pending_payment | ověřování | Ověřujeme platbu; při návratu Zpět čekáme na serverové zrušení, nehlásíme předčasně uvolněné místo. |
+| pending_merchant | authorization | Zablokováno X Kč, serverový odpočet, bez potvrzení blokaci uvolníme. |
+| capturing | capture probíhá | Podnik potvrdil, dokončujeme platbu; žádný kód. |
+| confirmed + paid | captured | FLEK je tvůj, Zaplaceno X Kč, kód/QR. |
+| rejected / expired po authorization | release_pending / released | Nic jsme nestrhli; blokaci uvolňujeme / jsme uvolnili podle serveru. |
+| cancelled před capture | release_pending / released | Uvolňujeme blokaci / Blokace uvolněna; nikdy vratka. |
+| refund requested/pending | captured + refund | Vracíme X Kč. Detail vratek se čte existujícím `my_payment_state`, neodhaduje se z historie. |
+| refund failed/canceled | stále captured | Vrácení platby řešíme ručně; žádný falešný úspěch (návrat, Rezervace i e-mail). |
+| refunded | refund succeeded | X Kč vráceno; připsání na výpisu závisí na bance. Historický kód nepřebije stav vratky. |
+
+### Discovery a partner — PASS
+
+- Hlavní rail má jen **Vše / Teď / Dnes / Zítra** ve feedu i mapě. Sheet obsahuje Kdy (Teď, Do 2 h, Dnes, Zítra, Vše), Denní dobu (Kdykoli, Ráno, Odpoledne, Večer) a dosavadní další filtry.
+- Skutečné kliknutí na Do 2 h + Odpoledne poslalo `search_offers` dvouhodinové okno a `p_daypart=afternoon`; večer ověřen také. Viditelné chips, badge 2, žádná primární volba pro soon ani při rozšíření; odebrání jednotlivě i Zrušit vše funguje. Rozšíření zůstává vysvětlené dosavadním textem, query logika se nemění.
+- Zopakovat budoucího FLEKu zachovalo platný čas/cenu/kapacitu. U minulého čas prázdný, ostatní hodnoty zachované, fokus na čase. Server skutečně odmítl kolidující termín `OVERLAP_CONFIRMATION_REQUIRED`; změna času/ceny/kapacity potvrzení překryvu znovu ruší. Neplatná cena a prázdný čas dávají původní validaci. Gate schválení/Stripe readiness a serverová validace zůstaly.
+- Nový formulář nemá přenesený draft. Naposledy použité bere poslední tři různé aktivní služby z existujících nabídek, bez nové tabulky. Zkratka kopíruje poslední cenu a celkovou kapacitu, nový čas vyžaduje. Ověřeno reálné publikování z recent i standardního formuláře.
+- Chrome **320/375/390/1280 px**: feed, Filter Sheet, mapa i otevřený náhled, repeat formulář, BookingSheet, waiting a potvrzená rezervace bez horizontálního přetečení. Nové/změněné ovladače ≥ 44 px; mapa načítá skutečné dlaždice a piny, otevření/zavření náhledu i filtry fungují. Bez runtime JS chyb.
+- `npm run build`: **PASS**, včetně TypeScriptu; dosavadní upozornění na velikost MapLibre. `npm run test:unit`: **184/184 PASS**, 22 souborů. Nové testy primary/advanced filtrů, badge/chips/reset, sdílených URL, zachovaného widening, draftů a peněžních stavů. Celou mutující sadu `test:acceptance` jsme neopakovali; nahrazena zde popsaným skutečným Checkout E2E a třemi transakčními SQL sadami.
+
 ## Vlastní fotografie služby má přednost — 20. 9. 2026
 
 - `serviceIllustration` vrací uloženou `services.image_url` dřív než fotografii aktivity, kategorie i univerzální FLEK. Unit test používá skutečný tvar veřejné Storage URL a ověřuje, že se nezamění za ilustrační fotografii.

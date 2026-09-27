@@ -81,6 +81,7 @@ export function contractDetails(contract: Contract): { rows: [string, string][];
     notes.push(`Rezervace se řídí obchodními podmínkami FLEK${contract.terms_version ? ` ve verzi ${contract.terms_version}` : ''}: ${APP}/podminky`);
   } else {
     if (contract.payment_status === 'refunded') rows.push(['Platba', 'Peníze jsme vrátili na tvou kartu.']);
+    else if (contract.payment_status === 'paid' && (contract.refund_status === 'failed' || contract.refund_status === 'canceled')) rows.push(['Platba', 'Platbu se na kartu vrátit nepodařilo. Peníze nepropadly, vrácení vyřešíme s tebou ručně.']);
     else if (contract.payment_status === 'paid') rows.push(['Platba', 'Vracíme celou částku na tvou kartu. Připsání závisí na bance.']);
     else if (contract.authorization_state === 'released' || contract.authorization_state === 'release_pending' || contract.payment_status === 'failed') {
       rows.push(['Platba', 'Nic neplatíš. Blokace na kartě se uvolní, jak rychle zmizí z výpisu, záleží na bance.']);

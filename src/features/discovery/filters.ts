@@ -90,58 +90,37 @@ export const PRICE_LABELS: [number | null, string][] = [
   [100000, 'Do 1 000 Kč'],
 ];
 
-/**
- * FLEK is organised around WHEN, so the time control speaks in intent ("mám volno večer")
- * rather than in the two server parameters it happens to set.
- */
-export type TimeIntent = 'now' | 'soon' | 'today' | 'afternoon' | 'evening' | 'tomorrow' | 'week';
+/** The rail offers only broad windows; the sheet keeps every server-supported window. */
+export const PRIMARY_TIME_INTENTS = [
+  { key: 'week', label: 'Vše' },
+  { key: 'now', label: 'Teď' },
+  { key: 'today', label: 'Dnes' },
+  { key: 'tomorrow', label: 'Zítra' },
+] as const;
+export type TimeIntent = typeof PRIMARY_TIME_INTENTS[number]['key'];
+export const TIME_OPTIONS: { value: When; label: string }[] =
+  (['now', 'soon', 'today', 'tomorrow', 'week'] as const).map((value) => ({ value, label: WHEN_LABELS[value] }));
 
-/*
- * Widest first, then narrowest to widest, and the set is closed: every state the rail can be
- * in lights exactly one pill.
- *
- * "Vše" leads because it is the way back. Once a pill is pressed, the escape from a slice
- * that holds nothing has to be the first thing the thumb reaches, not the last — and on a
- * phone the rail scrolls, so the last chip is off-screen exactly when it is needed. The
- * app still OPENS on "Dnes" (DEFAULT_FILTERS.when): FLEK sells the last free hour, and a
- * week-wide first screen would say the opposite.
- *
- * "Vše" is everything the marketplace can hold: private.validate_offer refuses any start_at
- * beyond now + 7 days.
- */
-export const TIME_INTENTS: { key: TimeIntent; label: string; when: When; daypart: Daypart | null }[] = [
-  { key: 'week', label: 'Vše', when: 'week', daypart: null },
-  { key: 'now', label: 'Teď', when: 'now', daypart: null },
-  { key: 'soon', label: 'Do 2 h', when: 'soon', daypart: null },
-  { key: 'today', label: 'Dnes', when: 'today', daypart: null },
-  { key: 'afternoon', label: 'Odpoledne', when: 'today', daypart: 'afternoon' },
-  { key: 'evening', label: 'Večer', when: 'today', daypart: 'evening' },
-  { key: 'tomorrow', label: 'Zítra', when: 'tomorrow', daypart: null },
-];
-
-/**
- * Which intent the current filters read as.
- *
- * The sheet sets `daypart` on its own, so thirteen of the twenty reachable (when, daypart)
- * pairs match no pill exactly — (Dnes + Ráno), (Vše + Večer) and so on — and the rail used
- * to go dark on all of them while the filter was plainly applied. Falling back to the pill
- * for the same window with no daypart keeps the promise above: something is always lit, and
- * the daypart itself stays visible as its own chip.
- */
-export function intentOf(filters: Filters): TimeIntent | null {
-  const exact = TIME_INTENTS.find((i) => i.when === filters.when && i.daypart === filters.daypart);
-  if (exact) return exact.key;
-  return TIME_INTENTS.find((i) => i.when === filters.when && i.daypart === null)?.key ?? null;
+/** Dayparts remain visible as chips. A two-hour window must never light the four-hour Teď. */
+export function intentOf(filters: Filters, appliedWhen: When = filters.when): TimeIntent | null {
+  // An advanced request stays represented by its chip even if the cold-start ladder widens it.
+  if (filters.when === 'soon') return null;
+  return PRIMARY_TIME_INTENTS.find((intent) => intent.key === appliedWhen)?.key ?? null;
 }
 
 export function applyIntent(filters: Filters, key: TimeIntent): Filters {
-  const intent = TIME_INTENTS.find((i) => i.key === key);
-  return intent ? { ...filters, when: intent.when, daypart: intent.daypart } : filters;
+  return { ...filters, when: key, daypart: null };
+}
+
+/** Clear the sheet's choices, including its advanced window, while keeping a primary window. */
+export function clearAdvancedFilters(filters: Filters): Filters {
+  return { ...DEFAULT_FILTERS, when: filters.when === 'soon' ? DEFAULT_FILTERS.when : filters.when };
 }
 
 /** How many choices differ from the default — the number shown on the Filtry button. */
 export function activeCount(filters: Filters): number {
   return (
+    (filters.when === 'soon' ? 1 : 0) +
     (filters.daypart ? 1 : 0) +
     (filters.category ? 1 : 0) +
     (filters.min_discount_pct > 0 ? 1 : 0) +
@@ -156,6 +135,8 @@ export type ActiveChip = { key: string; label: string; clear: (f: Filters) => Fi
 /** Every applied filter as a removable chip, so nothing is ever silently narrowing results. */
 export function activeChips(filters: Filters, categoryLabel: (slug: string) => string): ActiveChip[] {
   const chips: ActiveChip[] = [];
+  if (filters.when === 'soon')
+    chips.push({ key: 'when', label: WHEN_LABELS.soon, clear: (f) => ({ ...f, when: DEFAULT_FILTERS.when }) });
   if (filters.daypart)
     chips.push({ key: 'daypart', label: DAYPART_LABELS[filters.daypart], clear: (f) => ({ ...f, daypart: null }) });
   if (filters.category)

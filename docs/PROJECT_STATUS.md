@@ -1,6 +1,6 @@
 # FLEK — živý přehled projektu
 
-> Poslední kontrola: 23. 9. 2026
+> Poslední kontrola: 27. 9. 2026
 > Zdroj pravdy: repozitář FLEK v této složce. Tento soubor shrnuje stav produktu; technické detaily a akceptační důkazy zůstávají v odkazovaných dokumentech.
 
 ## Co FLEK řeší
@@ -23,6 +23,7 @@ Demo účty a jejich omezení jsou v [README.md](../README.md). Produkční hesl
 
 ### Objevování a mapa
 
+- **Pracovní kopie 27. 9.:** hlavní časové volby Vše / Teď / Dnes / Zítra; Do 2 h a denní doby v jednom Sheet Filtry. Advanced volby mají chips a badge, soon nemá falešnou primární volbu ani při cold-start rozšíření. Sdílené feed/map URL a serverové hledání beze změny.
 - Karta nabídky je celá fotka se zaoblenými rohy: na ní vlevo nahoře čas (u termínu do 2 hodin i „za 29 min“) a vpravo sleva, dole matný bílý panel se službou, podnikem, cenou, čtvrtí, vzdáleností, délkou, volnými místy a dalšími časy. Na Objevit je první sekce („Začíná brzy“) vodorovná lišta, ostatní sekce mřížka; stejný tvar má kostra při načítání i karusel „Mohlo by se ti líbit“ v detailu.
 - Hodnocení z Google Places je v kódu hotové (Edge Function `google-place-rating` a komponenta na kartě), **v produkci ale neaktivní**: funkce není v Supabase nasazená, chybí `GOOGLE_MAPS_API_KEY` a žádný podnik nemá Place ID (ověřeno 13. 9. 2026). Karty proto hodnocení neukazují a falešné se nedoplňuje. Zapnutí: klíč s billingem → `supabase secrets set GOOGLE_MAPS_API_KEY=…` → `supabase functions deploy google-place-rating` → Place ID u podniků v administraci. Každé zobrazení karty volá Places API bez cache, s rostoucím provozem to poroste i v nákladech.
 - Špendlík na mapě nese ikonu oboru (nůžky, ruka, jiskry, činka, květ, vlny podle `public.categories`) na tmavé dlaždici se značkovou kresbou, pod ní cenovku; neznámá kategorie dostane značku FLEK. Fotka služby zůstala v náhledové kartě a v seznamu vedle mapy, ve špendlíku při 48 px nic neřekla.
@@ -76,6 +77,8 @@ Demo účty a jejich omezení jsou v [README.md](../README.md). Produkční hesl
 - Funkce `content-moderation` je nasazená a klíč uložený v Supabase secrets. Skutečný požadavek na OpenAI ale 21. 9. skončil HTTP 429, proto automatické schvalování čeká na aktivaci/limit projektu OpenAI; ruční fronta a bezpečné nezveřejnění fungují.
 
 ### Zveřejnění FLEKu a cena
+
+- **Pracovní kopie 27. 9.:** Zopakovat zachovává službu/cenu/celkovou kapacitu a nabízí kompaktní souhrn; neplatný původní čas vyprázdní a fokusuje. Nový FLEK nabízí poslední 3 unikátní aktivní služby z existující historie; po zkratce stačí nový čas a zveřejnění. Žádná nová tabulka ani změna serverových pravidel.
 
 Cenový model v1 je implementovaný a ověřený v hostovaném Supabase projektu. Příklad: běžně 1 000 Kč, podnik 750 Kč, servisní poplatek 38 Kč, zákazník 788 Kč a úspora 21 %. Staré nabídky a rezervace zůstávají ve verzi 0 bez dodatečného poplatku.
 
@@ -203,6 +206,7 @@ Nejdůležitější migrace:
 
 ## Ověření a otevřené body
 
+- **27. 9.: skutečný Stripe Checkout E2E PASS** — karta v sandbox formuláři, authorization → pending_merchant bez kódu → merchant capturing → paid/confirmed/kód → zákaznické storno → refund succeeded 402 Kč. Kapacita obnovena, inbox události správně, obě testovací nabídky zrušené. Fyzický email/push **MANUAL VERIFICATION REQUIRED** (demo email suppress, 0 subscriptions); povinný email job/recipient/contract ověřen transakčním SQL testem. Build a 184 unit testů PASS, 320/375/390/1280 px bez přetečení. Frontend/copy změny jsou zatím v pracovní kopii, nenasažené. Podrobnosti a IDs v `VERIFICATION.md`.
 - Nasazení 23. 9. (`e9fd9cb`): Vercel, GitHub CI a Supabase Preview úspěšné. Produkční detail na 375/390 px načítá skutečnou fotografii, má 180px úvodní výřez a značkové tlačítko bez přetečení; lokálně prošel i desktop a změna času. Notion synchronizován.
 
 - Jednotkové testy a build s TypeScriptem běží v GitHub Actions (`.github/workflows/ci.yml`) při každém pushi; aktuální počet ukazuje CI. Vite upozorňuje na velikost mapového balíčku.
@@ -214,7 +218,7 @@ Nejdůležitější migrace:
 - Lokální integrační sada potřebuje běžící Docker/Supabase; v tomto prostředí neběžela. Typy aplikace jsou ručně spravované, nevyměňovat je přímo za generovaný soubor.
 - Názvy souborů v `supabase/migrations/` odpovídají verzím v hostované tabulce `supabase_migrations.schema_migrations` (sladěno 13. 9. 2026 podle názvu, včetně pořadí `photo_matches_activity` před `google_place_ratings`, jak se skutečně aplikovaly). `supabase db push` proto již aplikované migrace nespustí znovu. Novou migraci po aplikaci přes MCP pojmenujte podle verze, kterou databáze zapsala.
 - Platby jdou přes Stripe Connect v testovacím režimu (Edge Functions v `supabase/functions`, klíče v Supabase secrets). Ostrý režim, události Accounts v2 a účetní doklady jsou otevřené, viz `LIMITATIONS.md`. Integrační sada nově potvrzuje platbu přes `stripe_payment_succeeded` (náhrada webhooku), lokálně zatím neběžela.
-- Potvrzování rezervací (15. 9. 2026): `tests/manual-confirmation.sql` a `tests/whatsapp-notifications.sql` prošly proti hostované databázi (rollback), akceptace v původním režimu 101/101 a v režimu potvrzování 106/106, průchod zákazník + podnik se skutečnými testovacími platbami, build a typová kontrola Edge Functions. Push do `main` nasazuje funkce z `supabase/config.toml` (GitHub integrace), `stripe-checkout` (v10 od 18. 9., tlačítko „Zaplatit“), `stripe-test-pay` (v8) a `stripe-webhook-setup` (v1) jdou přes MCP. Přepínač je od 15:54 `true` a texty pro podniky jsou upravené. **Otevřené:** ruční test Checkoutu s kartou, Apple Pay a Google Pay na telefonu.
+- Potvrzování rezervací (15. 9. 2026): `tests/manual-confirmation.sql` a `tests/whatsapp-notifications.sql` prošly proti hostované databázi (rollback), akceptace v původním režimu 101/101 a v režimu potvrzování 106/106, průchod zákazník + podnik se skutečnými testovacími platbami, build a typová kontrola Edge Functions. Push do `main` nasazuje funkce z `supabase/config.toml` (GitHub integrace), `stripe-checkout` (v10 od 18. 9., tlačítko „Zaplatit“), `stripe-test-pay` (v8) a `stripe-webhook-setup` (v1) jdou přes MCP. Přepínač je od 15:54 `true` a texty pro podniky jsou upravené. **Aktualizace 27. 9.:** standardní karta v Checkout UI včetně autorizace/capture/refundu ověřena. Apple Pay a Google Pay na fyzickém telefonu zůstávají otevřené.
 - WhatsApp: **IMPLEMENTOVÁNO, ALE VYŽADUJE RUČNÍ EXTERNÍ OVĚŘENÍ** — u Meta je od 18. 9. aplikace FLEK s odsouhlasenými podmínkami a testovacím číslem; chybí pět schválených šablon, webhook, secrets, ověření jedním klepnutím na skutečném iPhonu a Androidu a skutečné klepnutí na tlačítko. Oficiální dokumentace Meta ukazuje v `button.payload` text tlačítka; vlastní payload ze šablony podle integrací třetích stran chodí zpět, proto webhook bere i text tlačítka spolu s `context.id` odeslané zprávy.
 
 - E-maily z upozornění (20. 9. 2026): fronta `private.notification_delivery` byla prázdná a vypadalo to na nefunkční odesílání. Ve skutečnosti se nikdy nemělo co odeslat — všech 420 upozornění patřilo demo účtům `@flek.test`, které e-maily dostávat nemají, a pod vlastními účty nikdo nerezervoval. Zkušební zpráva přes `private.account_notice` odešla na první pokus (`status = sent`), takže Resend i doručovací funkce fungují. Skutečná mezera byla jinde: registrace provozovny neposílala nic, viz migrace `20260920175100`.
@@ -231,6 +235,7 @@ Podrobné důkazy jsou v [VERIFICATION.md](../VERIFICATION.md), omezení v [LIMI
 
 | Datum | Změna | Stav |
 | --- | --- | --- |
+| 27. 9. 2026 | Discovery se čtyřmi primary volbami a viditelnými advanced filtry; rychlé Zopakovat a recent služby; přesné texty blokace/capture/refundu a přednost skutečného stavu před historickým kódem. Skutečný Stripe Checkout E2E s refundem 402 Kč. | pracovní kopie; build + 184 unit PASS, 3 hostované SQL sady s rollbackem PASS, 320/375/390/1280 px PASS; doručení email/push ručně |
 | 25. 9. 2026 | **Stín náhledu na mapě bez ostrého řezu.** Posuvný pás karet (`overflow-x`) ořezával i svisle a měl pod kartou jen 12 px, stín `glass-lift` (rozostření 40 px, posun 18 px) doznívá asi 60 px, takže končil rovnou čarou na úrovni horní hrany spodní navigace. Pás má teď pod kartou 64 px (a 8 px nad ní), záporné okraje drží kartu na místě, přesah leží pod navigací. | build a unit testy PASS; mobil 369 a 390 px: jas vedle rohu navigace změřený v headless Chrome (dřív skok o 6 úrovní, teď plynulý), navigace dál přijímá klepnutí |
 | 25. 9. 2026 | **Karta „Tvůj FLEK“ v Profilu jako útržek voucheru.** Nahoře jedno velké číslo ušetřené za měsíc, pod perforací chycené FLEKy, nejlepší úlovek a „Od začátku“. Souhrn od začátku se v prvním měsíci skryje, protože opakoval stejná čísla. | build a unit testy PASS; dočasný náhled se třemi stavy (první měsíc, další měsíc, měsíc bez FLEKu) na 375/390 px bez přetečení; přihlášený profil nebyl procházen |
 | 25. 9. 2026 | **Zvonění žádosti a opravené zaškrtávání upozornění.** Partnerská část při žádosti o rezervaci zvoní smyčkou (`src/features/merchant/ringer.ts`, zvuk z Web Audio běží i v kartě na pozadí), dokud žádost nepotvrdí, neodmítne (i z jiného zařízení nebo WhatsAppu), nevyprší nebo ji podnik neztlumí; lišta nahoře na každé stránce (`RequestRing.tsx`), odemčení zvuku prvním klepnutím, blikající titulek, vibrace na Androidu, v Provozovně „Vyzkoušet zvonění“ a „Nechat displej rozsvícený“ (Wake Lock). Push o žádosti nese `kind: request` a service worker ho nechá na obrazovce (`requireInteraction`). Upozornění: políčko se přepne hned a uloží se i když prohlížeč registraci odmítne, chyby prohlížeče česky (a u partnerů vykáním), zastaralou registraci zkusí zahodit a znovu, „Zapnout“ zapne sloupec Telefon u událostí, které člověk nenastavil. | náhled na 375 a 1280 px: zamčený zvuk → lišta „Zapnout zvuk“, klepnutí → zvoní (titulek střídá „🔔 Nová žádost o rezervaci“), „Ztlumit“ → ticho; políčko zaškrtnuté do 60 ms, druhé klikatelné hned, obě po uložení drží; build a 163 unit testů |

@@ -1,31 +1,62 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_FILTERS,
-  TIME_INTENTS,
+  PRIMARY_TIME_INTENTS, TIME_OPTIONS, activeChips, activeCount, applyIntent, clearAdvancedFilters,
   intentOf,
   wideningSteps,
   windowFor,
   type Filters,
 } from '../src/features/discovery/filters';
 import { cutoffFor } from '../src/features/merchant/CreateOfferSheet';
+import { readDiscoveryState } from '../src/features/discovery/useDiscoveryState';
 
 const NOW = '2026-09-10T09:00:00.000Z';
 const filters = (over: Partial<Filters> = {}): Filters => ({ ...DEFAULT_FILTERS, ...over });
 
-describe('rail', () => {
-  it('leads with Vše and still opens on Dnes', () => {
-    expect(TIME_INTENTS[0].key).toBe('week');
-    expect(DEFAULT_FILTERS.when).toBe('today');
+describe('rail and advanced time filters', () => {
+  it('preserves advanced choices in the shared feed/map URL state', () => {
+    for (const path of ['/', '/mapa']) {
+      const url = new URL(`${path}?when=soon&daypart=afternoon&radius_m=1000&sort=cheapest`, 'https://www.app-flek.eu');
+      const { filters: parsed } = readDiscoveryState(url.searchParams);
+      expect(parsed).toMatchObject({ when: 'soon', daypart: 'afternoon', radius_m: 1000, sort: 'cheapest' });
+      expect(intentOf(parsed)).toBeNull();
+      expect(activeCount(parsed)).toBe(4);
+    }
+  });
+  it('has exactly four primary choices and still opens on Dnes', () => {
+    expect(PRIMARY_TIME_INTENTS.map((i) => i.label)).toEqual(['Vše', 'Teď', 'Dnes', 'Zítra']);
     expect(intentOf(DEFAULT_FILTERS)).toBe('today');
   });
 
-  it('lights a pill for every combination the sheet can produce', () => {
-    // Thirteen of the twenty reachable pairs matched no pill and the rail went dark.
-    for (const when of ['now', 'soon', 'today', 'tomorrow', 'week'] as const) {
-      for (const daypart of [null, 'morning', 'afternoon', 'evening'] as const) {
-        expect(intentOf(filters({ when, daypart })), `${when}/${daypart}`).not.toBeNull();
-      }
-    }
+  it('keeps Do 2 h in the sheet without falsely lighting Teď', () => {
+    expect(TIME_OPTIONS.find((i) => i.value === 'soon')?.label).toBe('Do 2 h');
+    const advanced = filters({ when: 'soon' });
+    expect(intentOf(advanced)).toBeNull();
+    expect(intentOf(advanced, 'today')).toBeNull();
+    expect(intentOf(filters({ when: 'now' }), 'today')).toBe('today');
+    expect(windowFor('soon', NOW).until).not.toBe(windowFor('now', NOW).until);
+    expect(activeCount(advanced)).toBe(1);
+    const chip = activeChips(advanced, (s) => s)[0];
+    expect(chip.label).toBe('Do 2 h');
+    expect(chip.clear(advanced).when).toBe(DEFAULT_FILTERS.when);
+  });
+
+  it.each(['morning', 'afternoon', 'evening'] as const)('keeps %s visible alongside any window', (daypart) => {
+    const advanced = filters({ when: 'soon', daypart });
+    const chips = activeChips(advanced, (s) => s);
+    expect(chips.map((c) => c.key)).toEqual(['when', 'daypart']);
+    expect(activeCount(advanced)).toBe(2);
+    expect(chips[1].clear(advanced)).toMatchObject({ when: 'soon', daypart: null });
+    expect(intentOf(filters({ daypart }))).toBe('today');
+    expect(applyIntent(advanced, 'tomorrow')).toMatchObject({ when: 'tomorrow', daypart: null });
+  });
+
+  it('clears advanced filters and keeps the badge equal to removable chips', () => {
+    const advanced = filters({ when: 'soon', daypart: 'afternoon', category: 'sport', radius_m: 1000, min_discount_pct: 20, max_price_cents: 30000, sort: 'cheapest' });
+    expect(activeCount(advanced)).toBe(activeChips(advanced, (s) => s).length);
+    expect(clearAdvancedFilters(advanced)).toEqual(DEFAULT_FILTERS);
+    expect(clearAdvancedFilters(filters({ when: 'tomorrow', daypart: 'evening' }))).toEqual(filters({ when: 'tomorrow' }));
+    expect(activeCount(DEFAULT_FILTERS)).toBe(0);
   });
 });
 

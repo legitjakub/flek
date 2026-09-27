@@ -7,13 +7,14 @@ import {
   activeCount,
   applyIntent,
   DAYPART_LABELS,
-  DEFAULT_FILTERS,
+  clearAdvancedFilters,
   intentOf,
   DISCOUNT_LABELS,
   PRICE_LABELS,
   RADIUS_LABELS,
   SORT_LABELS,
-  TIME_INTENTS,
+  PRIMARY_TIME_INTENTS,
+  TIME_OPTIONS,
   type Daypart,
   type Filters,
   type When,
@@ -44,8 +45,8 @@ export function FilterBar({
   pending: boolean;
   /**
    * What the search actually ran with after the cold-start ladder had its say. The rail is
-   * lit from this, not from `filters`: a pill that says "Teď" above a week's worth of cards
-   * is the whole reason the filters read as broken.
+   * Primary choices reflect this window. Advanced Do 2 h stays a chip with no primary
+   * selection; the widening note still explains any wider results.
    */
   applied?: { when: When; radius_m: number };
   /** What the cold-start ladder widened, as one short line. */
@@ -58,7 +59,7 @@ export function FilterBar({
   const count = activeCount(filters);
   const label = (slug: string) => categories.find((c) => c.slug === slug)?.label_cs ?? slug;
   const chips = activeChips(filters, label);
-  const lit = intentOf({ ...filters, when: applied?.when ?? filters.when });
+  const lit = intentOf(filters, applied?.when);
   const rail = useRef<HTMLDivElement>(null);
 
   // Over the map a fade on a half-hidden white pill left a ghost of it floating on the tiles,
@@ -110,9 +111,9 @@ export function FilterBar({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-end gap-3">
+      <div className="flex items-end gap-2">
         <div className="min-w-0 flex-1">
-          {/* The six labelled pills say this themselves; the heading only cost height. */}
+          {/* The four labelled pills say this themselves; the heading only cost height. */}
           <div
             ref={rail}
             role="radiogroup"
@@ -120,9 +121,9 @@ export function FilterBar({
             onScroll={measureEdges}
             data-more-start={edges.start || undefined}
             data-more-end={edges.end || undefined}
-            className={`rail rail-edges -mx-1 flex snap-x snap-mandatory scroll-px-6 gap-2 px-1 ${floating ? '-my-3 py-3' : '-my-1 py-1'}`}
+            className={`rail rail-edges -mx-1 flex snap-x snap-mandatory scroll-px-6 gap-1 px-1 ${floating ? '-my-3 py-3' : '-my-1 py-1'}`}
           >
-            {TIME_INTENTS.map((intent) => {
+            {PRIMARY_TIME_INTENTS.map((intent) => {
               const active = lit === intent.key;
               return (
                 <button
@@ -131,7 +132,7 @@ export function FilterBar({
                   role="radio"
                   aria-checked={active}
                   onClick={() => onChange(applyIntent(filters, intent.key))}
-                  className={`min-h-11 shrink-0 snap-start rounded-full border px-4 text-sm font-bold whitespace-nowrap transition-colors ${active ? 'border-ink bg-ink text-accent-ink' : floating ? 'border-transparent bg-card text-ink shadow-card hover:border-accent' : 'border-line bg-card text-ink hover:border-accent'} ${floating && active ? 'shadow-card' : ''}`}
+                  className={`min-h-11 shrink-0 snap-start rounded-full border px-2.5 text-sm sm:px-4 font-bold whitespace-nowrap transition-colors ${active ? 'border-ink bg-ink text-accent-ink' : floating ? 'border-transparent bg-card text-ink shadow-card hover:border-accent' : 'border-line bg-card text-ink hover:border-accent'} ${floating && active ? 'shadow-card' : ''}`}
                 >
                   {intent.label}
                 </button>
@@ -139,7 +140,7 @@ export function FilterBar({
             })}
           </div>
         </div>
-        <button type="button" onClick={openSheet} aria-haspopup="dialog" className={`inline-flex min-h-11 shrink-0 items-center gap-2 border bg-card px-4 text-sm font-bold hover:border-accent ${floating ? 'rounded-full border-transparent shadow-card' : 'rounded-xl border-line'}`}>
+        <button type="button" onClick={openSheet} aria-haspopup="dialog" className={`inline-flex min-h-11 shrink-0 items-center gap-1 border bg-card px-2 text-sm sm:gap-2 sm:px-4 font-bold hover:border-accent ${floating ? 'rounded-full border-transparent shadow-card' : 'rounded-xl border-line'}`}>
           <SlidersHorizontal size={17} aria-hidden="true" />
           Filtry
           {count ? (
@@ -161,7 +162,7 @@ export function FilterBar({
               key={chip.key}
               type="button"
               onClick={() => onChange(chip.clear(filters))}
-              className={`inline-flex min-h-9 items-center gap-1.5 rounded-full border bg-card py-1 pr-2 pl-3 font-bold text-ink transition-colors hover:border-accent ${floating ? 'border-transparent shadow-card' : 'border-line'}`}
+              className={`inline-flex min-h-11 items-center gap-1.5 rounded-full border bg-card py-1 pr-2 pl-3 font-bold text-ink transition-colors hover:border-accent ${floating ? 'border-transparent shadow-card' : 'border-line'}`}
             >
               {chip.label}
               <X size={15} aria-hidden="true" className="text-muted" />
@@ -185,8 +186,8 @@ export function FilterBar({
           {chips.length ? (
             <button
               type="button"
-              onClick={() => onChange({ ...DEFAULT_FILTERS, when: filters.when })}
-              className={`min-h-9 font-bold underline underline-offset-4 ${floating ? 'rounded-full bg-card px-3 text-ink shadow-card' : 'text-accent'}`}
+              onClick={() => onChange(clearAdvancedFilters(filters))}
+              className={`min-h-11 font-bold underline underline-offset-4 ${floating ? 'rounded-full bg-card px-3 text-ink shadow-card' : 'text-accent'}`}
             >
               Zrušit vše
             </button>
@@ -203,7 +204,7 @@ export function FilterBar({
             <Button
               variant="secondary"
               className="flex-1"
-              onClick={() => setDraft({ ...DEFAULT_FILTERS, when: draft.when })}
+              onClick={() => setDraft(clearAdvancedFilters(draft))}
             >
               Vymazat
             </Button>
@@ -220,6 +221,29 @@ export function FilterBar({
         }
       >
         <div className="flex flex-col gap-5">
+          <Group title="Kdy">
+            <Segmented
+              label="Kdy"
+              value={draft.when}
+              onChange={(when) => setDraft({ ...draft, when })}
+              options={TIME_OPTIONS}
+              columns={2}
+            />
+          </Group>
+
+          <Group title="Denní doba">
+            <Segmented
+              label="Denní doba"
+              value={draft.daypart}
+              onChange={(daypart) => setDraft({ ...draft, daypart })}
+              options={[
+                { value: null, label: 'Kdykoli' },
+                ...(Object.keys(DAYPART_LABELS) as Daypart[]).map((p) => ({ value: p, label: DAYPART_LABELS[p] })),
+              ]}
+              columns={2}
+            />
+          </Group>
+
           <Group title="Obor">
             <div className="flex flex-wrap gap-2">
               {[{ slug: '', label_cs: 'Vše' }, ...categories].map((category) => {
@@ -239,19 +263,6 @@ export function FilterBar({
                 );
               })}
             </div>
-          </Group>
-
-          <Group title="Denní doba">
-            <Segmented
-              label="Denní doba"
-              value={draft.daypart}
-              onChange={(daypart) => setDraft({ ...draft, daypart })}
-              options={[
-                { value: null, label: 'Kdykoli' },
-                ...(Object.keys(DAYPART_LABELS) as Daypart[]).map((p) => ({ value: p, label: DAYPART_LABELS[p] })),
-              ]}
-              columns={2}
-            />
           </Group>
 
           <Group title="Vzdálenost">
