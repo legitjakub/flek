@@ -2,6 +2,8 @@
 
 ## Nasazení a doručení na vlastní účet — 27. 9. 2026
 
+Závěrečné sloučení zachovalo i souběžný commit `bb120d4` s čísly na Přehledu partnera. Build a **230/230 unit testů (28 souborů) PASS**.
+
 - **Nasazeno:** `c09ed4c` na `main`; Vercel, GitHub CI „Typy, build, unit testy a závislosti“ a Supabase Preview **success**. `notification-delivery` ACTIVE v88, `booking-confirmation` v71, `stripe-webhook` v94 a `stripe-refunds` v93 po automatickém nasazení. Build a všech **226 unit testů** prošly i po sloučení s aktuálním main.
 - Druhý skutečný Checkout test běžel přímo na **www.app-flek.eu**, pod existujícím vlastním nedemo účtem přihlášeným Googlem. Standardní karta 4242, sandbox (`livemode=false`), demo Studio Dobrá hodina. Cena 402 Kč, termín 1. 10. 19:43–20:28 Praha; žádný live režim ani změna secrets.
 - Offer `fcd35ef3-9f6c-418b-9a5a-ca3ebbc0464a`, booking `8203f6ed-bb4f-4e85-adca-3fdec3394fc5`, payment `b6bad675-ba23-4674-80bf-62c88663d329`, PaymentIntent `pi_3UKIJKFB6rpi2pX50nWQka2F`, refund `re_3UKIJKFB6rpi2pX50w5C7e2d`.
@@ -9,6 +11,11 @@
 - **E-mail fyzicky PASS:** v Gmailu otevřené skutečné zprávy „Tvůj FLEK je potvrzený — FLEK“ (15:41 Praha) a „Rezervace byla zrušena — FLEK“ (23:43 Praha), odesílatel `rezervace@mail.app-flek.eu`. Potvrzení uvádí správnou službu, termín, cenu 402 Kč včetně 25 Kč poplatku, **Zaplaceno**, odpovídající kód a lhůtu storna. Storno říká **„Vracíme celou částku na tvou kartu. Připsání závisí na bance.“**, žádné uvolňování autorizace. Oba email joby `sent`, 1 pokus, bez chyby; skutečné doručení je doložené mailboxem, ne pouze frontou.
 - **Push odeslání PASS:** přes skutečné nastavení účtu zapnuté události potvrzení a storna, zařízení zaregistrované (1 subscription); oba skutečné joby `sent`, 1 pokus, bez chyby. Inbox obsahuje odpovídající zákaznické události; partner má requested/confirmed/cancelled podle stávající logiky. **MANUAL VERIFICATION REQUIRED pouze pro zobrazení systémového push:** otevřít Oznamovací centrum tohoto Macu a ověřit oznámení FLEK z testu. Přístup k systémovému panelu automatizací timeoutoval; HTTP přijetí push službou neoznačujeme za důkaz zobrazení.
 - Produkční Discovery po nasazení: skutečné šířky **320/375/390/1280 px**, `scrollWidth === innerWidth`, pouze Vše / Teď / Dnes / Zítra. BookingSheet a potvrzený/refundovaný stav navíc ověřené na desktopu po sloučení; širší mobilní průchod pracovní kopie je doložen níže. Původní rozpracovaná úprava `OfferDetailPage.tsx` zůstala lokálně mimo tyto commity.
+
+## Čísla na Přehledu partnera — 27. 9. 2026
+
+- `npm run build` a `npm run test:unit` s proměnnými jako v CI (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`): build PASS, **230/230 unit testů (28 souborů) PASS**. Nový `tests/dashboardStats.test.ts`: české tvary počtů včetně nuly („0 volných míst“), pražský den místo UTC (00:00 a 23:59 v Praze ano, 23:59 předchozího dne a půlnoc do dalšího ne), do rezervací dne a částky patří `confirmed`, `completed` a `no_show`, žádosti, stržení v běhu, zamítnuté, vypršelé a zrušené ne.
+- Náhled se skutečnými komponentami (lokální Vite, Chromium přes Playwright, relace vložená do `localStorage`, odpovědi Supabase podvržené v prohlížeči, hostovaná databáze beze změny) ve čtyřech stavech: jako na Jakubově telefonu (nic v nabídce, žádná rezervace), běžný den (tři rezervace dnes, dvě aktivní nabídky se čtyřmi místy, 3 560 Kč za měsíc a 1 245 Kč, které čekají), čekání na první rezervaci a obří čísla (128 nabídek, 1 024 míst, 1 234 567 Kč). Na 320, 375, 390 a 1280 px: vodorovné přetečení 0, axe-core (WCAG 2.1 A/AA) 0 porušení, žádný odkaz ani tlačítko pod 44 px, bez chyb v konzoli. Popisky všech tří částí na jednom řádku na každé šířce, buňky 144–358 px široké a 121–140 px vysoké. Fokus z klávesnice je na buňce vidět celý (obrys uvnitř karty). Stav z Jakubova screenshotu před změnou vykreslený stejně jako na jeho telefonu (tři dlaždice, popisky ve dvou řádcích).
 
 ## Sloučení s aktuálním main — 27. 9. 2026
 
