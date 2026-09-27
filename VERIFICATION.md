@@ -1,5 +1,10 @@
 # Ověření FLEK
 
+## Čísla na Přehledu partnera — 27. 9. 2026
+
+- `npm run build` a `npm run test:unit` s proměnnými jako v CI (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`): build PASS, **230/230 unit testů (28 souborů) PASS**. Nový `tests/dashboardStats.test.ts`: české tvary počtů včetně nuly („0 volných míst“), pražský den místo UTC (00:00 a 23:59 v Praze ano, 23:59 předchozího dne a půlnoc do dalšího ne), do rezervací dne a částky patří `confirmed`, `completed` a `no_show`, žádosti, stržení v běhu, zamítnuté, vypršelé a zrušené ne.
+- Náhled se skutečnými komponentami (lokální Vite, Chromium přes Playwright, relace vložená do `localStorage`, odpovědi Supabase podvržené v prohlížeči, hostovaná databáze beze změny) ve čtyřech stavech: jako na Jakubově telefonu (nic v nabídce, žádná rezervace), běžný den (tři rezervace dnes, dvě aktivní nabídky se čtyřmi místy, 3 560 Kč za měsíc a 1 245 Kč, které čekají), čekání na první rezervaci a obří čísla (128 nabídek, 1 024 míst, 1 234 567 Kč). Na 320, 375, 390 a 1280 px: vodorovné přetečení 0, axe-core (WCAG 2.1 A/AA) 0 porušení, žádný odkaz ani tlačítko pod 44 px, bez chyb v konzoli. Popisky všech tří částí na jednom řádku na každé šířce, buňky 144–358 px široké a 121–140 px vysoké. Fokus z klávesnice je na buňce vidět celý (obrys uvnitř karty). Stav z Jakubova screenshotu před změnou vykreslený stejně jako na jeho telefonu (tři dlaždice, popisky ve dvou řádcích).
+
 ## Sloučení s aktuálním main — 27. 9. 2026
 
 Zachován nový vzhled partnera a BookingSheet z `d34913c`, včetně data storna. Ochrana quote nyní blokuje i odeslání kontaktního formuláře klávesou Enter. Moduly čisté logiky přejmenovány na `incomingRequestState.ts` a `ringSetupState.ts`, aby na macOS nekolidovaly s komponentami stejného jména. Po sloučení `npm run build` a **226/226 unit testů (27 souborů) PASS**.

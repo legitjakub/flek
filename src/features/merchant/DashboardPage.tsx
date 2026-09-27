@@ -1,4 +1,4 @@
-import { Armchair, CalendarClock, CalendarDays, ChevronRight, Heart, Plus, Ticket, UserCheck } from 'lucide-react';
+import { CalendarClock, CalendarDays, ChevronRight, Heart, Plus, Ticket, UserCheck, Wallet } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { merchantBookings, merchantOffers } from '../../lib/api';
@@ -11,11 +11,12 @@ import { MerchantShell } from './MerchantShell';
 import { CreateOfferSheet } from './CreateOfferSheet';
 import { useMerchantMetrics, useServices } from './useBusiness';
 import { SetupGuide, usePublishReadiness } from './SetupGuide';
-import type { Business, MerchantBooking } from '../../types/database';
+import type { Business, MerchantBooking, MerchantMetrics } from '../../types/database';
 import { ResolveButtons } from './ResolveButtons';
 import { ConfirmationRequests, isConfirmationRequest, visibleToMerchant } from './ConfirmationRequests';
 import { CodeChip, PageHeader, SectionTitle } from './partnerUi';
 import { startsIn } from './incomingRequestState';
+import { freeSeatsWord, todaySummary } from './dashboardStats';
 
 export function MerchantDashboardPage() {
   return (
@@ -123,11 +124,7 @@ function Dashboard({ business }: { business: Business }) {
           ) : null}
 
           {metrics.isError ? <ErrorState error={metrics.error} onRetry={() => metrics.refetch()} /> : null}
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
-            <Stat to="/partner/nabidky" icon={<CalendarDays size={18} />} label="Aktivní nabídky" value={metrics.data?.active_offers} />
-            <Stat to="/partner/rezervace" icon={<Ticket size={18} />} label="Rezervace dnes" value={metrics.data?.today_bookings} />
-            <Stat to="/partner/nabidky" icon={<Armchair size={18} />} label="Volná místa" value={metrics.data?.free_seats} />
-          </div>
+          <Numbers bookedToday={today.isSuccess ? todaySummary(today.data, day) : null} metrics={metrics.data} />
 
           {/* Renamed from "Čeká na vyřízení": nothing waits on the merchant any more. These are
               the bookings still open for a no-show, and ignoring them is the correct default,
@@ -229,12 +226,89 @@ function NoBookingYet() {
   );
 }
 
-function Stat({ to, icon, label, value }: { to: string; icon: ReactNode; label: string; value: number | undefined }) {
+const whole = new Intl.NumberFormat('cs-CZ');
+
+/**
+ * The venue in numbers, one card instead of three tiles that each wrapped their label: what
+ * today brings, what is on offer right now and the month so far, each opening the page behind
+ * it. A zero is quieter than a number, so an empty day does not shout three zeros.
+ */
+function Numbers({ bookedToday, metrics }: { bookedToday: { count: number; payoutCents: number } | null; metrics: MerchantMetrics | undefined }) {
   return (
-    <Link to={to} className="flex flex-col rounded-3xl bg-card p-3.5 shadow-card transition-transform hover:-translate-y-0.5 sm:p-5">
-      <IconTile icon={icon} size="sm" />
-      <span className="tnum mt-3 text-2xl leading-none font-extrabold text-ink">{value ?? '—'}</span>
-      <span className="mt-1.5 text-sm leading-snug text-muted">{label}</span>
+    <section aria-label="Přehled v číslech" className="grid grid-cols-2 overflow-hidden rounded-3xl bg-card shadow-card sm:grid-cols-3">
+      <NumberCell
+        to="/partner/rezervace"
+        icon={<Ticket size={16} />}
+        label="Rezervace dnes"
+        value={bookedToday ? whole.format(bookedToday.count) : null}
+        quiet={bookedToday?.count === 0}
+        note={bookedToday && bookedToday.count > 0 ? <>Vy dostanete <Amount>{money(bookedToday.payoutCents)}</Amount></> : null}
+        className="border-r border-line"
+      />
+      <NumberCell
+        to="/partner/nabidky"
+        icon={<CalendarDays size={16} />}
+        label="Aktivní nabídky"
+        value={metrics ? whole.format(metrics.active_offers) : null}
+        quiet={metrics?.active_offers === 0}
+        note={
+          !metrics ? null : metrics.active_offers === 0 ? 'Teď nic nenabízíte' : <><Amount>{whole.format(metrics.free_seats)}</Amount> {freeSeatsWord(metrics.free_seats)}</>
+        }
+        className="sm:border-r sm:border-line"
+      />
+      {/* On a phone the month takes the whole row: a sum in crowns does not fit half of it. */}
+      <NumberCell
+        to="/partner/metriky"
+        icon={<Wallet size={16} />}
+        label="Tento měsíc jste vydělali"
+        value={metrics ? money(metrics.earned_cents) : null}
+        quiet={metrics?.earned_cents === 0}
+        note={
+          metrics && metrics.upcoming_payout_cents > 0 ? <>a <Amount>{money(metrics.upcoming_payout_cents)}</Amount> za rezervace, které vás čekají</> : null
+        }
+        className="col-span-2 border-t border-line sm:col-span-1 sm:border-t-0"
+      />
+    </section>
+  );
+}
+
+function Amount({ children }: { children: ReactNode }) {
+  return <span className="font-bold text-ink">{children}</span>;
+}
+
+function NumberCell({
+  to,
+  icon,
+  label,
+  value,
+  quiet,
+  note,
+  className,
+}: {
+  to: string;
+  icon: ReactNode;
+  label: string;
+  /** Null while it loads. */
+  value: string | null;
+  quiet: boolean;
+  note: ReactNode;
+  className?: string;
+}) {
+  return (
+    <Link
+      to={to}
+      className={cx('group flex min-w-0 flex-col px-4 py-4 transition-colors hover:bg-surface focus-visible:-outline-offset-2 min-[360px]:px-5 sm:px-6 sm:py-5', className)}
+    >
+      {/* Below 360 px the glyph goes, so the label keeps its one line. */}
+      <span className="flex items-center gap-1.5 text-sm text-muted">
+        <span aria-hidden="true" className="hidden shrink-0 text-brand min-[360px]:block">{icon}</span>
+        {label}
+      </span>
+      <span className="mt-2 flex items-center justify-between gap-2">
+        <span className={cx('tnum text-2xl leading-none font-extrabold tracking-tight', quiet ? 'text-muted' : 'text-ink')}>{value ?? '—'}</span>
+        <ChevronRight size={18} aria-hidden="true" className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5" />
+      </span>
+      {note ? <span className="tnum mt-2 text-sm text-muted">{note}</span> : null}
     </Link>
   );
 }

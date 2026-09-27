@@ -84,6 +84,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 
 ## Todolist
 
+- [x] Čísla na Přehledu pro podniky v jedné kartě: rezervace dnes s částkou, aktivní nabídky s volnými místy a výdělek za měsíc (27. 9. 2026)
 - [x] Partnerská část v brandu FLEKu: modré hlavní akce, karty s barevným okrajem podle stavu, seznamy po dnech, záložky s počty, Nabídky jako diář, modrá karta nejbližší rezervace na Přehledu a „Ověřit rezervaci“ s načtením QR kódu (25. 9. 2026)
 - [x] Zvonění a oznámení na telefon pro podniky zapnuté samy, podnik jen jednou klepnutím povolí na svém zařízení (25. 9. 2026)
 - [x] Úvod pro zákazníky zkrácený na jednu obrazovku s tím nejdůležitějším (25. 9. 2026)
@@ -345,6 +346,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 27. 9. 2026 | Přehled pro podniky ukazuje čísla v jedné kartě místo tří dlaždic s nulami: kolik rezervací je dnes a kolik za ně podnik dostane, kolik nabídek je aktivních a kolik v nich zbývá volných míst (nebo že teď nic nenabízí) a kolik podnik tento měsíc vydělal. Každé číslo vede na stránku, kde jsou podrobnosti. |
 | 27. 9. 2026 | Skutečný Checkout test v sandboxu prošel včetně autorizace, potvrzení podnikem, capture, kódu, storna a refundu 402 Kč. V pracovní kopii zjednodušené Discovery a Zopakovat/recent služby, opravené peněžní texty. Build + 184 unit testů a mobilní/desktop kontroly PASS. Zbývá fyzické doručení email/push na nedemo účtu. |
 | 27. 9. 2026 | WhatsApp: Meta schválila všech pět šablon zpráv. Posílat je začne, až bude u WhatsApp účtu platební metoda, vyplněný profil firmy (právní název, země, web) a ověřená firma; do té doby zůstává WhatsApp ve FLEKu vypnutý. |
 | 25. 9. 2026 | Partnerská část má nový vzhled v barvách FLEKu. Nabídky jsou diář po dnech (Nadcházející a Ukončené místo tří záložek), každá karta má vlevo čas, barvou a slovem stav (Aktivní, Vyprodáno, Uzavřeno…), výrazně „Vy dostanete“, proužek obsazenosti a dole Zopakovat, Upravit, Zrušit. Přehled ukazuje modrou kartu nejbližší rezervace a kdo ještě dnes přijde. Rezervace začínají kartou „Ověřit rezervaci“ s modrým „Načíst QR kód“ a po načtení hned řeknou, jestli rezervace platí. Služby, Provozovna a Metriky mají hlavičky s ikonami, Metriky modrou kartu s výdělkem. |
