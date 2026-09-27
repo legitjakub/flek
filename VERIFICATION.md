@@ -1,12 +1,22 @@
 # Ověření FLEK
 
+## Nasazení a doručení na vlastní účet — 27. 9. 2026
+
+- **Nasazeno:** `c09ed4c` na `main`; Vercel, GitHub CI „Typy, build, unit testy a závislosti“ a Supabase Preview **success**. `notification-delivery` ACTIVE v88, `booking-confirmation` v71, `stripe-webhook` v94 a `stripe-refunds` v93 po automatickém nasazení. Build a všech **226 unit testů** prošly i po sloučení s aktuálním main.
+- Druhý skutečný Checkout test běžel přímo na **www.app-flek.eu**, pod existujícím vlastním nedemo účtem přihlášeným Googlem. Standardní karta 4242, sandbox (`livemode=false`), demo Studio Dobrá hodina. Cena 402 Kč, termín 1. 10. 19:43–20:28 Praha; žádný live režim ani změna secrets.
+- Offer `fcd35ef3-9f6c-418b-9a5a-ca3ebbc0464a`, booking `8203f6ed-bb4f-4e85-adca-3fdec3394fc5`, payment `b6bad675-ba23-4674-80bf-62c88663d329`, PaymentIntent `pi_3UKIJKFB6rpi2pX50nWQka2F`, refund `re_3UKIJKFB6rpi2pX50w5C7e2d`.
+- **PASS:** autorizace → `pending_merchant` + „Zablokováno 402 Kč“, bez veřejného kódu → autorizované merchant RPC `respond_to_booking` vrátilo `capturing` → skutečný capture a `confirmed/paid` → UI „FLEK je tvůj“, Zaplaceno, kód/QR → zákaznické storno v bezplatné lhůtě → `cancelled_by_customer/refunded`, Stripe refund `succeeded`. Žádost o refund 21:43:07 UTC, dokončení 21:43:11 UTC; historie UI „402 Kč vráceno“. Kapacita obnovena na 1/1. Nabídka následně uklizena přes `merchant_cancel_offer`, auditní historie zachována.
+- **E-mail fyzicky PASS:** v Gmailu otevřené skutečné zprávy „Tvůj FLEK je potvrzený — FLEK“ (15:41 Praha) a „Rezervace byla zrušena — FLEK“ (23:43 Praha), odesílatel `rezervace@mail.app-flek.eu`. Potvrzení uvádí správnou službu, termín, cenu 402 Kč včetně 25 Kč poplatku, **Zaplaceno**, odpovídající kód a lhůtu storna. Storno říká **„Vracíme celou částku na tvou kartu. Připsání závisí na bance.“**, žádné uvolňování autorizace. Oba email joby `sent`, 1 pokus, bez chyby; skutečné doručení je doložené mailboxem, ne pouze frontou.
+- **Push odeslání PASS:** přes skutečné nastavení účtu zapnuté události potvrzení a storna, zařízení zaregistrované (1 subscription); oba skutečné joby `sent`, 1 pokus, bez chyby. Inbox obsahuje odpovídající zákaznické události; partner má requested/confirmed/cancelled podle stávající logiky. **MANUAL VERIFICATION REQUIRED pouze pro zobrazení systémového push:** otevřít Oznamovací centrum tohoto Macu a ověřit oznámení FLEK z testu. Přístup k systémovému panelu automatizací timeoutoval; HTTP přijetí push službou neoznačujeme za důkaz zobrazení.
+- Produkční Discovery po nasazení: skutečné šířky **320/375/390/1280 px**, `scrollWidth === innerWidth`, pouze Vše / Teď / Dnes / Zítra. BookingSheet a potvrzený/refundovaný stav navíc ověřené na desktopu po sloučení; širší mobilní průchod pracovní kopie je doložen níže. Původní rozpracovaná úprava `OfferDetailPage.tsx` zůstala lokálně mimo tyto commity.
+
 ## Sloučení s aktuálním main — 27. 9. 2026
 
 Zachován nový vzhled partnera a BookingSheet z `d34913c`, včetně data storna. Ochrana quote nyní blokuje i odeslání kontaktního formuláře klávesou Enter. Moduly čisté logiky přejmenovány na `incomingRequestState.ts` a `ringSetupState.ts`, aby na macOS nekolidovaly s komponentami stejného jména. Po sloučení `npm run build` a **226/226 unit testů (27 souborů) PASS**.
 
 ## Checkout, Discovery a rychlé zveřejnění — 27. 9. 2026
 
-Ověřený frontend: místní pracovní kopie v Chrome/Playwright na `127.0.0.1:5173`. Backend: skutečný hostovaný projekt `yupkrntknbkvmlajwlph`, existující nasazené Edge Functions a Stripe **TEST MODE**. Přihlášení vložením session demo zákazníka `demo-6@flek.test` a podniku `demo-merchant@flek.test`; bez hesel v testovacím formuláři. Nastavení `stripe_test_mode=true` a `manual_confirmation_enabled=true` bylo ověřeno před i po testu. Žádné klíče ani produkční secrets se neměnily. Změny této pracovní kopie zatím nejsou nasazené.
+Ověřený frontend: místní pracovní kopie v Chrome/Playwright na `127.0.0.1:5173`. Backend: skutečný hostovaný projekt `yupkrntknbkvmlajwlph`, existující nasazené Edge Functions a Stripe **TEST MODE**. Přihlášení vložením session demo zákazníka `demo-6@flek.test` a podniku `demo-merchant@flek.test`; bez hesel v testovacím formuláři. Nastavení `stripe_test_mode=true` a `manual_confirmation_enabled=true` bylo ověřeno před i po testu. Žádné klíče ani produkční secrets se neměnily. Následné sloučení a nasazení viz novější záznam výše.
 
 ### Skutečný money flow — PASS
 
@@ -45,7 +55,7 @@ Přechodné „Vracíme“ pokrývá serverový čas žádosti před skutečným
 - `tests/legal.sql` na hostované DB **PASS**: v transakci vytvořen email job pro nedemo testovací adresu i při vypnuté email preferenci zákazníka, ověřen event/příjemce a povinný kontrakt; partnerské preference respektované. Odesílání workeru test blokuje a vše končí rollbackem, nic nebylo posláno na smyšlený mailbox.
 - `tests/manual-confirmation.sql` na hostované DB **PASS**: hold, autorizace, závody/deadline, odmítnutí, timeout, release bez refundu, capture failure bez falešného potvrzení, pozdní capture a oprávnění; rollback.
 - `tests/stripe-refunds.sql` na hostované DB **PASS**: pending/requires_action nejsou refunded, failed, succeeded, opožděné a duplicitní zprávy, klientská oprávnění; rollback.
-- **MANUAL VERIFICATION REQUIRED:** fyzické doručení povinného potvrzovacího e-mailu a push na vlastním nedemo účtu a přihlášeném zařízení. Standardní karta a skutečný money flow už prošly. Apple Pay/Google Pay na fyzickém telefonu zůstávají dřívějším samostatným pilotním bodem.
+- **Původní omezení demo testu:** fyzické doručení povinného e-mailu bylo později ověřeno na vlastním účtu (viz výše); zbývá ověřit systémové zobrazení push. Standardní karta a skutečný money flow už prošly. Apple Pay/Google Pay na fyzickém telefonu zůstávají dřívějším samostatným pilotním bodem.
 
 ### Money UX matrix
 

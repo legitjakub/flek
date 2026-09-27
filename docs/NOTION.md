@@ -11,7 +11,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 | Fáze | Fáze 1 — demo pilot (běží veřejně, platby přes Stripe v testovacím režimu) |
 | Web | https://www.app-flek.eu (původní https://flek-nine.vercel.app funguje dál) |
 | Kód | https://github.com/legitjakub/flek (větev `main`) |
-| Poslední nasazení | web 25. 9. 2026 (nový vzhled partnerské části, zvonění a oznámení pro podniky zapnuté s povolením, úvod pro zákazníky na jedné obrazovce) a migrace `20260925205632_merchant_push_default` v hostované DB; předtím web a migrace fotografií 23. 9. (`e9fd9cb`). `content-moderation` nasazený 21. 9. |
+| Poslední nasazení | web + Edge Functions 27. 9. (`c09ed4c`), Vercel/CI/Supabase success; dříve web 25. 9. 2026 (nový vzhled partnerské části, zvonění a oznámení pro podniky zapnuté s povolením, úvod pro zákazníky na jedné obrazovce) a migrace `20260925205632_merchant_push_default` v hostované DB; předtím web a migrace fotografií 23. 9. (`e9fd9cb`). `content-moderation` nasazený 21. 9. |
 | Testy | 226 unit testů a build po sloučení aktuálního main (27. 9.); skutečný Checkout sandbox → autorizace → potvrzení → capture → kód → storno → refund 402 Kč; SQL regrese potvrzování, vratek a povinného emailu s rollbackem; UI 320/375/390/1280 px |
 | Potvrzování rezervací podnikem | **zapnuté pro všechny podniky** od 15. 9. 15:54 (předtím demo: akceptace 106/106 a průchod se skutečnými testovacími platbami) |
 | WhatsApp | u Mety platný trvalý token, aplikace FLEK přihlášená k odběru, webhook ověřený, profil s logem, číslo FLEKu uložené; všech pět šablon Meta 27. 9. schválila; odesílání ale dál blokuje, dokud není přidaná platební metoda, vyplněný profil firmy a ověřená firma, a chybí zkouška na telefonu, do té doby je kanál serverově vypnutý a v UI skrytý |
@@ -34,7 +34,8 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 - [ ] **Aktivovat a otočit klíč pro automatickou moderaci.** V OpenAI projektu ověř limity/billing pro API; nasazený požadavek na bezplatný Moderation endpoint vrací HTTP 429. Vytvoř nový omezený klíč, vlož ho jako `OPENAI_API_KEY` pouze do Supabase Edge Functions secrets a starý smaž. Potom agent provede bezpečný a závadný test. Bez toho se nic závadného nezveřejní, ale bezpečný nový obsah čeká na ruční kontrolu.
 - [x] **Vyzkoušet e-maily.** Claude 13. 9. poslal na jakub.hrncir24@gmail.com „Obnova hesla — FLEK“ a „Zkušební upozornění — FLEK“, Resend oba hlásí Delivered. Zkontroluj, že nepadly do spamu. Odkaz z obnovy hesla použít nemusíš.
 - [x] **Platba přes skutečný Stripe Checkout.** Agent 27. 9. prošel standardní testovací kartou celý tok blokace → potvrzení podnikem → stržení → kód/QR → storno → skutečná vratka 402 Kč. Notifikace v aplikaci vznikly správně; testovací nabídky jsou uklizené.
-- [ ] **Doručení emailu a push — MANUAL VERIFICATION REQUIRED.** Na vlastním nedemo účtu s povoleným push proveď testovací rezervaci u demo podniku, nech ji potvrdit a zkontroluj povinný email a oznámení telefonu. Demo účty email záměrně nedostávají; vznik povinného jobu a příjemce ověřil SQL test, fyzické doručení tím prokázané není.
+- [x] **Skutečný potvrzovací a storno e-mail:** 27. 9. po Checkout platbě 4242 na vlastním nedemo účtu doručené do Gmailu, otevřené a obsah ověřený. Druhý test skončil skutečným refundem 402 Kč a úklidem nabídky.
+- [ ] **Zobrazení push — MANUAL VERIFICATION REQUIRED:** otevřít Oznamovací centrum testovaného Macu a ověřit oznámení FLEK. Zařízení je přihlášené, push potvrzení i storna služba přijala na první pokus; automatické čtení systémového panelu timeoutovalo.
 - [x] **Uložit VAPID klíče do správce hesel.** Hotovo 15. 9.: Jakub je uložil a dočasný soubor s klíči smazal (ověřeno, soubor už neexistuje).
 - [x] **Propojit podnik „Kubova“ se Stripe.** Hotovo 14. 9.: platby, výplaty i údaje u Stripe potvrzené (ověřeno 15. 9. v databázi). Tenis kurt propojený zatím není.
 - [x] **Odhlásit se z Endory.** Přihlášení už vypršelo (13. 9.), DNS záznamy pro Resend jsou uložené a ověřené.
@@ -112,9 +113,9 @@ Rozdělení vychází z auditu 13. 9. 2026 (bezpečnostní audit ChatGPT ověře
 
 ### Fáze B — nutné před ostrým pilotem
 
-- [x] Discovery: čtyři hlavní časy, advanced volby ve Filtrech s viditelnými chips a badge (pracovní kopie 27. 9., čeká na nasazení).
-- [x] Partner: Zopakovat → nový čas → Zveřejnit, poslední 3 služby bez nového backendu (pracovní kopie 27. 9., čeká na nasazení).
-- [x] Money UX: rozlišení blokace/stržení/uvolnění/refundu, historický kód nepřebije storno a vratku (pracovní kopie 27. 9., čeká na nasazení).
+- [x] Discovery: čtyři hlavní časy, advanced volby ve Filtrech s viditelnými chips a badge (nasazeno 27. 9.).
+- [x] Partner: Zopakovat → nový čas → Zveřejnit, poslední 3 služby bez nového backendu (nasazeno 27. 9.).
+- [x] Money UX: rozlišení blokace/stržení/uvolnění/refundu, historický kód nepřebije storno a vratku (nasazeno 27. 9.).
 
 Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spuštění) je v `docs/PRED_SPUSTENIM.md`.
 
@@ -345,7 +346,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
-| 27. 9. 2026 | Skutečný Checkout test v sandboxu prošel včetně autorizace, potvrzení podnikem, capture, kódu, storna a refundu 402 Kč. V pracovní kopii zjednodušené Discovery a Zopakovat/recent služby, opravené peněžní texty. Build + 184 unit testů a mobilní/desktop kontroly PASS. Zbývá fyzické doručení email/push na nedemo účtu. |
+| 27. 9. 2026 | Skutečný Checkout test v sandboxu prošel včetně autorizace, potvrzení podnikem, capture, kódu, storna a refundu 402 Kč. Nasazené zjednodušené Discovery a Zopakovat/recent služby, opravené peněžní texty, zachovaný novější vzhled partnera. Build + 226 unit testů a Vercel/CI/Supabase PASS. Druhý test na vlastním účtu ověřil doručený potvrzovací i storno email v Gmailu. Zbývá pouze systémové zobrazení push. |
 | 27. 9. 2026 | WhatsApp: Meta schválila všech pět šablon zpráv. Posílat je začne, až bude u WhatsApp účtu platební metoda, vyplněný profil firmy (právní název, země, web) a ověřená firma; do té doby zůstává WhatsApp ve FLEKu vypnutý. |
 | 25. 9. 2026 | Partnerská část má nový vzhled v barvách FLEKu. Nabídky jsou diář po dnech (Nadcházející a Ukončené místo tří záložek), každá karta má vlevo čas, barvou a slovem stav (Aktivní, Vyprodáno, Uzavřeno…), výrazně „Vy dostanete“, proužek obsazenosti a dole Zopakovat, Upravit, Zrušit. Přehled ukazuje modrou kartu nejbližší rezervace a kdo ještě dnes přijde. Rezervace začínají kartou „Ověřit rezervaci“ s modrým „Načíst QR kód“ a po načtení hned řeknou, jestli rezervace platí. Služby, Provozovna a Metriky mají hlavičky s ikonami, Metriky modrou kartu s výdělkem. |
 | 25. 9. 2026 | Zvonění a oznámení na telefon jsou pro podniky zapnuté samy. Podnik jen jednou klepne na „Povolit zvonění a oznámení“: prohlížeč se zeptá na povolení, zařízení se zaregistruje, jednou zazvoní na zkoušku a displej zůstane rozsvícený. Na iPhonu aplikace poradí přidání na plochu, při zamítnutí řekne, jak povolení vrátit. |

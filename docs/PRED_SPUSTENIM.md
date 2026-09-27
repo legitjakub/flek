@@ -141,7 +141,7 @@ Testovací a ukázkové texty v aplikaci nejsou napsané v kódu — řídí se 
 - [ ] **Zprovoznit poskytovatele automatické moderace.** Funkce `content-moderation` a `OPENAI_API_KEY` jsou v Supabase, ale skutečný požadavek na `omni-moderation-latest` vrací HTTP 429. V OpenAI projektu ověřit aktivní API projekt a jeho limity/billing, klíč preventivně otočit, nový vložit jen do Supabase secrets a potvrdit bezpečný i označený text a obrázek. Do té doby obsah bezpečně zůstává v admin frontě neveřejný.
 - [ ] **Resend klíč:** vytvořit nový API klíč (Sending access, doména `mail.app-flek.eu`), vložit ho jako `RESEND_API_KEY` do Edge Function secrets i jako heslo SMTP v Supabase Auth a smazat oba staré klíče („FLEK production“ a „FLEK production rotated“), které se objevily v záznamu Codexu.
 - [x] **VAPID klíče** uložené ve správci hesel, dočasný soubor s klíči smazaný (15. 9.).
-- [x] **Skutečné e-maily:** obnova hesla a upozornění doručené na jakub.hrncir24@gmail.com (Resend: Delivered, 13. 9.). Zbývá zkouška s rezervací kartou 4242 a push.
+- [x] **Skutečné e-maily:** obnova hesla a upozornění doručené na jakub.hrncir24@gmail.com (Resend: Delivered, 13. 9.). 27. 9. doručené a v Gmailu otevřené také skutečné potvrzení a storno po Checkout kartě 4242; obě push zprávy služba přijala, zbývá zkontrolovat systémové zobrazení na testovaném Macu.
 - [x] **Vercel: odpojit databázi `supabase-cerulean-village` od projektu flek** (18. 9., agent po Jakubově výslovném souhlasu: Storage → Projects → Remove Project Connection). Databáze zůstala a jde znovu připojit; nasazení od té doby prochází. K projektu nepřipojovat úložiště z Vercel Marketplace, uspané shodí každé nasazení.
 - [ ] **Přihlášení přes Google a Apple:** klient OAuth v Google Cloud a Services ID s klíčem u Apple Developer, klíče vložit v Supabase → Authentication → Sign In / Providers, přidat `https://www.app-flek.eu/prihlaseni` do Redirect URLs. Postup krok za krokem je v `docs/NOTION.md` (Na tahu je Jakub). U Apple je potřeba každých 6 měsíců vygenerovat nový tajný klíč a zaregistrovat odesílací doménu pro skryté e-mailové adresy.
 - [ ] **Monitoring chyb:** účet Sentry (nebo podobné služby) a předání DSN do Vercelu jako `VITE_SENTRY_DSN`.
@@ -212,7 +212,7 @@ Každý bod je samostatný úkol. Po dokončení agent aktualizuje dokumentaci p
 ### E-maily a upozornění
 
 - [x] Potvrzení a zrušení rezervace zákazníkovi e-mailem, v aplikaci a push (13. 9.).
-- [x] Povinné potvrzení rezervace e-mailem (potvrzení smlouvy „na trvalém nosiči“): poskytovatel, cena, kód, storno, nedostavení, verze podmínek a ADR (`supabase/functions/_shared/email.ts`), v patičce provozovatel; zákazníkovi ho nejde vypnout (18. 9.). Skutečný e-mail přes novou verzi zatím nikdo nedostal, demo účty e-maily nedostávají.
+- [x] Povinné potvrzení rezervace e-mailem (potvrzení smlouvy „na trvalém nosiči“): poskytovatel, cena, kód, storno, nedostavení, verze podmínek a ADR (`supabase/functions/_shared/email.ts`), v patičce provozovatel; zákazníkovi ho nejde vypnout (18. 9.). Skutečné potvrzení i storno po Checkout kartě 4242 doručené a obsah ověřený v Gmailu 27. 9.; demo účty e-maily nedostávají.
 - [ ] Připomínka před termínem.
 - [x] E-mail, push a upozornění v aplikaci podniku o nové rezervaci a o stornu, nastavitelné v Provozovně (13. 9.).
 - [ ] E-mail o vratce.
