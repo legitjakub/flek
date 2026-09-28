@@ -2,6 +2,7 @@ import { useEffect, useState, type CSSProperties } from 'react';
 import { money } from '../../lib/format';
 import { DiscountBadge, OriginalPrice } from '../../components/Price';
 import { ACTIVITY_GALLERIES, activityPhotoSrcSet } from '../../lib/activityGalleries';
+import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
 
 /*
  * Illustrative, not inventory: no venue names, so the intro never presents a business
@@ -96,6 +97,7 @@ export function IntroDeck({ playing, className = 'w-full max-w-sm' }: { playing:
                 pct={pct}
                 className={`absolute top-3 left-3 shadow-card transition-opacity duration-300 ${position === 0 || exiting ? 'opacity-100' : 'opacity-0'}`}
               />
+              {position === 0 ? <IllustrativePhotoLabel className="right-3 bottom-3" /> : null}
             </div>
             <div className="shrink-0 px-3.5 pt-3 pb-3.5">
               <p className="truncate text-base leading-snug font-extrabold text-ink">{card.service}</p>

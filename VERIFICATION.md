@@ -526,6 +526,12 @@ Lokální Docker integrační sada, fyzický iPhone/Safari, skutečná kamera, n
 - 27. 9. ve 12:15 (Praha; ranní kontrola naplánovaná na 26. 9. se v relaci nezpracovala kvůli restartu kontejneru, proto dodatečně; `dry_run`, HTTP 200): **všech pět šablon je APPROVED** (`flek_booking_request`, `flek_business_confirmed`, `flek_business_cancelled`, `flek_customer_confirmed`, `flek_customer_cancelled`), žádná zamítnutá. Účet dál BLOCKED se stejnými kódy 141006 (platební metoda, blokuje zprávy, které začíná firma, tedy i šablony), 141010 (ověření firmy, `pending_submission`) a 131000 (profil firmy bez právního názvu, země a webu); `account_review_status` APPROVED. Číslo je dál testovací +1 555 156 7838, webhook míří na `…/functions/v1/whatsapp-webhook`, odběr aplikace FLEK aktivní (vedle ní dál aplikace Mety „WA DevX Webhook Events 1P App“), všech 11 klíčů `WHATSAPP_*` v secrets. `whatsapp_enabled` zůstává `false`. Další kontrola 28. 9. ráno.
 - 28. 9. v 9:40 (Praha; ranní kontrola, `dry_run`, HTTP 200): **beze změny.** Všech pět šablon APPROVED, účet i číslo dál BLOCKED se stejnými kódy 131000 (profil firmy), 141006 (platební metoda) a 141010 (ověření firmy), webhook dál na `…/functions/v1/whatsapp-webhook`. `whatsapp_enabled` zůstává `false`. Další kontrola 29. 9. ráno.
 
+## Oblíbené a štítky ilustračních fotek — 28. 9. 2026
+
+- Build a 239 unit testů PASS.
+- Náhled Oblíbených (nepřihlášený i prázdný stav, pozvánka k hlídači pod seznamem), úvodu a karet na 320, 375, 390 a 1280 px: vodorovné přetečení 0, axe-core 0 porušení, žádný prvek pod 44 px. Úvod se na 375 × 844 dál vejde bez rolování. Štítek „ilustrační foto“ se u náhledu na mapě ukáže jen u katalogové fotky, ne u zástupné grafiky (stejně jako u karet).
+- `rg "dáme ti vědět" src/features/favorites` je prázdné.
+
 ## Detail nabídky a výběr času — 28. 9. 2026
 
 - Build a 239 unit testů PASS. Nové testy: `mergeSameTime` (dva stejné časy = jeden se sečtenými místy, zachová otevřený čas, jinou cenu, službu ani podnik nesloučí), `ownBookingCopy` (živá rezervace = „Tohle je tvůj FLEK“, skončená nic), `relativeTime` („za 3 dny“, „za 5 dní“).

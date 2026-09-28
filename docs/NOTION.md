@@ -85,6 +85,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 
 ## Todolist
 
+- [x] Pravdivý text v Oblíbených s pozvánkou k hlídači, štítek ilustrační fotky na mapě a v úvodu (28. 9. 2026)
 - [x] Detail nabídky: vlastní rezervovaný FLEK, potvrzení podnikem před klepnutím, průměr hodnocení od 3 recenzí, sloučené stejné časy (28. 9. 2026)
 - [x] Jeden srozumitelný stav rezervace pro zákazníka a stav peněz u částky, potvrzení zrušení žádosti, jiné FLEKy po odmítnutí (28. 9. 2026)
 - [x] Čísla na Přehledu pro podniky v jedné kartě: rezervace dnes s částkou, aktivní nabídky s volnými místy a výdělek za měsíc (27. 9. 2026)
@@ -349,6 +350,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 28. 9. 2026 | Oblíbené už neslibují upozornění, které neexistuje: řeknou, že nové FLEKy u sledovaných míst najdeš v Oblíbených s tečkou na liště, a nabídnou hlídač, který opravdu upozorní. Štítek „ilustrační foto“ je nově i na mapě a v úvodu. |
 | 28. 9. 2026 | Detail nabídky pozná, že vyprodaný FLEK je tvůj („Tohle je tvůj FLEK“ s odkazem na kód) místo „už někdo chytil“, už před klepnutím řekne, že podnik má na potvrzení až 10 minut a do té doby je částka jen zablokovaná, hodnocení ukazuje průměr až od tří recenzí a stejný čas zveřejněný víckrát se ukáže jednou s počtem míst. |
 | 28. 9. 2026 | Moje rezervace mluví k zákazníkovi: každá rezervace má jeden stav („Čeká na podnik“, „Podnik nemohl přijmout“, „Zrušeno na tvou žádost“…) a u částky je vždy vidět, co se děje s penězi („Jen zablokováno“, „Zaplaceno“, „Vracíme“, „Blokace uvolněna“, „Nic nestrženo“). Na čekání na podnik jde žádost zrušit až po potvrzení a aplikace řekne, že stránku jde zavřít, protože výsledek přijde e-mailem. Když podnik žádost odmítne nebo nestihne, pod výsledkem se rovnou nabídnou jiné FLEKy. |
 | 27. 9. 2026 | Přehled pro podniky ukazuje čísla v jedné kartě místo tří dlaždic s nulami: kolik rezervací je dnes a kolik za ně podnik dostane, kolik nabídek je aktivních a kolik v nich zbývá volných míst (nebo že teď nic nenabízí) a kolik podnik tento měsíc vydělal. Každé číslo vede na stránku, kde jsou podrobnosti. |

@@ -9,6 +9,8 @@ import { OfferCard } from '../discovery/OfferCard';
 import { groupSlots } from '../discovery/slots';
 import { GooglePlaceRating } from '../ratings/GooglePlaceRating';
 import { useSession } from '../auth/session';
+import { WatchPrompt } from '../watches/WatchPrompt';
+import { DEFAULT_POINT, storedPoint } from '../../lib/geo';
 
 /**
  * The point of following a venue is hearing about its next slot. There is no push or e-mail
@@ -45,7 +47,7 @@ export function FavoritesPage() {
             tone="promo"
             icon={<Heart size={26} />}
             title="Sleduj místa, kam se vracíš."
-            body="Dáme ti vědět, jakmile u nich přibude volný FLEK."
+            body="Nové volné FLEKy u míst, která sleduješ, pak najdeš pohromadě tady."
             action={
               <Link to="/prihlaseni?returnTo=%2Foblibene" className={buttonClass({ size: 'lg', shape: 'pill' })}>
                 Přihlásit se
@@ -74,7 +76,7 @@ export function FavoritesPage() {
             tone="promo"
             icon={<Heart size={26} />}
             title="Zatím nesleduješ žádné místo."
-            body="U nabídky klepni na Sledovat a dáme ti vědět, až tam přibude volný FLEK."
+            body="U nabídky klepni na Sledovat. Nové FLEKy u sledovaných míst pak najdeš tady a tečka na liště ukáže, že přibyly."
             action={
               <Link to="/" className={buttonClass({ size: 'lg', shape: 'pill' })}>
                 Objevit nabídky
@@ -161,6 +163,9 @@ export function FavoritesPage() {
           </Link>
         </div>
       ) : null}
+
+      {/* Following shows news here; a message when a FLEK opens nearby is the watch's job. */}
+      {favorites.isSuccess ? <WatchPrompt point={storedPoint() ?? DEFAULT_POINT} className="mt-8" /> : null}
     </main>
   );
 }
