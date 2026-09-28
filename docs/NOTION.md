@@ -26,6 +26,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 Úkoly, které AI agent udělat nesmí nebo nemůže, protože jde o klíče, hesla nebo platbu kartou. Hotové odškrtni.
 
 - [ ] **Schválit agentovi volání Supabase z chatu.** Audit před spuštěním (28. 9.) potřebuje číst hostovanou databázi (kontroly dat, Security Advisor) a nasadit opravy migrací. Volání nástrojů Supabase v aplikaci Claude teď končí „requires approval“: potvrď je, až se objeví, nebo je u konektoru Supabase povol bez ptaní. Heslo ani klíč agent nepotřebuje.
+- [ ] **Založit Connect webhook ve Stripe (stav účtů podniků).** Postup je v `docs/PRED_SPUSTENIM.md`, Část 1, Stripe, bod „Connect webhook“: endpoint pro události připojených účtů na `…/stripe-webhook?connect=1` s `account.updated` a jeho signing secret do Supabase secrets jako `STRIPE_CONNECT_WEBHOOK_SECRET`.
 - [x] **Doplnit klíče pro upozornění v Supabase.** `NOTIFICATION_FROM` a `VAPID_PUBLIC_KEY` doplnil Claude, `VAPID_PRIVATE_KEY` Jakub (13. 9.). Otisk klíče sedí se souborem a doručovací funkce s ním běží.
 - [ ] **Vložit nové šablony e-mailů do Supabase.** V repozitáři mají `supabase/templates/confirmation.html` a `recovery.html` nově skutečné logo; Supabase Auth ale čte šablony ze svého nastavení, ne z repozitáře. Otevři Supabase → Authentication → Emails, u „Confirm signup“ a „Reset password“ vlož obsah těch dvou souborů a ulož. (Upozornění na rezervace jdou přes Edge Function a ta se nasazuje z `main` sama.)
 - [ ] **Vyměnit klíč Resendu.**
@@ -155,7 +156,7 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 - [x] Platby přes Stripe Connect: Checkout, poplatek FLEKu jako application fee, výplaty a KYC podniků přes Stripe, ověřený webhook, vratky přes refund API (13. 9., testovací režim)
 - [x] Odebrat demo platby (`start_payment` jen Stripe, `demo_confirm_payment` zrušená) (13. 9.)
 - [ ] Ostrý Stripe: živé klíče a webhook, `stripe_test_mode=false`, potvrdit odpovědnost platformy v Connect nastavení, vypnout `stripe-test-pay`
-- [ ] Poslouchat události Accounts v2 (`v2.core.account[...]`) nebo Connect webhook `account.updated`, ať se stav účtu podniku mění i bez otevření aplikace
+- [ ] Poslouchat události Accounts v2 (`v2.core.account[...]`) nebo Connect webhook `account.updated`, ať se stav účtu podniku mění i bez otevření aplikace (kód pro Connect hotový 28. 9.; Jakub založí endpoint `…/stripe-webhook?connect=1` a klíč `STRIPE_CONNECT_WEBHOOK_SECRET`)
 - [ ] Skrýt ve feedu FLEKy podniků, kterým Stripe omezil platby; formulář „Výplatní údaje“ sladit se Stripe (číslo účtu už zadává podnik u Stripe)
 - [ ] Fakturace servisního poplatku podnikům a účetní export plateb
 - [ ] Povinné MFA (TOTP) pro administrátory, CAPTCHA (Turnstile) u registrace, `secure_password_change`, přísnější limity
@@ -358,6 +359,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 28. 9. 2026 | Webhook Stripe umí přijímat i události připojených účtů podniků (druhý podpisový klíč), takže se stav účtu podniku po založení Connect endpointu změní sám. `stripe-webhook-setup` hlásí, jestli endpoint a klíč existují. |
 | 28. 9. 2026 | Potvrzování rezervací je spolehlivější. Přijatá rezervace už nepropadne jen proto, že si úlohu převzal jiný běh workeru. Nezaplacená žádost nevisí v „Uvolňujeme blokaci“. Uvolnění blokace se zkouší dál i po výpadku Stripe. Stržení, které nestihlo začátek termínu, se ukončí a místo se vrátí. Čeká na nasazení migrace a funkce. |
 | 28. 9. 2026 | Administrace má novou záložku „Platby k řešení“ s počtem v navigaci. Ukazuje vratky, které Stripe zamítl nebo neprovedl, platby bez rezervace, neuvolněné blokace, nedokončené stržení a selhané události ze Stripe, u každé s odkazem do Stripe. O každém novém problému přijde adminům e-mail. Čeká na nasazení migrace. |
 | 28. 9. 2026 | Audit před spuštěním: bez zásadní chyby, jedenáct nálezů k opravě s pořadím v `docs/PRED_SPUSTENIM.md`. Migrace z repozitáře jdou nově přehrát na čisté databázi, což nový produkční projekt potřebuje. Zastaralé testy opravené, nový test hlídá, že podnik nevidí data jiného podniku a zákazník jiného zákazníka. |

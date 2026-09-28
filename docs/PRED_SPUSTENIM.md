@@ -38,8 +38,15 @@ Hotový úkol odškrtni tady i v `docs/NOTION.md` (todolist fáze B). Úkoly na 
 - [ ] **V ostrém režimu dokončit nastavení Connect.** Týká se to profilu platformy, země Česko, Express dashboardu pro podniky a potvrzení, že poplatky a ztráty nese platforma (`losses_collector = application`). Bez toho Stripe nedovolí zakládat účty podniků.
 - [ ] **Vytvořit ostrý webhook** na `https://<projekt>.supabase.co/functions/v1/stripe-webhook`:
   - Události platformy: `checkout.session.completed`, `checkout.session.expired`, `payment_intent.succeeded`, `charge.refunded`, `refund.created`, `refund.updated`, `refund.failed`. Bez událostí `refund.*` se o vratce, která selže až dodatečně, FLEK nedozví. Testovací webhook je má od 14. 9.
-  - Zvlášť Connect webhook (události připojených účtů) s `account.updated`.
+  - Zvlášť Connect webhook (události připojených účtů) s `account.updated`, na adrese s `?connect=1` (postup v dalším bodě).
 - [ ] **Vložit ostré klíče do Supabase → Edge Functions → Secrets:** `STRIPE_SECRET_KEY` (`sk_live_…`) a `STRIPE_WEBHOOK_SECRET` (`whsec_…`). Klíče nikdy do chatu, repozitáře ani `.env` v gitu.
+- [ ] **Connect webhook pro stav účtů podniků (audit M4), nejdřív v testovacím režimu:**
+  1. Stripe Dashboard → Developers → Webhooks → Add endpoint → **Events on Connected accounts**.
+  2. URL: `https://<projekt>.supabase.co/functions/v1/stripe-webhook?connect=1`; událost `account.updated`.
+  3. Signing secret endpointu (`whsec_…`) vlož do Supabase → Edge Functions → Secrets jako `STRIPE_CONNECT_WEBHOOK_SECRET`. Do chatu ho nepiš.
+  4. Ověření: admin zavolá `stripe-webhook-setup` s `{"dry_run": true}`; v odpovědi musí být `connect.found: true`, `connect.missing: []` a `connect.secret_configured: true`.
+  
+  Kód (od 28. 9.) přijme událost podepsanou kterýmkoli z obou klíčů a podnik dohledá i podle ID účtu. Dokud endpoint není, stav účtu se obnoví jen v aplikaci.
 - [ ] **Nastavit vzhled Checkoutu a výpis na kartě.** V Stripe nahrát logo a barvy a nastavit text výpisu (statement descriptor), např. `FLEK`.
 
 ### Potvrzování rezervací a WhatsApp
@@ -193,7 +200,7 @@ Audit se díval na peníze, oddělení podniků a zákazníků, oprávnění, st
 - [ ] **M1 Worker potvrzování nesmí zrušit přijatou rezervaci**, když mu úlohu mezitím převzal jiný běh nebo selže spojení s databází (`booking-confirmation`, `confirmation_job_ready`). V kódu hotové (28. 9.): `confirmation_job_state` říká proč a worker cizí úlohu přeskočí. Čeká na migraci `confirmation_worker_reliability` a nasazení funkce.
 - [ ] **M2 Nedokončená platba nesmí viset v „Uvolňujeme blokaci“.** Žádost bez autorizace zůstává `release_pending` a platba `pending`. V kódu hotové (28. 9.): worker po zavření Checkoutu, `stripe_checkout_expired` i údržba (starší řádky) zapíšou uvolnění, pozdní autorizace vrátí `release_pending`.
 - [ ] **M3 Úlohy potvrzování po 8 pokusech:** uvolnění blokace zkoušet dál s odstupem, `capturing` po začátku termínu ukončit. V kódu hotové (28. 9.): uvolnění se opakuje s odstupem až 1 h, stržení po začátku nebo po vyčerpání pokusů ukončí databáze a blokaci uvolní.
-- [ ] **M4 Stav účtu podniku** → bod „Stav účtu podniku bez otevření aplikace“ níže (Connect webhook s `account.updated`, druhý podpisový klíč).
+- [ ] **M4 Stav účtu podniku** → bod „Stav účtu podniku bez otevření aplikace“ níže. Kód je hotový (28. 9.): druhý podpisový klíč `STRIPE_CONNECT_WEBHOOK_SECRET`, podnik dohledaný i podle ID účtu a `stripe-webhook-setup` hlásí Connect endpoint. Zbývá, aby Jakub endpoint založil (Část 1, Stripe).
 - [ ] **M5 Podmínky o hodnocení:** věta „Hodnocení podniků zatím nezveřejňujeme“ neplatí. Jakub rozhodl, že recenze zůstanou veřejné; nová verze 1.1 a bod pro právníka.
 - [ ] **M6 Dvě provozovny:** žádost nevybrané provozovny v aplikaci nezazvoní ani se neukáže a odkaz v upozornění provozovnu nenese.
 - [ ] **L1** Kód nepotvrzené žádosti jde přečíst přímo z tabulky `bookings` (REST, realtime). Jakub rozhodl opravit sloupcovým oprávněním.
@@ -205,7 +212,7 @@ Audit se díval na peníze, oddělení podniků a zákazníků, oprávnění, st
 
 ### Platby (navazuje na Stripe z 13. 9.)
 
-- [ ] **Stav účtu podniku bez otevření aplikace.** Obsloužit události Accounts v2 (`v2.core.account[configuration.recipient].capability_status_updated`, `v2.core.account[requirements].updated`) nebo Connect `account.updated`, aby se `stripe_charges_enabled` měnil sám. Dnes se stav obnoví jen při návratu z onboardingu nebo po otevření sekce „Platby a výplaty“.
+- [ ] **Stav účtu podniku bez otevření aplikace.** Obsloužit události Accounts v2 (`v2.core.account[configuration.recipient].capability_status_updated`, `v2.core.account[requirements].updated`) nebo Connect `account.updated`, aby se `stripe_charges_enabled` měnil sám. Dnes se stav obnoví jen při návratu z onboardingu nebo po otevření sekce „Platby a výplaty“. Strana kódu pro Connect `account.updated` je hotová (28. 9., audit M4). Chybí endpoint ve Stripe (Část 1) a ověření, že Stripe pro účty založené přes Accounts v2 `account.updated` opravdu posílá; jinak zbývají události Accounts v2.
 - [ ] **Skrýt ve feedu, na mapě a na stránce podniku FLEKy podniků**, kterým Stripe omezil platby. Dnes se zobrazí a rezervace skončí hláškou `PAYMENTS_NOT_READY`.
 - [ ] **Sladit formulář „Výplatní a fakturační údaje“ se Stripe.** Číslo účtu pro výplaty už zadává podnik u Stripe, formulář má nechat jen fakturační údaje a souhlas s podmínkami.
 - [ ] **Migrace pro ostrý režim.** Nastavit `stripe_test_mode = 'false'` v `private.settings`, aby zmizela hláška o testovací kartě. Spustit až spolu s ostrými klíči.

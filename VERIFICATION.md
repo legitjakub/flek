@@ -526,6 +526,16 @@ Lokální Docker integrační sada, fyzický iPhone/Safari, skutečná kamera, n
 - 27. 9. ve 12:15 (Praha; ranní kontrola naplánovaná na 26. 9. se v relaci nezpracovala kvůli restartu kontejneru, proto dodatečně; `dry_run`, HTTP 200): **všech pět šablon je APPROVED** (`flek_booking_request`, `flek_business_confirmed`, `flek_business_cancelled`, `flek_customer_confirmed`, `flek_customer_cancelled`), žádná zamítnutá. Účet dál BLOCKED se stejnými kódy 141006 (platební metoda, blokuje zprávy, které začíná firma, tedy i šablony), 141010 (ověření firmy, `pending_submission`) a 131000 (profil firmy bez právního názvu, země a webu); `account_review_status` APPROVED. Číslo je dál testovací +1 555 156 7838, webhook míří na `…/functions/v1/whatsapp-webhook`, odběr aplikace FLEK aktivní (vedle ní dál aplikace Mety „WA DevX Webhook Events 1P App“), všech 11 klíčů `WHATSAPP_*` v secrets. `whatsapp_enabled` zůstává `false`. Další kontrola 28. 9. ráno.
 - 28. 9. v 9:40 (Praha; ranní kontrola, `dry_run`, HTTP 200): **beze změny.** Všech pět šablon APPROVED, účet i číslo dál BLOCKED se stejnými kódy 131000 (profil firmy), 141006 (platební metoda) a 141010 (ověření firmy), webhook dál na `…/functions/v1/whatsapp-webhook`. `whatsapp_enabled` zůstává `false`. Další kontrola 29. 9. ráno.
 
+## Connect webhook (audit M4) — 28. 9. 2026
+
+- `stripe-webhook` spuštěný lokálně v Deno 2.5.6 proti lokální Supabase, s testovacími klíči jen pro tento běh. Tři události podepsané podle schématu Stripe (HMAC SHA-256 přes `t.payload`):
+  - platformovým klíčem → 200 `{"received":true}`;
+  - Connect klíčem → 200;
+  - cizím klíčem → 400 `Invalid signature`.
+- `deno check` `stripe-webhook` a `stripe-webhook-setup` bez chyb.
+- `tests/webhookSecrets.test.ts`: oba endpointy, cizí podpis, chybějící Connect klíč a prázdný klíč se nikdy nepoužije.
+- Neověřeno: skutečná událost `account.updated` ze Stripe. Endpoint zakládá Jakub a u účtů z Accounts v2 je potřeba potvrdit, že ji Stripe posílá.
+
 ## Worker potvrzování (audit M1–M3) — 28. 9. 2026
 
 - Lokální Supabase s migrací `20260928231000_confirmation_worker_reliability.sql`; hostovaná DB a nasazení `booking-confirmation` čekají.

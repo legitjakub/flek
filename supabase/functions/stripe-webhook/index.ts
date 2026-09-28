@@ -2,12 +2,16 @@ import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import {
   ACCOUNT_INCLUDE, cryptoProvider, latestRefund, message, processRefunds, recordRefund, serviceClient, Stripe, stripeClient, syncAccount,
 } from '../_shared/stripe.ts';
+import { verifyWithAnySecret } from '../_shared/webhookSecrets.ts';
 
 /**
  * Stripe's word on money. Every event is verified by signature, handled once (Stripe retries and may
  * deliver twice), and turned into the same database calls the app uses: a paid payment books its
  * seat, a payment that cannot book is refunded, an expired Checkout closes the payment. A payment that
  * waits for the merchant (confirmation_version 1) is reconciled from the PaymentIntent's current state.
+ *
+ * Two Stripe endpoints deliver here: the platform's (STRIPE_WEBHOOK_SECRET) and, once set up, the Connect
+ * one for the businesses' accounts (STRIPE_CONNECT_WEBHOOK_SECRET), which brings `account.updated`.
  */
 Deno.serve(async (request) => {
   if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
@@ -19,12 +23,11 @@ Deno.serve(async (request) => {
   if (!signature) return new Response('Missing signature', { status: 400 });
   const payload = await request.text();
 
-  let event: Stripe.Event;
-  try {
-    event = await stripe.webhooks.constructEventAsync(payload, signature, secret, undefined, cryptoProvider);
-  } catch {
-    return new Response('Invalid signature', { status: 400 });
-  }
+  const event: Stripe.Event | null = await verifyWithAnySecret(
+    [secret, Deno.env.get('STRIPE_CONNECT_WEBHOOK_SECRET')],
+    (candidate) => stripe.webhooks.constructEventAsync(payload, signature, candidate, undefined, cryptoProvider),
+  );
+  if (!event) return new Response('Invalid signature', { status: 400 });
 
   const db = serviceClient();
   const { data: fresh, error } = await db.rpc('stripe_event_begin', {
@@ -109,7 +112,9 @@ async function handle(event: Stripe.Event, stripe: Stripe, db: SupabaseClient) {
     }
     case 'account.updated': {
       const account = event.data.object as Stripe.Account;
-      const businessId = account.metadata?.business_id;
+      // Accounts FLEK created carry the business in their metadata; the stored account id is the fallback.
+      const businessId = account.metadata?.business_id
+        ?? (await db.from('businesses').select('id').eq('stripe_account_id', account.id).maybeSingle()).data?.id;
       if (!businessId) return;
       // The v1 view of a recipient account never has card payments, so read what it may do from Accounts v2.
       await syncAccount(db, businessId, await stripe.v2.core.accounts.retrieve(account.id, { include: ACCOUNT_INCLUDE }));
