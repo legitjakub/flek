@@ -104,6 +104,7 @@ export function MapCanvas({
   fitToMarkers = false,
   framePadding = { top: 88, right: 72, bottom: 52, left: 72 },
   focusId,
+  focusKey,
   focusArea,
   userLocation,
   area,
@@ -122,6 +123,8 @@ export function MapCanvas({
   framePadding?: { top: number; right: number; bottom: number; left: number };
   /** A marker whose preview covers part of the map: it is panned into the part left uncovered. */
   focusId?: string;
+  /** A new card selection centers its pin, including another service at the same address. */
+  focusKey?: string;
   /** How much of the map, from the top and the bottom, is covered while `focusId` is shown. */
   focusArea?: { top: number; bottom: number };
   /** Where the customer is right now, drawn as a dot with a halo as wide as the fix is unsure. */
@@ -425,7 +428,7 @@ export function MapCanvas({
   // sees the height of the empty slot and judged a pin under the card as visible. The pass
   // runs again once the real height arrives, until the customer moves the map themselves:
   // a re-render must never undo their pan.
-  const focusClaim = useRef<{ id?: string; released: boolean }>({ released: false });
+  const focusClaim = useRef<{ id?: string; key?: string; released: boolean }>({ released: false });
   useEffect(() => {
     const instance = map.current;
     if (!instance) return;
@@ -437,7 +440,8 @@ export function MapCanvas({
   }, []);
 
   useEffect(() => {
-    if (focusClaim.current.id !== focusId) focusClaim.current = { id: focusId, released: false };
+    const requested = focusClaim.current.id !== focusId || focusClaim.current.key !== focusKey;
+    if (requested) focusClaim.current = { id: focusId, key: focusKey, released: false };
     if (focusClaim.current.released) return;
     const instance = map.current;
     const marker = markers.find((entry) => entry.id === focusId);
@@ -447,7 +451,7 @@ export function MapCanvas({
     if (visibleBottom - focusArea.top < 80) return;
     const point = instance.project([marker.lng, marker.lat]);
     // The selected pin is 64 px tall around its point and scaled up by 12 %.
-    if (point.y > focusArea.top + 40 && point.y < visibleBottom - 40 && point.x > 32 && point.x < width - 32) return;
+    if ((!requested || !focusKey) && point.y > focusArea.top + 40 && point.y < visibleBottom - 40 && point.x > 32 && point.x < width - 32) return;
     instance.easeTo({
       center: [marker.lng, marker.lat],
       offset: [0, (focusArea.top - focusArea.bottom) / 2],
@@ -455,7 +459,7 @@ export function MapCanvas({
     });
     // A new focus or a remeasured card moves the camera; new markers from the same search do not.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focusId, focusArea?.top, focusArea?.bottom]);
+  }, [focusId, focusKey, focusArea?.top, focusArea?.bottom]);
 
   return <div ref={container} className={className} role="region" aria-label={ariaLabel} />;
 }

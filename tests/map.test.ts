@@ -1,9 +1,42 @@
 import { describe, expect, it } from 'vitest';
 import { DOT_SIZE, markersCollide, spreadPins } from '../src/features/discovery/mapClusters';
-import { groupMapOffers } from '../src/features/discovery/mapOffers';
+import { groupMapOffers, mapLocationId, serviceForMapPin } from '../src/features/discovery/mapOffers';
+import { groupSlots } from '../src/features/discovery/slots';
 import type { SearchRow } from '../src/types/database';
 
 describe('Map selection regressions', () => {
+  const carouselRows = [
+    { id: 'massage-later', business_id: 'a', service_id: 'massage', latitude: 50.08, longitude: 14.42, deal_price_cents: 39000, start_at: '2026-09-29T16:00:00Z' },
+    { id: 'yoga', business_id: 'b', service_id: 'yoga', latitude: 50.09, longitude: 14.43, deal_price_cents: 26000, start_at: '2026-09-29T12:00:00Z' },
+    { id: 'massage-earlier', business_id: 'a', service_id: 'massage', latitude: 50.08, longitude: 14.42, deal_price_cents: 39000, start_at: '2026-09-29T10:00:00Z' },
+    { id: 'facial', business_id: 'a', service_id: 'facial', latitude: 50.08, longitude: 14.42, deal_price_cents: 45000, start_at: '2026-09-29T14:00:00Z' },
+  ] as SearchRow[];
+
+  it('offers every matching venue in server order, with multiple times under one service card', () => {
+    const cards = groupSlots(carouselRows);
+    expect(cards.map((card) => card.key)).toEqual(['a:massage', 'b:yoga', 'a:facial']);
+    expect(cards[0].slots.map((row) => row.id)).toEqual(['massage-earlier', 'massage-later']);
+    expect(cards[0].lead.id).toBe('massage-earlier');
+    const pinIds = groupMapOffers(carouselRows).map((pin) => pin.id);
+    expect(cards.every((card) => pinIds.includes(mapLocationId(card.lead)))).toBe(true);
+    expect(mapLocationId(cards[0].lead)).not.toBe(mapLocationId(cards[1].lead));
+  });
+
+  it('selects the first service at a tapped venue and keeps an already selected service there', () => {
+    const cards = groupSlots(carouselRows);
+    const pin = mapLocationId(carouselRows[0]);
+    expect(serviceForMapPin(cards, pin, 'b:yoga')?.key).toBe('a:massage');
+    expect(serviceForMapPin(cards, pin, 'a:facial')?.key).toBe('a:facial');
+    expect(serviceForMapPin(cards, mapLocationId(carouselRows[1]), 'a:massage')?.key).toBe('b:yoga');
+  });
+
+  it('never selects a service outside the current results or brings back a filtered-out venue', () => {
+    const cards = groupSlots(carouselRows.filter((row) => row.service_id === 'facial'));
+    expect(serviceForMapPin(cards, mapLocationId(carouselRows[0]), 'a:massage')?.key).toBe('a:facial');
+    expect(serviceForMapPin(cards, mapLocationId(carouselRows[1]), null)).toBeUndefined();
+    expect(serviceForMapPin([], mapLocationId(carouselRows[0]), null)).toBeUndefined();
+  });
+
   it('keeps every appointment at the same address accessible, with the actual lowest price', () => {
     const rows = [
       { id: 'later', latitude: 50.08, longitude: 14.42, deal_price_cents: 39000, start_at: '2026-09-09T16:00:00Z' },

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, Clock3, X } from 'lucide-react';
 import { Link } from '../../app/router';
 import { cx } from '../../components/ui';
@@ -10,30 +10,42 @@ import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel'
 import { thumbnail } from '../../lib/thumbnail';
 import { clockTime, dayLabel } from '../../lib/time';
 import type { SearchRow } from '../../types/database';
-import { groupSlots, type SlotGroup } from './slots';
+import type { SlotGroup } from './slots';
 
 /**
- * What a tapped pin opens: the appointment as a card with its photo, over the bottom of the
- * map, so the customer can compare it against the pins around it without leaving the map.
- * Several appointments at one address swipe sideways.
+ * Appointments with their photos over the bottom of the map, available as soon as results
+ * load, so the customer can browse them without leaving the map.
+ * Services across all matching venues swipe sideways, with their other times grouped together.
  */
 export function MapPreviewCard({
-  offers,
+  groups,
+  selectedKey,
+  onSelect,
   now,
   detailHref,
   onClose,
   className,
 }: {
-  offers: SearchRow[];
+  groups: SlotGroup[];
+  selectedKey: string;
+  onSelect: (key: string) => void;
   now: string;
   detailHref: (id: string) => string;
   onClose: () => void;
   className?: string;
 }) {
-  // One card per service at this address; the nearest time is summarized here.
-  const groups = useMemo(() => groupSlots(offers), [offers]);
-  const carousel = useSnapCarousel<HTMLUListElement>(groups.length, groups.map((group) => group.key).join(':'));
-  const touch = useRef<{ x: number; y: number } | null>(null);
+  const carousel = useSnapCarousel<HTMLUListElement>(groups.length, undefined, (index) => {
+    const group = groups[index];
+    if (group) onSelect(group.key);
+  });
+  const selectedIndex = groups.findIndex((group) => group.key === selectedKey);
+  // A pin click or refreshed results may move the selected service to another position.
+  // A swipe already selects its own index, so it never gets interrupted by this synchronization.
+  useEffect(() => {
+    if (selectedIndex < 0 || selectedIndex === carousel.index) return;
+    const frame = window.requestAnimationFrame(() => carousel.goTo(selectedIndex, 'auto'));
+    return () => window.cancelAnimationFrame(frame);
+  }, [selectedIndex, carousel.index, carousel.goTo]);
   const many = groups.length > 1;
 
   useEffect(() => {
@@ -45,26 +57,12 @@ export function MapPreviewCard({
   }, [onClose]);
 
   return (
-    <section className={cx('pointer-events-none', className)} aria-label={many ? `${groups.length} ${groups.length < 5 ? 'služby' : 'služeb'} na tomto místě` : 'Vybraný termín'}>
+    <section className={cx('pointer-events-none', className)} aria-label="Procházet nabídky na mapě">
       <ul
         ref={carousel.viewportRef}
         tabIndex={many ? 0 : -1}
         onScroll={carousel.onScroll}
         onKeyDown={carousel.onKeyDown}
-        onTouchStart={(event) => {
-          const point = event.touches[0];
-          touch.current = point ? { x: point.clientX, y: point.clientY } : null;
-        }}
-        onTouchEnd={(event) => {
-          const start = touch.current;
-          const point = event.changedTouches[0];
-          touch.current = null;
-          if (!start || !point) return;
-          const dx = point.clientX - start.x;
-          const dy = point.clientY - start.y;
-          if (Math.abs(dx) < 32 || Math.abs(dx) <= Math.abs(dy)) return;
-          carousel.goTo(carousel.index + (dx < 0 ? 1 : -1));
-        }}
         // A horizontal scroller clips vertically too, and the lifted glass shadow (40 px blur,
         // 18 px down) only fades out about 60 px below the card. With 12 px of room it ended in
         // a hard line level with the top of the tab bar; the padding now holds the whole shadow
@@ -76,7 +74,8 @@ export function MapPreviewCard({
           <li
             key={group.key}
             data-snap-item
-            aria-label={many ? `Služba ${index + 1} z ${groups.length}` : undefined}
+            aria-label={many ? `Nabídka ${index + 1} z ${groups.length}` : undefined}
+            aria-current={group.key === selectedKey ? 'true' : undefined}
             className="flex w-[calc(100%_-_1.5rem)] max-w-sm shrink-0 snap-start snap-always"
           >
             <PreviewCard
@@ -95,7 +94,7 @@ export function MapPreviewCard({
             type="button"
             onClick={() => carousel.goTo(carousel.index - 1)}
             disabled={!carousel.canGoBack}
-            aria-label="Předchozí služba"
+            aria-label="Předchozí nabídka"
             className="grid size-11 place-items-center rounded-full bg-card text-ink shadow-card disabled:opacity-40"
           >
             <ChevronLeft size={20} aria-hidden="true" />
@@ -104,7 +103,7 @@ export function MapPreviewCard({
             type="button"
             onClick={() => carousel.goTo(carousel.index + 1)}
             disabled={!carousel.canGoForward}
-            aria-label="Další služba"
+            aria-label="Další nabídka"
             className="grid size-11 place-items-center rounded-full bg-card text-ink shadow-card disabled:opacity-40"
           >
             <ChevronRight size={20} aria-hidden="true" />
@@ -141,9 +140,9 @@ function PreviewCard({
 
   return (
     <article className="glass glass-lift offer-glass relative h-[136px] w-full overflow-hidden rounded-[1.65rem]">
-      <Link to={detailHref(offer.id)} className="group flex h-full min-w-0 pr-11 focus-visible:outline-none">
-        <span className="relative w-[6.75rem] shrink-0 overflow-hidden bg-accent-soft" aria-hidden="true">
-          <img src={photo} alt="" decoding="async" onError={() => setFailed(true)} className="size-full object-cover transition-transform duration-200 group-hover:scale-[1.025]" />
+      <Link to={detailHref(offer.id)} className="group flex h-full min-w-0 focus-visible:outline-none">
+        <span className="relative w-20 min-[390px]:w-[6.75rem] shrink-0 overflow-hidden bg-accent-soft" aria-hidden="true">
+          <img src={photo} alt="" loading="lazy" decoding="async" onError={() => setFailed(true)} className="size-full object-cover transition-transform duration-200 group-hover:scale-[1.025]" />
           {!failed && isIllustrativeServiceImage(source) ? <IllustrativePhotoLabel className="bottom-2 left-2" /> : null}
           {position ? (
             <span className="glass tnum absolute top-2 left-2 rounded-full px-2 py-0.5 text-[11px] font-bold text-ink">
@@ -153,8 +152,8 @@ function PreviewCard({
         </span>
 
         <span className="flex min-w-0 flex-1 flex-col px-3 py-3">
-          <span className="line-clamp-2 pr-1 text-sm leading-[1.05rem] font-extrabold tracking-tight text-ink">{offer.service_name}</span>
-          <span className="mt-0.5 truncate text-xs text-muted">{offer.business_name}</span>
+          <span className="line-clamp-2 pr-8 text-sm leading-[1.05rem] font-extrabold tracking-tight text-ink">{offer.service_name}</span>
+          <span className="mt-0.5 truncate pr-8 text-xs text-muted">{offer.business_name}</span>
           <span className="tnum mt-auto flex min-w-0 items-center gap-1.5 text-sm text-ink">
             <Clock3 size={15} aria-hidden="true" className="shrink-0 text-accent" />
             <span className="truncate font-bold">{dayLabel(offer.start_at, now)} · {clockTime(offer.start_at)}</span>

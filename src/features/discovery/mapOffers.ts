@@ -1,4 +1,14 @@
 import type { SearchRow } from '../../types/database';
+import type { SlotGroup } from './slots';
+
+export const mapLocationId = (offer: Pick<SearchRow, 'latitude' | 'longitude'>) =>
+  `${offer.latitude.toFixed(5)},${offer.longitude.toFixed(5)}`;
+
+/** A pin keeps its current service, or opens its first service in the shared result order. */
+export function serviceForMapPin(cards: SlotGroup[], pinId: string, currentKey: string | null): SlotGroup | undefined {
+  const matches = cards.filter((card) => mapLocationId(card.lead) === pinId);
+  return matches.find((card) => card.key === currentKey) ?? matches[0];
+}
 
 export type MapOfferGroup = {
   id: string;
@@ -12,7 +22,7 @@ export type MapOfferGroup = {
 export function groupMapOffers(rows: SearchRow[]): MapOfferGroup[] {
   const groups = new Map<string, MapOfferGroup>();
   for (const offer of rows) {
-    const id = `${offer.latitude.toFixed(5)},${offer.longitude.toFixed(5)}`;
+    const id = mapLocationId(offer);
     const group = groups.get(id);
     if (group) {
       group.offers.push(offer);

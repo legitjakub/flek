@@ -24,6 +24,7 @@ export function useSnapCarousel<T extends HTMLElement>(
   const target = useRef<number | null>(null);
   const settle = useRef<number | null>(null);
   const [index, setIndex] = useState(0);
+  const indexRef = useRef(0);
 
   useEffect(() => {
     changeHandler.current = onIndexChange;
@@ -46,6 +47,7 @@ export function useSnapCarousel<T extends HTMLElement>(
       left: item.offsetLeft - viewport.offsetLeft,
       behavior: reduced ? 'auto' : behavior,
     });
+    indexRef.current = next;
     setIndex(next);
     changeHandler.current?.(next);
   }, [count]);
@@ -73,10 +75,12 @@ export function useSnapCarousel<T extends HTMLElement>(
         if (nearest !== target.current) return;
         target.current = null;
       }
-      setIndex((current) => {
-        if (current !== nearest) changeHandler.current?.(nearest);
-        return nearest;
-      });
+      if (indexRef.current !== nearest) {
+        indexRef.current = nearest;
+        setIndex(nearest);
+        // Notify outside a state updater: callers may update the map's parent component.
+        changeHandler.current?.(nearest);
+      }
     });
   }, []);
 
@@ -97,6 +101,7 @@ export function useSnapCarousel<T extends HTMLElement>(
   }, [count, goTo, index]);
 
   useEffect(() => {
+    indexRef.current = 0;
     setIndex(0);
     const id = window.requestAnimationFrame(() => {
       viewportRef.current?.scrollTo({ left: 0, behavior: 'auto' });

@@ -13,7 +13,7 @@ import { LocationChip } from './LocationChip';
 import { FilterBar, plural } from './FilterBar';
 import { useDiscoveryState } from './useDiscoveryState';
 import { MAP_LIMIT, useDiscovery } from './useDiscovery';
-import { groupMapOffers } from './mapOffers';
+import { groupMapOffers, mapLocationId, serviceForMapPin } from './mapOffers';
 import { groupSlots, slotLabels } from './slots';
 import { MapPreviewCard } from './MapPreviewCard';
 import { locate } from '../../lib/geo';
@@ -78,7 +78,9 @@ export function MapPage() {
   const activeWatches = (watches.data ?? []).filter((watch) => !watch.paused);
   // Opened from a watch's notification or from Profile: show what the watch covers.
   const shownWatch = (watches.data ?? []).find((watch) => watch.id === search.get('hlidac')) ?? null;
-  const [openGroup, setOpenGroup] = useState<string[]>([]);
+  const [previewOpen, setPreviewOpen] = useState(true);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [focusVersion, setFocusVersion] = useState(0);
   const [highlighted, setHighlighted] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
   const [locateError, setLocateError] = useState(false);
@@ -139,10 +141,13 @@ export function MapPage() {
   const groups = useMemo(() => groupMapOffers(rows ?? []), [rows]);
   // The list beside the map shows one row per service and venue, like the feed.
   const listed = useMemo(() => groupSlots(rows ?? []), [rows]);
-  const selectedOffers = groups
-    .filter((group) => openGroup.includes(group.id))
-    .flatMap((group) => group.offers)
-    .sort((a, b) => a.start_at.localeCompare(b.start_at));
+  const activeCard = previewOpen ? listed.find((card) => card.key === selectedKey) ?? listed[0] : undefined;
+  const activePin = activeCard ? mapLocationId(activeCard.lead) : undefined;
+  const searchKey = JSON.stringify([point.lat, point.lng, filters]);
+  useEffect(() => {
+    setSelectedKey(null);
+    setPreviewOpen(true);
+  }, [searchKey]);
   const origin = `/mapa${search.size ? `?${search}` : ''}`;
   const detailHref = useCallback((id: string) => `/nabidka/${id}?from=${encodeURIComponent(origin)}`, [origin]);
   const markers = useMemo(() => groups.map((group) => {
@@ -166,21 +171,26 @@ export function MapPage() {
   }, []);
 
   useEffect(() => {
-    setOpenGroup((current) => {
-      const available = current.filter((id) => groups.some((group) => group.id === id));
-      return available.length === current.length ? current : available;
-    });
-  }, [groups]);
+    if (rows) setSelectedKey((current) => listed.some((card) => card.key === current) ? current : null);
+  }, [rows, listed]);
+
+  function selectPin(id: string) {
+    const card = serviceForMapPin(listed, id, activeCard?.key ?? null);
+    if (!card) return;
+    setSelectedKey(card.key);
+    setPreviewOpen(true);
+    // Tapping the same pin again also reclaims the camera after a manual map pan.
+    setFocusVersion((current) => current + 1);
+  }
 
   const closePreview = useCallback(() => {
-    const ids = openGroup;
-    setOpenGroup([]);
+    setPreviewOpen(false);
     // Back to the pin that opened the card, so a keyboard user does not start over at the top.
     const pin = [...document.querySelectorAll<HTMLElement>('[data-map-ids]')].find((element) =>
-      ids.some((id) => (JSON.parse(element.dataset.mapIds ?? '[]') as string[]).includes(id)),
+      activePin && (JSON.parse(element.dataset.mapIds ?? '[]') as string[]).includes(activePin),
     );
     pin?.focus({ preventScroll: true });
-  }, [openGroup]);
+  }, [activePin]);
 
   async function useMyLocation() {
     setLocateError(false);
@@ -230,13 +240,14 @@ export function MapPage() {
           className="absolute inset-0 h-full w-full"
           center={point}
           markers={markers}
-          selectedId={openGroup[0] ?? highlighted ?? undefined}
+          selectedId={activePin ?? highlighted ?? undefined}
           eager
           fitToMarkers
           framePadding={phone ? PHONE_FRAME : WIDE_FRAME}
-          focusId={openGroup.length === 1 ? openGroup[0] : undefined}
+          focusId={activePin}
+          focusKey={activeCard ? `${activeCard.key}:${focusVersion}` : undefined}
           focusArea={phone ? { ...PHONE_FOCUS, bottom: previewHeight + 110 } : WIDE_FOCUS}
-          onSelect={(id) => setOpenGroup([id])}
+          onSelect={selectPin}
           userLocation={live.position}
           area={shownWatch ? { lat: shownWatch.lat, lng: shownWatch.lng, radius_m: shownWatch.radius_m } : null}
           ariaLabel="Mapa volných FLEKů. Každý špendlík s cenou otevře náhled nabídky."
@@ -348,10 +359,11 @@ export function MapPage() {
               ) : null}
             </div>
           ) : null}
-          {selectedOffers.length ? (
+          {activeCard ? (
             <MapPreviewCard
-              key={openGroup.join(':')}
-              offers={selectedOffers}
+              groups={listed}
+              selectedKey={activeCard.key}
+              onSelect={setSelectedKey}
               now={now}
               detailHref={detailHref}
               onClose={closePreview}
