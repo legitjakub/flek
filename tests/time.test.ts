@@ -21,3 +21,14 @@ describe('calendar page',()=>{
  it('names the Prague day',()=>expect(calendarDay('2026-09-26T16:30:00Z')).toEqual({weekday:'so',day:'26',month:'zář',long:'sobota 26. 9.'}));
  it('half past midnight in Prague is already the next day',()=>expect(calendarDay('2026-09-26T22:30:00Z')).toMatchObject({weekday:'ne',day:'27'}));
 });
+
+describe('relative start of a FLEK', () => {
+  it('uses the right plural for days', async () => {
+    const { relativeTime } = await import('../src/lib/clock');
+    const now = '2026-09-28T08:00:00Z';
+    const inDays = (days: number) => new Date(Date.parse(now) + days * 86_400_000).toISOString();
+    expect(relativeTime(inDays(1), now)).toBe('zítra');
+    expect(relativeTime(inDays(3), now)).toBe('za 3 dny');
+    expect(relativeTime(inDays(5), now)).toBe('za 5 dní');
+  });
+});

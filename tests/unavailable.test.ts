@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { unavailableCopy, unavailableReason } from '../src/features/offers/unavailable';
+import { ownBookingCopy } from '../src/features/offers/unavailable';
 
 const NOW = '2026-09-09T12:00:00.000Z';
 
@@ -74,5 +75,21 @@ describe('unavailableReason', () => {
     // Same offer, an earlier server "now": nothing has expired yet.
     expect(unavailableReason(o, '2026-09-09T10:00:00.000Z')).toBe('unknown');
     expect(unavailableReason(o, NOW)).toBe('started');
+  });
+});
+
+describe('a sold-out FLEK the viewer booked', () => {
+  it('is theirs while the booking is alive, never "caught"', () => {
+    for (const status of ['pending_payment', 'pending_merchant', 'capturing', 'confirmed'] as const) {
+      const copy = ownBookingCopy(status);
+      expect(copy?.title).toBe('Tohle je tvůj FLEK');
+      expect(copy?.body).not.toMatch(/chytil/);
+    }
+    expect(ownBookingCopy('confirmed')?.link).toBe('Ukázat kód');
+  });
+  it('stops being theirs once the booking ended', () => {
+    for (const status of ['rejected', 'expired', 'payment_failed', 'cancelled_by_customer', 'cancelled_by_merchant', 'completed', 'no_show'] as const) {
+      expect(ownBookingCopy(status)).toBeNull();
+    }
   });
 });
