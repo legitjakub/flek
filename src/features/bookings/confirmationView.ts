@@ -46,7 +46,7 @@ const RELEASE = 'Nic jsme nestrhli a blokaci částky na kartě uvolňujeme.';
 
 export function confirmationView(state: Facts | null | undefined, returnedWithoutPaying = false): ConfirmationView {
   if (!state) return { kind: 'verifying', title: 'Ověřujeme platbu', body: 'Obvykle to trvá pár sekund.', live: true, action: null };
-  const release = state.authorization_state === 'released' ? 'Nic jsme nestrhli. Blokaci jsme uvolnili; její zobrazení na výpisu závisí na bance.' : RELEASE;
+  const release = state.authorization_state === 'released' ? 'Nic jsme nestrhli. Blokaci jsme uvolnili, banka ji ale může ještě pár dní ukazovat; pak sama zmizí.' : RELEASE;
   // A cancelled booking can retain a historical code. Money/outcome takes precedence.
   if (state.status === 'refunded') {
     return { kind: 'refunded', title: 'Platba je vrácená', body: 'Celou částku jsme vrátili na kartu. Připsání na výpisu závisí na bance.', live: false, action: 'find_other' };
@@ -155,18 +155,49 @@ function minutesWord(n: number): string {
   return 'minut';
 }
 
-/** The amount and its state stay together in the reservations list. */
-export function bookingMoneyLabel(booking: {
+export type CustomerTone = 'positive' | 'warning' | 'danger' | 'neutral';
+
+/**
+ * The one status a customer sees on a booking card, said to the person who made it. The venue and
+ * the admin keep StatusBadge's vocabulary ("Zrušeno zákazníkem", "Zamítnuto"); a customer reading
+ * that about their own booking sees a log, not an answer. What happens to the money is said
+ * separately, next to the amount (bookingMoneyState), so the two never repeat each other.
+ */
+export function customerBookingStatus(booking: { status: BookingStatus; authorized_at?: string | null }): { label: string; tone: CustomerTone } {
+  switch (booking.status) {
+    case 'pending_payment': return { label: 'Dokončuješ platbu', tone: 'warning' };
+    case 'pending_merchant': return { label: 'Čeká na podnik', tone: 'warning' };
+    case 'capturing': return { label: 'Podnik potvrdil', tone: 'positive' };
+    case 'confirmed': return { label: 'Potvrzeno', tone: 'positive' };
+    case 'completed': return { label: 'Proběhlo', tone: 'positive' };
+    case 'no_show': return { label: 'Zmeškáno', tone: 'danger' };
+    case 'cancelled_by_customer': return { label: 'Zrušeno na tvou žádost', tone: 'neutral' };
+    case 'cancelled_by_merchant': return { label: 'Zrušeno podnikem', tone: 'danger' };
+    case 'rejected': return { label: 'Podnik nemohl přijmout', tone: 'neutral' };
+    // Without an authorisation the customer never finished paying; with one, the venue ran out of time.
+    case 'expired': return booking.authorized_at ? { label: 'Podnik nestihl potvrdit', tone: 'neutral' } : { label: 'Platba nedokončena', tone: 'neutral' };
+    case 'payment_failed': return { label: 'Platba se nezdařila', tone: 'danger' };
+  }
+}
+
+/**
+ * What is happening to the money, said beside the amount it concerns. A hold is never "paid" and a
+ * release still in progress is never "released": the customer compares this line with their bank.
+ */
+export function bookingMoneyState(booking: {
   status: BookingStatus;
   payment_status: PaymentState['status'] | null;
   authorization_state?: PaymentState['authorization_state'];
-}, amount: string): string | undefined {
-  if (booking.payment_status === 'refunded') return `${amount} vráceno`;
-  if (booking.payment_status === 'paid') return booking.status.startsWith('cancelled') ? `Vracíme ${amount}` : `Zaplaceno ${amount}`;
-  if (booking.status === 'capturing') return 'Dokončujeme platbu';
-  if (booking.authorization_state === 'release_pending') return 'Uvolňujeme blokaci';
-  if (booking.authorization_state === 'released') return 'Blokace uvolněna';
-  if (booking.authorization_state === 'authorized') return `Zablokováno ${amount}`;
-  if (booking.payment_status === 'pending') return 'Ověřujeme platbu';
-  return undefined;
+}): { text: string; tone: 'positive' | 'muted' } | null {
+  if (booking.payment_status === 'refunded') return { text: 'Vráceno', tone: 'positive' };
+  if (booking.payment_status === 'paid') return booking.status.startsWith('cancelled') ? { text: 'Vracíme', tone: 'muted' } : { text: 'Zaplaceno', tone: 'positive' };
+  if (booking.status === 'capturing') return { text: 'Dokončujeme platbu', tone: 'muted' };
+  if (booking.authorization_state === 'release_pending') return { text: 'Uvolňujeme blokaci', tone: 'muted' };
+  if (booking.authorization_state === 'released') return { text: 'Blokace uvolněna', tone: 'muted' };
+  if (booking.authorization_state === 'authorized') return { text: 'Jen zablokováno', tone: 'muted' };
+  // A booking that ended before any money moved has nothing left to verify.
+  const ended = ['expired', 'rejected', 'payment_failed', 'cancelled_by_customer', 'cancelled_by_merchant'].includes(booking.status);
+  if (booking.payment_status === 'failed' || (booking.payment_status === 'pending' && ended)) return { text: 'Nic nestrženo', tone: 'muted' };
+  if (booking.payment_status === 'pending') return { text: 'Ověřujeme platbu', tone: 'muted' };
+  return null;
 }

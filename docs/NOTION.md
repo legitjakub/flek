@@ -85,6 +85,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 
 ## Todolist
 
+- [x] Jeden srozumitelný stav rezervace pro zákazníka a stav peněz u částky, potvrzení zrušení žádosti, jiné FLEKy po odmítnutí (28. 9. 2026)
 - [x] Čísla na Přehledu pro podniky v jedné kartě: rezervace dnes s částkou, aktivní nabídky s volnými místy a výdělek za měsíc (27. 9. 2026)
 - [x] Partnerská část v brandu FLEKu: modré hlavní akce, karty s barevným okrajem podle stavu, seznamy po dnech, záložky s počty, Nabídky jako diář, modrá karta nejbližší rezervace na Přehledu a „Ověřit rezervaci“ s načtením QR kódu (25. 9. 2026)
 - [x] Zvonění a oznámení na telefon pro podniky zapnuté samy, podnik jen jednou klepnutím povolí na svém zařízení (25. 9. 2026)
@@ -347,6 +348,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 28. 9. 2026 | Moje rezervace mluví k zákazníkovi: každá rezervace má jeden stav („Čeká na podnik“, „Podnik nemohl přijmout“, „Zrušeno na tvou žádost“…) a u částky je vždy vidět, co se děje s penězi („Jen zablokováno“, „Zaplaceno“, „Vracíme“, „Blokace uvolněna“, „Nic nestrženo“). Na čekání na podnik jde žádost zrušit až po potvrzení a aplikace řekne, že stránku jde zavřít, protože výsledek přijde e-mailem. Když podnik žádost odmítne nebo nestihne, pod výsledkem se rovnou nabídnou jiné FLEKy. |
 | 27. 9. 2026 | Přehled pro podniky ukazuje čísla v jedné kartě místo tří dlaždic s nulami: kolik rezervací je dnes a kolik za ně podnik dostane, kolik nabídek je aktivních a kolik v nich zbývá volných míst (nebo že teď nic nenabízí) a kolik podnik tento měsíc vydělal. Každé číslo vede na stránku, kde jsou podrobnosti. |
 | 27. 9. 2026 | Skutečný Checkout test v sandboxu prošel včetně autorizace, potvrzení podnikem, capture, kódu, storna a refundu 402 Kč. Nasazené zjednodušené Discovery a Zopakovat/recent služby, opravené peněžní texty, zachovaný novější vzhled partnera. Build + 226 unit testů a Vercel/CI/Supabase PASS. Druhý test na vlastním účtu ověřil doručený potvrzovací i storno email v Gmailu. Zbývá pouze systémové zobrazení push. |
 | 27. 9. 2026 | WhatsApp: Meta schválila všech pět šablon zpráv. Posílat je začne, až bude u WhatsApp účtu platební metoda, vyplněný profil firmy (právní název, země, web) a ověřená firma; do té doby zůstává WhatsApp ve FLEKu vypnutý. |

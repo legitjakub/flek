@@ -9,7 +9,7 @@ import { money, distance as formatDistance } from '../../lib/format';
 import { DiscountBadge, OriginalPrice } from '../../components/Price';
 import { clockTime, dayLabel, duration, untilLabel } from '../../lib/time';
 import { DEFAULT_POINT, storedPoint } from '../../lib/geo';
-import { Button, ErrorState, Skeleton, cx, IconTile } from '../../components/ui';
+import { Button, ErrorState, Skeleton, buttonClass, cx, IconTile } from '../../components/ui';
 import { bookingIcs, icsHref } from '../../lib/calendar';
 import { Link, useRouter } from '../../app/router';
 import { BookingSheet, cancellationDeadline } from '../bookings/BookingSheet';
@@ -177,6 +177,14 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           navigate(`/nabidka/${offer.id}`, { replace: true, scroll: false });
           setSheetOpen(true);
         }}
+        alternatives={
+          <Recommendations
+            offer={offer}
+            venueRows={venueOffers.data ?? []}
+            point={storedPoint() ?? { lat: offer.latitude, lng: offer.longitude }}
+            now={now}
+          />
+        }
       />
     );
   }
@@ -584,7 +592,7 @@ function BookingSuccess({
           moment it is true. Computed from this booking, not from a running total. */}
       {offer.original_price_cents > offer.deal_price_cents ? (
         <p className="tnum mt-1 text-base font-bold text-ink">
-          Ušetřil jsi {money(offer.original_price_cents - offer.deal_price_cents)}
+          Ušetřeno {money(offer.original_price_cents - offer.deal_price_cents)}
         </p>
       ) : null}
       <p className="tnum mt-4 text-base font-bold text-ink">
@@ -594,25 +602,23 @@ function BookingSuccess({
         {offer.address_line}, {offer.city}
       </p>
       <div className="mt-6 flex flex-col gap-2">
+        {/* One height for all three: a 44 px primary above two 52 px outlines read as two sizes of button. */}
         <a
-          className="btn-primary"
+          className={buttonClass({ size: 'lg' })}
           href={navigationHref(offer)}
           target="_blank"
           rel="noreferrer"
         >
-          Navigovat
+          <MapPin size={18} aria-hidden="true" />Navigovat
         </a>
         <a
-          className="inline-flex min-h-13 w-full items-center justify-center gap-2 rounded-xl border border-line bg-card px-5 text-base font-bold text-ink"
+          className={buttonClass({ variant: 'secondary', size: 'lg' })}
           href={icsHref(bookingIcs({ code, serviceName: offer.service_name, businessName: offer.business_name, address: `${offer.address_line}, ${offer.city}`, startAt: offer.start_at, endAt: offer.end_at }))}
           download={`flek-${code}.ics`}
         >
           <CalendarPlus size={18} aria-hidden="true" />Přidat do kalendáře
         </a>
-        <Link
-          to="/rezervace"
-          className="inline-flex min-h-13 w-full items-center justify-center rounded-xl border border-line bg-card px-5 text-base font-bold text-ink"
-        >
+        <Link to="/rezervace" className={buttonClass({ variant: 'secondary', size: 'lg' })}>
           Zobrazit rezervaci
         </Link>
       </div>
