@@ -148,7 +148,7 @@ export function AuthPage() {
       }
       if (currentAttempt === attempt.current) navigate(returnTo, { replace: true });
     } catch (error) {
-      if (currentAttempt === attempt.current) setFailure(errorMessage(error));
+      if (currentAttempt === attempt.current) setFailure(errorMessage(error, formal ? 'merchant' : 'customer'));
     }
   }
 

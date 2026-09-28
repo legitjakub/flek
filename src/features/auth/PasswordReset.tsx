@@ -138,7 +138,7 @@ export function NewPasswordForm({ formal }: { formal: boolean }) {
     setProblem(null);
     const { error } = await supabase.auth.updateUser({ password });
     if (error) {
-      setProblem(/different|same/i.test(error.message) ? 'Nové heslo musí být jiné než to současné.' : errorMessage(error));
+      setProblem(/different|same/i.test(error.message) ? 'Nové heslo musí být jiné než to současné.' : errorMessage(error, formal ? 'merchant' : 'customer'));
       return;
     }
     setState('done');

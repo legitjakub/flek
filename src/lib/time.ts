@@ -3,7 +3,7 @@ export const ZONE='Europe/Prague';
 export function localToInstant(value:string):string {
  const plain=Temporal.PlainDateTime.from(value);
  const zoned=plain.toZonedDateTime(ZONE,{disambiguation:'compatible'});
- if(!zoned.toPlainDateTime().equals(plain)) throw new Error('Tento čas kvůli změně na letní čas neexistuje. Vyber jiný.');
+ if(!zoned.toPlainDateTime().equals(plain)) throw new Error('Tento čas kvůli změně na letní čas neexistuje, je potřeba zvolit jiný.');
  return zoned.toInstant().toString();
 }
 export function localInput(instant:string):string{return Temporal.Instant.from(instant).toZonedDateTimeISO(ZONE).toPlainDateTime().toString({smallestUnit:'minute'});}

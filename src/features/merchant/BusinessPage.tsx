@@ -632,7 +632,7 @@ function BusinessForm({ business }: { business?: Business }) {
           </Field>
         </div>
 
-        <Field id="b-bank" label="Číslo účtu nebo IBAN" hint="Sem posíláme výplaty za rezervace.">
+        <Field id="b-bank" label="Číslo účtu nebo IBAN" hint="Stejný účet, jaký máte ve Stripe. Uvádíme ho v oznámení DAC7; výplaty samotné posílá Stripe.">
           <Input id="b-bank" placeholder="123456789/0800" value={billing.bank_account} onChange={(event) => setBill('bank_account', event.target.value)} />
         </Field>
 

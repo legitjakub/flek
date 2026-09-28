@@ -105,7 +105,7 @@ export function NotificationBell({ businessId }: { businessId?: string }) {
         ) : query.isPending ? (
           <p className="text-sm text-muted">Načítání…</p>
         ) : notices.length === 0 ? (
-          <p className="rounded-2xl bg-surface p-5 text-sm text-muted">Zatím tu nemáš žádná upozornění.</p>
+          <p className="rounded-2xl bg-surface p-5 text-sm text-muted">{businessId ? 'Zatím tu nemáte žádná upozornění.' : 'Zatím tu nemáš žádná upozornění.'}</p>
         ) : (
           <ul className="divide-y divide-line">
             {notices.map((notice) => (

@@ -1,9 +1,9 @@
 import { z } from 'zod';
 // Zod probes `new Function` to pick a faster parser; the CSP forbids eval, so skip the probe.
 z.config({ jitless: true });
-const required=z.string().trim().min(1,'Vyplňte prosím toto pole.');
+const required=z.string().trim().min(1,'Toto pole je povinné.');
 const wholeCzk=z.string().regex(/^\d+$/,'Zadejte celé koruny.');
-export const loginSchema=z.object({email:z.email('Zkontroluj e-mail.'),password:z.string().min(8,'Heslo musí mít alespoň 8 znaků.')});
+export const loginSchema=z.object({email:z.email('E-mail nemá správný tvar.'),password:z.string().min(8,'Heslo musí mít alespoň 8 znaků.')});
 // Surname stays optional here because signup already allows it to be empty; requiring it
 // only at booking time blocked customers on a field the confirmation never explains.
 export const profileSchema=z.object({first_name:required.max(80),last_name:z.string().trim().max(80),phone:z.string().regex(/^\+?[\d\s]{9,20}$/,'Zkontroluj telefonní číslo.')});

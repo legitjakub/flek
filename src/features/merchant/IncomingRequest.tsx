@@ -472,7 +472,7 @@ function RequestDetails({
       </dl>
       <p className="takeover-rise mt-3 flex items-start gap-1.5 text-sm text-muted" style={{ animationDelay: '210ms' }}>
         <ShieldCheck size={16} aria-hidden="true" className="mt-0.5 shrink-0 text-brand" />
-        Platba je autorizovaná, strhneme ji po potvrzení.
+        Částka je na kartě zablokovaná, strhneme ji po potvrzení.
       </p>
     </div>
   );

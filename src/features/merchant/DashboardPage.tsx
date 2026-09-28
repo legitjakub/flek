@@ -9,6 +9,7 @@ import { Banner, Button, ErrorState, IconTile, LoadingList, cx } from '../../com
 import { Link } from '../../app/router';
 import { MerchantShell } from './MerchantShell';
 import { CreateOfferSheet } from './CreateOfferSheet';
+import { recentOffers } from './offerDraft';
 import { useMerchantMetrics, useServices } from './useBusiness';
 import { SetupGuide, usePublishReadiness } from './SetupGuide';
 import type { Business, MerchantBooking, MerchantMetrics } from '../../types/database';
@@ -64,7 +65,7 @@ function Dashboard({ business }: { business: Business }) {
       {published ? (
         <Banner tone="success">
           Nabídka je aktivní. <span className="tnum">{published}</span>{' '}
-          <button type="button" onClick={() => setPublished(null)} className="font-bold underline underline-offset-4">Skrýt</button>
+          <button type="button" onClick={() => setPublished(null)} className="inline-flex min-h-11 items-center font-bold underline underline-offset-4">Skrýt</button>
         </Banner>
       ) : null}
       <PageHeader
@@ -167,7 +168,8 @@ function Dashboard({ business }: { business: Business }) {
         </>
       )}
 
-      {sheetOpen ? <CreateOfferSheet onPublished={setPublished} open onClose={() => setSheetOpen(false)} services={services.data ?? []} /> : null}
+      {/* The same "Naposledy použité" as on Nabídky: from here a repeat FLEK is a service tap and a time. */}
+      {sheetOpen ? <CreateOfferSheet onPublished={setPublished} open onClose={() => setSheetOpen(false)} services={services.data ?? []} recent={recentOffers(offers.data ?? [], services.data ?? [])} /> : null}
     </div>
   );
 }

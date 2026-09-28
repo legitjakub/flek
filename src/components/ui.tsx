@@ -268,10 +268,12 @@ export function EmptyState({
   );
 }
 
-export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
+export function ErrorState({ error, onRetry, audience }: { error: unknown; onRetry?: () => void; audience?: 'customer' | 'merchant' }) {
+  // Screens under /partner and /admin vyká; deciding it here means no new screen can forget it.
+  const voice = audience ?? (typeof window !== 'undefined' && /^\/(partner|admin)(\/|$)/.test(window.location.pathname) ? 'merchant' : 'customer');
   return (
     <div role="alert" className="rounded-2xl border border-line bg-accent-soft px-5 py-6 text-center">
-      <p className="text-sm font-bold text-ink">{errorMessage(error)}</p>
+      <p className="text-sm font-bold text-ink">{errorMessage(error, voice)}</p>
       {onRetry ? (
         <Button variant="secondary" className="mt-3" onClick={onRetry}>
           Zkusit znovu
