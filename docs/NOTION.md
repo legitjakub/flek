@@ -85,6 +85,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 
 ## Todolist
 
+- [x] Swipování nabídek nad mapou po provozovnách, mapa neskáče tam a zpět (28. 9. 2026)
 - [x] Stejné průsvitné modré sklo na kartách i v náhledu na mapě, oznámení „Nabídka je aktivní“ v barvách partnerské části (28. 9. 2026)
 - [x] Hledání služby lupou v Objevit i na mapě (bez ohledu na diakritiku), filtr „Brzy“ místo „Teď“ (28. 9. 2026)
 - [x] Přístupnost: viditelné okraje polí a čtená nápověda i chyba, bílý fokus na tmavých plochách, název stránky v kartě a fokus na nadpis po přechodu, orientace i na šířku, plochy 44 px (28. 9. 2026)
@@ -354,6 +355,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 28. 9. 2026 | Swipování nabídek nad mapou už nepřeskakuje tam a zpět: služby jedné provozovny jdou za sebou a mapa se mezi nimi nehýbe, posune se až na další podnik. |
 | 28. 9. 2026 | Náhled služby na mapě má stejné průsvitné modré sklo jako karty v Objevit. Po zveřejnění FLEKu se místo zeleného pruhu ukáže karta v barvách partnerské části: „Nabídka je aktivní“, služba a čas a kolik zákazník zaplatí a podnik dostane. |
 | 28. 9. 2026 | Zákazník si může lupou vyhledat službu podle názvu (i bez háčků a čárek), v Objevit i na mapě. Filtr „Teď“ se jmenuje „Brzy“ (příští 4 hodiny) a karty nabídek mají průsvitný modrý panel. |
 | 28. 9. 2026 | Přístupnost: pole mají viditelný okraj a chybné pole červený, čtečka obrazovky přečte u pole i nápovědu a chybu, fokus z klávesnice je vidět i na tmavých kartách, karta prohlížeče říká, na jaké stránce jsi (a u podniku počet nových žádostí), po přechodu jde fokus na nadpis stránky a aplikace jde otočit na šířku. |

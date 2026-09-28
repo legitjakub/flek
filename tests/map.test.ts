@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DOT_SIZE, markersCollide, spreadPins } from '../src/features/discovery/mapClusters';
-import { groupMapOffers, mapLocationId, serviceForMapPin } from '../src/features/discovery/mapOffers';
+import { cardsByLocation, groupMapOffers, mapLocationId, serviceForMapPin } from '../src/features/discovery/mapOffers';
 import { groupSlots } from '../src/features/discovery/slots';
 import type { SearchRow } from '../src/types/database';
 
@@ -20,6 +20,15 @@ describe('Map selection regressions', () => {
     const pinIds = groupMapOffers(carouselRows).map((pin) => pin.id);
     expect(cards.every((card) => pinIds.includes(mapLocationId(card.lead)))).toBe(true);
     expect(mapLocationId(cards[0].lead)).not.toBe(mapLocationId(cards[1].lead));
+  });
+
+  it('swipes through every service at one venue before moving the map to the next venue', () => {
+    const cards = cardsByLocation(groupSlots(carouselRows));
+    expect(cards.map((card) => card.key)).toEqual(['a:massage', 'a:facial', 'b:yoga']);
+    // One pin change for two venues: the map never flies back to a venue it has left.
+    const pins = cards.map((card) => mapLocationId(card.lead));
+    expect(pins.filter((pin, index) => index > 0 && pin !== pins[index - 1])).toHaveLength(1);
+    expect(cardsByLocation([])).toEqual([]);
   });
 
   it('selects the first service at a tapped venue and keeps an already selected service there', () => {

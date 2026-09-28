@@ -13,7 +13,7 @@ import { LocationChip } from './LocationChip';
 import { FilterBar, plural } from './FilterBar';
 import { useDiscoveryState } from './useDiscoveryState';
 import { MAP_LIMIT, useDiscovery } from './useDiscovery';
-import { groupMapOffers, mapLocationId, serviceForMapPin } from './mapOffers';
+import { cardsByLocation, groupMapOffers, mapLocationId, serviceForMapPin } from './mapOffers';
 import { groupSlots, slotLabels } from './slots';
 import { MapPreviewCard } from './MapPreviewCard';
 import { locate } from '../../lib/geo';
@@ -141,7 +141,9 @@ export function MapPage() {
   const groups = useMemo(() => groupMapOffers(rows ?? []), [rows]);
   // The list beside the map shows one row per service and venue, like the feed.
   const listed = useMemo(() => groupSlots(rows ?? []), [rows]);
-  const activeCard = previewOpen ? listed.find((card) => card.key === selectedKey) ?? listed[0] : undefined;
+  // The cards over the map go venue by venue, so a swipe stays on one pin until its services run out.
+  const swipeCards = useMemo(() => cardsByLocation(listed), [listed]);
+  const activeCard = previewOpen ? swipeCards.find((card) => card.key === selectedKey) ?? swipeCards[0] : undefined;
   const activePin = activeCard ? mapLocationId(activeCard.lead) : undefined;
   const searchKey = JSON.stringify([point.lat, point.lng, filters]);
   useEffect(() => {
@@ -175,7 +177,7 @@ export function MapPage() {
   }, [rows, listed]);
 
   function selectPin(id: string) {
-    const card = serviceForMapPin(listed, id, activeCard?.key ?? null);
+    const card = serviceForMapPin(swipeCards, id, activeCard?.key ?? null);
     if (!card) return;
     setSelectedKey(card.key);
     setPreviewOpen(true);
@@ -245,7 +247,8 @@ export function MapPage() {
           fitToMarkers
           framePadding={phone ? PHONE_FRAME : WIDE_FRAME}
           focusId={activePin}
-          focusKey={activeCard ? `${activeCard.key}:${focusVersion}` : undefined}
+          // Keyed by the pin, not the card: another service at the same address leaves the map where it is.
+          focusKey={activePin ? `${activePin}:${focusVersion}` : undefined}
           focusArea={phone ? { ...PHONE_FOCUS, bottom: previewHeight + 110 } : WIDE_FOCUS}
           onSelect={selectPin}
           userLocation={live.position}
@@ -361,7 +364,7 @@ export function MapPage() {
           ) : null}
           {activeCard ? (
             <MapPreviewCard
-              groups={listed}
+              groups={swipeCards}
               selectedKey={activeCard.key}
               onSelect={setSelectedKey}
               now={now}
