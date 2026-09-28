@@ -526,6 +526,40 @@ Lokální Docker integrační sada, fyzický iPhone/Safari, skutečná kamera, n
 - 27. 9. ve 12:15 (Praha; ranní kontrola naplánovaná na 26. 9. se v relaci nezpracovala kvůli restartu kontejneru, proto dodatečně; `dry_run`, HTTP 200): **všech pět šablon je APPROVED** (`flek_booking_request`, `flek_business_confirmed`, `flek_business_cancelled`, `flek_customer_confirmed`, `flek_customer_cancelled`), žádná zamítnutá. Účet dál BLOCKED se stejnými kódy 141006 (platební metoda, blokuje zprávy, které začíná firma, tedy i šablony), 141010 (ověření firmy, `pending_submission`) a 131000 (profil firmy bez právního názvu, země a webu); `account_review_status` APPROVED. Číslo je dál testovací +1 555 156 7838, webhook míří na `…/functions/v1/whatsapp-webhook`, odběr aplikace FLEK aktivní (vedle ní dál aplikace Mety „WA DevX Webhook Events 1P App“), všech 11 klíčů `WHATSAPP_*` v secrets. `whatsapp_enabled` zůstává `false`. Další kontrola 28. 9. ráno.
 - 28. 9. v 9:40 (Praha; ranní kontrola, `dry_run`, HTTP 200): **beze změny.** Všech pět šablon APPROVED, účet i číslo dál BLOCKED se stejnými kódy 131000 (profil firmy), 141006 (platební metoda) a 141010 (ověření firmy), webhook dál na `…/functions/v1/whatsapp-webhook`. `whatsapp_enabled` zůstává `false`. Další kontrola 29. 9. ráno.
 
+## Audit před spuštěním, krok 0 — 28. 9. 2026
+
+- **Hostovaná databáze neověřená.** `execute_sql` i `get_advisors` přes Supabase MCP vrací „MCP tool call requires approval“. Kontroly dat, Security Advisor a nastavení `manual_confirmation_enabled` zbývají.
+- **Lokální Supabase v Dockeru** (CLI 2.117, Postgres 17.6, bez realtime, studia a edge runtime):
+  - napoprvé spadla třetí migrace na syntaxi (`20260907215224_merchant.sql`: `p_data->>'cover_url)` bez apostrofu);
+  - po opravě spadla `20260909155306_service_photos.sql` na cizím klíči, protože kategorie služeb (`vlasy`…) vkládal jen seed, který běží až po migracích;
+  - po obou opravách prošlo 79/79 migrací i seed.
+- **Matice oprávnění z katalogu** (`has_function_privilege`, `has_table_privilege`, `pg_policy`):
+  - anon smí 18 funkcí, všechny úmyslně veřejné (hledání, detail, podnik, recenze, právní info, `record_event`, `server_clock`…);
+  - 29 funkcí workerů, Stripe a WhatsAppu smí jen `service_role`;
+  - všech 17 `admin_*` jen přihlášení a uvnitř `is_admin()`;
+  - všechny pohledy bez přímého čtení, schéma `private` bez USAGE;
+  - jediná odchylka: `service_photos` má pro anon i přihlášené INSERT, UPDATE a DELETE (zápis blokuje jen RLS, nález L5).
+- **SQL sady s rollbackem na lokální databázi** (se seedem):
+  - PASS `manual-confirmation`, `stripe-refunds`, `legal`, `reviews-moderation`, `whatsapp-notifications`, `watches`, `oauth-profile`, `merchant-push` a `discovery-search`;
+  - `discovery-search` po doplnění lokálních fixtur, které hostované demo má (testovací účty Stripe, zapamatované ceny);
+  - `pilot-maintenance` padal dvakrát, pokaždé kvůli zastaralému testu:
+    - osiřelé platby se od 13. 9. vkládají jako Stripe, ale test čekal demo cestu;
+    - kopie demo podniku sdílela unikátní `stripe_account_id`;
+  - po opravě testu PASS, včetně nové větve pro Stripe: osiřelá platba po 61 min dostane `refund_requested_at`, po 59 min ne.
+- **Nový `tests/tenant-isolation.sql`** (role `authenticated` a `anon` s JWT, grants i RLS v platnosti) PASS:
+  - podnik A na podnik B: 21 RPC vrací `FORBIDDEN`, detail a hledání kódu nic, 8 tabulek 0 řádků;
+  - zákazník A na zákazníka B: 7 RPC odmítnuto, `my_bookings`, `my_notifications` a export jen vlastní, 3 tabulky 0 řádků;
+  - 17 admin RPC odmítne zákazníka;
+  - anon: 13 tabulek a pohledů `permission denied`;
+  - člen dvou podniků vidí oba, každý seznam jen svůj a třetí podnik ne;
+  - podnik u nedohodnuté žádosti nevidí jméno, telefon ani kód.
+- **Nález L1 reprodukovaný** stejnou sadou: zákazník přečte `reservation_code` své čekající žádosti přímo z tabulky `bookings`, i když `my_bookings` ho skrývá. Kontrola přibude do sady s opravou.
+- **Vitest proti lokální Supabase** (`node scripts/test.mjs`): 296/296, z toho 45 integračních. Předtím padaly tři zastaralé testy:
+  - schválení podniku s obsahem čekajícím na moderaci (`CONTENT_REVIEW_REQUIRED`);
+  - blokace zákazníka bez povinného důvodu, takže se tiše neprovedla;
+  - nabídka s uzávěrkou už v okamžiku vložení.
+- `npm run build` PASS a `npm run test:unit` 251/251.
+
 ## Sklo na mapě a oznámení o zveřejnění — 28. 9. 2026
 
 - Build a 247 unit testů PASS (včetně `tests/discoverySearch.test.ts` z commitu `b24743c`).

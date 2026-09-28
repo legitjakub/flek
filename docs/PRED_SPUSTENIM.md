@@ -184,6 +184,25 @@ Texty napsal agent podle skutečného chování FLEKu (18. 9. 2026): `src/conten
 
 Každý bod je samostatný úkol. Po dokončení agent aktualizuje dokumentaci podle `AGENTS.md`.
 
+### Audit před spuštěním (28. 9.)
+
+Audit se díval na peníze, oddělení podniků a zákazníků, oprávnění, stavy žádosti, vratky, Edge Functions a scénáře A–J. BLOCKER nenašel: ceny a poplatek počítá jen server, Stripe dostává částky z databáze, o posledním místě rozhoduje zámek a CHECK, cizí data chrání RLS a kontrola členství. Opravy jdou v tomto pořadí (důkazy ve `VERIFICATION.md`):
+
+- [x] **Migrace jdou přehrát na čisté databázi** (HIGH, podmínka nového produkčního projektu): v `20260907215224_merchant.sql` chyběl apostrof a kategorie služeb vznikaly jen v lokálním seedu. Opraveno 28. 9.; lokálně prošlo všech 79 migrací.
+- [ ] **H1 Selhané vratky vidí admin** → bod „Přehled vratek, které potřebují člověka“ níže. Jakub rozhodl: jen přehled a e-mail, bez ručního „vyřízeno mimo Stripe“.
+- [ ] **M1 Worker potvrzování nesmí zrušit přijatou rezervaci**, když mu úlohu mezitím převzal jiný běh nebo selže spojení s databází (`booking-confirmation`, `confirmation_job_ready`).
+- [ ] **M2 Nedokončená platba nesmí viset v „Uvolňujeme blokaci“.** Žádost bez autorizace zůstává `release_pending` a platba `pending`.
+- [ ] **M3 Úlohy potvrzování po 8 pokusech:** uvolnění blokace zkoušet dál s odstupem, `capturing` po začátku termínu ukončit.
+- [ ] **M4 Stav účtu podniku** → bod „Stav účtu podniku bez otevření aplikace“ níže (Connect webhook s `account.updated`, druhý podpisový klíč).
+- [ ] **M5 Podmínky o hodnocení:** věta „Hodnocení podniků zatím nezveřejňujeme“ neplatí. Jakub rozhodl, že recenze zůstanou veřejné; nová verze 1.1 a bod pro právníka.
+- [ ] **M6 Dvě provozovny:** žádost nevybrané provozovny v aplikaci nezazvoní ani se neukáže a odkaz v upozornění provozovnu nenese.
+- [ ] **L1** Kód nepotvrzené žádosti jde přečíst přímo z tabulky `bookings` (REST, realtime). Jakub rozhodl opravit sloupcovým oprávněním.
+- [ ] **L2** `stripe-refunds` spustí kdokoli (bez tajného klíče workeru); nic nepřidá, jen zbytečně volá Stripe.
+- [ ] **L3** Kvóta a omezení klíče Google Places před zapnutím hodnocení (Jakub v Google Cloud).
+- [ ] **L4** Admin větev `merchant_cancel_offer` nezapisuje `private.audit`.
+- [ ] **L5** Tabulka `service_photos` má pro anon a přihlášené INSERT, UPDATE a DELETE. Zápis dnes blokuje jen RLS; práva odebrat.
+- [x] Zastaralý `tests/pilot-maintenance.sql` opravený. Nový `tests/tenant-isolation.sql` hlídá scénáře G–J a oprávnění z katalogu. Lokálně prošlo všech 11 SQL sad (28. 9.).
+
 ### Platby (navazuje na Stripe z 13. 9.)
 
 - [ ] **Stav účtu podniku bez otevření aplikace.** Obsloužit události Accounts v2 (`v2.core.account[configuration.recipient].capability_status_updated`, `v2.core.account[requirements].updated`) nebo Connect `account.updated`, aby se `stripe_charges_enabled` měnil sám. Dnes se stav obnoví jen při návratu z onboardingu nebo po otevření sekce „Platby a výplaty“.
@@ -198,7 +217,7 @@ Každý bod je samostatný úkol. Po dokončení agent aktualizuje dokumentaci p
 - [ ] **Přehled vratek, které potřebují člověka.** V administraci ukázat platby se selhanou nebo zrušenou vratkou (`refund_status in ('failed','canceled')`) a platby s 8 neúspěšnými pokusy a poslat adminovi upozornění. Dnes je najde jen SQL dotaz z `LIMITATIONS.md`.
 - [ ] **Přehled plateb pro admina a účetní export (CSV):** platby, vratky, poplatky FLEKu a převody podnikům spárované se Stripe ID.
 - [x] **Úklid `scripts/acceptance.mjs`:** mrtvé větve demo plateb odstraněné (13. 9.).
-- [ ] **Spustit `npm run test:integration` s Dockerem.** Po přechodu na Stripe neběžel; helper `book()` teď potvrzuje platbu přes `stripe_payment_succeeded`.
+- [x] **Spustit `npm run test:integration` s Dockerem.** 28. 9. prošlo 45/45 proti lokální Supabase (`node scripts/test.mjs`), po opravě tří zastaralých testů: schválení podniku s obsahem čekajícím na moderaci, blokace bez důvodu a rezervace po uzávěrce.
 
 ### Potvrzování rezervací
 

@@ -1,7 +1,8 @@
 -- LOCAL DEVELOPMENT ONLY. Fictional businesses; recreate with supabase db reset.
 insert into public.categories(slug,label_cs,icon,sort_order) values
  ('vlasy','Vlasy a vousy','Scissors',1),('masaze','Masáže','Hand',2),('krasa','Krása','Sparkles',3),
- ('sport','Sport','Dumbbell',4),('joga','Jóga','Flower2',5),('wellness','Wellness','Waves',6);
+ ('sport','Sport','Dumbbell',4),('joga','Jóga','Flower2',5),('wellness','Wellness','Waves',6)
+on conflict (slug) do nothing;
 
 do $$
 declare uid uuid; mail text; i integer;

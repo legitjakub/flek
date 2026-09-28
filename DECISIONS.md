@@ -420,3 +420,9 @@ Nahrazuje rozhodnutí „Kompaktní FLEK body při oddálení“ z 21. 9., kter�
 - **Peníze u čísla, ke kterému patří.** Pod Rezervacemi dnes „Vy dostanete …“ (stejná slova jako modrá karta nejbližší rezervace), měsíc ukazuje výdělek z `merchant_metrics` a „a … za rezervace, které vás čekají“ stejně jako Metriky. Karta zůstává bílá; jediná plná barevná plocha na stránce je dál modrá karta nejbližší rezervace.
 - **Rezervace dnes a částka z jednoho seznamu.** Obojí počítá `todaySummary` z rezervací, které Přehled už načítá, takže počet a částka spolu vždy sedí. Patří do nich i dnešní proběhlá a nedorazivší rezervace, protože za ty podnik peníze dostane; žádost čekající na podnik, stržení v běhu a zrušená rezervace ne. Pražský den je `dayBounds` ze serverového času. `today_bookings` z `merchant_metrics` Přehled už nečte.
 - **Nula je tišší.** Nulová hodnota je šedá místo černé, takže prázdný den nekřičí; kontrast šedé na bílé je 6,9 : 1.
+
+## Audit před spuštěním — 28. 9. 2026
+
+- **Historické migrace opravujeme jen tak, aby šly přehrát na čisté databázi.** Soubor pro už aplikovanou verzi hostovaná databáze znovu nespustí, protože `supabase db push` porovnává jen verze. Nový produkční projekt ale migrace z repozitáře potřebuje celé. Oprava proto nesmí změnit výsledné schéma: doplněný apostrof a kategorie služeb, které hostovaná databáze už má, vložené s `on conflict do nothing`.
+- **Kategorie služeb jsou referenční data, ne demo.** Patří do migrace, protože na ně odkazují katalog fotek i demo služby. Seed je vkládá znovu s `on conflict do nothing`.
+- **Oddělení podniků a zákazníků hlídá SQL sada, ne jen akceptační skript.** `tests/tenant-isolation.sql` volá RPC i tabulky pod rolí `authenticated` a `anon` s JWT, jako aplikace, takže testuje granty i RLS zároveň. Fixtury jsou vlastní QA účty a podniky, žádná demo data se nemění.

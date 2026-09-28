@@ -17,6 +17,12 @@ create table public.user_roles (
  user_id uuid references auth.users(id) on delete cascade, role text not null check(role='admin'), primary key(user_id,role)
 );
 create table public.categories (slug text primary key, label_cs text not null, icon text not null, sort_order integer not null);
+-- Reference data, not demo data: later migrations (service photos, demo catalogue) point at these slugs,
+-- so a fresh database needs them before the seed runs.
+insert into public.categories(slug,label_cs,icon,sort_order) values
+ ('vlasy','Vlasy a vousy','Scissors',1),('masaze','Masáže','Hand',2),('krasa','Krása','Sparkles',3),
+ ('sport','Sport','Dumbbell',4),('joga','Jóga','Flower2',5),('wellness','Wellness','Waves',6)
+on conflict (slug) do nothing;
 create table public.businesses (
  id uuid primary key default gen_random_uuid(), display_name text not null check(length(display_name) between 2 and 120),
  legal_name text, slug text not null unique, description text not null default '', category_slug text not null references public.categories,

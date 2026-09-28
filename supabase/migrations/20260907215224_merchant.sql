@@ -4,7 +4,7 @@ begin
  if auth.uid() is null then raise exception 'AUTH_REQUIRED'; end if;
  if lat is null or lng is null or lat not between -90 and 90 or lng not between -180 and 180 then raise exception 'VALIDATION_ERROR'; end if;
  insert into public.businesses(id,display_name,slug,legal_name,description,category_slug,phone,public_email,website,address_line,city,district,postal_code,country,location,logo_url,cover_url)
- values(bid,p_data->>'display_name',lower(regexp_replace(p_data->>'display_name','[^a-zA-Z0-9]+','-','g'))||'-'||left(bid::text,8),p_data->>'legal_name',coalesce(p_data->>'description',''),p_data->>'category_slug',p_data->>'phone',p_data->>'public_email',p_data->>'website',p_data->>'address_line',p_data->>'city',coalesce(p_data->>'district',''),p_data->>'postal_code',coalesce(p_data->>'country','CZ'),extensions.st_setsrid(extensions.st_makepoint(lng,lat),4326)::extensions.geography,p_data->>'logo_url',p_data->>'cover_url) returning * into b;
+ values(bid,p_data->>'display_name',lower(regexp_replace(p_data->>'display_name','[^a-zA-Z0-9]+','-','g'))||'-'||left(bid::text,8),p_data->>'legal_name',coalesce(p_data->>'description',''),p_data->>'category_slug',p_data->>'phone',p_data->>'public_email',p_data->>'website',p_data->>'address_line',p_data->>'city',coalesce(p_data->>'district',''),p_data->>'postal_code',coalesce(p_data->>'country','CZ'),extensions.st_setsrid(extensions.st_makepoint(lng,lat),4326)::extensions.geography,p_data->>'logo_url',p_data->>'cover_url') returning * into b;
  insert into public.business_members(business_id,user_id,role) values(b.id,auth.uid(),'owner');
  perform private.emit('merchant_signup_completed',jsonb_build_object('business_id',b.id));
  return b;

@@ -27,7 +27,10 @@ async function business(owner:Account,status='approved'){
  const {data,error}=await owner.client.rpc('create_business',{p_data:{display_name:`Test ${run}`,category_slug:'test',phone:'+420777123456',public_email:'test@flek.test',address_line:'Testovací 1',city:'Praha',postal_code:'12000',latitude:50.0755,longitude:14.4378}});
  if(error)throw error; businesses.push(data.id);
  // Payments go through Stripe only, so a test venue needs a (fake) connected account that may receive transfers.
- await db.query('update public.businesses set status=$1,stripe_account_id=$3,stripe_charges_enabled=true where id=$2',[status,data.id,`acct_test_${data.id.slice(0,8)}`]);return data.id as string;
+ // The registration's own copy waits for moderation, and a venue with content under review cannot be approved;
+ // the test stands in for the moderation worker that approves it.
+ await db.query("update private.content_moderation set status='superseded' where entity_type='business' and entity_id=$1 and status in ('pending','processing','manual_review')",[data.id]);
+ await db.query("update public.businesses set status=$1,content_status='approved',pending_moderation_id=null,stripe_account_id=$3,stripe_charges_enabled=true where id=$2",[status,data.id,`acct_test_${data.id.slice(0,8)}`]);return data.id as string;
 }
 async function offer(cap=1,options:{business?:string;start?:number;cutoff?:number;status?:string}={}){
  const b=options.business??biz;
@@ -206,7 +209,8 @@ describe('Domain invariants',()=>{
  });
  it('manual booking block is admin-only and enforced by booking RPC',async()=>{
   const a=await user();code((await merchant.client.rpc('admin_set_booking_block',{p_user_id:a.id,p_blocked:true})).error,'FORBIDDEN');
-  await adminUser.client.rpc('admin_set_booking_block',{p_user_id:a.id,p_blocked:true});code((await book(a,await offer())).error,'BOOKING_BLOCKED');
+  // Blocking needs a reason the customer is told (since 18. 9.); without one the block would silently not happen.
+  expect((await adminUser.client.rpc('admin_set_booking_block',{p_user_id:a.id,p_blocked:true,p_reason:'QA blokace'})).error).toBeNull();code((await book(a,await offer())).error,'BOOKING_BLOCKED');
  });
 });
 
@@ -225,11 +229,12 @@ describe('Read models for merchant and admin screens',()=>{
  });
  it('recovered revenue counts only completed bookings',async()=>{
   const before=(await merchant.client.rpc('merchant_metrics',{p_business_id:biz})).data as {recovered_cents:number};
-  const o=await offer(1,{start:1,cutoff:0});const a=await user();expect((await book(a,o)).error).toBeNull();
+  // Bookable for one more minute (the cutoff must still be ahead when the seat is taken), then moved into the past below.
+  const o=await offer(1,{start:2,cutoff:1});const a=await user();expect((await book(a,o)).error).toBeNull();
   const after=(await merchant.client.rpc('merchant_metrics',{p_business_id:biz})).data as {recovered_cents:number};
   expect(after.recovered_cents).toBe(before.recovered_cents); // confirmed, not yet completed
   const k=(await db.query('select id from public.bookings where offer_id=$1',[o.id])).rows[0].id;
-  await db.query("update public.offers set start_at=now()-interval '10 minutes' where id=$1",[o.id]);
+  await db.query("update public.offers set start_at=now()-interval '10 minutes',booking_cutoff_at=now()-interval '25 minutes' where id=$1",[o.id]);
   await db.query("update public.bookings set start_at_snapshot=now()-interval '10 minutes' where id=$1",[k]);
   expect((await merchant.client.rpc('merchant_resolve_booking',{p_booking_id:k,p_outcome:'completed'})).error).toBeNull();
   const done=(await merchant.client.rpc('merchant_metrics',{p_business_id:biz})).data as {recovered_cents:number};

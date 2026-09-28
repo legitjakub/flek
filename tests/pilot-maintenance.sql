@@ -5,7 +5,7 @@ do $$
 declare
  merchant uuid; customer uuid; venue public.businesses; svc public.services;
  offer_id uuid; payment_id uuid; booking_id uuid; ids uuid[] := '{}';
- orphan uuid; fresh uuid; bound uuid; paid_booking uuid; legacy uuid;
+ orphan uuid; fresh uuid; bound uuid; stripe_orphan uuid; stripe_fresh uuid; paid_booking uuid; legacy uuid;
  snapshot_rejected boolean := false; deadline_rejected boolean := false;
  stats jsonb; result jsonb; started timestamptz; ended timestamptz;
 begin
@@ -14,6 +14,8 @@ begin
  assert merchant is not null and customer is not null, 'Demo fixtures missing';
  select b.* into venue from public.businesses b join public.business_members m on m.business_id=b.id where m.user_id=merchant limit 1;
  venue.id := gen_random_uuid(); venue.slug := 'qa-rollback-'||venue.id; venue.display_name := 'QA transakční test';
+ -- The copy must not share the demo venue's connected account, which is unique.
+ venue.stripe_account_id := null; venue.stripe_charges_enabled := false; venue.pending_moderation_id := null;
  insert into public.businesses select venue.*;
  insert into public.business_members(business_id,user_id) values(venue.id,merchant);
  insert into public.services(business_id,name,category_slug,duration_minutes,normal_price_cents)
@@ -58,12 +60,23 @@ begin
   if sqlerrm='FINANCIAL_SNAPSHOT_IMMUTABLE' then snapshot_rejected:=true; else raise; end if;
  end;
  assert snapshot_rejected, 'Financial snapshot changed';
- insert into public.payments(customer_id,offer_id,amount_cents,status,paid_at)
- values(customer,offer_id,78800,'paid',now()-interval '31 minutes') returning id into orphan;
- insert into public.payments(customer_id,offer_id,amount_cents,status,paid_at)
- values(customer,offer_id,78800,'paid',now()-interval '29 minutes') returning id into fresh;
- insert into public.payments(customer_id,offer_id,amount_cents,status,paid_at)
- values(customer,offer_id,78800,'paid',now()-interval '30 minutes') returning id into bound;
+ -- Demo money is only a row, so flek_maintenance releases it itself; payments default to Stripe since 13. 9.
+ insert into public.payments(customer_id,offer_id,amount_cents,provider,status,paid_at)
+ values(customer,offer_id,78800,'demo','paid',now()-interval '31 minutes') returning id into orphan;
+ insert into public.payments(customer_id,offer_id,amount_cents,provider,status,paid_at)
+ values(customer,offer_id,78800,'demo','paid',now()-interval '29 minutes') returning id into fresh;
+ insert into public.payments(customer_id,offer_id,amount_cents,provider,status,paid_at)
+ values(customer,offer_id,78800,'demo','paid',now()-interval '30 minutes') returning id into bound;
+ -- Stripe money goes back through Stripe: an hour without a seat queues the refund, and the row stays paid until Stripe says so.
+ insert into public.payments(customer_id,offer_id,amount_cents,provider,status,paid_at)
+ values(customer,offer_id,78800,'stripe','paid',now()-interval '61 minutes') returning id into stripe_orphan;
+ insert into public.payments(customer_id,offer_id,amount_cents,provider,status,paid_at)
+ values(customer,offer_id,78800,'stripe','paid',now()-interval '59 minutes') returning id into stripe_fresh;
+ perform private.flek_stripe_maintenance();
+ assert (select status='paid' and refund_requested_at is not null and failure_reason='NO_BOOKING' from public.payments where id=stripe_orphan),
+  'Stripe orphan not queued for refund';
+ assert (select refund_requested_at is null from public.payments where id=stripe_fresh), 'Fresh Stripe payment queued too early';
+ assert (select refund_requested_at is null from public.payments where id=paid_booking), 'Booked Stripe payment queued for refund';
  result := private.flek_maintenance();
  assert (select status='completed' and resolved_at is not null from public.bookings where id=ids[1]), 'Exact 24h boundary not completed';
  assert (select status='confirmed' from public.bookings where id=ids[2]), 'Completed too early';
@@ -95,4 +108,4 @@ begin
  assert not has_function_privilege('authenticated','private.flek_maintenance()','EXECUTE'), 'Client can run maintenance';
 end $$;
 rollback;
-select 'PASS: maintenance, time boundaries, immutable snapshot, no-show payout, legacy prices and grants; all fixtures rolled back' as result;
+select 'PASS: maintenance, time boundaries, demo and Stripe orphans, immutable snapshot, no-show payout, legacy prices and grants; all fixtures rolled back' as result;

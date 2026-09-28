@@ -25,6 +25,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 
 Úkoly, které AI agent udělat nesmí nebo nemůže, protože jde o klíče, hesla nebo platbu kartou. Hotové odškrtni.
 
+- [ ] **Schválit agentovi volání Supabase z chatu.** Audit před spuštěním (28. 9.) potřebuje číst hostovanou databázi (kontroly dat, Security Advisor) a nasadit opravy migrací. Volání nástrojů Supabase v aplikaci Claude teď končí „requires approval“: potvrď je, až se objeví, nebo je u konektoru Supabase povol bez ptaní. Heslo ani klíč agent nepotřebuje.
 - [x] **Doplnit klíče pro upozornění v Supabase.** `NOTIFICATION_FROM` a `VAPID_PUBLIC_KEY` doplnil Claude, `VAPID_PRIVATE_KEY` Jakub (13. 9.). Otisk klíče sedí se souborem a doručovací funkce s ním běží.
 - [ ] **Vložit nové šablony e-mailů do Supabase.** V repozitáři mají `supabase/templates/confirmation.html` a `recovery.html` nově skutečné logo; Supabase Auth ale čte šablony ze svého nastavení, ne z repozitáře. Otevři Supabase → Authentication → Emails, u „Confirm signup“ a „Reset password“ vlož obsah těch dvou souborů a ulož. (Upozornění na rezervace jdou přes Edge Function a ta se nasazuje z `main` sama.)
 - [ ] **Vyměnit klíč Resendu.**
@@ -173,6 +174,8 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 - [ ] Admin nástroj na ruční vratku a storno (se zápisem do audit logu)
 - [x] Vratky podle skutečného stavu ve Stripe: vráceno až po potvrzení, selhaná vratka jde člověku (14. 9., P0 z auditu)
 - [ ] Přehled a upozornění pro admina na vratky, které Stripe zamítl nebo které 8× selhaly
+- [x] Audit před spuštěním (28. 9.): peníze, oddělení podniků a zákazníků, oprávnění, stavy žádosti, vratky, Edge Functions a scénáře A–J; BLOCKER žádný. Migrace z repozitáře poprvé přehrané na čisté databázi (dvě opravy), zastaralé testy opravené, nový `tests/tenant-isolation.sql`
+- [ ] Opravy z auditu 28. 9. v pořadí H1 → M1–M3 → M4 → M6 → M5 → L1–L5 (seznam v `docs/PRED_SPUSTENIM.md`, Část 2)
 - [ ] Sentry pro chyby v aplikaci, upozornění při selhání cronu nebo webhooku, jednou vyzkoušené obnovení ze zálohy
 - [ ] Mapy a hledání adres: licencovaný poskytovatel nebo vlastní limity (ArcGIS záloha a veřejné Photon API nejsou na komerční provoz)
 - [ ] Skutečný e-mail podpory a údaje provozovatele v `private.settings` (Jakub pošle); `VITE_SUPPORT_EMAIL` zůstává jen jako záloha
@@ -355,6 +358,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 28. 9. 2026 | Audit před spuštěním: bez zásadní chyby, jedenáct nálezů k opravě s pořadím v `docs/PRED_SPUSTENIM.md`. Migrace z repozitáře jdou nově přehrát na čisté databázi, což nový produkční projekt potřebuje. Zastaralé testy opravené, nový test hlídá, že podnik nevidí data jiného podniku a zákazník jiného zákazníka. |
 | 28. 9. 2026 | Swipování nabídek nad mapou už nepřeskakuje tam a zpět: služby jedné provozovny jdou za sebou a mapa se mezi nimi nehýbe, posune se až na další podnik. |
 | 28. 9. 2026 | Náhled služby na mapě má stejné průsvitné modré sklo jako karty v Objevit. Po zveřejnění FLEKu se místo zeleného pruhu ukáže karta v barvách partnerské části: „Nabídka je aktivní“, služba a čas a kolik zákazník zaplatí a podnik dostane. |
 | 28. 9. 2026 | Zákazník si může lupou vyhledat službu podle názvu (i bez háčků a čárek), v Objevit i na mapě. Filtr „Teď“ se jmenuje „Brzy“ (příští 4 hodiny) a karty nabídek mají průsvitný modrý panel. |
