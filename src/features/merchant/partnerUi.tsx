@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { CalendarCheck2, X } from 'lucide-react';
 import { IconTile, cx } from '../../components/ui';
 import { calendarDay, clockTime, dayKey, dayLabel } from '../../lib/time';
 
@@ -17,6 +18,33 @@ export function PageHeader({ title, subtitle, action }: { title: string; subtitl
         {subtitle ? <p className="mt-1 text-sm text-muted">{subtitle}</p> : null}
       </div>
       {action}
+    </div>
+  );
+}
+
+/**
+ * „Nabídka je aktivní“ right after publishing, in the console's own notice (the ring setup card:
+ * white card, brand ring and tile) instead of a green banner that looked borrowed from elsewhere.
+ */
+export type PublishedSummary = { what: string; money: string };
+
+export function PublishedNotice({ published, onClose }: { published: PublishedSummary; onClose: () => void }) {
+  return (
+    <div role="status" className="flex items-start gap-3 rounded-3xl bg-card p-4 shadow-card ring-2 ring-brand/15 sm:p-5">
+      <IconTile icon={<CalendarCheck2 size={20} />} />
+      <div className="min-w-0 flex-1">
+        <p className="text-base font-extrabold text-ink">Nabídka je aktivní</p>
+        <p className="tnum mt-0.5 text-sm font-bold break-words text-accent">{published.what}</p>
+        <p className="tnum mt-1 text-sm leading-relaxed text-muted">{published.money}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Skrýt oznámení"
+        className="-my-2 -mr-2 grid size-11 shrink-0 place-items-center rounded-xl text-muted transition-colors hover:bg-surface hover:text-ink"
+      >
+        <X size={18} aria-hidden="true" />
+      </button>
     </div>
   );
 }

@@ -13,6 +13,7 @@ import type { MerchantOffer, Service } from '../../types/database';
 import { serviceIllustration } from '../../lib/serviceIllustrations';
 
 import { MAX_DAYS_AHEAD, MIN_MINUTES_AHEAD, repeatSlot, type OfferDraft } from './offerDraft';
+import type { PublishedSummary } from './partnerUi';
 export type { OfferDraft } from './offerDraft';
 
 const CUTOFF_MINUTES = 15;
@@ -45,7 +46,7 @@ export function CreateOfferSheet({
   draft?: OfferDraft;
   recent?: MerchantOffer[];
   /** Confirmation belongs on the page behind the sheet, not in one more screen to dismiss. */
-  onPublished?: (summary: string) => void;
+  onPublished?: (published: PublishedSummary) => void;
 }) {
   const queryClient = useQueryClient();
   const active = useMemo(() => services.filter((s) => s.is_active), [services]);
@@ -132,9 +133,10 @@ export function CreateOfferSheet({
     onSuccess: async (offer) => {
       const instant = startInstant ?? serverNow();
       // The server's numbers, not the preview's: they are the ones customers will see.
-      onPublished?.(
-        `${service?.name} · ${dayLabel(instant, serverNow())} ${clockTime(instant)} · zákazník uvidí ${money(offer.deal_price_cents)}, vy dostanete ${money(offer.merchant_price_cents)}`,
-      );
+      onPublished?.({
+        what: `${service?.name} · ${dayLabel(instant, serverNow())} ${clockTime(instant)}`,
+        money: `Zákazník uvidí ${money(offer.deal_price_cents)}, vy dostanete ${money(offer.merchant_price_cents)}.`,
+      });
       close();
       // Named keys. A bare invalidateQueries() threw away every cached query in the app,
       // customer discovery included, for one merchant publishing one slot.

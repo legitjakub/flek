@@ -5,7 +5,7 @@ import { merchantBookings, merchantOffers } from '../../lib/api';
 import { money } from '../../lib/format';
 import { calendarDay, clockTime, dayBounds, dayLabel, duration } from '../../lib/time';
 import { useServerNow } from '../../lib/clock';
-import { Banner, Button, ErrorState, IconTile, LoadingList, cx } from '../../components/ui';
+import { Button, ErrorState, IconTile, LoadingList, cx } from '../../components/ui';
 import { Link } from '../../app/router';
 import { MerchantShell } from './MerchantShell';
 import { CreateOfferSheet } from './CreateOfferSheet';
@@ -15,7 +15,7 @@ import { SetupGuide, usePublishReadiness } from './SetupGuide';
 import type { Business, MerchantBooking, MerchantMetrics } from '../../types/database';
 import { ResolveButtons } from './ResolveButtons';
 import { ConfirmationRequests, isConfirmationRequest, visibleToMerchant } from './ConfirmationRequests';
-import { CodeChip, PageHeader, SectionTitle } from './partnerUi';
+import { CodeChip, PageHeader, PublishedNotice, type PublishedSummary, SectionTitle } from './partnerUi';
 import { startsIn } from './incomingRequestState';
 import { freeSeatsWord, todaySummary } from './dashboardStats';
 
@@ -33,7 +33,7 @@ function Dashboard({ business }: { business: Business }) {
   const businessId = business.id;
   const now = useServerNow();
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [published, setPublished] = useState<string | null>(null);
+  const [published, setPublished] = useState<PublishedSummary | null>(null);
   const services = useServices(businessId);
   const metrics = useMerchantMetrics(businessId);
   const readiness = usePublishReadiness(business);
@@ -62,12 +62,7 @@ function Dashboard({ business }: { business: Business }) {
 
   return (
     <div className="flex flex-col gap-5">
-      {published ? (
-        <Banner tone="success">
-          Nabídka je aktivní. <span className="tnum">{published}</span>{' '}
-          <button type="button" onClick={() => setPublished(null)} className="inline-flex min-h-11 items-center font-bold underline underline-offset-4">Skrýt</button>
-        </Banner>
-      ) : null}
+      {published ? <PublishedNotice published={published} onClose={() => setPublished(null)} /> : null}
       <PageHeader
         title="Přehled"
         subtitle={fresh ? 'Pár kroků a můžete nabízet volné termíny.' : `${business.display_name} · ${calendarDay(now).long}`}

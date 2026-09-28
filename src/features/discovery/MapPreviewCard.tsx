@@ -140,7 +140,7 @@ function PreviewCard({
   const otherTimes = Math.max(0, group.slots.length - 1);
 
   return (
-    <article className="glass glass-lift relative h-[136px] w-full overflow-hidden rounded-[1.65rem]">
+    <article className="glass glass-lift offer-glass relative h-[136px] w-full overflow-hidden rounded-[1.65rem]">
       <Link to={detailHref(offer.id)} className="group flex h-full min-w-0 pr-11 focus-visible:outline-none">
         <span className="relative w-[6.75rem] shrink-0 overflow-hidden bg-accent-soft" aria-hidden="true">
           <img src={photo} alt="" decoding="async" onError={() => setFailed(true)} className="size-full object-cover transition-transform duration-200 group-hover:scale-[1.025]" />

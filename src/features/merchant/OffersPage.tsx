@@ -17,7 +17,7 @@ import { StatusBadge, type AppStatus } from '../../components/StatusBadge';
 import { discountPct, priceProblem, quote } from '../../lib/pricing';
 import type { Business, MerchantOffer } from '../../types/database';
 import { SetupNotice, usePublishReadiness } from './SetupGuide';
-import { CapacityMeter, CardAction, DayHeading, PageHeader, TimeCard, dayHeading, groupByDay, type Tone } from './partnerUi';
+import { CapacityMeter, CardAction, DayHeading, PageHeader, PublishedNotice, type PublishedSummary, TimeCard, dayHeading, groupByDay, type Tone } from './partnerUi';
 
 type Tab = 'upcoming' | 'ended';
 
@@ -36,7 +36,7 @@ function Offers({ business }: { business: Business }) {
   const [tab, setTab] = useState<Tab>('upcoming');
   const [draft, setDraft] = useState<OfferDraft>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [published, setPublished] = useState<string | null>(null);
+  const [published, setPublished] = useState<PublishedSummary | null>(null);
   const [toCancel, setToCancel] = useState<MerchantOffer | null>(null);
   const [toEdit, setToEdit] = useState<MerchantOffer | null>(null);
   const services = useServices(businessId);
@@ -69,12 +69,7 @@ function Offers({ business }: { business: Business }) {
 
   return (
     <div className="flex flex-col gap-5">
-      {published ? (
-        <Banner tone="success">
-          Nabídka je aktivní. <span className="tnum">{published}</span>{' '}
-          <button type="button" onClick={() => setPublished(null)} className="inline-flex min-h-11 items-center font-bold underline underline-offset-4">Skrýt</button>
-        </Banner>
-      ) : null}
+      {published ? <PublishedNotice published={published} onClose={() => setPublished(null)} /> : null}
       <PageHeader
         title="Nabídky"
         subtitle="Volné termíny, které teď zákazníci vidí, a ty, které už proběhly."
