@@ -173,7 +173,7 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 - [ ] **Právní kontrola textů a výchozích řešení před ostrým provozem** (právník, kontrolní seznam v `docs/PRED_SPUSTENIM.md`)
 - [ ] Admin nástroj na ruční vratku a storno (se zápisem do audit logu)
 - [x] Vratky podle skutečného stavu ve Stripe: vráceno až po potvrzení, selhaná vratka jde člověku (14. 9., P0 z auditu)
-- [ ] Přehled a upozornění pro admina na vratky, které Stripe zamítl nebo které 8× selhaly
+- [ ] Přehled a upozornění pro admina na vratky, které Stripe zamítl nebo které 8× selhaly (v kódu 28. 9.: „Platby k řešení“ v administraci a e-mail adminům; čeká na migraci v hostované DB)
 - [x] Audit před spuštěním (28. 9.): peníze, oddělení podniků a zákazníků, oprávnění, stavy žádosti, vratky, Edge Functions a scénáře A–J; BLOCKER žádný. Migrace z repozitáře poprvé přehrané na čisté databázi (dvě opravy), zastaralé testy opravené, nový `tests/tenant-isolation.sql`
 - [ ] Opravy z auditu 28. 9. v pořadí H1 → M1–M3 → M4 → M6 → M5 → L1–L5 (seznam v `docs/PRED_SPUSTENIM.md`, Část 2)
 - [ ] Sentry pro chyby v aplikaci, upozornění při selhání cronu nebo webhooku, jednou vyzkoušené obnovení ze zálohy
@@ -358,6 +358,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 28. 9. 2026 | Administrace má novou záložku „Platby k řešení“ s počtem v navigaci. Ukazuje vratky, které Stripe zamítl nebo neprovedl, platby bez rezervace, neuvolněné blokace, nedokončené stržení a selhané události ze Stripe, u každé s odkazem do Stripe. O každém novém problému přijde adminům e-mail. Čeká na nasazení migrace. |
 | 28. 9. 2026 | Audit před spuštěním: bez zásadní chyby, jedenáct nálezů k opravě s pořadím v `docs/PRED_SPUSTENIM.md`. Migrace z repozitáře jdou nově přehrát na čisté databázi, což nový produkční projekt potřebuje. Zastaralé testy opravené, nový test hlídá, že podnik nevidí data jiného podniku a zákazník jiného zákazníka. |
 | 28. 9. 2026 | Swipování nabídek nad mapou už nepřeskakuje tam a zpět: služby jedné provozovny jdou za sebou a mapa se mezi nimi nehýbe, posune se až na další podnik. |
 | 28. 9. 2026 | Náhled služby na mapě má stejné průsvitné modré sklo jako karty v Objevit. Po zveřejnění FLEKu se místo zeleného pruhu ukáže karta v barvách partnerské části: „Nabídka je aktivní“, služba a čas a kolik zákazník zaplatí a podnik dostane. |

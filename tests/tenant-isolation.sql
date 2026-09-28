@@ -246,7 +246,7 @@ begin
     format('select public.admin_set_business_status(%L::uuid, %L, %L)', current_setting('qa.venue_b'), 'suspended', 'QA pozastavení'),
     format('select public.admin_set_google_place_id(%L::uuid, %L)', current_setting('qa.venue_b'), 'ChIJ-qa'),
     'select public.admin_set_whatsapp_display_number(''+420777000000'')', 'select public.admin_set_whatsapp_enabled(true)',
-    'select public.admin_user_lookup(''demo'')', 'select public.admin_whatsapp_state()'
+    'select public.admin_user_lookup(''demo'')', 'select public.admin_whatsapp_state()', 'select public.admin_payment_issues()'
   ] loop
     data := to_jsonb(pg_temp.err(e));
     assert data #>> '{}' = 'FORBIDDEN', format('I: %s answered %s', e, coalesce(data #>> '{}', 'without an error'));
@@ -294,4 +294,4 @@ end $$;
 reset role;
 
 rollback;
-select 'PASS: venues isolated from each other (21 RPCs, 8 tables), customers from each other (7 RPCs, read models, export, 3 tables), 17 admin RPCs refuse a customer, anon reads nothing private, two memberships stay apart, no contact or code for the venue before agreement; all fixtures rolled back' as result;
+select 'PASS: venues isolated from each other (21 RPCs, 8 tables), customers from each other (7 RPCs, read models, export, 3 tables), 18 admin RPCs refuse a customer, anon reads nothing private, two memberships stay apart, no contact or code for the venue before agreement; all fixtures rolled back' as result;

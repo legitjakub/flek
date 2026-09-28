@@ -82,6 +82,13 @@ describe('booking e-mails', () => {
     expect(many.html).toContain('Zobrazit na mapě');
     expect(many.html).not.toContain('Otevřít rezervace');
   });
+
+  it('sends an admin to the payments that need a person', () => {
+    const email = composeEmail({ title: '2 nové platby k řešení', body: 'Stripe nevrátil peníze.', href: '/admin/platby' }, null);
+    expect(email.html).toContain('Otevřít platby k řešení');
+    expect(email.text).toContain('https://www.app-flek.eu/admin/platby');
+    expect(email.html).not.toContain('Otevřít rezervace');
+  });
 });
 
 describe('ARES', () => {

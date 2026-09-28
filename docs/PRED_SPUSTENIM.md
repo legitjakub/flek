@@ -189,7 +189,7 @@ Každý bod je samostatný úkol. Po dokončení agent aktualizuje dokumentaci p
 Audit se díval na peníze, oddělení podniků a zákazníků, oprávnění, stavy žádosti, vratky, Edge Functions a scénáře A–J. BLOCKER nenašel: ceny a poplatek počítá jen server, Stripe dostává částky z databáze, o posledním místě rozhoduje zámek a CHECK, cizí data chrání RLS a kontrola členství. Opravy jdou v tomto pořadí (důkazy ve `VERIFICATION.md`):
 
 - [x] **Migrace jdou přehrát na čisté databázi** (HIGH, podmínka nového produkčního projektu): v `20260907215224_merchant.sql` chyběl apostrof a kategorie služeb vznikaly jen v lokálním seedu. Opraveno 28. 9.; lokálně prošlo všech 79 migrací.
-- [ ] **H1 Selhané vratky vidí admin** → bod „Přehled vratek, které potřebují člověka“ níže. Jakub rozhodl: jen přehled a e-mail, bez ručního „vyřízeno mimo Stripe“.
+- [ ] **H1 Selhané vratky vidí admin** → bod „Přehled vratek, které potřebují člověka“ níže. Jakub rozhodl: jen přehled a e-mail, bez ručního „vyřízeno mimo Stripe“. V kódu hotové a lokálně ověřené (28. 9.); čeká na migraci `payment_issues` v hostované databázi.
 - [ ] **M1 Worker potvrzování nesmí zrušit přijatou rezervaci**, když mu úlohu mezitím převzal jiný běh nebo selže spojení s databází (`booking-confirmation`, `confirmation_job_ready`).
 - [ ] **M2 Nedokončená platba nesmí viset v „Uvolňujeme blokaci“.** Žádost bez autorizace zůstává `release_pending` a platba `pending`.
 - [ ] **M3 Úlohy potvrzování po 8 pokusech:** uvolnění blokace zkoušet dál s odstupem, `capturing` po začátku termínu ukončit.
@@ -214,7 +214,9 @@ Audit se díval na peníze, oddělení podniků a zákazníků, oprávnění, st
 - [ ] **Z ostrého nasazení vynechat `stripe-test-pay`.** S ostrým klíčem sama odmítá, ale je čistší ji nenasadit.
 - [ ] **Admin nástroj na ruční vratku a storno** se zápisem do `admin_audit_log`, pro řešení sporů.
 - [x] **Vratky podle skutečného stavu ve Stripe** (P0 z auditu ChatGPT, 14. 9.): vráceno až po `succeeded`, čekající vratky se sledují, webhook poslouchá `refund.*`.
-- [ ] **Přehled vratek, které potřebují člověka.** V administraci ukázat platby se selhanou nebo zrušenou vratkou (`refund_status in ('failed','canceled')`) a platby s 8 neúspěšnými pokusy a poslat adminovi upozornění. Dnes je najde jen SQL dotaz z `LIMITATIONS.md`.
+- [ ] **Přehled vratek, které potřebují člověka.** Hotové v kódu (28. 9.), čeká na nasazení migrace:
+  - administrace **Platby k řešení** (`/admin/platby`, počet v navigaci) ukazuje vratku zamítnutou Stripem, vratku po 8 chybách, vratku čekající na akci, zaplacenou platbu bez rezervace, neuvolněnou blokaci, nedokončené stržení a selhanou událost ze Stripe, vždy s odkazem do dashboardu Stripe;
+  - o novém problému pošle údržba každých 5 minut adminům jeden e-mail (`private.notice_payment_issues`); testovací platby demo účtů se ukážou, ale e-mail nespustí.
 - [ ] **Přehled plateb pro admina a účetní export (CSV):** platby, vratky, poplatky FLEKu a převody podnikům spárované se Stripe ID.
 - [x] **Úklid `scripts/acceptance.mjs`:** mrtvé větve demo plateb odstraněné (13. 9.).
 - [x] **Spustit `npm run test:integration` s Dockerem.** 28. 9. prošlo 45/45 proti lokální Supabase (`node scripts/test.mjs`), po opravě tří zastaralých testů: schválení podniku s obsahem čekajícím na moderaci, blokace bez důvodu a rezervace po uzávěrce.

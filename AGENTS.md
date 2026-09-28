@@ -33,7 +33,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik zveř
 | `src/features/offers` | detail nabídky, výběr času (`TimePicker.tsx`), „Mohlo by se ti líbit“ (`Recommendations.tsx`), `OfferMap.tsx` (MapLibre) |
 | `src/features/bookings` | rezervace, platba, voucher s QR |
 | `src/features/merchant` | FLEK Partner: provozovna, služby, zveřejnění FLEKu, rezervace, metriky, upozornění; průvodce „Začínáme“ a `usePublishReadiness` (`SetupGuide.tsx`), nápověda „Jak FLEK funguje“ a sdílené kroky (`PartnerHelp.tsx`), zvonění čekající žádosti (`ringer.ts`, `RequestRing.tsx`) a žádost přes celou obrazovku (`IncomingRequest.tsx`, logika `incomingRequestState.ts`) |
-| `src/features/admin` | administrace, fronta nahlášení (`AdminReports.tsx`), podklad DAC7 (`Dac7Export.tsx`, `dac7.ts`) |
+| `src/features/admin` | administrace, fronta nahlášení (`AdminReports.tsx`), podklad DAC7 (`Dac7Export.tsx`, `dac7.ts`), platby k řešení (`AdminPayments.tsx`, `paymentIssues.ts`) |
 | `src/features/legal` | právní stránky, patička „O FLEKu“, věta o poskytovateli, nahlášení obsahu; vykreslení omezeného markdownu bez HTML (`markdown.tsx`), verze textů (`documents.ts`) |
 | `src/content/pravni` | právní texty v markdownu: `podminky.md` (včetně nahlášení obsahu podle DSA), `podminky-podniky.md`, `soukromi.md` |
 | `src/features/watches` | hlídač FLEKů: `WatchSheet.tsx` (založení a úprava), `WatchList.tsx` (Profil), `WatchPrompt.tsx` (pozvánka v Objevit a prázdných Rezervacích), `travel.ts` (dojezd → okruh, zrcadlí `private.watch_radius`); tečku polohy kreslí `OfferMap.tsx` z `src/lib/useLivePosition.ts` |
@@ -45,10 +45,10 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik zveř
 | `src/types/database.ts` | ručně psané typy, **negenerovat** |
 | `supabase/functions` | Edge Functions: `stripe-checkout`, `stripe-webhook`, `stripe-connect` (Accounts v2), `stripe-refunds`, `stripe-test-pay` (jen test), `stripe-webhook-setup` (jen admin: doplní události webhooku), `booking-confirmation` (capture nebo uvolnění autorizace po rozhodnutí podniku), sdílené `_shared/stripe.ts`; `notification-delivery` (e-mail přes Resend, Web Push a WhatsApp z fronty), `whatsapp-webhook` (Meta Cloud API, podpis `X-Hub-Signature-256`), `whatsapp-templates-setup` (admin, nebo databáze s klíčem workeru: stav kanálu u Mety, pět šablon podle `_shared/whatsapp.ts`, odběr, webhook, profil a logo), sdílené `_shared/whatsapp.ts`; `ares-lookup` (IČO v ARES, `_shared/ares.ts`); e-maily skládá `_shared/email.ts` |
 | `supabase/migrations` | schéma, RLS a všechny RPC; názvy souborů = verze v hostované DB |
-| `tests` | unit testy (Vitest), `integration.test.ts` (potřebuje Docker), `pilot-maintenance.sql`, `stripe-refunds.sql`, `manual-confirmation.sql`, `whatsapp-notifications.sql`, `legal.sql`, `oauth-profile.sql`, `watches.sql` a `tenant-isolation.sql` (SQL v transakci s rollbackem) |
+| `tests` | unit testy (Vitest), `integration.test.ts` (potřebuje Docker), `pilot-maintenance.sql`, `stripe-refunds.sql`, `manual-confirmation.sql`, `whatsapp-notifications.sql`, `legal.sql`, `oauth-profile.sql`, `watches.sql`, `tenant-isolation.sql` a `payment-issues.sql` (SQL v transakci s rollbackem) |
 | `scripts` | `acceptance.mjs` (API kontroly), `check-oauth.mjs` (stav přihlášení přes Google a Apple), `sync-notion.mjs`, lokální Supabase |
 
-Routy: zákazník `/`, `/mapa`, `/nabidka/:id`, `/podnik/:id`, `/oblibene`, `/rezervace`, `/profil`, `/prihlaseni`, `/potvrzeni`, `/r/:code`, právní texty `/podminky`, `/podminky-podniky`, `/soukromi`; podnik `/partner` (+ `/nabidky`, `/rezervace`, `/sluzby`, `/provozovna`, `/metriky`, `/registrace`); admin `/admin` (+ `/nabidky`, `/rezervace`, `/uzivatele`, `/metriky`, `/audit`, `/nahlaseni`, `/nastaveni`).
+Routy: zákazník `/`, `/mapa`, `/nabidka/:id`, `/podnik/:id`, `/oblibene`, `/rezervace`, `/profil`, `/prihlaseni`, `/potvrzeni`, `/r/:code`, právní texty `/podminky`, `/podminky-podniky`, `/soukromi`; podnik `/partner` (+ `/nabidky`, `/rezervace`, `/sluzby`, `/provozovna`, `/metriky`, `/registrace`); admin `/admin` (+ `/nabidky`, `/rezervace`, `/platby`, `/uzivatele`, `/metriky`, `/audit`, `/nahlaseni`, `/nastaveni`).
 
 ## Pravidla, která se nesmí porušit
 

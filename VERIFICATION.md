@@ -526,6 +526,24 @@ Lokální Docker integrační sada, fyzický iPhone/Safari, skutečná kamera, n
 - 27. 9. ve 12:15 (Praha; ranní kontrola naplánovaná na 26. 9. se v relaci nezpracovala kvůli restartu kontejneru, proto dodatečně; `dry_run`, HTTP 200): **všech pět šablon je APPROVED** (`flek_booking_request`, `flek_business_confirmed`, `flek_business_cancelled`, `flek_customer_confirmed`, `flek_customer_cancelled`), žádná zamítnutá. Účet dál BLOCKED se stejnými kódy 141006 (platební metoda, blokuje zprávy, které začíná firma, tedy i šablony), 141010 (ověření firmy, `pending_submission`) a 131000 (profil firmy bez právního názvu, země a webu); `account_review_status` APPROVED. Číslo je dál testovací +1 555 156 7838, webhook míří na `…/functions/v1/whatsapp-webhook`, odběr aplikace FLEK aktivní (vedle ní dál aplikace Mety „WA DevX Webhook Events 1P App“), všech 11 klíčů `WHATSAPP_*` v secrets. `whatsapp_enabled` zůstává `false`. Další kontrola 28. 9. ráno.
 - 28. 9. v 9:40 (Praha; ranní kontrola, `dry_run`, HTTP 200): **beze změny.** Všech pět šablon APPROVED, účet i číslo dál BLOCKED se stejnými kódy 131000 (profil firmy), 141006 (platební metoda) a 141010 (ověření firmy), webhook dál na `…/functions/v1/whatsapp-webhook`. `whatsapp_enabled` zůstává `false`. Další kontrola 29. 9. ráno.
 
+## Platby k řešení pro admina (audit H1) — 28. 9. 2026
+
+- Lokální Supabase s migrací `20260928230000_payment_issues.sql`; hostovaná DB čeká na schválení MCP.
+- `tests/payment-issues.sql` PASS:
+  - všech 7 druhů se ukáže adminovi se vším, co potřebuje k akci (důvod, e-mail zákazníka, PaymentIntent, režim, částka, pokusy);
+  - zdravá platba, čerstvá platba bez rezervace (20 min) a zpracovaná událost se neukážou;
+  - zákazník dostane `FORBIDDEN`, anon `permission denied`;
+  - údržba pošle adminovi jeden e-mail na adresu účtu, druhý běh už nic;
+  - testovací platba demo účtu se ukáže, ale e-mail nespustí;
+  - vyřešený problém se zapomene a nové selhání téže platby je znovu zpráva;
+  - kromě hodinové pojistky pro platbu bez rezervace se žádná platba nezmění.
+- `tests/tenant-isolation.sql` PASS s 18 admin RPC (přibylo `admin_payment_issues`).
+- Build a 256 unit testů PASS: nové `tests/paymentIssues.test.ts` (texty všech druhů, odkaz do dashboardu podle režimu, čeština počtu) a e-mail s tlačítkem „Otevřít platby k řešení“.
+- **Obrazovka `/admin/platby`** (Vite proti lokální Supabase, přihlášení vložením session lokálního admina, tři lokální problémy):
+  - 320, 390 i 1280 px: přetečení 0, axe 0, žádný prvek pod 44 px, bez chyb v konzoli, titulek „Platby k řešení — FLEK Admin“;
+  - odkazy vedou do `dashboard.stripe.com/test/payments/…` a `…/test/events/…`.
+  - Během kontroly se našla a opravila vlastní chyba: skrytý text počtu pro čtečky unikal ze skrolovatelné navigace a všechny admin stránky na 320 px přetékaly o 53 px. Odkaz v navigaci je teď `relative`.
+
 ## Audit před spuštěním, krok 0 — 28. 9. 2026
 
 - **Hostovaná databáze neověřená.** `execute_sql` i `get_advisors` přes Supabase MCP vrací „MCP tool call requires approval“. Kontroly dat, Security Advisor a nastavení `manual_confirmation_enabled` zbývají.

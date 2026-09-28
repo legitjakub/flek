@@ -97,6 +97,7 @@ function buttonLabel(href: string): string {
   if (href.startsWith('/mapa?hlidac=')) return 'Zobrazit na mapě';
   if (href === '/partner/provozovna') return 'Otevřít provozovnu';
   if (href === '/profil') return 'Otevřít profil';
+  if (href === '/admin/platby') return 'Otevřít platby k řešení';
   return 'Otevřít rezervace';
 }
 

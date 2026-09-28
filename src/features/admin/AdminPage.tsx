@@ -6,6 +6,7 @@ import {
   adminBusinesses,
   adminMetrics,
   adminOffers,
+  adminPaymentIssues,
   adminSetGooglePlaceId,
   adminSetBookingBlock,
   adminSetBusinessStatus,
@@ -26,11 +27,13 @@ import { StatusBadge } from '../../components/StatusBadge';
 import type { AdminAuditEntry, AdminBusiness } from '../../types/database';
 import { Dac7Export } from './Dac7Export';
 import { WhatsAppSetup } from './WhatsAppTemplates';
+import { PAYMENT_ISSUES_KEY, issueCountLabel } from './paymentIssues';
 
 const NAV = [
   { to: '/admin', label: 'Provozovny' },
   { to: '/admin/nabidky', label: 'Nabídky' },
   { to: '/admin/rezervace', label: 'Rezervace' },
+  { to: '/admin/platby', label: 'Platby' },
   { to: '/admin/uzivatele', label: 'Uživatelé' },
   { to: '/admin/metriky', label: 'Metriky' },
   { to: '/admin/audit', label: 'Audit' },
@@ -42,6 +45,9 @@ const NAV = [
 export function AdminFrame({ children }: { children: ReactNode }) {
   const { path } = useRouter();
   const { admin, userId, ready } = useSession();
+  // Payments that wait for a person are counted on every admin page, so they are not missed.
+  const issues = useQuery({ queryKey: PAYMENT_ISSUES_KEY, queryFn: adminPaymentIssues, enabled: admin, refetchInterval: 60_000 });
+  const waiting = issues.data?.length ?? 0;
 
   return (
     <div className="min-h-dvh bg-ink/3">
@@ -68,11 +74,17 @@ export function AdminFrame({ children }: { children: ReactNode }) {
                 <Link
                   to={item.to}
                   aria-current={path === item.to ? 'page' : undefined}
-                  className={`inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-bold whitespace-nowrap ${
+                  className={`relative inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-bold whitespace-nowrap ${
                     path === item.to ? 'bg-ink text-surface' : 'text-muted hover:text-ink'
                   }`}
                 >
                   {item.label}
+                  {item.to === '/admin/platby' && waiting > 0 ? (
+                    <span className="tnum ml-1.5 inline-flex min-w-5 items-center justify-center rounded-full bg-danger px-1.5 text-xs leading-5 font-extrabold text-card">
+                      <span aria-hidden="true">{waiting}</span>
+                      <span className="sr-only">, {issueCountLabel(waiting)}</span>
+                    </span>
+                  ) : null}
                 </Link>
               </li>
             ))}

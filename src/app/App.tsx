@@ -60,6 +60,9 @@ const AdminMetricsPage = lazy(() =>
 const AdminReportsPage = lazy(() =>
   import('../features/admin/AdminReports').then((m) => ({ default: m.AdminReportsPage })),
 );
+const AdminPaymentsPage = lazy(() =>
+  import('../features/admin/AdminPayments').then((m) => ({ default: m.AdminPaymentsPage })),
+);
 const AdminSettingsPage = lazy(() =>
   import('../features/admin/AdminPage').then((m) => ({ default: m.AdminSettingsPage })),
 );
@@ -128,6 +131,7 @@ const ROUTES: { path: string; title: string | null; render: (params: Record<stri
   { path: '/admin', title: 'Provozovny', render: () => <AdminBusinessesPage />, shell: false },
   { path: '/admin/nabidky', title: 'Nabídky', render: () => <AdminOffersPage />, shell: false },
   { path: '/admin/rezervace', title: 'Rezervace', render: () => <AdminBookingsPage />, shell: false },
+  { path: '/admin/platby', title: 'Platby k řešení', render: () => <AdminPaymentsPage />, shell: false },
   { path: '/admin/uzivatele', title: 'Uživatelé', render: () => <AdminUsersPage />, shell: false },
   { path: '/admin/metriky', title: 'Metriky', render: () => <AdminMetricsPage />, shell: false },
   { path: '/admin/audit', title: 'Audit', render: () => <AdminAuditPage />, shell: false },

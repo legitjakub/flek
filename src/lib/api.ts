@@ -2,7 +2,7 @@ import { FunctionsHttpError } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { result } from './errors';
 import { noteServerNow } from './clock';
-import type { AdminBooking, AdminBusiness, AdminMetrics, AdminUser, Business, BookingStatus, Category, ConfirmationDecision, ConfirmationQuote, CustomerBooking, CustomerMetrics, FavoriteBusiness, FavoriteOffer, MerchantBooking, MerchantBookingDetail, MerchantMetrics, MerchantOffer, OfferDetail, Payment, Profile, PublicBusiness, ReferralClaim, ReferralStats, PaymentsMode, PaymentState, BusinessPaymentsStatus, SearchRow, ServicePhoto, Service, SortKey, BusinessBilling, AdminAuditEntry, WhatsAppPairing, WhatsAppSettings, LegalInfo, BusinessProvider, ContentReportReason, AdminContentReport, Dac7Row, AresLookup, BusinessReview, AdminContentModeration, ContentModerationStatus, FlekWatch } from '../types/database';
+import type { AdminBooking, AdminBusiness, AdminMetrics, AdminUser, Business, BookingStatus, Category, ConfirmationDecision, ConfirmationQuote, CustomerBooking, CustomerMetrics, FavoriteBusiness, FavoriteOffer, MerchantBooking, MerchantBookingDetail, MerchantMetrics, MerchantOffer, OfferDetail, Payment, Profile, PublicBusiness, ReferralClaim, ReferralStats, PaymentsMode, PaymentState, BusinessPaymentsStatus, SearchRow, ServicePhoto, Service, SortKey, BusinessBilling, AdminAuditEntry, WhatsAppPairing, WhatsAppSettings, LegalInfo, BusinessProvider, ContentReportReason, AdminContentReport, Dac7Row, AresLookup, BusinessReview, AdminContentModeration, ContentModerationStatus, FlekWatch, AdminPaymentIssue } from '../types/database';
 
 /** Records the server clock carried by any payload that exposes it. */
 function withClock<T extends { server_now?: string }>(rows: T[]): T[] {
@@ -700,6 +700,10 @@ export async function whatsappTemplatesSetup(
 
 export async function adminAuditLog(limit = 100): Promise<AdminAuditEntry[]> {
   return (await result<AdminAuditEntry[]>(supabase.rpc('admin_audit_log', { p_limit: limit }))) ?? [];
+}
+
+export async function adminPaymentIssues(): Promise<AdminPaymentIssue[]> {
+  return (await result<AdminPaymentIssue[]>(supabase.rpc('admin_payment_issues'))) ?? [];
 }
 
 export async function adminMetrics(): Promise<AdminMetrics> {

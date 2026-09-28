@@ -321,6 +321,34 @@ export type AdminAuditEntry = {
 
 export type PaymentStatus = 'pending' | 'paid' | 'refunded' | 'failed';
 
+/** What `admin_payment_issues()` lists: money that waits for a person. */
+export type PaymentIssueKind =
+  | 'refund_failed'
+  | 'refund_stuck'
+  | 'refund_waiting'
+  | 'paid_without_booking'
+  | 'release_stuck'
+  | 'capture_stuck'
+  | 'webhook_failed';
+
+export type AdminPaymentIssue = {
+  kind: PaymentIssueKind;
+  /** The payment, or the Stripe event for `webhook_failed`. */
+  ref: string;
+  payment_id: string | null;
+  booking_id: string | null;
+  business_name: string | null;
+  service_name: string | null;
+  start_at: string | null;
+  amount_cents: number | null;
+  customer_email: string | null;
+  payment_intent_id: string | null;
+  livemode: boolean | null;
+  detail: string | null;
+  attempts: number | null;
+  since: string | null;
+};
+
 export type Payment = {
   id: string;
   customer_id: string;
