@@ -42,8 +42,11 @@ export function StripePayouts({ business }: { business: Business }) {
 
   // Back from Stripe's onboarding: ask Stripe what changed, then drop the marker from the address.
   const returned = search.get('stripe');
+  // Kept after the marker leaves the address, so the page can say what just happened.
+  const [back, setBack] = useState<string | null>(null);
   useEffect(() => {
     if (!returned) return;
+    setBack(returned);
     refresh.mutate();
     navigate('/partner/provozovna', { replace: true, scroll: false });
   }, [returned]);
@@ -60,6 +63,8 @@ export function StripePayouts({ business }: { business: Business }) {
   const data = status.data;
   const ready = Boolean(data?.charges_enabled);
   const connected = Boolean(data?.connected);
+  // A failed read is not "not connected": saying so sent merchants through Stripe a second time.
+  const unknown = status.isError && !data;
 
   return (
     <section className="flex flex-col gap-3 rounded-3xl bg-card p-5 shadow-card sm:p-6" aria-labelledby="platby-vyplaty">
@@ -70,6 +75,8 @@ export function StripePayouts({ business }: { business: Business }) {
         </h2>
         {status.isPending || refresh.isPending ? (
           <Spinner label="Zjišťujeme stav u Stripe" />
+        ) : unknown ? (
+          <span className="rounded-full bg-surface px-2.5 py-1 text-xs font-bold text-muted">Stav neznámý</span>
         ) : (
           <span
             className={
@@ -85,8 +92,16 @@ export function StripePayouts({ business }: { business: Business }) {
         )}
       </div>
 
+      {back === 'hotovo' && !ready && !unknown ? (
+        <Banner tone="success">Údaje jsou ve Stripe. Ověření obvykle trvá pár minut a stav se tu obnoví sám.</Banner>
+      ) : back === 'znovu' && !ready && !unknown ? (
+        <Banner tone="warning">Odkaz do Stripe mezitím vypršel. Pokračujte tlačítkem níže, otevře se nový.</Banner>
+      ) : null}
+
       <p className="text-base text-muted">
-        {ready
+        {unknown
+          ? 'Stav u Stripe se teď nepodařilo načíst. Nic se tím nezměnilo; zkuste to prosím za chvíli znovu.'
+          : ready
           ? data?.payouts_enabled
             ? 'Zákazníci platí kartou přes Stripe. FLEK si ponechá servisní poplatek a zbytek vám Stripe posílá na účet.'
             : 'Platby jsou zapnuté. Výplaty na účet začnou, jakmile Stripe dokončí ověření bankovního účtu.'
@@ -98,7 +113,11 @@ export function StripePayouts({ business }: { business: Business }) {
       {failure ? <Banner tone="warning">{failure}</Banner> : null}
 
       <div className="flex flex-wrap gap-2">
-        {ready ? (
+        {unknown ? (
+          <Button variant="secondary" shape="pill" onClick={() => void status.refetch()}>
+            Zkusit znovu
+          </Button>
+        ) : ready ? (
           <Button variant="secondary" shape="pill" loading={dashboard.isPending} onClick={() => { setFailure(null); dashboard.mutate(); }}>
             Přehled výplat
             <ArrowUpRight size={16} aria-hidden="true" />

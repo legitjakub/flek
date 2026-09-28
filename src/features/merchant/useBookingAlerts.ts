@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { merchantBookings } from '../../lib/api';
 import { dayBounds } from '../../lib/time';
 import { serverNow, useServerNow } from '../../lib/clock';
+import { setTitleBadge } from '../../lib/documentTitle';
 import { supabase } from '../../lib/supabase';
 import { useSession } from '../auth/session';
 import { bookingAlerts } from './bookingAlertStore';
@@ -137,10 +138,10 @@ export function useBookingAlerts(businessId: string) {
     }))
     .sort((a, b) => Date.parse(a.deadline ?? '') - Date.parse(b.deadline ?? ''));
 
+  // The page keeps its name; the count goes in front of it ("(2) Přehled — FLEK Partner").
   useEffect(() => {
-    const previous = document.title;
-    document.title = state.unreadIds.length ? `(${state.unreadIds.length}) FLEK Partner` : 'FLEK Partner';
-    return () => { document.title = previous; };
+    setTitleBadge(state.unreadIds.length);
+    return () => setTitleBadge(0);
   }, [state.unreadIds.length]);
 
   return {

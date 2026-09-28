@@ -1,6 +1,6 @@
 import { Dialog } from '@base-ui/react/dialog';
 import { ChevronDown, ChevronRight, Star, X } from 'lucide-react';
-import { useCallback, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from 'react';
 import { errorMessage } from '../lib/errors';
 import { Link } from '../app/router';
 
@@ -148,6 +148,9 @@ export function Spinner({ label }: { label?: string }) {
 
 /* ----------------------------------------------------------------- form bits */
 
+/** What a <Field> tells the control it labels: which hint or error describes it, and whether it is invalid. */
+const FieldContext = createContext<{ id: string; describedBy?: string; invalid: boolean } | null>(null);
+
 export function Field({
   label,
   error,
@@ -161,55 +164,57 @@ export function Field({
   children: ReactNode;
   id: string;
 }) {
+  const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
   return (
-    <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-sm font-bold text-ink">
-        {label}
-      </label>
-      {children}
-      {hint && !error ? (
-        <p id={`${id}-hint`} className="text-sm text-muted">
-          {hint}
-        </p>
-      ) : null}
-      {error ? (
-        <p id={`${id}-error`} className="text-sm font-medium text-danger">
-          {error}
-        </p>
-      ) : null}
-    </div>
+    <FieldContext.Provider value={{ id, describedBy, invalid: Boolean(error) }}>
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor={id} className="text-sm font-bold text-ink">
+          {label}
+        </label>
+        {children}
+        {hint && !error ? (
+          <p id={`${id}-hint`} className="text-sm text-muted">
+            {hint}
+          </p>
+        ) : null}
+        {error ? (
+          <p id={`${id}-error`} className="text-sm font-medium text-danger">
+            {error}
+          </p>
+        ) : null}
+      </div>
+    </FieldContext.Provider>
   );
 }
 
+/**
+ * The hint and the error used to be printed under the field but never announced with it. The control
+ * the <Field> labels (same id) now points at them, and an error marks it invalid, so a screen reader
+ * reads "Běžná cena, Zadejte běžnou cenu v celých korunách" instead of the label alone.
+ */
+function useFieldProps<T extends { id?: string; 'aria-describedby'?: string; 'aria-invalid'?: React.AriaAttributes['aria-invalid'] }>(props: T): T {
+  const field = useContext(FieldContext);
+  if (!field || props.id !== field.id) return props;
+  return {
+    ...props,
+    'aria-describedby': [...new Set([props['aria-describedby'], field.describedBy].filter(Boolean))].join(' ') || undefined,
+    'aria-invalid': props['aria-invalid'] ?? (field.invalid || undefined),
+  };
+}
+
+// A field's edge is a control boundary (3 : 1); an invalid one turns the danger red its message uses.
+const CONTROL = 'w-full rounded-xl border border-line-strong bg-card text-base text-ink aria-[invalid=true]:border-danger';
+
 export function Input({ className, ...rest }: InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <input
-      {...rest}
-      className={cx(
-        'min-h-11 w-full rounded-xl border border-line bg-card px-3 text-base text-ink placeholder:text-muted/70',
-        rest['aria-invalid'] ? 'border-accent' : '',
-        className,
-      )}
-    />
-  );
+  return <input {...useFieldProps(rest)} className={cx(CONTROL, 'min-h-11 px-3 placeholder:text-placeholder', className)} />;
 }
 
 export function Textarea({ className, ...rest }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return (
-    <textarea
-      {...rest}
-      className={cx('min-h-24 w-full rounded-xl border border-line bg-card p-3 text-base text-ink', className)}
-    />
-  );
+  return <textarea {...useFieldProps(rest)} className={cx(CONTROL, 'min-h-24 p-3 placeholder:text-placeholder', className)} />;
 }
 
 export function Select({ className, ...rest }: React.SelectHTMLAttributes<HTMLSelectElement>) {
-  return (
-    <select
-      {...rest}
-      className={cx('min-h-11 w-full rounded-xl border border-line bg-card px-3 text-base text-ink', className)}
-    />
-  );
+  return <select {...useFieldProps(rest)} className={cx(CONTROL, 'min-h-11 px-3', className)} />;
 }
 
 /* ------------------------------------------------------------------- states */
@@ -268,10 +273,12 @@ export function EmptyState({
   );
 }
 
-export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
+export function ErrorState({ error, onRetry, audience }: { error: unknown; onRetry?: () => void; audience?: 'customer' | 'merchant' }) {
+  // Screens under /partner and /admin vyká; deciding it here means no new screen can forget it.
+  const voice = audience ?? (typeof window !== 'undefined' && /^\/(partner|admin)(\/|$)/.test(window.location.pathname) ? 'merchant' : 'customer');
   return (
     <div role="alert" className="rounded-2xl border border-line bg-accent-soft px-5 py-6 text-center">
-      <p className="text-sm font-bold text-ink">{errorMessage(error)}</p>
+      <p className="text-sm font-bold text-ink">{errorMessage(error, voice)}</p>
       {onRetry ? (
         <Button variant="secondary" className="mt-3" onClick={onRetry}>
           Zkusit znovu
@@ -629,7 +636,7 @@ export function PromoCard({
       {...rest}
       className={cx(
         'relative overflow-hidden rounded-3xl p-5 shadow-card sm:p-6',
-        tone === 'dark' ? 'bg-ink text-card' : 'bg-promo text-promo-ink',
+        tone === 'dark' ? 'on-dark bg-ink text-card' : 'bg-promo text-promo-ink',
         className,
       )}
     >

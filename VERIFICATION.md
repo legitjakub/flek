@@ -524,6 +524,40 @@ Lokální Docker integrační sada, fyzický iPhone/Safari, skutečná kamera, n
 - Panel WhatsApp v administraci s blokovaným účtem vykreslený na 390 a 1280 px: bez přetečení, řádek „Účet u Mety“ nahoře, u čísla upozornění na testovací číslo, „Zpřístupnit WhatsApp“ zamčené.
 - 14:41 (Praha, odpolední naplánovaná kontrola spuštěná ve 14:11, `dry_run`, HTTP 200): **beze změny.** Všech pět šablon PENDING, žádná zamítnutá (nic k přepsání ani k novému odeslání); účet dál BLOCKED se stejnými kódy 141006, 141010 a 131000, `business_verification_status` pending_submission; číslo CONNECTED, LIVE, TIER_250; odběr aplikace FLEK aktivní a webhook dál na `…/functions/v1/whatsapp-webhook` (pole `messages`); všech 11 klíčů `WHATSAPP_*` v secrets. `whatsapp_enabled` zůstává `false`. Další kontrola 26. 9. ráno.
 - 27. 9. ve 12:15 (Praha; ranní kontrola naplánovaná na 26. 9. se v relaci nezpracovala kvůli restartu kontejneru, proto dodatečně; `dry_run`, HTTP 200): **všech pět šablon je APPROVED** (`flek_booking_request`, `flek_business_confirmed`, `flek_business_cancelled`, `flek_customer_confirmed`, `flek_customer_cancelled`), žádná zamítnutá. Účet dál BLOCKED se stejnými kódy 141006 (platební metoda, blokuje zprávy, které začíná firma, tedy i šablony), 141010 (ověření firmy, `pending_submission`) a 131000 (profil firmy bez právního názvu, země a webu); `account_review_status` APPROVED. Číslo je dál testovací +1 555 156 7838, webhook míří na `…/functions/v1/whatsapp-webhook`, odběr aplikace FLEK aktivní (vedle ní dál aplikace Mety „WA DevX Webhook Events 1P App“), všech 11 klíčů `WHATSAPP_*` v secrets. `whatsapp_enabled` zůstává `false`. Další kontrola 28. 9. ráno.
+- 28. 9. v 9:40 (Praha; ranní kontrola, `dry_run`, HTTP 200): **beze změny.** Všech pět šablon APPROVED, účet i číslo dál BLOCKED se stejnými kódy 131000 (profil firmy), 141006 (platební metoda) a 141010 (ověření firmy), webhook dál na `…/functions/v1/whatsapp-webhook`. `whatsapp_enabled` zůstává `false`. Další kontrola 29. 9. ráno.
+
+## Přístupnost: pole, fokus, titulky — 28. 9. 2026
+
+- Build a 242 unit testů PASS (nové `tests/documentTitle.test.ts`: pořadí název stránky → aplikace, počet žádostí před názvem, blikání přes vše, obsahový titulek jen ze známých částí).
+- Fokus měřený v Chromiu: po každém Tabu (s čekáním na `transition-colors`, který animuje i barvu obrysu) kontrast obrysu vůči ploše kolem, 13 obrazovek zákazníka, podniku i admina. Před opravou jediný skutečný nález: „Objevit FLEKy“ na tmavé kartě v Profilu 1 : 1; po opravě 0 slabých obrysů. „Ztlumit“ a „Později“ měření hlásilo falešně (celoobrazovková žádost má pozadí jako gradient, bílý obrys tam je správně).
+- Skutečná aplikace s routerem v náhledu: `/` → Rezervace: titulek „Rezervace — FLEK“, fokus na `H1` „Moje rezervace“ bez obrysu; → Oblíbené: „Oblíbená místa — FLEK“ a fokus na nadpisu; zpět v prohlížeči totéž pro Rezervace.
+- Formulář služby: pole názvu má `aria-describedby="s-name-hint"`, po neúspěšném uložení `s-name-error` a `aria-invalid="true"`; cena zabalená v `div` totéž. Okraj rgb(133, 138, 160), chybný rgb(179, 38, 30), placeholder rgb(107, 112, 134). axe 0.
+- Omezený pohyb (`reducedMotion: 'reduce'`): odpočet po potvrzení žádosti má `animation-duration` 4 s a po 0,9 s je pruh na 32 z 350 px. Admin hlavička: žádný odkaz pod 44 px. Přetečení 0 na 320 a 1280 px (detail, rezervace, Provozovna, Služby, admin).
+- Chyby v konzoli náhledu jsou jen dlaždice mapy, které sandbox nestáhne (certifikát proxy); aplikace sama chybu nehlásí.
+
+## Partnerská část: odmítnutí, vykání, chybové stavy — 28. 9. 2026
+
+- Build a 239 unit testů PASS.
+- Scénáře v Chromiu nad náhledem se skutečnými komponentami a podvrženými daty (10/10 PASS): karta žádosti na Přehledu ukáže „Potvrdit“; „Nemohu přijmout“ otevře „Opravdu odmítnout?“ a do té doby se nic neodešle; „Zpět“ vrátí tlačítka; „Odmítnout“ odešle právě jedno odmítnutí a žádost zmizí ze seznamu; Služby při chybě načtení ukážou „Spojení se nepodařilo. Zkontrolujte internet a zkuste to znovu.“; neúspěšné načtení Stripe ukáže „Stav neznámý“ bez „Nepropojeno“ a bez „Propojit se Stripe“; návrat ze Stripe ukáže zprávu a značka zmizí z adresy. axe-core 0 porušení.
+- Audit (UX-025) tvrdil, že aplikace návrat ze Stripe ignoruje; ve skutečnosti `StripePayouts` čte `search.get('stripe')` a stav obnoví, chyběla jen viditelná zpráva.
+
+## Oblíbené a štítky ilustračních fotek — 28. 9. 2026
+
+- Build a 239 unit testů PASS.
+- Náhled Oblíbených (nepřihlášený i prázdný stav, pozvánka k hlídači pod seznamem), úvodu a karet na 320, 375, 390 a 1280 px: vodorovné přetečení 0, axe-core 0 porušení, žádný prvek pod 44 px. Úvod se na 375 × 844 dál vejde bez rolování. Štítek „ilustrační foto“ se u náhledu na mapě ukáže jen u katalogové fotky, ne u zástupné grafiky (stejně jako u karet).
+- `rg "dáme ti vědět" src/features/favorites` je prázdné.
+
+## Detail nabídky a výběr času — 28. 9. 2026
+
+- Build a 239 unit testů PASS. Nové testy: `mergeSameTime` (dva stejné časy = jeden se sečtenými místy, zachová otevřený čas, jinou cenu, službu ani podnik nesloučí), `ownBookingCopy` (živá rezervace = „Tohle je tvůj FLEK“, skončená nic), `relativeTime` („za 3 dny“, „za 5 dní“).
+- Náhled detailu se skutečnou komponentou a podvrženými daty na 320, 375, 390 a 1280 px: běžný detail s řádkem „Podnik má na potvrzení až 10 min. Do té doby částku jen zablokujeme.“ pod časem začátku; vyprodaný FLEK, který mám rezervovaný, s modrou kartou „Tohle je tvůj FLEK“, odkazem „Ukázat kód“ a doporučeními místo „už někdo chytil“; uzavřený FLEK beze změny. Vodorovné přetečení 0, axe-core 0 porušení; jediný prvek pod 44 px jsou „Zdroje mapy“ na počítači (známé, klepnout jde do 44 px).
+
+## Rezervace a peníze pro zákazníka — 28. 9. 2026
+
+- Build a 233 unit testů PASS. Nové testy v `tests/confirmation.test.ts`: každý z 11 stavů rezervace má jeden stav řečený zákazníkovi (bez „zákazník“, „Zamítnuto“, „Nedorazil“); vypršení s autorizací a bez ní se liší; stav peněz nikdy neřekne „Zaplaceno“ u blokace ani u uvolňování; stav a peníze se neopakují.
+- Náhled se skutečnými komponentami a podvrženými daty (`rezervace-stavy`: čekající, potvrzovaná, potvrzená, proběhlá, zrušená zákazníkem s vratkou, odmítnutá, vypršelá s uvolňováním, nedokončená platba, neúspěšná platba, zrušená podnikem s vrácením, zmeškaná; `platba`: čekání, odmítnutí, vypršení, dokončování platby, vratka) na 320, 375, 390, 430 a 1280 px: vodorovné přetečení 0, axe-core 0 porušení, žádný ovládací prvek pod 44 px. Dlouhé stavy se na 320 px zalomí pod čas, stav peněz stojí pod částkou.
+- Čekací obrazovka: „Zrušit žádost“ otevře okno „Zrušit žádost?“ (axe 0), „Nechat“ ho zavře bez odeslání. „e‑mail“ se nezalomí na spojovníku. Po odmítnutí se pod výsledkem vykreslí „Mohlo by se ti líbit“ se třemi FLEKy (na počítači s šipkami).
+- E-mail o výsledku žádosti: `private.booking_notification` pošle zákazníkovi e-mail při potvrzení, odmítnutí, vypršení, neúspěšné platbě i zrušení podnikem (bez ohledu na předvolby), takže věta „pošleme ti e‑mail“ platí.
 
 ## UX/UI audit — 25. 9. 2026
 

@@ -47,7 +47,7 @@ export function AdminFrame({ children }: { children: ReactNode }) {
     <div className="min-h-dvh bg-ink/3">
       <header className="border-b border-line bg-card">
         <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-3">
-          <Link to="/admin">
+          <Link to="/admin" className="inline-flex min-h-11 items-center">
             <Wordmark suffix="Admin" />
           </Link>
           <Link
@@ -68,7 +68,7 @@ export function AdminFrame({ children }: { children: ReactNode }) {
                 <Link
                   to={item.to}
                   aria-current={path === item.to ? 'page' : undefined}
-                  className={`inline-flex min-h-10 items-center rounded-lg px-3 text-sm font-bold whitespace-nowrap ${
+                  className={`inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-bold whitespace-nowrap ${
                     path === item.to ? 'bg-ink text-surface' : 'text-muted hover:text-ink'
                   }`}
                 >

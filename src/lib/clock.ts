@@ -62,5 +62,5 @@ export function relativeTime(target: string, now: string): string {
   const hours = Math.round(minutes / 60);
   if (hours < 24) return `za ${hours} h`;
   const days = Math.round(hours / 24);
-  return days === 1 ? 'zítra' : `za ${days} dny`;
+  return days === 1 ? 'zítra' : `za ${days} ${days < 5 ? 'dny' : 'dní'}`;
 }

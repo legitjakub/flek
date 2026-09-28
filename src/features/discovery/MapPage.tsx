@@ -308,7 +308,7 @@ export function MapPage() {
                 type="button"
                 aria-label="Skrýt okruh hlídače"
                 onClick={() => setFilters({ ...filters })}
-                className="grid size-9 shrink-0 place-items-center rounded-full hover:bg-white/15"
+                className="relative grid size-9 shrink-0 place-items-center rounded-full before:absolute before:-inset-1 before:content-[''] hover:bg-white/15"
               >
                 <X size={16} aria-hidden="true" />
               </button>

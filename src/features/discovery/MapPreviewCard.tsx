@@ -5,7 +5,8 @@ import { cx } from '../../components/ui';
 import { OriginalPrice } from '../../components/Price';
 import { useSnapCarousel } from '../../components/useSnapCarousel';
 import { money } from '../../lib/format';
-import { SERVICE_PLACEHOLDER, serviceIllustration } from '../../lib/serviceIllustrations';
+import { isIllustrativeServiceImage, SERVICE_PLACEHOLDER, serviceIllustration } from '../../lib/serviceIllustrations';
+import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
 import { thumbnail } from '../../lib/thumbnail';
 import { clockTime, dayLabel } from '../../lib/time';
 import type { SearchRow } from '../../types/database';
@@ -143,6 +144,7 @@ function PreviewCard({
       <Link to={detailHref(offer.id)} className="group flex h-full min-w-0 pr-11 focus-visible:outline-none">
         <span className="relative w-[6.75rem] shrink-0 overflow-hidden bg-accent-soft" aria-hidden="true">
           <img src={photo} alt="" decoding="async" onError={() => setFailed(true)} className="size-full object-cover transition-transform duration-200 group-hover:scale-[1.025]" />
+          {!failed && isIllustrativeServiceImage(source) ? <IllustrativePhotoLabel className="bottom-2 left-2" /> : null}
           {position ? (
             <span className="glass tnum absolute top-2 left-2 rounded-full px-2 py-0.5 text-[11px] font-bold text-ink">
               {position}

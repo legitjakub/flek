@@ -72,7 +72,7 @@ function Offers({ business }: { business: Business }) {
       {published ? (
         <Banner tone="success">
           Nabídka je aktivní. <span className="tnum">{published}</span>{' '}
-          <button type="button" onClick={() => setPublished(null)} className="font-bold underline underline-offset-4">Skrýt</button>
+          <button type="button" onClick={() => setPublished(null)} className="inline-flex min-h-11 items-center font-bold underline underline-offset-4">Skrýt</button>
         </Banner>
       ) : null}
       <PageHeader

@@ -23,6 +23,10 @@ Jeden řádek na rozhodnutí, chronologicky. Kde bylo zadání nejednoznačné, 
 - MapLibre se načítá až na obrazovkách, které kreslí mapu (`React.lazy`). Balík má skoro megabajt a objevování ho nesmí platit.
 - Serverový čas se bere z každé odpovědi, která ho nese (`server_now`), a drží se jako odchylka. Odpočty a popisky dnů se z něj přepočítávají v intervalu; hodiny zařízení se nepoužívají.
 - Zákaznická část tyká, partnerská vyká. Důsledně, bez míchání.
+- Zákazník vidí u rezervace jeden stav řečený jemu (`customerBookingStatus`: „Zrušeno na tvou žádost“, „Podnik nemohl přijmout“) a stav peněz u částky (`bookingMoneyState`). Slovník `StatusBadge` („Zrušeno zákazníkem“, „Zamítnuto“) zůstává podniku a adminovi, kteří o rezervaci mluví ve třetí osobě. Dva odznaky vedle sebe často říkaly totéž dvakrát (28. 9.).
+- Titulek karty má jednoho správce (`src/lib/documentTitle.ts`): cesta dá název stránky, stránka ho může zpřesnit podle obsahu (nabídka, podnik), partnerská část dává počet žádostí před něj a zvonění přes něj bliká. Dřív každý psal celý titulek a po sobě vracel „předchozí“, takže mohl vrátit titulek jiné stránky (28. 9.).
+- Po přechodu na jinou stránku jde fokus na její `h1` (bez obrysu, není to ovládací prvek), ne na první odkaz: čtečka ohlásí stránku a Tab pokračuje od začátku jejího obsahu. Nepřesouvá se při prvním načtení, při změně filtrů (stejná cesta) ani z otevřeného okna (28. 9.).
+- Okraj pole je samostatný token `--color-line-strong`, ne `--color-line`: hranice ovládacího prvku potřebuje 3 : 1, oddělovače a karty ne, a ztmavit `line` by zatížilo celé rozhraní (28. 9.).
 - TanStack Query běží v režimu `networkMode: 'always'`. Výchozí režim výpadek sítě jen pozastaví, takže by zákazník viděl nekonečný skeleton a zablokované tlačítko místo čitelné chyby.
 - Cache dotazů se maže jen při skutečné změně identity, ne při každé události přihlášení. Mazání při úvodní události zahazovalo probíhající dotazy.
 - Service worker cachuje jen skořápku aplikace. Odpovědi o nabídkách a rezervacích se nikdy neukládají — kapacita se mění po minutách.

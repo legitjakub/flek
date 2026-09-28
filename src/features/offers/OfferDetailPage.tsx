@@ -1,15 +1,16 @@
-import { ArrowLeft, CalendarDays, CalendarPlus, ChevronDown, Clock3, Info, MapPin, Check, ShieldCheck, Ban } from 'lucide-react';
+import { ArrowLeft, BellRing, CalendarDays, CalendarPlus, ChevronDown, Clock3, Info, MapPin, Check, ShieldCheck, Ban } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { activityPhotoSrcSet } from '../../lib/activityGalleries';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { businessOffers, confirmationQuote, getOfferDetail, setFavorite } from '../../lib/api';
+import { businessOffers, confirmationQuote, getOfferDetail, myBookings, setFavorite } from '../../lib/api';
 import { track } from '../../lib/analytics';
 import { relativeTime, useServerNow } from '../../lib/clock';
+import { contentTitle, useDetailTitle } from '../../lib/documentTitle';
 import { money, distance as formatDistance } from '../../lib/format';
 import { DiscountBadge, OriginalPrice } from '../../components/Price';
 import { clockTime, dayLabel, duration, untilLabel } from '../../lib/time';
 import { DEFAULT_POINT, storedPoint } from '../../lib/geo';
-import { Button, ErrorState, Skeleton, cx, IconTile } from '../../components/ui';
+import { Button, ErrorState, Skeleton, buttonClass, cx, IconTile } from '../../components/ui';
 import { bookingIcs, icsHref } from '../../lib/calendar';
 import { Link, useRouter } from '../../app/router';
 import { BookingSheet, cancellationDeadline } from '../bookings/BookingSheet';
@@ -22,7 +23,7 @@ import { navigationHref } from '../../lib/maps';
 import { LazyMap } from './LazyMap';
 import { ShareOfferButton } from './ShareOfferButton';
 import { UnavailableOfferRecovery } from './UnavailableOfferRecovery';
-import { unavailableCopy, unavailableReason } from './unavailable';
+import { ownBookingCopy, unavailableCopy, unavailableReason } from './unavailable';
 import { GooglePlaceRating } from '../ratings/GooglePlaceRating';
 import { FlekRatingSummary } from '../ratings/FlekReviews';
 import { IllustrativePhotoLabel } from '../../components/IllustrativePhotoLabel';
@@ -66,6 +67,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
     refetchInterval: 60_000,
   });
   const offer = query.data ?? null;
+  useDetailTitle(contentTitle(offer?.service_name, offer?.business_name));
   // Whether this venue confirms bookings: the money is then only held until it does, and the grace period counts from its yes.
   const quote = useQuery({
     queryKey: ['confirmation-quote', offerId],
@@ -74,6 +76,16 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
     staleTime: 60_000,
   });
   const manual = Boolean(quote.data?.manual);
+  const confirmMinutes = quote.data?.window_seconds ? Math.max(1, Math.round(quote.data.window_seconds / 60)) : null;
+  // A FLEK that cannot be booked may be the viewer's own: same key as the reservations page.
+  const mine = useQuery({
+    queryKey: ['my-bookings', userId],
+    queryFn: myBookings,
+    enabled: Boolean(userId) && offer?.bookable === false,
+    staleTime: 30_000,
+  });
+  const ownBooking = offer ? mine.data?.find((row) => row.offer_id === offer.id && ownBookingCopy(row.status)) ?? null : null;
+  const own = ownBooking ? ownBookingCopy(ownBooking.status) : null;
 
   // Every free offer at this venue: the other times of this service for the picker, the venue's other
   // services for the recommendations. Same key as the venue page, so the cache is shared and the
@@ -177,6 +189,14 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
           navigate(`/nabidka/${offer.id}`, { replace: true, scroll: false });
           setSheetOpen(true);
         }}
+        alternatives={
+          <Recommendations
+            offer={offer}
+            venueRows={venueOffers.data ?? []}
+            point={storedPoint() ?? { lat: offer.latitude, lng: offer.longitude }}
+            now={now}
+          />
+        }
       />
     );
   }
@@ -347,10 +367,12 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
               that can no longer be booked loses the fill and the tick, and says so right here: on a
               computer the reason further down the page sat below the fold while this card, beside
               it, still read "Tvůj termín ✓". */}
-          <div className={cx('rounded-2xl px-4 py-3.5', offer.bookable ? 'bg-brand text-brand-ink' : 'bg-surface text-ink')}>
-            <div className={cx('mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs font-medium', !offer.bookable && 'text-muted')}>
+          <div className={cx('rounded-2xl px-4 py-3.5', offer.bookable || own ? 'bg-brand text-brand-ink' : 'bg-surface text-ink')}>
+            <div className={cx('mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs font-medium', !offer.bookable && !own && 'text-muted')}>
               {offer.bookable ? (
                 <h2 className="inline-flex items-center gap-1.5"><Check size={14} aria-hidden="true" />Tvůj termín</h2>
+              ) : own ? (
+                <h2 className="inline-flex items-center gap-1.5 font-bold"><Check size={14} aria-hidden="true" />{own.title}</h2>
               ) : (
                 <h2 className="inline-flex items-center gap-1.5 font-bold"><Ban size={14} aria-hidden="true" />Tenhle čas už nejde rezervovat</h2>
               )}
@@ -381,7 +403,14 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             </div>
           </div>
 
-          {!offer.bookable && reason ? (
+          {own ? (
+            <p className="mt-2.5 text-sm text-ink">
+              {own.body}{' '}
+              <Link to="/rezervace" className="inline-flex min-h-11 items-center font-bold text-accent underline underline-offset-4">
+                {own.link}
+              </Link>
+            </p>
+          ) : !offer.bookable && reason ? (
             <p className="mt-2.5 text-sm font-bold text-ink">
               {unavailableCopy(reason).title}{' '}
               <a href="#recovery-title" className="inline-flex min-h-11 items-center font-bold text-accent underline underline-offset-4">
@@ -395,6 +424,13 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
               {minutesAway > 0 && minutesAway <= 120 && offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60 ? <span aria-hidden="true">·</span> : null}
               {offer.bookable && cutoffMinutes > 0 && cutoffMinutes <= 60 ? <span>Rezervovat ještě <strong className="text-ink">{cutoffMinutes} min</strong></span> : null}
               {showCapacity ? <CapacityLabel remaining={offer.capacity_remaining} total={offer.capacity_total} /> : null}
+            </p>
+          ) : null}
+          {/* Said before the tap, not first in the booking sheet: "Chytit FLEK" alone reads as instant. */}
+          {offer.bookable && manual && confirmMinutes ? (
+            <p className="mt-2 flex items-start gap-1.5 text-xs leading-snug text-muted">
+              <BellRing size={13} aria-hidden="true" className="mt-px shrink-0 text-accent" />
+              <span>Podnik má na potvrzení až {confirmMinutes} min. Do té doby částku jen zablokujeme.</span>
             </p>
           ) : null}
 
@@ -448,7 +484,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
               výhodnější cenu. Dostaneš úplně stejnou službu jako za plnou cenu.
             </p>
           </details>
-          {!offer.bookable && reason ? (
+          {!offer.bookable && reason && !own ? (
             <div className="mb-8">
               <UnavailableOfferRecovery offer={offer} reason={reason} now={now} point={point} />
             </div>
@@ -494,7 +530,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
             </Section>
           ) : null}
           {/* A slot that can no longer be booked already offers alternatives in the recovery block above. */}
-          {offer.bookable || !reason ? (
+          {offer.bookable || !reason || own ? (
             <Recommendations
               offer={offer}
               venueRows={venueOffers.data ?? []}
@@ -584,7 +620,7 @@ function BookingSuccess({
           moment it is true. Computed from this booking, not from a running total. */}
       {offer.original_price_cents > offer.deal_price_cents ? (
         <p className="tnum mt-1 text-base font-bold text-ink">
-          Ušetřil jsi {money(offer.original_price_cents - offer.deal_price_cents)}
+          Ušetřeno {money(offer.original_price_cents - offer.deal_price_cents)}
         </p>
       ) : null}
       <p className="tnum mt-4 text-base font-bold text-ink">
@@ -594,25 +630,23 @@ function BookingSuccess({
         {offer.address_line}, {offer.city}
       </p>
       <div className="mt-6 flex flex-col gap-2">
+        {/* One height for all three: a 44 px primary above two 52 px outlines read as two sizes of button. */}
         <a
-          className="btn-primary"
+          className={buttonClass({ size: 'lg' })}
           href={navigationHref(offer)}
           target="_blank"
           rel="noreferrer"
         >
-          Navigovat
+          <MapPin size={18} aria-hidden="true" />Navigovat
         </a>
         <a
-          className="inline-flex min-h-13 w-full items-center justify-center gap-2 rounded-xl border border-line bg-card px-5 text-base font-bold text-ink"
+          className={buttonClass({ variant: 'secondary', size: 'lg' })}
           href={icsHref(bookingIcs({ code, serviceName: offer.service_name, businessName: offer.business_name, address: `${offer.address_line}, ${offer.city}`, startAt: offer.start_at, endAt: offer.end_at }))}
           download={`flek-${code}.ics`}
         >
           <CalendarPlus size={18} aria-hidden="true" />Přidat do kalendáře
         </a>
-        <Link
-          to="/rezervace"
-          className="inline-flex min-h-13 w-full items-center justify-center rounded-xl border border-line bg-card px-5 text-base font-bold text-ink"
-        >
+        <Link to="/rezervace" className={buttonClass({ variant: 'secondary', size: 'lg' })}>
           Zobrazit rezervaci
         </Link>
       </div>

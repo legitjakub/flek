@@ -74,6 +74,9 @@ function ConfirmationRequestCard({ booking }: { booking: MerchantBooking }) {
   const now = useServerNow(1_000);
   const queryClient = useQueryClient();
   const [feedback, setFeedback] = useState<{ tone: 'success' | 'warning'; text: string } | null>(null);
+  // Declining is final (the hold is released, the customer is told, the seat goes back), so it asks
+  // once, as the full-screen request does. Confirming stays one tap.
+  const [declining, setDeclining] = useState(false);
   const decision = useMutation({
     mutationFn: (accept: boolean) => respondToBooking(booking.id, accept),
     onSuccess: (result, accept) => setFeedback(decisionMessage(result, accept)),
@@ -111,7 +114,7 @@ function ConfirmationRequestCard({ booking }: { booking: MerchantBooking }) {
         <div><dt className="text-xs text-muted">Vy dostanete</dt><dd className="tnum font-bold text-ink">{money(booking.merchant_payout_cents)}</dd></div>
       </dl>
       <p className="mt-3 text-sm text-muted">
-        {capturing ? 'Dokončujeme platbu zákazníka. Rezervační kód uvidíte za pár sekund.' : 'Zákazník má platbu autorizovanou. Peníze strhneme, až rezervaci potvrdíte.'}
+        {capturing ? 'Dokončujeme platbu zákazníka. Rezervační kód uvidíte za pár sekund.' : 'Zákazník má částku na kartě zablokovanou. Strhneme ji, až rezervaci potvrdíte.'}
       </p>
 
       {!capturing ? (
@@ -119,15 +122,27 @@ function ConfirmationRequestCard({ booking }: { booking: MerchantBooking }) {
           <p className={cx('tnum mt-3 text-xl font-extrabold', overdue ? 'text-muted' : 'text-ink')} role="timer" aria-live="off">
             {overdue ? 'Čas na potvrzení vypršel' : `Potvrďte do ${left?.clock ?? '–'}`}
           </p>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            <Button size="lg" variant="brand" loading={decision.isPending && decision.variables === true} disabled={decision.isPending || overdue || answered} onClick={() => decision.mutate(true)}>
-              <Check size={20} aria-hidden="true" />
-              Potvrdit
-            </Button>
-            <Button size="lg" variant="secondary" loading={decision.isPending && decision.variables === false} disabled={decision.isPending || overdue || answered} onClick={() => decision.mutate(false)}>
-              Nemohu přijmout
-            </Button>
-          </div>
+          {declining && !overdue && !answered ? (
+            <div role="group" aria-labelledby={`odmitnout-${booking.id}`} className="mt-3 rounded-2xl bg-danger-soft p-4">
+              <p id={`odmitnout-${booking.id}`} className="text-base font-extrabold text-ink">Opravdu odmítnout?</p>
+              <p className="mt-1 text-sm text-ink/80">Zákazník nic nezaplatí a místo se vrátí do nabídky.</p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <Button variant="secondary" disabled={decision.isPending} onClick={() => setDeclining(false)}>Zpět</Button>
+                <Button variant="danger" loading={decision.isPending} onClick={() => decision.mutate(false)}>Odmítnout</Button>
+              </div>
+            </div>
+          ) : (
+            // One strong answer; declining is a quiet button under it, as on the full-screen request.
+            <div className="mt-3 grid gap-1">
+              <Button size="lg" variant="brand" loading={decision.isPending && decision.variables === true} disabled={decision.isPending || overdue || answered} onClick={() => decision.mutate(true)}>
+                <Check size={20} aria-hidden="true" />
+                Potvrdit
+              </Button>
+              <Button variant="ghost" disabled={decision.isPending || overdue || answered} onClick={() => setDeclining(true)} className="text-muted">
+                Nemohu přijmout
+              </Button>
+            </div>
+          )}
         </>
       ) : null}
       {feedback ? <div className="mt-3"><Banner tone={feedback.tone}>{feedback.text}</Banner></div> : null}

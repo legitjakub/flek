@@ -4,7 +4,7 @@ import { Check, ChevronDown, ChevronRight, ImageOff, Plus, Scissors } from 'luci
 import { listCategories, saveService } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { money } from '../../lib/format';
-import { Banner, Button, Chip, EmptyState, Field, Input, LoadingList, Select, Sheet, Textarea, cx } from '../../components/ui';
+import { Banner, Button, Chip, EmptyState, ErrorState, Field, Input, LoadingList, Select, Sheet, Textarea, cx } from '../../components/ui';
 import { MerchantShell } from './MerchantShell';
 import { PageHeader } from './partnerUi';
 import { useRouter } from '../../app/router';
@@ -51,6 +51,7 @@ function Services({ business }: { business: Business }) {
       />
 
       {services.isPending ? <LoadingList /> : null}
+      {services.isError ? <ErrorState error={services.error} onRetry={() => services.refetch()} /> : null}
       {services.isSuccess && services.data.length === 0 ? (
         <EmptyState
           icon={<Scissors size={24} />}

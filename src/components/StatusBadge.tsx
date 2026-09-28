@@ -2,7 +2,8 @@ import { cx } from './ui';
 import type { BookingStatus, BusinessStatus, OfferStatus, PaymentStatus } from '../types/database';
 
 export type AppStatus = BookingStatus | BusinessStatus | OfferStatus | PaymentStatus;
-type Tone = 'positive' | 'warning' | 'danger' | 'neutral';
+export type BadgeTone = 'positive' | 'warning' | 'danger' | 'neutral';
+type Tone = BadgeTone;
 
 const META: Record<AppStatus, { label: string; tone: Tone }> = {
   pending_payment: { label: 'Probíhá platba', tone: 'warning' },
@@ -33,17 +34,22 @@ export function statusMeta(status: AppStatus): { label: string; tone: Tone } {
 
 export function StatusBadge({ status, label }: { status: AppStatus; label?: string }) {
   const meta = statusMeta(status);
+  return <ToneBadge tone={meta.tone} label={label ?? meta.label} />;
+}
+
+/** The badge itself, for a label whose colour follows its meaning rather than a stored status. */
+export function ToneBadge({ tone, label }: { tone: BadgeTone; label: string }) {
   return (
     <span
       className={cx(
         'inline-flex min-h-6 items-center rounded-md px-2 py-0.5 text-xs font-bold',
-        meta.tone === 'positive' && 'bg-positive/10 text-positive',
-        meta.tone === 'warning' && 'bg-warning-soft text-warning',
-        meta.tone === 'danger' && 'bg-danger-soft text-danger',
-        meta.tone === 'neutral' && 'bg-surface text-muted',
+        tone === 'positive' && 'bg-positive/10 text-positive',
+        tone === 'warning' && 'bg-warning-soft text-warning',
+        tone === 'danger' && 'bg-danger-soft text-danger',
+        tone === 'neutral' && 'bg-surface text-muted',
       )}
     >
-      {label ?? meta.label}
+      {label}
     </span>
   );
 }

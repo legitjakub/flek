@@ -134,9 +134,9 @@ function SignedOutProfile() {
 
       <PromoCard tone="promo">
         <Store size={26} aria-hidden="true" />
-        <h2 className="mt-3 text-lg font-extrabold tracking-tight">Máte podnik?</h2>
+        <h2 className="mt-3 text-lg font-extrabold tracking-tight">Máš podnik?</h2>
         <p className="mt-1 max-w-sm text-base text-ink">
-          Nabídněte volné termíny a naplňte je i na poslední chvíli. Registrace je zdarma.
+          Nabízej volné termíny a naplň je i na poslední chvíli. Registrace je zdarma.
         </p>
         <Link to="/partner" className={buttonClass({ shape: 'pill' }) + ' mt-4'}>
           FLEK Partner
@@ -157,7 +157,7 @@ function AppList({ partner, admin, signedIn }: { partner: boolean; admin: boolea
   return (
     <>
       <SettingsList title="Aplikace">
-        <SettingsRow icon={<Sparkles size={20} />} label="Jak FLEK funguje?" hint="Krátké představení ve čtyřech krocích" onClick={openIntro} />
+        <SettingsRow icon={<Sparkles size={20} />} label="Jak FLEK funguje?" hint="Co je FLEK, na jedné obrazovce" onClick={openIntro} />
         {install ? (
           <SettingsRow
             icon={<Download size={20} />}
@@ -170,7 +170,7 @@ function AppList({ partner, admin, signedIn }: { partner: boolean; admin: boolea
           <SettingsRow
             icon={<Store size={20} />}
             label={partner ? 'FLEK Partner' : 'Pro podniky'}
-            hint={partner ? 'Správa provozovny a termínů' : 'Nabídněte volné termíny'}
+            hint={partner ? 'Správa provozovny a termínů' : 'Nabízej volné termíny'}
             to="/partner"
           />
         ) : null}

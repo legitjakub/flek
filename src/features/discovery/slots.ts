@@ -20,10 +20,36 @@ export function slotKey(row: Pick<SearchRow, 'business_id' | 'service_id'>): str
   return `${row.business_id}:${row.service_id}`;
 }
 
+/**
+ * A venue that publishes one time twice (instead of one FLEK with two seats) offers the customer
+ * one time, not two identical chips: rows of one service starting at the same moment for the same
+ * price become one row with their free seats added up. Booking it books one of them; the next
+ * read shows the other. `preferId` keeps that row's id — the time already open on the page.
+ */
+export function mergeSameTime<T extends SearchRow>(rows: T[], preferId?: string): T[] {
+  const byTime = new Map<string, T>();
+  for (const row of rows) {
+    const key = `${slotKey(row)}|${row.start_at}|${row.deal_price_cents}`;
+    const kept = byTime.get(key);
+    if (!kept) {
+      byTime.set(key, row);
+      continue;
+    }
+    if (kept.id === row.id) continue;
+    const winner = row.id === preferId ? row : kept;
+    byTime.set(key, {
+      ...winner,
+      capacity_remaining: kept.capacity_remaining + row.capacity_remaining,
+      capacity_total: kept.capacity_total + row.capacity_total,
+    });
+  }
+  return [...byTime.values()];
+}
+
 /** Groups keep the order in which the server ranked their first time. */
 export function groupSlots<T extends SearchRow>(rows: T[]): SlotGroup<T>[] {
   const groups = new Map<string, T[]>();
-  for (const row of rows) {
+  for (const row of mergeSameTime(rows)) {
     const slots = groups.get(slotKey(row));
     if (!slots) groups.set(slotKey(row), [row]);
     else if (!slots.some((slot) => slot.id === row.id)) slots.push(row);

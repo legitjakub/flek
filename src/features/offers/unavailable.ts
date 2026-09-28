@@ -1,4 +1,4 @@
-import type { OfferDetail } from '../../types/database';
+import type { BookingStatus, OfferDetail } from '../../types/database';
 
 /**
  * Why an offer cannot be booked — for presentation only.
@@ -67,5 +67,23 @@ export function unavailableCopy(reason: UnavailableReason): { title: string; bod
         title: 'Tenhle FLEK už není dostupný.',
         body: 'Zkus se podívat, co je volné teď.',
       };
+  }
+}
+
+/**
+ * The viewer holds this seat. A sold-out FLEK they booked themselves is not "caught by someone":
+ * after paying, reopening the offer used to read like the slot had been lost.
+ */
+export function ownBookingCopy(status: BookingStatus): { title: string; body: string; link: string } | null {
+  switch (status) {
+    case 'confirmed':
+      return { title: 'Tohle je tvůj FLEK', body: 'Máš rezervováno. Kód, který v podniku ukážeš, najdeš v Rezervacích.', link: 'Ukázat kód' };
+    case 'pending_merchant':
+    case 'capturing':
+      return { title: 'Tohle je tvůj FLEK', body: 'Podnik tvou žádost právě potvrzuje.', link: 'Zobrazit rezervaci' };
+    case 'pending_payment':
+      return { title: 'Tohle je tvůj FLEK', body: 'Platbu ještě dokončuješ.', link: 'Zobrazit rezervaci' };
+    default:
+      return null;
   }
 }

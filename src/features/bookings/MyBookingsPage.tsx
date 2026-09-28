@@ -10,10 +10,10 @@ import { Banner, Button, EmptyState, ErrorState, LoadingList, PinMark, PromoCard
 import { Link, useRouter } from '../../app/router';
 import { useSession } from '../auth/session';
 import { Voucher } from './Voucher';
-import { StatusBadge } from '../../components/StatusBadge';
+import { ToneBadge } from '../../components/StatusBadge';
 import { OriginalPrice } from '../../components/Price';
 import type { CustomerBooking } from '../../types/database';
-import { bookingMoneyLabel, confirmationView, waitingLine } from './confirmationView';
+import { bookingMoneyState, confirmationView, customerBookingStatus, waitingLine } from './confirmationView';
 import { DEFAULT_POINT, storedPoint } from '../../lib/geo';
 import { DEFAULT_FILTERS } from '../discovery/filters';
 import { plural } from '../discovery/FilterBar';
@@ -113,6 +113,7 @@ export function MyBookingsPage() {
     );
   }
 
+  const cancellingRequest = Boolean(toCancel && ['pending_payment', 'pending_merchant'].includes(toCancel.status));
   const all = query.data ?? [];
   // Requests still in motion lead the list: they are the ones with a clock running.
   const inMotion = (b: CustomerBooking) => b.status === 'pending_payment' || b.status === 'pending_merchant' || b.status === 'capturing';
@@ -175,14 +176,8 @@ export function MyBookingsPage() {
                       {clockTime(booking.end_at_snapshot)}
                     </p>
                   </div>
-                  <span className="flex max-w-full shrink-0 flex-wrap justify-end gap-1.5">
-                    <StatusBadge status={booking.status} />
-                    {booking.payment_status === 'paid' && booking.status.startsWith('cancelled') && booking.payment_id ? (
-                      <RefundStatus paymentId={booking.payment_id} amount={money(booking.price_cents)} />
-                    ) : booking.payment_status ? (
-                      <StatusBadge status={booking.payment_status} label={bookingMoneyLabel(booking, money(booking.price_cents))} />
-                    ) : null}
-                  </span>
+                  {/* One status, said to the customer; the money has its own line beside the amount. */}
+                  <ToneBadge {...customerBookingStatus(booking)} />
                 </div>
 
                 <div className="mt-3 flex items-start gap-3 text-base font-bold text-ink">
@@ -192,6 +187,7 @@ export function MyBookingsPage() {
                     {booking.original_price_cents_snapshot > booking.price_cents ? (
                       <OriginalPrice cents={booking.original_price_cents_snapshot} className="text-xs font-normal" />
                     ) : null}
+                    <MoneyState booking={booking} />
                   </p>
                 </div>
                 <p className="text-sm text-muted">
@@ -366,7 +362,7 @@ export function MyBookingsPage() {
           setToCancel(null);
           setFailure(null);
         }}
-        title="Zrušit rezervaci?"
+        title={cancellingRequest ? 'Zrušit žádost?' : 'Zrušit rezervaci?'}
         footer={
           <div className="flex gap-2">
             <Button variant="secondary" className="flex-1" onClick={() => setToCancel(null)}>
@@ -378,15 +374,15 @@ export function MyBookingsPage() {
               loading={cancel.isPending}
               onClick={() => toCancel && cancel.mutate(toCancel)}
             >
-              Zrušit rezervaci
+              {cancellingRequest ? 'Zrušit žádost' : 'Zrušit rezervaci'}
             </Button>
           </div>
         }
       >
-        <p className="text-sm text-ink">
-          {toCancel && ['pending_payment', 'pending_merchant'].includes(toCancel.status)
-            ? 'Žádost zrušíme a případná blokace částky na kartě se uvolní.'
-            : 'Termín se vrátí do nabídky a někdo jiný ho může využít. Vrátíme ti celou zaplacenou částku.'}
+        <p className="text-sm leading-relaxed text-ink">
+          {cancellingRequest
+            ? 'Podnik tvou žádost už neuvidí. Nic nestrhneme a blokaci částky na kartě uvolníme.'
+            : 'Termín se vrátí do nabídky a někdo jiný ho může využít. Celou zaplacenou částku ti vrátíme na kartu; na výpisu se obvykle objeví do 5–10 pracovních dnů.'}
         </p>
         {failure ? (
           <div className="mt-3">
@@ -483,8 +479,25 @@ function TicketPreview() {
   );
 }
 
+/** What is happening to the money, under the amount it concerns. */
+function MoneyState({ booking }: { booking: CustomerBooking }) {
+  if (booking.payment_status === 'paid' && booking.status.startsWith('cancelled') && booking.payment_id) {
+    return <RefundState paymentId={booking.payment_id} />;
+  }
+  const state = bookingMoneyState(booking);
+  return state ? <MoneyLine text={state.text} tone={state.tone} /> : null;
+}
+
+function MoneyLine({ text, tone }: { text: string; tone: 'positive' | 'muted' | 'danger' }) {
+  return (
+    <span className={cx('text-right text-xs font-bold', tone === 'positive' ? 'text-positive' : tone === 'danger' ? 'text-danger' : 'text-muted')}>
+      {text}
+    </span>
+  );
+}
+
 /** Only unresolved captured refunds need the more detailed existing payment RPC. */
-function RefundStatus({ paymentId, amount }: { paymentId: string; amount: string }) {
+function RefundState({ paymentId }: { paymentId: string }) {
   const queryClient = useQueryClient();
   const state = useQuery({
     queryKey: ['payment-state', paymentId],
@@ -495,10 +508,9 @@ function RefundStatus({ paymentId, amount }: { paymentId: string; amount: string
     if (state.data?.status === 'refunded') void queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
   }, [state.data?.status, queryClient]);
   const failed = state.data?.refund_status === 'failed' || state.data?.refund_status === 'canceled';
-  const label = state.isError || !state.data ? 'Ověřujeme vrácení platby'
-    : state.data.status === 'refunded' ? `${amount} vráceno`
-      : failed ? 'Vrácení platby řešíme ručně' : `Vracíme ${amount}`;
-  return <StatusBadge status={failed ? 'failed' : state.data?.status === 'refunded' ? 'refunded' : 'pending'} label={label} />;
+  if (state.isError || !state.data) return <MoneyLine text="Ověřujeme vrácení" tone="muted" />;
+  if (state.data.status === 'refunded') return <MoneyLine text="Vráceno" tone="positive" />;
+  return failed ? <MoneyLine text="Vrácení řešíme ručně" tone="danger" /> : <MoneyLine text="Vracíme" tone="muted" />;
 }
 
 /** The request outcome uses the same words here and on the return from Stripe. */

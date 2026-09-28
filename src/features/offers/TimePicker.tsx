@@ -5,7 +5,7 @@ import { relativeTime } from '../../lib/clock';
 import { money } from '../../lib/format';
 import { cx } from '../../components/ui';
 import { OriginalPrice } from '../../components/Price';
-import { slotLabels, slotsByDay } from '../discovery/slots';
+import { mergeSameTime, slotLabels, slotsByDay } from '../discovery/slots';
 import type { OfferDetail, SearchRow } from '../../types/database';
 
 /** Four compact choices fill two rows on a phone; more stay one tap away. */
@@ -36,7 +36,8 @@ export function TimePicker({
   const current = slots.some((slot) => slot.id === offer.id);
   // The current slot already has a complete summary above this chooser. Showing it again here
   // made the phone screen feel like two competing selections, so this list contains alternatives.
-  const times = slots.filter((slot) => slot.id !== offer.id);
+  // A second copy of the open time (the venue published it twice) folds into it, not into the list.
+  const times = useMemo(() => mergeSameTime(slots, offer.id).filter((slot) => slot.id !== offer.id), [slots, offer.id]);
   const days = useMemo(() => slotsByDay(times, now), [times, now]);
   const offerDay = dayKey(offer.start_at);
   const selectedDay = days.some((day) => day.key === offerDay) ? offerDay : days[0]?.key;

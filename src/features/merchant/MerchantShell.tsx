@@ -165,12 +165,12 @@ function ApprovedFrame({ business, path }: { business: Business; path: string })
   return (
     <>
       {celebrate ? (
-        <div className="mb-4 flex items-start justify-between gap-3 rounded-2xl bg-accent px-4 py-3 text-accent-ink" role="status">
+        <div className="on-dark mb-4 flex items-start justify-between gap-3 rounded-2xl bg-accent px-4 py-3 text-accent-ink" role="status">
           <div>
             <p className="text-base font-extrabold">Provozovna byla schválena 🎉</p>
             <p className="text-sm">Teď můžete vystavit první FLEK.</p>
           </div>
-          <button type="button" onClick={closeCelebration} aria-label="Zavřít" className="grid size-10 shrink-0 place-items-center rounded-xl hover:bg-card/15">
+          <button type="button" onClick={closeCelebration} aria-label="Zavřít" className="grid size-11 shrink-0 place-items-center rounded-xl hover:bg-card/15">
             <X size={18} aria-hidden="true" />
           </button>
         </div>
@@ -197,7 +197,7 @@ function NewBookingBanner({ alert, onDismiss }: { alert: BookingAlert; onDismiss
   const { navigate } = useRouter();
   const request = alert.kind === 'request';
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-ink px-4 py-3 text-card shadow-lift">
+    <div className="on-dark flex flex-wrap items-center gap-3 rounded-2xl bg-ink px-4 py-3 text-card shadow-lift">
       <BellRing size={20} aria-hidden="true" className="shrink-0 text-brand-on-dark" />
       <div className="min-w-0 flex-1">
         <p className="text-base font-extrabold">{request ? 'Nová rezervace čeká na potvrzení' : 'Nová rezervace'}</p>
@@ -218,7 +218,7 @@ function NewBookingBanner({ alert, onDismiss }: { alert: BookingAlert; onDismiss
       >
         {request ? 'Vyřídit' : 'Zobrazit'}
       </button>
-      <button type="button" onClick={() => onDismiss()} aria-label="Skrýt" className="grid size-10 shrink-0 place-items-center rounded-xl text-card/80 hover:bg-card/10">
+      <button type="button" onClick={() => onDismiss()} aria-label="Skrýt" className="grid size-11 shrink-0 place-items-center rounded-xl text-card/80 hover:bg-card/10">
         <X size={18} aria-hidden="true" />
       </button>
     </div>
@@ -292,7 +292,7 @@ function MerchantFrame({
                 aria-label="Provozovna"
                 value={business.id}
                 onChange={(event) => onSwitch?.(event.target.value)}
-                className="min-h-11 max-w-[12rem] truncate rounded-xl border border-line bg-card px-3 text-sm font-bold text-ink"
+                className="min-h-11 max-w-[12rem] truncate rounded-xl border border-line-strong bg-card px-3 text-sm font-bold text-ink"
               >
                 {businesses.map((item) => (
                   <option key={item.id} value={item.id}>

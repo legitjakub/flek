@@ -66,6 +66,7 @@ const AdminSettingsPage = lazy(() =>
 import { errorMessage } from '../lib/errors';
 import { Button, LoadingList } from '../components/ui';
 import { inventoryVersion } from '../lib/api';
+import { routeTitle, setRouteTitle } from '../lib/documentTitle';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -96,40 +97,79 @@ function InventoryWatcher() {
   return null;
 }
 
-/** Merchant and admin surfaces bring their own frame; the customer app wears the shell. */
-const ROUTES: { path: string; render: (params: Record<string, string>) => ReactNode; shell: boolean }[] = [
-  { path: '/', render: () => <DiscoveryPage />, shell: true },
-  { path: '/mapa', render: () => <MapPage />, shell: true },
-  { path: '/nabidka/:id', render: (p) => <OfferDetailPage offerId={p.id} />, shell: true },
-  { path: '/oblibene', render: () => <FavoritesPage />, shell: true },
+/**
+ * Merchant and admin surfaces bring their own frame; the customer app wears the shell. `title`
+ * names the page in the browser tab and to a screen reader; null keeps the app's own title.
+ */
+const ROUTES: { path: string; title: string | null; render: (params: Record<string, string>) => ReactNode; shell: boolean }[] = [
+  { path: '/', title: null, render: () => <DiscoveryPage />, shell: true },
+  { path: '/mapa', title: 'Mapa', render: () => <MapPage />, shell: true },
+  { path: '/nabidka/:id', title: 'FLEK', render: (p) => <OfferDetailPage offerId={p.id} />, shell: true },
+  { path: '/oblibene', title: 'Oblíbená místa', render: () => <FavoritesPage />, shell: true },
   // A venue and everything free at it — the destination favourites always implied.
-  { path: '/podnik/:id', render: (p) => <VenuePage businessId={p.id} />, shell: true },
-  { path: '/rezervace', render: () => <MyBookingsPage />, shell: true },
-  { path: '/profil', render: () => <ProfilePage />, shell: true },
+  { path: '/podnik/:id', title: 'Podnik', render: (p) => <VenuePage businessId={p.id} />, shell: true },
+  { path: '/rezervace', title: 'Rezervace', render: () => <MyBookingsPage />, shell: true },
+  { path: '/profil', title: 'Profil', render: () => <ProfilePage />, shell: true },
   // Terms, privacy and content rules: public, linked from the footer, the booking sheet and the partner area.
-  { path: '/podminky', render: () => <LegalPage kind="customer_terms" />, shell: true },
-  { path: '/podminky-podniky', render: () => <LegalPage kind="merchant_terms" />, shell: true },
-  { path: '/soukromi', render: () => <LegalPage kind="privacy" />, shell: true },
-  { path: '/prihlaseni', render: () => <AuthPage />, shell: false },
-  { path: '/potvrzeni', render: () => <ConfirmationPage />, shell: false },
+  { path: '/podminky', title: 'Obchodní podmínky', render: () => <LegalPage kind="customer_terms" />, shell: true },
+  { path: '/podminky-podniky', title: 'Podmínky pro podniky', render: () => <LegalPage kind="merchant_terms" />, shell: true },
+  { path: '/soukromi', title: 'Ochrana osobních údajů', render: () => <LegalPage kind="privacy" />, shell: true },
+  { path: '/prihlaseni', title: 'Přihlášení', render: () => <AuthPage />, shell: false },
+  { path: '/potvrzeni', title: 'Potvrzení e-mailu', render: () => <ConfirmationPage />, shell: false },
   // Invitation links are public and must render before anyone signs in.
-  { path: '/r/:code', render: (p) => <ReferralLandingPage code={p.code} />, shell: false },
-  { path: '/partner', render: () => <MerchantDashboardPage />, shell: false },
-  { path: '/partner/nabidky', render: () => <MerchantOffersPage />, shell: false },
-  { path: '/partner/rezervace', render: () => <MerchantBookingsPage />, shell: false },
-  { path: '/partner/sluzby', render: () => <MerchantServicesPage />, shell: false },
-  { path: '/partner/provozovna', render: () => <MerchantBusinessPage />, shell: false },
-  { path: '/partner/metriky', render: () => <MerchantMetricsPage />, shell: false },
-  { path: '/partner/registrace', render: () => <MerchantRegisterPage />, shell: false },
-  { path: '/admin', render: () => <AdminBusinessesPage />, shell: false },
-  { path: '/admin/nabidky', render: () => <AdminOffersPage />, shell: false },
-  { path: '/admin/rezervace', render: () => <AdminBookingsPage />, shell: false },
-  { path: '/admin/uzivatele', render: () => <AdminUsersPage />, shell: false },
-  { path: '/admin/metriky', render: () => <AdminMetricsPage />, shell: false },
-  { path: '/admin/audit', render: () => <AdminAuditPage />, shell: false },
-  { path: '/admin/nahlaseni', render: () => <AdminReportsPage />, shell: false },
-  { path: '/admin/nastaveni', render: () => <AdminSettingsPage />, shell: false },
+  { path: '/r/:code', title: 'Pozvánka', render: (p) => <ReferralLandingPage code={p.code} />, shell: false },
+  { path: '/partner', title: 'Přehled', render: () => <MerchantDashboardPage />, shell: false },
+  { path: '/partner/nabidky', title: 'Nabídky', render: () => <MerchantOffersPage />, shell: false },
+  { path: '/partner/rezervace', title: 'Rezervace', render: () => <MerchantBookingsPage />, shell: false },
+  { path: '/partner/sluzby', title: 'Služby', render: () => <MerchantServicesPage />, shell: false },
+  { path: '/partner/provozovna', title: 'Provozovna', render: () => <MerchantBusinessPage />, shell: false },
+  { path: '/partner/metriky', title: 'Metriky', render: () => <MerchantMetricsPage />, shell: false },
+  { path: '/partner/registrace', title: 'Registrace provozovny', render: () => <MerchantRegisterPage />, shell: false },
+  { path: '/admin', title: 'Provozovny', render: () => <AdminBusinessesPage />, shell: false },
+  { path: '/admin/nabidky', title: 'Nabídky', render: () => <AdminOffersPage />, shell: false },
+  { path: '/admin/rezervace', title: 'Rezervace', render: () => <AdminBookingsPage />, shell: false },
+  { path: '/admin/uzivatele', title: 'Uživatelé', render: () => <AdminUsersPage />, shell: false },
+  { path: '/admin/metriky', title: 'Metriky', render: () => <AdminMetricsPage />, shell: false },
+  { path: '/admin/audit', title: 'Audit', render: () => <AdminAuditPage />, shell: false },
+  { path: '/admin/nahlaseni', title: 'Bezpečnost obsahu', render: () => <AdminReportsPage />, shell: false },
+  { path: '/admin/nastaveni', title: 'Nastavení', render: () => <AdminSettingsPage />, shell: false },
 ];
+
+/**
+ * A new page used to arrive in silence: focus stayed on the link that was pressed, often gone, and
+ * a screen reader said nothing. After a navigation (not the first load, not a change of filters)
+ * focus moves to the page's heading, once it has rendered. An open dialog keeps its focus.
+ */
+function useRouteFocus(path: string) {
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    const focusHeading = () => {
+      if (document.activeElement?.closest('[role="dialog"], [role="alertdialog"]')) return true;
+      const heading = document.querySelector<HTMLElement>('main h1');
+      if (!heading) return false;
+      heading.setAttribute('tabindex', '-1');
+      heading.setAttribute('data-route-focus', '');
+      heading.focus({ preventScroll: true });
+      return true;
+    };
+    if (focusHeading()) return;
+    // The page may still be loading its chunk or data; wait a moment for the heading.
+    const observer = new MutationObserver(() => {
+      if (focusHeading()) stop();
+    });
+    const timer = window.setTimeout(() => stop(), 4_000);
+    const stop = () => {
+      observer.disconnect();
+      window.clearTimeout(timer);
+    };
+    observer.observe(document.body, { childList: true, subtree: true });
+    return stop;
+  }, [path]);
+}
 
 function RouteLoading() {
   return (
@@ -141,15 +181,25 @@ function RouteLoading() {
 
 function Routes() {
   const { path } = useRouter();
+  let matched: { route: (typeof ROUTES)[number]; params: Record<string, string> } | null = null;
   for (const route of ROUTES) {
     const params = matchPath(route.path, path);
-    if (!params) continue;
+    if (params) {
+      matched = { route, params };
+      break;
+    }
+  }
+  const title = routeTitle(path, matched ? matched.route.title : undefined);
+  useEffect(() => setRouteTitle(title), [title]);
+  useRouteFocus(path);
+
+  if (matched) {
     const element = (
       <Boundary key={path} page>
-        <Suspense fallback={<RouteLoading />}>{route.render(params)}</Suspense>
+        <Suspense fallback={<RouteLoading />}>{matched.route.render(matched.params)}</Suspense>
       </Boundary>
     );
-    return route.shell ? <CustomerShell>{element}</CustomerShell> : element;
+    return matched.route.shell ? <CustomerShell>{element}</CustomerShell> : element;
   }
   return (
     <CustomerShell>

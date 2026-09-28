@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { capacityLabel } from '../src/components/CapacityLabel';
-import { bookingMoneyLabel, confirmationView, startsInLine, timeLeft, waitingLine } from '../src/features/bookings/confirmationView';
+import { bookingMoneyState, confirmationView, customerBookingStatus, startsInLine, timeLeft, waitingLine } from '../src/features/bookings/confirmationView';
+import type { BookingStatus } from '../src/types/database';
 import { decisionMessage, isConfirmationRequest, visibleToMerchant } from '../src/features/merchant/ConfirmationRequests';
 
 const facts = (extra: Record<string, unknown>) => ({
@@ -124,12 +125,48 @@ describe('money regressions', () => {
   });
   it('never describes an unfinished release as completed or an authorization as paid', () => {
     const booking = { status: 'pending_merchant' as const, payment_status: 'pending' as const, authorization_state: 'authorized' as const };
-    expect(bookingMoneyLabel(booking, '390 Kč')).toBe('Zablokováno 390 Kč');
-    expect(bookingMoneyLabel({ ...booking, authorization_state: 'release_pending' }, '390 Kč')).toBe('Uvolňujeme blokaci');
-    expect(bookingMoneyLabel({ ...booking, authorization_state: 'released' }, '390 Kč')).toBe('Blokace uvolněna');
-    expect(bookingMoneyLabel({ ...booking, status: 'capturing' }, '390 Kč')).toBe('Dokončujeme platbu');
-    expect(bookingMoneyLabel({ ...booking, status: 'confirmed', payment_status: 'paid', authorization_state: 'captured' }, '390 Kč')).toBe('Zaplaceno 390 Kč');
-    expect(bookingMoneyLabel({ ...booking, status: 'cancelled_by_customer', payment_status: 'paid', authorization_state: 'captured' }, '390 Kč')).toBe('Vracíme 390 Kč');
-    expect(bookingMoneyLabel({ ...booking, status: 'cancelled_by_customer', payment_status: 'refunded', authorization_state: 'captured' }, '390 Kč')).toBe('390 Kč vráceno');
+    const text = (extra: Partial<Parameters<typeof bookingMoneyState>[0]>) => bookingMoneyState({ ...booking, ...extra })?.text;
+    expect(text({})).toBe('Jen zablokováno');
+    expect(text({ authorization_state: 'release_pending' })).toBe('Uvolňujeme blokaci');
+    expect(text({ authorization_state: 'released' })).toBe('Blokace uvolněna');
+    expect(text({ status: 'capturing' })).toBe('Dokončujeme platbu');
+    expect(text({ status: 'confirmed', payment_status: 'paid', authorization_state: 'captured' })).toBe('Zaplaceno');
+    expect(text({ status: 'cancelled_by_customer', payment_status: 'paid', authorization_state: 'captured' })).toBe('Vracíme');
+    expect(text({ status: 'cancelled_by_customer', payment_status: 'refunded', authorization_state: 'captured' })).toBe('Vráceno');
+    // A request that ended before any money moved has nothing left to verify.
+    expect(text({ status: 'expired', authorization_state: 'none' })).toBe('Nic nestrženo');
+    expect(text({ status: 'pending_payment', authorization_state: 'none' })).toBe('Ověřujeme platbu');
+    // Nothing captured is ever called paid, whatever the booking says.
+    for (const status of ['pending_payment', 'pending_merchant', 'capturing', 'rejected', 'expired'] as const) {
+      for (const authorization_state of ['none', 'authorized', 'release_pending', 'released'] as const) {
+        expect(text({ status, authorization_state })).not.toBe('Zaplaceno');
+      }
+    }
+  });
+});
+
+describe('the customer\'s own booking card', () => {
+  const statuses: BookingStatus[] = ['pending_payment', 'pending_merchant', 'capturing', 'confirmed', 'expired', 'rejected',
+    'payment_failed', 'cancelled_by_customer', 'cancelled_by_merchant', 'completed', 'no_show'];
+  it('gives every booking state exactly one label, spoken to the customer', () => {
+    for (const status of statuses) {
+      const { label } = customerBookingStatus({ status });
+      expect(label.length).toBeGreaterThan(0);
+      // The venue's words about the customer never reach the customer.
+      expect(label).not.toMatch(/zákazník|Zamítnuto|Nedorazil/);
+    }
+    expect(customerBookingStatus({ status: 'cancelled_by_customer' }).label).toBe('Zrušeno na tvou žádost');
+    expect(customerBookingStatus({ status: 'rejected' }).label).toBe('Podnik nemohl přijmout');
+  });
+  it('tells a venue that ran out of time apart from a payment never finished', () => {
+    expect(customerBookingStatus({ status: 'expired', authorized_at: '2026-09-28T10:00:00Z' }).label).toBe('Podnik nestihl potvrdit');
+    expect(customerBookingStatus({ status: 'expired', authorized_at: null }).label).toBe('Platba nedokončena');
+  });
+  it('never repeats the money line in the status', () => {
+    for (const status of statuses) {
+      const status_label = customerBookingStatus({ status, authorized_at: '2026-09-28T10:00:00Z' }).label;
+      const money = bookingMoneyState({ status, payment_status: 'pending', authorization_state: 'authorized' })?.text;
+      expect(status_label).not.toBe(money);
+    }
   });
 });

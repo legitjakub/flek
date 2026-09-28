@@ -116,7 +116,8 @@ const SECTIONS = [
 ] as const;
 
 function jumpTo(id: string, smooth = true) {
-  document.getElementById(id)?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+  const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.getElementById(id)?.scrollIntoView({ behavior: smooth && !still ? 'smooth' : 'auto', block: 'start' });
 }
 
 /** Scrolls to `?sekce=…` once the part has rendered; the forms below load their data first. */
@@ -632,7 +633,7 @@ function BusinessForm({ business }: { business?: Business }) {
           </Field>
         </div>
 
-        <Field id="b-bank" label="Číslo účtu nebo IBAN" hint="Sem posíláme výplaty za rezervace.">
+        <Field id="b-bank" label="Číslo účtu nebo IBAN" hint="Stejný účet, jaký máte ve Stripe. Uvádíme ho v oznámení DAC7; výplaty samotné posílá Stripe.">
           <Input id="b-bank" placeholder="123456789/0800" value={billing.bank_account} onChange={(event) => setBill('bank_account', event.target.value)} />
         </Field>
 

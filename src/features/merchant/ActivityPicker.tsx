@@ -188,12 +188,12 @@ export function ServicePhotoPicker({
           <legend className="text-sm font-bold text-ink">Fotka nabídky</legend>
           <span className="mt-0.5 block text-sm text-muted">Vyberte fotku, která službu vystihuje.</span>
         </span>
-        <span className="flex shrink-0 items-center gap-1">
+        <span className="flex shrink-0 items-center gap-2">
           <span className="tnum mr-1 text-xs font-bold text-muted" aria-live="polite">{selectedIndex + 1} / {choices.length}</span>
-          <button type="button" aria-label="Předchozí fotka" disabled={selectedIndex === 0} onClick={() => carousel.goTo(selectedIndex - 1)} className="grid size-9 place-items-center rounded-xl border border-line bg-card text-ink disabled:opacity-30">
+          <button type="button" aria-label="Předchozí fotka" disabled={selectedIndex === 0} onClick={() => carousel.goTo(selectedIndex - 1)} className="relative grid size-9 place-items-center rounded-xl border border-line bg-card text-ink before:absolute before:-inset-1 before:content-[''] disabled:opacity-30">
             <ChevronLeft size={17} aria-hidden="true" />
           </button>
-          <button type="button" aria-label="Další fotka" disabled={selectedIndex === choices.length - 1} onClick={() => carousel.goTo(selectedIndex + 1)} className="grid size-9 place-items-center rounded-xl border border-line bg-card text-ink disabled:opacity-30">
+          <button type="button" aria-label="Další fotka" disabled={selectedIndex === choices.length - 1} onClick={() => carousel.goTo(selectedIndex + 1)} className="relative grid size-9 place-items-center rounded-xl border border-line bg-card text-ink before:absolute before:-inset-1 before:content-[''] disabled:opacity-30">
             <ChevronRight size={17} aria-hidden="true" />
           </button>
         </span>

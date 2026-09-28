@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { groupSlots, slotLabels, slotsByDay, visibleSlots } from '../src/features/discovery/slots';
+import { groupSlots, mergeSameTime, slotLabels, slotsByDay, visibleSlots } from '../src/features/discovery/slots';
 import type { SearchRow } from '../src/types/database';
 
 const NOW = '2026-09-15T08:00:00Z'; // 10:00 in Prague
@@ -47,5 +47,23 @@ describe('times of one service', () => {
     expect(visibleSlots([1, 2, 3, 4, 5, 6])).toEqual({ shown: [1, 2, 3], more: 3 });
     const days = slotsByDay([row('a', '2026-09-15T11:00:00Z'), row('b', '2026-09-15T16:00:00Z'), row('c', '2026-09-16T07:00:00Z')], NOW);
     expect(days.map((day) => [day.title, day.slots.map((slot) => slot.id)])).toEqual([['Dnes', ['a', 'b']], ['Zítra', ['c']]]);
+  });
+});
+
+describe('one time published twice', () => {
+  it('is one time with the seats of both, not two identical chips', () => {
+    const rows = [row('a', '2026-09-15T15:00:00Z', { capacity_total: 1, capacity_remaining: 1 }), row('b', '2026-09-15T15:00:00Z', { capacity_total: 1, capacity_remaining: 1 }), row('c', '2026-09-15T17:00:00Z')];
+    const merged = mergeSameTime(rows);
+    expect(merged.map((slot) => slot.id)).toEqual(['a', 'c']);
+    expect(merged[0]).toMatchObject({ capacity_total: 2, capacity_remaining: 2 });
+    expect(groupSlots(rows)[0].slots.map((slot) => slot.id)).toEqual(['a', 'c']);
+  });
+  it('keeps the time already open on the page, and keeps a different price apart', () => {
+    const rows = [row('a', '2026-09-15T15:00:00Z'), row('b', '2026-09-15T15:00:00Z'), row('d', '2026-09-15T15:00:00Z', { deal_price_cents: 35000 })];
+    expect(mergeSameTime(rows, 'b').map((slot) => slot.id)).toEqual(['b', 'd']);
+  });
+  it('never merges two services or two venues', () => {
+    const rows = [row('a', '2026-09-15T15:00:00Z'), row('e', '2026-09-15T15:00:00Z', { service_id: 's2' }), row('f', '2026-09-15T15:00:00Z', { business_id: 'b2' })];
+    expect(mergeSameTime(rows)).toHaveLength(3);
   });
 });

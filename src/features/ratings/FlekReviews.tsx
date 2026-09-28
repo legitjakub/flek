@@ -6,6 +6,9 @@ import { EmptyState, ErrorState, Skeleton } from '../../components/ui';
 
 const date = new Intl.DateTimeFormat('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' });
 
+/** Airbnb shows stars from three reviews on; below that one visit decides a new venue's score. */
+export const MIN_RATINGS_FOR_AVERAGE = 3;
+
 export function FlekRatingSummary({
   businessId,
   average,
@@ -18,17 +21,22 @@ export function FlekRatingSummary({
   href?: string;
 }) {
   if (!average || count < 1) return null;
-  const content = (
+  // An average of one or two visits says more about those visits than about the venue, so it is
+  // shown from three; before that only the fact that verified reviews exist.
+  const enough = count >= MIN_RATINGS_FOR_AVERAGE;
+  const content = enough ? (
     <>
       <Star size={14} aria-hidden="true" className="fill-brand text-brand" />
       <span className="tnum">{new Intl.NumberFormat('cs-CZ', { maximumFractionDigits: 1 }).format(average)}</span>
       <span className="font-normal text-muted">({count}) na FLEKu</span>
     </>
+  ) : (
+    <span className="tnum font-normal text-muted">{count === 1 ? '1 hodnocení' : `${count} hodnocení`} na FLEKu</span>
   );
   return href ? (
     <Link
       to={href}
-      aria-label={`${average} z 5, ${count} ověřených hodnocení na FLEKu`}
+      aria-label={enough ? `${average} z 5, ${count} ověřených hodnocení na FLEKu` : `${count} ${count === 1 ? 'ověřené' : 'ověřená'} hodnocení na FLEKu`}
       className="inline-flex min-h-11 items-center gap-1 font-bold text-ink underline decoration-line underline-offset-4 hover:text-accent"
     >
       {content}
