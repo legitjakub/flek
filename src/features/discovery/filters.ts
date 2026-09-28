@@ -5,6 +5,7 @@ export type When = 'now' | 'soon' | 'today' | 'tomorrow' | 'week';
 export type Daypart = 'morning' | 'afternoon' | 'evening';
 
 export type Filters = {
+  query: string;
   when: When;
   daypart: Daypart | null;
   radius_m: number;
@@ -15,6 +16,7 @@ export type Filters = {
 };
 
 export const DEFAULT_FILTERS: Filters = {
+  query: '',
   when: 'today',
   daypart: null,
   radius_m: 5000,
@@ -38,7 +40,7 @@ export function windowFor(when: When, serverNow: string): { from: string | null;
 
 /** Short enough to sit on one line in the segmented control at 375 px. */
 export const WHEN_LABELS: Record<When, string> = {
-  now: 'Teď',
+  now: 'Brzy',
   soon: 'Do 2 h',
   today: 'Dnes',
   tomorrow: 'Zítra',
@@ -93,7 +95,7 @@ export const PRICE_LABELS: [number | null, string][] = [
 /** The rail offers only broad windows; the sheet keeps every server-supported window. */
 export const PRIMARY_TIME_INTENTS = [
   { key: 'week', label: 'Vše' },
-  { key: 'now', label: 'Teď' },
+  { key: 'now', label: 'Brzy' },
   { key: 'today', label: 'Dnes' },
   { key: 'tomorrow', label: 'Zítra' },
 ] as const;
@@ -101,7 +103,7 @@ export type TimeIntent = typeof PRIMARY_TIME_INTENTS[number]['key'];
 export const TIME_OPTIONS: { value: When; label: string }[] =
   (['now', 'soon', 'today', 'tomorrow', 'week'] as const).map((value) => ({ value, label: WHEN_LABELS[value] }));
 
-/** Dayparts remain visible as chips. A two-hour window must never light the four-hour Teď. */
+/** Dayparts remain visible as chips. A two-hour window must never light the four-hour Brzy. */
 export function intentOf(filters: Filters, appliedWhen: When = filters.when): TimeIntent | null {
   // An advanced request stays represented by its chip even if the cold-start ladder widens it.
   if (filters.when === 'soon') return null;
@@ -120,6 +122,7 @@ export function clearAdvancedFilters(filters: Filters): Filters {
 /** How many choices differ from the default — the number shown on the Filtry button. */
 export function activeCount(filters: Filters): number {
   return (
+    (filters.query ? 1 : 0) +
     (filters.when === 'soon' ? 1 : 0) +
     (filters.daypart ? 1 : 0) +
     (filters.category ? 1 : 0) +
@@ -135,6 +138,8 @@ export type ActiveChip = { key: string; label: string; clear: (f: Filters) => Fi
 /** Every applied filter as a removable chip, so nothing is ever silently narrowing results. */
 export function activeChips(filters: Filters, categoryLabel: (slug: string) => string): ActiveChip[] {
   const chips: ActiveChip[] = [];
+  if (filters.query)
+    chips.push({ key: 'query', label: `Hledání: ${filters.query}`, clear: (f) => ({ ...f, query: '' }) });
   if (filters.when === 'soon')
     chips.push({ key: 'when', label: WHEN_LABELS.soon, clear: (f) => ({ ...f, when: DEFAULT_FILTERS.when }) });
   if (filters.daypart)

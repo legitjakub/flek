@@ -335,9 +335,9 @@ export function MapPage() {
           ) : null}
           {empty ? (
             <div className="pointer-events-auto mx-3 w-[calc(100%-1.5rem)] max-w-sm rounded-3xl bg-card p-5 shadow-lift">
-              <p className="text-base font-extrabold text-ink">V okolí teď nic volného není.</p>
-              <p className="mt-1 text-sm text-muted">Zkus jiné místo nebo čas nahoře nad mapou.</p>
-              {NOTIFICATIONS_ENABLED ? (
+              <p className="text-base font-extrabold text-ink">{filters.query ? 'Takovou službu jsme nenašli.' : 'V okolí teď nic volného není.'}</p>
+              <p className="mt-1 text-sm text-muted">{filters.query ? 'Zkus kratší název nebo vymaž hledání lupou nad mapou.' : 'Zkus jiné místo nebo čas nahoře nad mapou.'}</p>
+              {NOTIFICATIONS_ENABLED && !filters.query ? (
                 <button
                   type="button"
                   onClick={() => setWatchOpen(true)}

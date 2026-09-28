@@ -24,11 +24,11 @@ describe('rail and advanced time filters', () => {
     }
   });
   it('has exactly four primary choices and still opens on Dnes', () => {
-    expect(PRIMARY_TIME_INTENTS.map((i) => i.label)).toEqual(['Vše', 'Teď', 'Dnes', 'Zítra']);
+    expect(PRIMARY_TIME_INTENTS.map((i) => i.label)).toEqual(['Vše', 'Brzy', 'Dnes', 'Zítra']);
     expect(intentOf(DEFAULT_FILTERS)).toBe('today');
   });
 
-  it('keeps Do 2 h in the sheet without falsely lighting Teď', () => {
+  it('keeps Do 2 h in the sheet without falsely lighting Brzy', () => {
     expect(TIME_OPTIONS.find((i) => i.value === 'soon')?.label).toBe('Do 2 h');
     const advanced = filters({ when: 'soon' });
     expect(intentOf(advanced)).toBeNull();
@@ -57,6 +57,32 @@ describe('rail and advanced time filters', () => {
     expect(clearAdvancedFilters(advanced)).toEqual(DEFAULT_FILTERS);
     expect(clearAdvancedFilters(filters({ when: 'tomorrow', daypart: 'evening' }))).toEqual(filters({ when: 'tomorrow' }));
     expect(activeCount(DEFAULT_FILTERS)).toBe(0);
+  });
+});
+
+describe('service search', () => {
+  it('shares the query between feed and map, including Czech text', () => {
+    for (const path of ['/', '/mapa']) {
+      const url = new URL(`${path}?query=%20Masáž%20&when=now`, 'https://www.app-flek.eu');
+      const parsed = readDiscoveryState(url.searchParams).filters;
+      expect(parsed.query).toBe('Masáž');
+      expect(applyIntent(parsed, 'tomorrow').query).toBe('Masáž');
+      expect(TIME_OPTIONS.find((i) => i.value === 'now')?.label).toBe('Brzy');
+      expect(windowFor('now', NOW).until).toBe('2026-09-10T13:00:00.000Z');
+    }
+  });
+
+  it('keeps search visible and removable without resetting other choices', () => {
+    const searched = filters({ query: 'jóga', daypart: 'evening' });
+    const chips = activeChips(searched, (s) => s);
+    expect(activeCount(searched)).toBe(chips.length);
+    expect(chips.find((chip) => chip.key === 'query')?.clear(searched)).toEqual(filters({ daypart: 'evening' }));
+    expect(clearAdvancedFilters(searched)).toEqual(DEFAULT_FILTERS);
+  });
+
+  it('bounds a query restored from the URL and treats whitespace as empty', () => {
+    expect(readDiscoveryState(new URLSearchParams({ query: 'x'.repeat(100) })).filters.query).toHaveLength(80);
+    expect(readDiscoveryState(new URLSearchParams({ query: '   ' })).filters.query).toBe('');
   });
 });
 

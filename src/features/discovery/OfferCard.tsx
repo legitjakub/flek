@@ -192,17 +192,8 @@ export function OfferCard({
         <IllustrativePhotoLabel className={offer.discount_pct > 0 ? 'top-13 right-4' : 'top-4 right-4'} />
       ) : null}
 
-      {/*
-        The same glass as the chip above it, only bigger and lifted higher — one material for the
-        whole app instead of a second one for this card. The panel that stood here mixed a
-        diagonal brand tint, an inset highlight, a coloured drop shadow and a gradient hairline
-        and came out opaque: all that machinery for a white slab, with the photograph gone from
-        under it. What makes the card FLEK's is the blue on the price and on the times, where the
-        colour carries a meaning — not a wash over the whole sheet.
-
-        The radius is concentric with the card: 2rem outer, 0.625rem inset, 1.375rem here.
-      */}
-      <div className="glass glass-lift absolute inset-x-2.5 bottom-2.5 rounded-[1.375rem] p-3.5">
+      {/* A translucent brand tint; the radius stays concentric with the photograph. */}
+      <div className="glass glass-lift offer-glass absolute inset-x-2.5 bottom-2.5 rounded-[1.375rem] p-3.5">
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
             <h3 className="line-clamp-2 text-base leading-snug font-extrabold text-ink [overflow-wrap:anywhere]">

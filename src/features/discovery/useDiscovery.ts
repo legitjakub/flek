@@ -58,6 +58,7 @@ export async function discover(point: Point, filters: Filters, limit = FEED_LIMI
       lng: point.lng,
       radius_m: step.radius_m,
       category: filters.category,
+      query: filters.query,
       from: range.from,
       until: range.until,
       min_discount_pct: filters.min_discount_pct,

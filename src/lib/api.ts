@@ -11,6 +11,7 @@ function withClock<T extends { server_now?: string }>(rows: T[]): T[] {
 }
 
 export type SearchParams = {
+  query?: string;
   lat: number;
   lng: number;
   radius_m: number;
@@ -32,6 +33,7 @@ export async function searchOffers(p: SearchParams): Promise<SearchRow[]> {
       p_lng: p.lng,
       p_radius_m: p.radius_m,
       p_category: p.category,
+      p_query: p.query || null,
       p_from: p.from,
       p_until: p.until,
       p_min_discount_pct: p.min_discount_pct,

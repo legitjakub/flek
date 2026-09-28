@@ -173,6 +173,19 @@
       0 2px 6px rgb(16 18 31 / 0.08),
       0 18px 40px -14px color-mix(in srgb, var(--color-brand) 22%, rgb(16 18 31 / 0.55));
   }
+  /* More of the photo shows through; darker metadata keeps AA over dark photographs. */
+  .offer-glass {
+    --color-muted: #35384f;
+    background: linear-gradient(135deg,
+      color-mix(in srgb, var(--color-accent-soft) 78%, transparent),
+      color-mix(in srgb, var(--color-brand-soft) 72%, transparent));
+    -webkit-backdrop-filter: blur(24px) saturate(145%);
+    backdrop-filter: blur(24px) saturate(145%);
+    border: 1px solid rgb(255 255 255 / 0.45);
+  }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .offer-glass { background: var(--color-accent-soft); }
+  }
   /* Tmavá varianta pro štítek nad fotkou, kde bílé sklo splývá s obrázkem. */
   .glass-ink {
     background: color-mix(in srgb, var(--color-ink) 82%, transparent);

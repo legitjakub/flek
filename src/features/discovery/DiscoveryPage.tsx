@@ -55,9 +55,15 @@ export function DiscoveryPage() {
       {discovery.isError ? <div className="mt-4"><ErrorState error={discovery.error} onRetry={() => discovery.refetch()} /></div> : null}
       {discovery.isSuccess && rows.length === 0 ? (
         <div className="mt-4 flex flex-col gap-3">
-          <EmptyState title="V okolí teď nic volného není." body="Zkus jiný den nebo větší okolí. Nové FLEKy přibývají během dne." action={<Button variant="secondary" onClick={() => setFilters({ ...DEFAULT_FILTERS, when: 'week', radius_m: 25000 })}>Hledat v celém týdnu</Button>} />
+          <EmptyState
+            title={filters.query ? 'Takovou službu jsme nenašli.' : 'V okolí teď nic volného není.'}
+            body={filters.query ? 'Zkus kratší název nebo jinou službu.' : 'Zkus jiný den nebo větší okolí. Nové FLEKy přibývají během dne.'}
+            action={filters.query
+              ? <Button variant="secondary" onClick={() => setFilters({ ...filters, query: '' })}>Vymazat hledání</Button>
+              : <Button variant="secondary" onClick={() => setFilters({ ...DEFAULT_FILTERS, when: 'week', radius_m: 25000 })}>Hledat v celém týdnu</Button>}
+          />
           {/* Nothing here now is exactly when being told later is worth something. */}
-          <WatchPrompt point={point} filters={filters} />
+          {!filters.query ? <WatchPrompt point={point} filters={filters} /> : null}
         </div>
       ) : null}
       {discovery.isPending ? (
@@ -109,7 +115,7 @@ export function DiscoveryPage() {
           </section>
         );
       })}
-      {discovery.isSuccess && rows.length > 0 ? <WatchPrompt point={point} filters={filters} className="mt-8 md:max-w-xl" /> : null}
+      {discovery.isSuccess && rows.length > 0 && !filters.query ? <WatchPrompt point={point} filters={filters} className="mt-8 md:max-w-xl" /> : null}
     </main>
   );
 }

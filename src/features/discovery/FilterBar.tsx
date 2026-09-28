@@ -1,5 +1,5 @@
-import { ScanSearch, SlidersHorizontal, X } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Search, ScanSearch, SlidersHorizontal, X } from 'lucide-react';
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { Button, Field, Input, Segmented, Sheet } from '../../components/ui';
 import type { Category, SortKey } from '../../types/database';
 import {
@@ -55,6 +55,8 @@ export function FilterBar({
   floating?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchButton = useRef<HTMLButtonElement>(null);
   const [draft, setDraft] = useState<Filters>(filters);
   const count = activeCount(filters);
   const label = (slug: string) => categories.find((c) => c.slug === slug)?.label_cs ?? slug;
@@ -65,13 +67,14 @@ export function FilterBar({
   // Over the map a fade on a half-hidden white pill left a ghost of it floating on the tiles,
   // and the scroll to the lit pill cut the first one hard at the left edge. The rail now rests
   // on whole pills (scroll snap) and fades only the edge that actually hides more of them.
-  const [edges, setEdges] = useState({ start: false, end: false });
+  const [edges, setEdges] = useState({ start: false, end: false, width: 0 });
   const measureEdges = useCallback(() => {
     const viewport = rail.current;
     if (!viewport) return;
     const start = viewport.scrollLeft > 1;
     const end = viewport.scrollLeft + viewport.clientWidth < viewport.scrollWidth - 1;
-    setEdges((current) => (current.start === start && current.end === end ? current : { start, end }));
+    const width = viewport.clientWidth;
+    setEdges((current) => (current.start === start && current.end === end && current.width === width ? current : { start, end, width }));
   }, []);
   useEffect(() => {
     const viewport = rail.current;
@@ -97,7 +100,7 @@ export function FilterBar({
     if (clear(viewport.scrollLeft) && left(chip) >= viewport.scrollLeft + (viewport.scrollLeft > 0 ? RAIL_FADE : 0)) return;
     const stops = [...viewport.children].map((element) => Math.min(max, Math.max(0, left(element) - RAIL_FADE)));
     viewport.scrollLeft = stops.find((stop) => clear(stop) && stop <= left(chip) - (stop > 0 ? RAIL_FADE : 0)) ?? stops[0];
-  }, [lit]);
+  }, [lit, edges.width]);
   // The ladder can search at 25 km while the radius chip still reads 5 km and the Filtry
   // badge reads zero. Say it — once, in one line beside the chips. It used to be a chip AND a
   // full-width banner saying the same thing, which cost a phone screen about 150 px of offers.
@@ -132,7 +135,7 @@ export function FilterBar({
                   role="radio"
                   aria-checked={active}
                   onClick={() => onChange(applyIntent(filters, intent.key))}
-                  className={`min-h-11 shrink-0 snap-start rounded-full border px-2.5 text-sm sm:px-4 font-bold whitespace-nowrap transition-colors ${active ? 'border-ink bg-ink text-accent-ink' : floating ? 'border-transparent bg-card text-ink shadow-card hover:border-accent' : 'border-line bg-card text-ink hover:border-accent'} ${floating && active ? 'shadow-card' : ''}`}
+                  className={`min-h-11 min-w-11 shrink-0 snap-start rounded-full border px-2 text-sm sm:px-4 font-bold whitespace-nowrap transition-colors ${active ? 'border-ink bg-ink text-accent-ink' : floating ? 'border-transparent bg-card text-ink shadow-card hover:border-accent' : 'border-line bg-card text-ink hover:border-accent'} ${floating && active ? 'shadow-card' : ''}`}
                 >
                   {intent.label}
                 </button>
@@ -140,6 +143,16 @@ export function FilterBar({
             })}
           </div>
         </div>
+        <button
+          ref={searchButton}
+          type="button"
+          aria-label="Hledat službu"
+          aria-expanded={searchOpen}
+          onClick={() => setSearchOpen(!searchOpen)}
+          className={`grid size-11 shrink-0 place-items-center border ${searchOpen ? 'border-brand bg-brand-soft text-accent' : 'border-line bg-card text-ink'} ${floating ? 'rounded-full shadow-card' : 'rounded-xl'}`}
+        >
+          <Search size={19} aria-hidden="true" />
+        </button>
         <button type="button" onClick={openSheet} aria-haspopup="dialog" className={`inline-flex min-h-11 shrink-0 items-center gap-1 border bg-card px-2 text-sm sm:gap-2 sm:px-4 font-bold hover:border-accent ${floating ? 'rounded-full border-transparent shadow-card' : 'rounded-xl border-line'}`}>
           <SlidersHorizontal size={17} aria-hidden="true" />
           Filtry
@@ -150,6 +163,14 @@ export function FilterBar({
           ) : null}
         </button>
       </div>
+      {searchOpen ? (
+        <ServiceSearch
+          value={filters.query}
+          onChange={(query) => onChange({ ...filters, query })}
+          onClose={() => { setSearchOpen(false); searchButton.current?.focus(); }}
+          floating={floating}
+        />
+      ) : null}
       {chips.length || widened ? (
         <div className="flex flex-wrap items-center gap-2 text-sm">
           {/*
@@ -162,10 +183,10 @@ export function FilterBar({
               key={chip.key}
               type="button"
               onClick={() => onChange(chip.clear(filters))}
-              className={`inline-flex min-h-11 items-center gap-1.5 rounded-full border bg-card py-1 pr-2 pl-3 font-bold text-ink transition-colors hover:border-accent ${floating ? 'border-transparent shadow-card' : 'border-line'}`}
+              className={`inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-full border bg-card py-1 pr-2 pl-3 font-bold text-ink transition-colors hover:border-accent ${floating ? 'border-transparent shadow-card' : 'border-line'}`}
             >
-              {chip.label}
-              <X size={15} aria-hidden="true" className="text-muted" />
+              <span className="min-w-0 truncate">{chip.label}</span>
+              <X size={15} aria-hidden="true" className="shrink-0 text-muted" />
               <span className="sr-only">Zrušit filtr</span>
             </button>
           ))}
@@ -327,6 +348,52 @@ export function FilterBar({
         </div>
       </Sheet>
     </div>
+  );
+}
+
+function ServiceSearch({ value, onChange, onClose, floating }: {
+  value: string;
+  onChange: (query: string) => void;
+  onClose: () => void;
+  floating: boolean;
+}) {
+  const [text, setText] = useState(value);
+  const apply = useEffectEvent(onChange);
+  useEffect(() => setText(value), [value]);
+  useEffect(() => {
+    if (text.trim() === value) return;
+    const timer = window.setTimeout(() => apply(text.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [text, value]);
+
+  return (
+    <form
+      role="search"
+      aria-label="Hledání služeb"
+      onSubmit={(event) => { event.preventDefault(); onChange(text.trim()); }}
+      className={`flex min-h-11 items-center rounded-2xl border border-brand/25 bg-card pl-3 focus-within:ring-2 focus-within:ring-brand/30 ${floating ? 'shadow-card' : ''}`}
+    >
+      <Search size={18} className="shrink-0 text-accent" aria-hidden="true" />
+      <input
+        autoFocus
+        type="search"
+        aria-label="Název služby"
+        placeholder="Masáž, jóga, střih…"
+        maxLength={80}
+        value={text}
+        onChange={(event) => setText(event.target.value)}
+        onKeyDown={(event) => { if (event.key === 'Escape') onClose(); }}
+        className="min-h-11 min-w-0 flex-1 bg-transparent px-3 text-base text-ink outline-none [&::-webkit-search-cancel-button]:hidden"
+      />
+      <button
+        type="button"
+        aria-label={text ? 'Vymazat hledání' : 'Zavřít hledání'}
+        onClick={() => { if (text) { setText(''); onChange(''); } else onClose(); }}
+        className="grid size-11 shrink-0 place-items-center rounded-full text-muted"
+      >
+        <X size={18} aria-hidden="true" />
+      </button>
+    </form>
   );
 }
 

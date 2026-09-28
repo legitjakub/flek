@@ -14,6 +14,7 @@ export function readDiscoveryState(search: URLSearchParams, fallback: Point = DE
   const part = search.get('daypart');
   const sort = search.get('sort');
   const filters: Filters = {
+    query: (search.get('query') ?? '').trim().slice(0, 80),
     when: when && Object.hasOwn(WHEN_LABELS, when) ? when as Filters['when'] : DEFAULT_FILTERS.when,
     daypart: part && Object.hasOwn(DAYPART_LABELS, part) ? part as Filters['daypart'] : null,
     sort: sort && Object.hasOwn(SORT_LABELS, sort) ? sort as Filters['sort'] : DEFAULT_FILTERS.sort,
