@@ -188,11 +188,14 @@ export function bookingMoneyState(booking: {
   status: BookingStatus;
   payment_status: PaymentState['status'] | null;
   authorization_state?: PaymentState['authorization_state'];
+  authorized_at?: string | null;
 }): { text: string; tone: 'positive' | 'muted' } | null {
   if (booking.payment_status === 'refunded') return { text: 'Vráceno', tone: 'positive' };
   if (booking.payment_status === 'paid') return booking.status.startsWith('cancelled') ? { text: 'Vracíme', tone: 'muted' } : { text: 'Zaplaceno', tone: 'positive' };
   if (booking.status === 'capturing') return { text: 'Dokončujeme platbu', tone: 'muted' };
   if (booking.authorization_state === 'release_pending') return { text: 'Uvolňujeme blokaci', tone: 'muted' };
+  // The customer never finished paying, so there was no hold to release.
+  if (booking.authorization_state === 'released' && booking.authorized_at === null) return { text: 'Nic nestrženo', tone: 'muted' };
   if (booking.authorization_state === 'released') return { text: 'Blokace uvolněna', tone: 'muted' };
   if (booking.authorization_state === 'authorized') return { text: 'Jen zablokováno', tone: 'muted' };
   // A booking that ended before any money moved has nothing left to verify.

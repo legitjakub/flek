@@ -358,6 +358,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 28. 9. 2026 | Potvrzování rezervací je spolehlivější. Přijatá rezervace už nepropadne jen proto, že si úlohu převzal jiný běh workeru. Nezaplacená žádost nevisí v „Uvolňujeme blokaci“. Uvolnění blokace se zkouší dál i po výpadku Stripe. Stržení, které nestihlo začátek termínu, se ukončí a místo se vrátí. Čeká na nasazení migrace a funkce. |
 | 28. 9. 2026 | Administrace má novou záložku „Platby k řešení“ s počtem v navigaci. Ukazuje vratky, které Stripe zamítl nebo neprovedl, platby bez rezervace, neuvolněné blokace, nedokončené stržení a selhané události ze Stripe, u každé s odkazem do Stripe. O každém novém problému přijde adminům e-mail. Čeká na nasazení migrace. |
 | 28. 9. 2026 | Audit před spuštěním: bez zásadní chyby, jedenáct nálezů k opravě s pořadím v `docs/PRED_SPUSTENIM.md`. Migrace z repozitáře jdou nově přehrát na čisté databázi, což nový produkční projekt potřebuje. Zastaralé testy opravené, nový test hlídá, že podnik nevidí data jiného podniku a zákazník jiného zákazníka. |
 | 28. 9. 2026 | Swipování nabídek nad mapou už nepřeskakuje tam a zpět: služby jedné provozovny jdou za sebou a mapa se mezi nimi nehýbe, posune se až na další podnik. |

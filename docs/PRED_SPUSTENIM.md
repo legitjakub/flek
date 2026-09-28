@@ -190,9 +190,9 @@ Audit se díval na peníze, oddělení podniků a zákazníků, oprávnění, st
 
 - [x] **Migrace jdou přehrát na čisté databázi** (HIGH, podmínka nového produkčního projektu): v `20260907215224_merchant.sql` chyběl apostrof a kategorie služeb vznikaly jen v lokálním seedu. Opraveno 28. 9.; lokálně prošlo všech 79 migrací.
 - [ ] **H1 Selhané vratky vidí admin** → bod „Přehled vratek, které potřebují člověka“ níže. Jakub rozhodl: jen přehled a e-mail, bez ručního „vyřízeno mimo Stripe“. V kódu hotové a lokálně ověřené (28. 9.); čeká na migraci `payment_issues` v hostované databázi.
-- [ ] **M1 Worker potvrzování nesmí zrušit přijatou rezervaci**, když mu úlohu mezitím převzal jiný běh nebo selže spojení s databází (`booking-confirmation`, `confirmation_job_ready`).
-- [ ] **M2 Nedokončená platba nesmí viset v „Uvolňujeme blokaci“.** Žádost bez autorizace zůstává `release_pending` a platba `pending`.
-- [ ] **M3 Úlohy potvrzování po 8 pokusech:** uvolnění blokace zkoušet dál s odstupem, `capturing` po začátku termínu ukončit.
+- [ ] **M1 Worker potvrzování nesmí zrušit přijatou rezervaci**, když mu úlohu mezitím převzal jiný běh nebo selže spojení s databází (`booking-confirmation`, `confirmation_job_ready`). V kódu hotové (28. 9.): `confirmation_job_state` říká proč a worker cizí úlohu přeskočí. Čeká na migraci `confirmation_worker_reliability` a nasazení funkce.
+- [ ] **M2 Nedokončená platba nesmí viset v „Uvolňujeme blokaci“.** Žádost bez autorizace zůstává `release_pending` a platba `pending`. V kódu hotové (28. 9.): worker po zavření Checkoutu, `stripe_checkout_expired` i údržba (starší řádky) zapíšou uvolnění, pozdní autorizace vrátí `release_pending`.
+- [ ] **M3 Úlohy potvrzování po 8 pokusech:** uvolnění blokace zkoušet dál s odstupem, `capturing` po začátku termínu ukončit. V kódu hotové (28. 9.): uvolnění se opakuje s odstupem až 1 h, stržení po začátku nebo po vyčerpání pokusů ukončí databáze a blokaci uvolní.
 - [ ] **M4 Stav účtu podniku** → bod „Stav účtu podniku bez otevření aplikace“ níže (Connect webhook s `account.updated`, druhý podpisový klíč).
 - [ ] **M5 Podmínky o hodnocení:** věta „Hodnocení podniků zatím nezveřejňujeme“ neplatí. Jakub rozhodl, že recenze zůstanou veřejné; nová verze 1.1 a bod pro právníka.
 - [ ] **M6 Dvě provozovny:** žádost nevybrané provozovny v aplikaci nezazvoní ani se neukáže a odkaz v upozornění provozovnu nenese.

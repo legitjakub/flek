@@ -129,6 +129,9 @@ describe('money regressions', () => {
     expect(text({})).toBe('Jen zablokováno');
     expect(text({ authorization_state: 'release_pending' })).toBe('Uvolňujeme blokaci');
     expect(text({ authorization_state: 'released' })).toBe('Blokace uvolněna');
+    expect(text({ authorization_state: 'released', authorized_at: '2026-09-28T10:00:00Z' })).toBe('Blokace uvolněna');
+    // Released without ever being authorised (the customer left Checkout): nothing was held, nothing taken.
+    expect(text({ status: 'expired', payment_status: 'failed', authorization_state: 'released', authorized_at: null })).toBe('Nic nestrženo');
     expect(text({ status: 'capturing' })).toBe('Dokončujeme platbu');
     expect(text({ status: 'confirmed', payment_status: 'paid', authorization_state: 'captured' })).toBe('Zaplaceno');
     expect(text({ status: 'cancelled_by_customer', payment_status: 'paid', authorization_state: 'captured' })).toBe('Vracíme');

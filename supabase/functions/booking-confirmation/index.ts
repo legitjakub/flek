@@ -1,4 +1,5 @@
 import { isPermanentStripeError, message, serviceClient, Stripe, stripeClient } from '../_shared/stripe.ts';
+import { captureStep, unpaidCheckoutStep, type UnpaidCheckout } from '../_shared/confirmationJob.ts';
 
 type Job = {
   payment_id: string;
@@ -13,7 +14,10 @@ type Job = {
   server_now: string;
 };
 
-/** After this many claims a capture that still fails is given up: the seat goes back and the hold is released. */
+/**
+ * After this many claims a capture that still fails is given up: the seat goes back and the hold is released.
+ * A release has no such limit: letting a hold go is always safe, so it is tried again with a growing pause.
+ */
 const MAX_ATTEMPTS = 8;
 
 /**
@@ -37,26 +41,54 @@ Deno.serve(async (request) => {
   const { data, error } = await db.rpc('claim_confirmation_jobs');
   if (error) return new Response('Queue unavailable', { status: 500 });
   const jobs = (Array.isArray(data) ? data : []) as Job[];
-  const result = { completed: 0, retrying: 0, capture_failed: 0 };
+  const result = { completed: 0, retrying: 0, capture_failed: 0, skipped: 0 };
 
   for (const job of jobs) {
     let done = false;
     let failure: string | null = null;
     try {
-      if (!job.intent) {
-        // No authorisation exists yet. Close the Checkout page too, so a customer whose hold ran out
-        // cannot still authorise money for a seat that is no longer theirs.
-        if (job.action === 'cancel' && job.session) await expireSession(stripe, job.session);
+      let intentId = job.intent;
+      if (!intentId && job.action === 'cancel') {
+        // FLEK let the request go before Stripe told it about any authorisation. Close the Checkout page so a
+        // customer whose hold ran out cannot still authorise money, then see whether anything was authorised.
+        const unpaid = await settleUnpaidCheckout(stripe, job.session);
+        if (unpaid.step === 'released') {
+          await observed(db, job, 'released', null, 0);
+          done = true;
+        } else if (unpaid.step === 'use_intent') {
+          intentId = unpaid.intent;
+        } else {
+          failure = 'CHECKOUT_STILL_OPEN';
+        }
+      } else if (!intentId) {
+        // A capture is only ever queued for an authorisation the webhook recorded.
         done = true;
-      } else {
-        let intent = await stripe.paymentIntents.retrieve(job.intent);
+      }
+
+      if (intentId) {
+        let intent: Stripe.PaymentIntent = await stripe.paymentIntents.retrieve(intentId);
         if (job.action === 'capture' && intent.status === 'requires_capture') {
-          const { data: ready } = await db.rpc('confirmation_job_ready', { p_payment_id: job.payment_id, p_lease: job.lease });
-          if (ready === true) {
+          const { data: state, error: stateError } = await db.rpc('confirmation_job_state', { p_payment_id: job.payment_id, p_lease: job.lease });
+          const step = stateError ? 'skip' : captureStep(state as string | null);
+          if (step === 'skip') {
+            // Another run owns the job now, or the database did not answer: never end an accepted request on that.
+            result.skipped += 1;
+            continue;
+          }
+          if (step === 'give_up') {
+            // The appointment has started: too late to take the money.
+            await rpc(db, 'confirmation_capture_failed', { p_payment_id: job.payment_id, p_error: 'CAPTURE_NOT_ALLOWED' });
+            result.capture_failed += 1;
+            continue;
+          }
+          if (step === 'release') {
+            // The request moved on while the job waited (the offer was cancelled): release, never capture.
+            intent = await cancelIntent(stripe, intent, job);
+          } else {
             try {
               intent = await stripe.paymentIntents.capture(intent.id, {}, { idempotencyKey: `flek-capture-${job.payment_id}-${job.attempts}` });
             } catch (captureError) {
-              intent = await stripe.paymentIntents.retrieve(job.intent);
+              intent = await stripe.paymentIntents.retrieve(intent.id);
               if (intent.status === 'requires_capture' && (isPermanentStripeError(captureError) || job.attempts >= MAX_ATTEMPTS)) {
                 await rpc(db, 'confirmation_capture_failed', { p_payment_id: job.payment_id, p_error: message(captureError) });
                 result.capture_failed += 1;
@@ -65,15 +97,6 @@ Deno.serve(async (request) => {
               }
               if (intent.status === 'requires_capture') throw captureError;
             }
-          } else {
-            // The request moved on while the job waited (the offer was cancelled, the appointment started): release, never capture.
-            const { data: state } = await db.from('bookings').select('status, cancellation_requested').eq('payment_id', job.payment_id).maybeSingle();
-            if (state?.status === 'capturing' && !state.cancellation_requested) {
-              await rpc(db, 'confirmation_capture_failed', { p_payment_id: job.payment_id, p_error: 'CAPTURE_NOT_ALLOWED' });
-              result.capture_failed += 1;
-              continue;
-            }
-            intent = await cancelIntent(stripe, intent, job);
           }
         } else if (job.action === 'cancel' && intent.status === 'requires_capture') {
           intent = await cancelIntent(stripe, intent, job);
@@ -135,7 +158,19 @@ async function expireSession(stripe: Stripe, sessionId: string) {
   }
 }
 
-async function observed(db: ReturnType<typeof serviceClient>, job: Job, outcome: 'captured' | 'released', intent: string, amount: number) {
+/** Closes an unpaid Checkout page and reads what it says about an authorisation. */
+async function settleUnpaidCheckout(stripe: Stripe, sessionId: string | null): Promise<UnpaidCheckout> {
+  if (!sessionId) return unpaidCheckoutStep(null);
+  let session = await stripe.checkout.sessions.retrieve(sessionId);
+  if (session.status === 'open') {
+    await expireSession(stripe, sessionId);
+    session = await stripe.checkout.sessions.retrieve(sessionId);
+  }
+  const intent = typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id ?? null;
+  return unpaidCheckoutStep({ status: session.status, payment_intent: intent });
+}
+
+async function observed(db: ReturnType<typeof serviceClient>, job: Job, outcome: 'captured' | 'released', intent: string | null, amount: number) {
   await rpc(db, 'confirmation_payment_observed', { p_payment_id: job.payment_id, p_outcome: outcome, p_intent: intent, p_amount: amount });
 }
 
