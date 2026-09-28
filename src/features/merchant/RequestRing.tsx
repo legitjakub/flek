@@ -2,6 +2,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { BellOff, BellRing, Maximize2, MonitorSmartphone, Volume2 } from 'lucide-react';
 import { Button } from '../../components/ui';
 import { useServerNow } from '../../lib/clock';
+import { flashTitle } from '../../lib/documentTitle';
 import { timeLeft } from '../bookings/confirmationView';
 import {
   armRinger,
@@ -57,15 +58,14 @@ export function useRequestRing(waiting: WaitingRequest[]) {
   // A tab in the background says it too: the title alternates while the ring lasts.
   useEffect(() => {
     if (!ringing) return;
-    const original = document.title;
     let bell = false;
     const timer = window.setInterval(() => {
       bell = !bell;
-      document.title = bell ? '🔔 Nová žádost o rezervaci' : original;
+      flashTitle(bell ? '🔔 Nová žádost o rezervaci' : null);
     }, 1000);
     return () => {
       window.clearInterval(timer);
-      document.title = original;
+      flashTitle(null);
     };
   }, [ringing]);
 
@@ -109,7 +109,7 @@ export function RingBar({ ring }: { ring: ReturnType<typeof useRequestRing> }) {
   if (!ring.loud.length) return null;
   const action = 'inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl bg-card px-3 text-sm font-bold text-ink hover:bg-surface';
   return (
-    <div role={ring.ready ? 'status' : 'alert'} className="flex flex-wrap items-center gap-3 rounded-2xl bg-brand px-4 py-3 text-brand-ink shadow-lift">
+    <div role={ring.ready ? 'status' : 'alert'} className="on-dark flex flex-wrap items-center gap-3 rounded-2xl bg-brand px-4 py-3 text-brand-ink shadow-lift">
       <BellRing
         size={22}
         aria-hidden="true"

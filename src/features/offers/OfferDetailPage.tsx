@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { businessOffers, confirmationQuote, getOfferDetail, myBookings, setFavorite } from '../../lib/api';
 import { track } from '../../lib/analytics';
 import { relativeTime, useServerNow } from '../../lib/clock';
+import { contentTitle, useDetailTitle } from '../../lib/documentTitle';
 import { money, distance as formatDistance } from '../../lib/format';
 import { DiscountBadge, OriginalPrice } from '../../components/Price';
 import { clockTime, dayLabel, duration, untilLabel } from '../../lib/time';
@@ -66,6 +67,7 @@ export function OfferDetailPage({ offerId }: { offerId: string }) {
     refetchInterval: 60_000,
   });
   const offer = query.data ?? null;
+  useDetailTitle(contentTitle(offer?.service_name, offer?.business_name));
   // Whether this venue confirms bookings: the money is then only held until it does, and the grace period counts from its yes.
   const quote = useQuery({
     queryKey: ['confirmation-quote', offerId],

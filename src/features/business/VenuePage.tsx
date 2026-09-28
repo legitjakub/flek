@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, MapPin } from 'lucide-react';
 import { businessOffers, businessPublic } from '../../lib/api';
 import { useServerNow } from '../../lib/clock';
+import { contentTitle, useDetailTitle } from '../../lib/documentTitle';
 import { DEFAULT_POINT, storedPoint } from '../../lib/geo';
 import { navigationHref } from '../../lib/maps';
 import { EmptyState, ErrorState, LoadingList, Skeleton } from '../../components/ui';
@@ -39,6 +40,7 @@ export function VenuePage({ businessId }: { businessId: string }) {
     queryFn: () => businessOffers(businessId, point),
     refetchOnWindowFocus: true,
   });
+  useDetailTitle(contentTitle(venue.data?.display_name));
 
   // Where "back" goes: whoever linked here says so, otherwise the favourites list, which is
   // where this page is reached from most often.
@@ -70,7 +72,7 @@ export function VenuePage({ businessId }: { businessId: string }) {
     return (
       <main className="page-container py-10 text-center">
         <p className="text-base font-bold text-ink">Tenhle podnik na FLEKu nenajdeme.</p>
-        <Link to="/" className="mt-4 inline-block text-base font-bold underline underline-offset-4">
+        <Link to="/" className="mt-4 inline-flex min-h-11 items-center text-base font-bold underline underline-offset-4">
           Objevit volné FLEKy
         </Link>
       </main>

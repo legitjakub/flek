@@ -576,7 +576,7 @@ function OutcomeSheet({
         style={{ animationDelay: '200ms' }}
       >
         {outcome.autoClose ? (
-          <span aria-hidden="true" className="takeover-countdown absolute inset-y-0 left-0 bg-accent" style={{ animationDuration: `${AUTO_CLOSE_MS}ms` }} />
+          <span aria-hidden="true" className="takeover-countdown absolute inset-y-0 left-0 bg-accent" style={{ '--countdown-ms': `${AUTO_CLOSE_MS}ms` } as React.CSSProperties} />
         ) : null}
         <span className="relative">{more ? 'Další žádost' : outcome.autoClose ? 'Hotovo' : 'Zavřít'}</span>
       </button>

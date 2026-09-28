@@ -49,7 +49,7 @@ export function GooglePlaceRating({
           href={query.data.googleMapsUri}
           target="_blank"
           rel="noreferrer"
-          className="rounded-md focus-visible:outline-offset-2"
+          className="relative rounded-md before:absolute before:-inset-x-1 before:-inset-y-3 before:content-[''] focus-visible:outline-offset-2"
           onClick={(event) => event.stopPropagation()}
         >
           {rating}

@@ -116,7 +116,8 @@ const SECTIONS = [
 ] as const;
 
 function jumpTo(id: string, smooth = true) {
-  document.getElementById(id)?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+  const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.getElementById(id)?.scrollIntoView({ behavior: smooth && !still ? 'smooth' : 'auto', block: 'start' });
 }
 
 /** Scrolls to `?sekce=…` once the part has rendered; the forms below load their data first. */

@@ -85,6 +85,7 @@ FLEK je český marketplace pro volná místa na poslední chvíli. Podnik (kade
 
 ## Todolist
 
+- [x] Přístupnost: viditelné okraje polí a čtená nápověda i chyba, bílý fokus na tmavých plochách, název stránky v kartě a fokus na nadpis po přechodu, orientace i na šířku, plochy 44 px (28. 9. 2026)
 - [x] Partnerská část: dvoukrokové odmítnutí na kartě žádosti, vykání ve sdílených textech, chybové stavy Služeb a Stripe, zpráva po návratu ze Stripe, naposledy použité služby z Přehledu (28. 9. 2026)
 - [x] Pravdivý text v Oblíbených s pozvánkou k hlídači, štítek ilustrační fotky na mapě a v úvodu (28. 9. 2026)
 - [x] Detail nabídky: vlastní rezervovaný FLEK, potvrzení podnikem před klepnutím, průměr hodnocení od 3 recenzí, sloučené stejné časy (28. 9. 2026)
@@ -351,6 +352,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 28. 9. 2026 | Přístupnost: pole mají viditelný okraj a chybné pole červený, čtečka obrazovky přečte u pole i nápovědu a chybu, fokus z klávesnice je vidět i na tmavých kartách, karta prohlížeče říká, na jaké stránce jsi (a u podniku počet nových žádostí), po přechodu jde fokus na nadpis stránky a aplikace jde otočit na šířku. |
 | 28. 9. 2026 | Partnerská část: „Nemohu přijmout“ na kartě žádosti se nejdřív zeptá, jako žádost přes celou obrazovku; aplikace podnikům všude vyká (i v chybách a ve zvonku); neúspěšné načtení Stripe už nevypadá jako nepropojený účet; po návratu ze Stripe se ukáže, co se děje; z Přehledu jdou zveřejnit naposledy použité služby na dvě klepnutí. |
 | 28. 9. 2026 | Oblíbené už neslibují upozornění, které neexistuje: řeknou, že nové FLEKy u sledovaných míst najdeš v Oblíbených s tečkou na liště, a nabídnou hlídač, který opravdu upozorní. Štítek „ilustrační foto“ je nově i na mapě a v úvodu. |
 | 28. 9. 2026 | Detail nabídky pozná, že vyprodaný FLEK je tvůj („Tohle je tvůj FLEK“ s odkazem na kód) místo „už někdo chytil“, už před klepnutím řekne, že podnik má na potvrzení až 10 minut a do té doby je částka jen zablokovaná, hodnocení ukazuje průměr až od tří recenzí a stejný čas zveřejněný víckrát se ukáže jednou s počtem míst. |
