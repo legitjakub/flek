@@ -58,7 +58,7 @@ Routy: zákazník `/`, `/mapa`, `/nabidka/:id`, `/podnik/:id`, `/oblibene`, `/re
 - Finanční snímek rezervace je po vytvoření neměnný.
 - Zákaznická část **tyká**, partnerská **vyká**. Termínu pro zákazníka se říká „FLEK“ („volné FLEKy“).
 - Žádná vymyšlená data: falešná hodnocení, jména podniků, e-mail podpory ani právní texty.
-- Veřejná data jen přes čtecí RPC. Anon nemá SELECT na doménové tabulky; nový veřejný údaj přidej do RPC, ne grantem na tabulku.
+- Veřejná data jen přes čtecí RPC. Anon nemá SELECT na doménové tabulky; nový veřejný údaj přidej do RPC, ne grantem na tabulku. Přihlášený má na `bookings` jen sloupcová práva bez `reservation_code`: nový sloupec mu povol v migraci (`grant select (sloupec)`), jinak ho neuvidí ani realtime.
 - Každá nová admin mutace zapisuje `private.audit(...)` ve stejné transakci.
 - Nová externí doména (API, obrázky, dlaždice) musí do CSP ve `vercel.json`. Žádné `eval`, inline skripty ani `dangerouslySetInnerHTML`.
 - Stripe klíče (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`) a klíče Meta (`WHATSAPP_*`) žijí jen v Supabase secrets. Místo podniku zaplatí a obsadí jen webhook Stripe; klient nikdy neoznačuje platbu jako zaplacenou.

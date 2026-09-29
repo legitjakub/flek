@@ -3,7 +3,7 @@
 begin;
 do $$
 declare
- customer uuid; offer uuid; queued uuid; external uuid; outcome text; raised boolean := false;
+ customer uuid; offer uuid; queued uuid; external uuid; outcome text; raised boolean := false; woken bigint;
  pay public.payments;
 begin
  select id into customer from auth.users where email='demo-customer@flek.test';
@@ -13,6 +13,16 @@ begin
  -- A refund FLEK asked for (a cancelled booking): paid, in the refund queue.
  insert into public.payments(customer_id,offer_id,amount_cents,status,provider,paid_at,payment_intent_id,refund_requested_at)
  values(customer,offer,78800,'paid','stripe',now()-interval '1 hour','pi_qa_queued',now()) returning id into queued;
+
+ -- The refund worker is woken only with the worker key (audit L2); without one, not at all.
+ delete from private.notification_config where key='worker_secret';
+ select count(*) into woken from net.http_request_queue;
+ perform private.kick_refunds();
+ assert (select count(*) from net.http_request_queue)=woken, 'Refund worker woken without a key';
+ insert into private.notification_config(key,value) values('worker_secret',repeat('q',40));
+ perform private.kick_refunds();
+ assert (select headers->>'Authorization' from net.http_request_queue where url like '%/stripe-refunds' order by id desc limit 1)
+  ='Bearer '||repeat('q',40), 'Refund worker woken without its key';
 
  -- Accepted is not refunded: pending and requires_action keep the payment paid and in the queue.
  outcome := public.stripe_refund_update(queued,'re_qa_1','pending');

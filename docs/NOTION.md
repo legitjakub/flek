@@ -360,6 +360,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 29. 9. 2026 | Zabezpečení z auditu: rezervační kód už nejde přečíst přímo z databáze (ani podniku přes živé změny), jen přes aplikaci a až u potvrzené rezervace. Vratky spustí jen databáze s tajným klíčem. Zrušení nabídky adminem se zapíše do auditu a katalog fotek jde jen číst. Čeká na nasazení migrací. |
 | 29. 9. 2026 | Obchodní podmínky (verze 1.1) už netvrdí, že hodnocení nezveřejňujeme, a popisují, jak hodnocení na FLEKu opravdu funguje: jen od zákazníků s dokončenou rezervací, bez jména, kladná i záporná, text až po kontrole. Zkontroluje právník; účinnost dostane se zveřejněním podmínek. |
 | 29. 9. 2026 | Kdo spravuje dvě provozovny, uslyší žádost i té, kterou zrovna nemá otevřenou: zazvoní, ukáže se přes celou obrazovku s názvem provozovny a jde rovnou potvrdit. Zvonek ukazuje upozornění všech provozoven a klepnutí otevře tu správnou. Hlavička partnerské části se s přepínačem provozovny vejde i na telefon. Čeká na nasazení migrace. |
 | 28. 9. 2026 | Webhook Stripe umí přijímat i události připojených účtů podniků (druhý podpisový klíč), takže se stav účtu podniku po založení Connect endpointu změní sám. `stripe-webhook-setup` hlásí, jestli endpoint a klíč existují. |

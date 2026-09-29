@@ -240,8 +240,11 @@ const soldOut = await anon.rpc('get_offer_detail', { p_offer_id: offerA, p_lat: 
 check('Vyprodaná nabídka přestane být rezervovatelná', soldOut.data.bookable === false && soldOut.data.capacity_remaining === 0);
 
 // --- authorization, as real JWTs rather than the service role
+// Explicit columns: the reservation code is not readable from the table at all (audit L1), so `*` would fail on the grant, not on RLS.
 check('Zákazník nevidí cizí rezervace',
-  ((await users[1].client.from('bookings').select('*').eq('customer_id', users[0].id)).data ?? []).length === 0);
+  ((await users[1].client.from('bookings').select('id').eq('customer_id', users[0].id)).data ?? []).length === 0);
+check('Rezervační kód jde přečíst jen přes RPC',
+  err((await users[0].client.from('bookings').select('reservation_code').limit(1)).error).includes('permission denied'));
 check('Zákazník vidí jen svůj profil',
   ((await users[1].client.from('profiles').select('*')).data ?? []).length <= 1);
 check('Klient nemůže zapsat capacity_remaining',

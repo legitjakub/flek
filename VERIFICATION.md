@@ -527,6 +527,25 @@ Lokální Docker integrační sada, fyzický iPhone/Safari, skutečná kamera, n
 - 28. 9. v 9:40 (Praha; ranní kontrola, `dry_run`, HTTP 200): **beze změny.** Všech pět šablon APPROVED, účet i číslo dál BLOCKED se stejnými kódy 131000 (profil firmy), 141006 (platební metoda) a 141010 (ověření firmy), webhook dál na `…/functions/v1/whatsapp-webhook`. `whatsapp_enabled` zůstává `false`. Další kontrola 29. 9. ráno.
 - 29. 9. v 9:43 (Praha; ranní kontrola se po restartu kontejneru spustila dodatečně, `dry_run`, HTTP 200): **beze změny.** Všech pět šablon APPROVED, účet i číslo dál BLOCKED (131000, 141006, 141010), ověření firmy `pending_submission`; číslo CONNECTED, LIVE, TIER_250; webhook i `callback_url` míří na `…/functions/v1/whatsapp-webhook`, odběr aktivní. `whatsapp_enabled` zůstává `false`. Další kontrola 30. 9. ráno.
 
+## Drobnosti z auditu (L1, L2, L4, L5) — 29. 9. 2026
+
+- Lokální Supabase s migracemi `20260929091000_audit_low_hardening.sql` a `20260929092000_booking_code_column_privilege.sql`; hostovaná DB čeká na Supabase MCP.
+- Nové kontroly a jejich protizkouška: každá proti staré definici selže a s novou projde.
+  - `tests/stripe-refunds.sql`: bez klíče workeru `kick_refunds` nic neodešle, s klíčem pošle `Authorization: Bearer …` (fronta `net.http_request_queue` v transakci, nic neodešlo).
+  - `tests/manual-confirmation.sql`: zrušení nabídky podnikem audit nezapíše, adminem mimo podnik zapíše `offer_cancelled` s důvodem a stavem před a po.
+  - `tests/tenant-isolation.sql`:
+    - `anon` dostane u `service_photos` na DELETE, UPDATE i TRUNCATE „permission denied“, SELECT funguje; přihlášený má jen SELECT;
+    - zákazník A ani podnik B nepřečtou z tabulky kód nepotvrzené žádosti a `select *` na `bookings` skončí na oprávnění;
+    - stav žádosti pod RLS vidí oba a cizí rezervace zůstává skrytá.
+- **Realtime podniku (L1)**, lokální realtime v2.130.0, účet se dvěma provozovnami, odběr jako v `useBookingAlerts` (`business_id=eq.<B>`), skutečná žádost přes `start_payment` a `confirmation_authorized`:
+  - s původním právem na celou tabulku přišly INSERT a UPDATE a payload **obsahoval `reservation_code`** (únik potvrzen);
+  - se sloupcovým právem přišly tytéž události **bez kódu**, třikrát za sebou.
+  - První běh bez události byl časový: změna proběhla dřív, než realtime potvrdil odběr v databázi („Subscribed to PostgreSQL“). Test proto na tuto zprávu čeká.
+- REST pod přihlášeným: `select=reservation_code` a `select=*` na `bookings` vrátí „permission denied for table bookings“, `select=id,status` vrátí vlastní řádky.
+- `stripe-refunds` v Deno 2.5.6 proti lokální Supabase: bez hlavičky 401, cizí klíč 401, klíč workeru projde kontrolou (dál 503, protože lokálně chybí klíč Stripe). `deno check` bez chyb.
+- Vitest s lokální Supabase **315/315**. Dva integrační testy četly `bookings` přes `select('*')` a čekaly prázdný výsledek z RLS; teď čtou `id` a nově ověřují, že kód z tabulky nepřečte ani vlastní zákazník. Akceptační skript upravený stejně (`node --check`; spouští se jen s hesly demo účtů).
+- Všech 13 SQL sad PASS. `legal`, `manual-confirmation`, `merchant-push` a `whatsapp-notifications` napoprvé spadly na `HOLD_RATE_LIMITED`, protože moje lokální fixtury pro realtime nechaly demo zákazníkům víc než pět propadlých žádostí za hodinu. Po posunutí jejich času vzniku (jen lokálně) prošly.
+
 ## Obchodní podmínky 1.1: hodnocení (audit M5) — 29. 9. 2026
 
 - Znění oddílu 3 porovnané s kódem:

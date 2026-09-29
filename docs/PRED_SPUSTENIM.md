@@ -204,11 +204,11 @@ Audit se díval na peníze, oddělení podniků a zákazníků, oprávnění, st
 - [ ] **M4 Stav účtu podniku** → bod „Stav účtu podniku bez otevření aplikace“ níže. Kód je hotový (28. 9.): druhý podpisový klíč `STRIPE_CONNECT_WEBHOOK_SECRET`, podnik dohledaný i podle ID účtu a `stripe-webhook-setup` hlásí Connect endpoint. Zbývá, aby Jakub endpoint založil (Část 1, Stripe).
 - [ ] **M5 Podmínky o hodnocení:** věta „Hodnocení podniků zatím nezveřejňujeme“ neplatí. Jakub rozhodl, že recenze zůstanou veřejné; nová verze 1.1 a bod pro právníka. V kódu hotové (29. 9.): oddíl 3 podmínek popisuje, kdo smí hodnotit, co se zveřejní a jak se kontroluje text. Verze 1.1 je v `documents.ts` a bod je v právní kontrole výše. Čeká na migraci `customer_terms_reviews` v hostované databázi; účinnost dostane se zveřejněním podmínek.
 - [ ] **M6 Dvě provozovny:** žádost nevybrané provozovny v aplikaci nezazvoní ani se neukáže a odkaz v upozornění provozovnu nenese. V kódu hotové a lokálně ověřené (29. 9.): zvonění, obrazovka žádosti, lišta i zvonek berou žádosti a upozornění všech provozoven s jejich názvem a odkaz `?provozovna=` otevře správnou. Hlavička partnera se vejde i s přepínačem provozovny. Čeká na migraci `venue_links` v hostované databázi.
-- [ ] **L1** Kód nepotvrzené žádosti jde přečíst přímo z tabulky `bookings` (REST, realtime). Jakub rozhodl opravit sloupcovým oprávněním.
-- [ ] **L2** `stripe-refunds` spustí kdokoli (bez tajného klíče workeru); nic nepřidá, jen zbytečně volá Stripe.
+- [ ] **L1** Kód nepotvrzené žádosti jde přečíst přímo z tabulky `bookings` (REST, realtime). Jakub rozhodl opravit sloupcovým oprávněním. V kódu hotové (29. 9.): přihlášený čte všechny sloupce kromě `reservation_code`, kód vrací jen RPC. Realtime podniku ověřený lokálně (události chodí, jen bez kódu). Čeká na migraci `booking_code_column_privilege`.
+- [ ] **L2** `stripe-refunds` spustí kdokoli (bez tajného klíče workeru); nic nepřidá, jen zbytečně volá Stripe. V kódu hotové (29. 9.): funkce chce klíč workeru a `kick_refunds` ho posílá. Nasadit v pořadí migrace `audit_low_hardening`, potom funkce, jinak se vratky do nasazení migrace nebudí.
 - [ ] **L3** Kvóta a omezení klíče Google Places před zapnutím hodnocení (Jakub v Google Cloud).
-- [ ] **L4** Admin větev `merchant_cancel_offer` nezapisuje `private.audit`.
-- [ ] **L5** Tabulka `service_photos` má pro anon a přihlášené INSERT, UPDATE a DELETE. Zápis dnes blokuje jen RLS; práva odebrat.
+- [ ] **L4** Admin větev `merchant_cancel_offer` nezapisuje `private.audit`. V kódu hotové (29. 9.): admin, který podnik nespravuje, zapíše `offer_cancelled`. Čeká na migraci `audit_low_hardening`.
+- [ ] **L5** Tabulka `service_photos` má pro anon a přihlášené INSERT, UPDATE a DELETE. Zápis dnes blokuje jen RLS; práva odebrat. V kódu hotové (29. 9.): zůstává jen SELECT (odebrán i TRUNCATE, na který RLS nepůsobí). Čeká na migraci `audit_low_hardening`.
 - [x] Zastaralý `tests/pilot-maintenance.sql` opravený. Nový `tests/tenant-isolation.sql` hlídá scénáře G–J a oprávnění z katalogu. Lokálně prošlo všech 11 SQL sad (28. 9.).
 
 ### Platby (navazuje na Stripe z 13. 9.)

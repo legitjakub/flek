@@ -200,6 +200,36 @@ begin
 end $$;
 reset role;
 
+-- ------------------------------------------ a request that is not agreed never shows its code (L1)
+
+select set_config('request.jwt.claims', jsonb_build_object('sub', current_setting('qa.customer_a'), 'role', 'authenticated')::text, true);
+set local role authenticated;
+do $$
+declare e text := pg_temp.err(format('select reservation_code from public.bookings where id = %L::uuid', current_setting('qa.pending_b')));
+begin
+  assert (select reservation_code is null from public.my_bookings() where id = current_setting('qa.pending_b')::uuid),
+    'my_bookings shows the code of a waiting request';
+  assert e like 'permission denied%', format('The bookings table shows the code of a waiting request (%s)', coalesce(e, 'readable'));
+  e := pg_temp.err('select * from public.bookings');
+  assert e like 'permission denied%', format('select * on bookings reaches the code (%s)', coalesce(e, 'readable'));
+  -- Everything else stays readable under RLS, which realtime relies on.
+  assert (select status from public.bookings where id = current_setting('qa.pending_b')::uuid) = 'pending_merchant',
+    'The customer lost sight of the own request';
+  assert (select count(*) from public.bookings where id = current_setting('qa.booking_b')::uuid) = 0, 'Another customer''s booking is visible';
+end $$;
+reset role;
+
+select set_config('request.jwt.claims', jsonb_build_object('sub', current_setting('qa.merchant_b'), 'role', 'authenticated')::text, true);
+set local role authenticated;
+do $$
+declare e text := pg_temp.err(format('select reservation_code from public.bookings where id = %L::uuid', current_setting('qa.pending_b')));
+begin
+  assert e like 'permission denied%', format('The venue reads a waiting request''s code from the table (%s)', coalesce(e, 'readable'));
+  assert (select status from public.bookings where id = current_setting('qa.pending_b')::uuid) = 'pending_merchant',
+    'The venue lost sight of its request';
+end $$;
+reset role;
+
 -- ---------------------------------------------------- H: customer A reaches for customer B
 
 select set_config('request.jwt.claims', jsonb_build_object('sub', current_setting('qa.customer_a'), 'role', 'authenticated')::text, true);
@@ -272,6 +302,19 @@ begin
   assert e like 'permission denied%', format('anon: admin_metrics answered %s', coalesce(e, 'rows'));
   e := pg_temp.err(format('select public.merchant_bookings(%L::uuid)', current_setting('qa.venue_b')));
   assert e like 'permission denied%', format('anon: merchant_bookings answered %s', coalesce(e, 'rows'));
+  -- The photo catalogue is read-only for the app (audit L5): writes are refused by privilege, not only by RLS,
+  -- and TRUNCATE, which RLS does not cover, is refused too.
+  foreach t in array array['delete from public.service_photos', 'truncate public.service_photos',
+    'update public.service_photos set sort_order = sort_order'] loop
+    e := pg_temp.err(t);
+    assert e like 'permission denied%', format('anon: %s answered %s', t, coalesce(e, 'done'));
+  end loop;
+  assert pg_temp.err('select count(*) from public.service_photos') is null, 'anon: photo catalogue unreadable';
+  assert not has_table_privilege('authenticated', 'public.service_photos', 'INSERT')
+    and not has_table_privilege('authenticated', 'public.service_photos', 'UPDATE')
+    and not has_table_privilege('authenticated', 'public.service_photos', 'DELETE')
+    and not has_table_privilege('authenticated', 'public.service_photos', 'TRUNCATE')
+    and has_table_privilege('authenticated', 'public.service_photos', 'SELECT'), 'Signed-in users can write the photo catalogue';
 end $$;
 reset role;
 
@@ -294,4 +337,4 @@ end $$;
 reset role;
 
 rollback;
-select 'PASS: venues isolated from each other (21 RPCs, 8 tables), customers from each other (7 RPCs, read models, export, 3 tables), 18 admin RPCs refuse a customer, anon reads nothing private, two memberships stay apart, no contact or code for the venue before agreement; all fixtures rolled back' as result;
+select 'PASS: venues isolated from each other (21 RPCs, 8 tables), customers from each other (7 RPCs, read models, export, 3 tables), 18 admin RPCs refuse a customer, anon reads nothing private and writes no photo catalogue, two memberships stay apart, no contact or code for the venue before agreement and no code in the bookings table; all fixtures rolled back' as result;

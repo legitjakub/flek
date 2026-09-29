@@ -310,6 +310,7 @@ begin
   perform public.confirmation_authorized(pay.id, 'pi_qa_offer', 'cs_qa_offer', 78800, 'czk', false);
   perform pg_temp.act_as(merchant);
   perform public.merchant_cancel_offer(spare, 'Kurz odpadá, omlouváme se.');
+  assert not exists (select 1 from public.admin_audit_log where target_id = spare), 'A venue cancelling its own offer was logged as an admin change';
   assert (pg_temp.booking(pay.id)).status = 'cancelled_by_merchant'
     and (select action from private.confirmation_jobs where payment_id = pay.id) = 'cancel', 'Offer cancellation left a pending request';
   -- An offer cancelled while its capture runs ends as the merchant's cancellation, not as a payment failure.
@@ -327,6 +328,14 @@ begin
   k := pg_temp.booking(pay.id);
   assert k.status = 'cancelled_by_merchant' and k.cancellation_reason = 'Nemoc trenéra.' and pg_temp.cap(rate[1]) = 1,
     'Offer cancelled during capture reported as a payment failure';
+
+  -- An admin who does not run the venue cancels an offer: the audit log says who, what and why (audit L4).
+  perform pg_temp.act_as(admin);
+  perform public.merchant_cancel_offer(rate[5], 'QA zrušení adminem');
+  assert (select status from public.offers where id = rate[5]) = 'cancelled', 'Admin could not cancel the offer';
+  assert exists (select 1 from public.admin_audit_log where actor_id = admin and action = 'offer_cancelled' and target_type = 'offer'
+                 and target_id = rate[5] and reason = 'QA zrušení adminem' and before->>'status' = 'published' and after->>'status' = 'cancelled'),
+    'Admin cancellation not audited';
 
   perform pg_temp.act_as(c[7]);
   pay := public.start_payment(soon);

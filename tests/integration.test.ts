@@ -129,11 +129,13 @@ describe('Authorization and RLS, real JWTs',()=>{
   code((await merchant.client.rpc('save_service',{p_business_id:otherBiz,p_data:{name:'Hijack'}})).error,'FORBIDDEN');
  });
  it('foreign bookings and reservation codes are not exposed',async()=>{
-  const a=await user(),r=await book(a,await offer());const read=await other.client.from('bookings').select('*').eq('id',r.data![0].booking_id);expect(read.data).toHaveLength(0);
+  const a=await user(),r=await book(a,await offer());const read=await other.client.from('bookings').select('id').eq('id',r.data![0].booking_id);expect(read.data).toHaveLength(0);
+  // The code is not readable from the table by anyone, the booking's own customer included (audit L1); only RPCs return it.
+  expect((await a.client.from('bookings').select('reservation_code').eq('id',r.data![0].booking_id)).error?.message).toContain('permission denied');
   const lookup=await other.client.rpc('merchant_lookup_booking',{p_code:r.data![0].reservation_code});expect(lookup.data).toBeNull();
  });
  it('customer cannot read another profile or bookings, or cancel them',async()=>{
-  const a=await user(),b=await user(),r=await book(a,await offer());expect((await b.client.from('profiles').select('*').eq('id',a.id)).data).toHaveLength(0);expect((await b.client.from('bookings').select('*').eq('customer_id',a.id)).data).toHaveLength(0);code((await b.client.rpc('cancel_booking',{p_booking_id:r.data![0].booking_id})).error,'NOT_FOUND');
+  const a=await user(),b=await user(),r=await book(a,await offer());expect((await b.client.from('profiles').select('*').eq('id',a.id)).data).toHaveLength(0);expect((await b.client.from('bookings').select('id').eq('customer_id',a.id)).data).toHaveLength(0);code((await b.client.rpc('cancel_booking',{p_booking_id:r.data![0].booking_id})).error,'NOT_FOUND');
  });
  it('anonymous cannot read pending businesses, draft offers or bookings',async()=>{
   const o=await offer(1,{status:'draft'});expect((await anon.from('businesses').select('*').eq('id',otherBiz)).data??[]).toHaveLength(0);expect((await anon.from('offers').select('*').eq('id',o.id)).data??[]).toHaveLength(0);expect((await anon.from('bookings').select('*')).error).toBeTruthy();
