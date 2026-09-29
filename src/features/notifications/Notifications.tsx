@@ -8,6 +8,8 @@ import { errorMessage } from '../../lib/errors';
 import { pushProblem, registerDevicePush } from './devicePush';
 import { useSession } from '../auth/session';
 import { WhatsAppSettingsSection, useWhatsAppSettings } from './WhatsApp';
+import { noticeLink } from './noticeLink';
+import type { Business } from '../../types/database';
 
 type Notice = {
   id: string;
@@ -49,7 +51,11 @@ async function rpc<T>(name: string, args: Record<string, unknown> = {}): Promise
   return data as T;
 }
 
-export function NotificationBell({ businessId }: { businessId?: string }) {
+/**
+ * The bell of the customer app, or of FLEK Partner when `businessId` is the venue open on screen.
+ * A person who runs more venues sees the notices of all of them there, each named and opening its own.
+ */
+export function NotificationBell({ businessId, venues = [] }: { businessId?: string; venues?: Pick<Business, 'id' | 'display_name'>[] }) {
   const { userId } = useSession();
   const [open, setOpen] = useState(
     () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('notifications') === '1',
@@ -67,8 +73,11 @@ export function NotificationBell({ businessId }: { businessId?: string }) {
   if (!NOTIFICATIONS_ENABLED || !userId) return null;
 
   const notices = (query.data ?? []).filter((notice) => (
-    businessId ? notice.business_id === businessId : notice.business_id === null
+    businessId
+      ? notice.business_id === businessId || venues.some((venue) => venue.id === notice.business_id)
+      : notice.business_id === null
   ));
+  const venueName = (id: string | null) => (venues.length > 1 ? venues.find((venue) => venue.id === id)?.display_name : undefined);
   const unread = notices.filter((notice) => !notice.read_at).length;
 
   async function markRead(id: string) {
@@ -111,7 +120,7 @@ export function NotificationBell({ businessId }: { businessId?: string }) {
             {notices.map((notice) => (
               <li key={notice.id} className="py-2">
                 <Link
-                  to={notice.href}
+                  to={noticeLink(notice.href, notice.business_id, businessId)}
                   onClick={() => {
                     setOpen(false);
                     if (!notice.read_at) void markRead(notice.id);
@@ -121,6 +130,9 @@ export function NotificationBell({ businessId }: { businessId?: string }) {
                   <span className="flex items-start gap-2">
                     {!notice.read_at ? <span className="mt-2 size-2 shrink-0 rounded-full bg-brand" aria-label="Nepřečtené" /> : null}
                     <span className="min-w-0">
+                      {venueName(notice.business_id) ? (
+                        <span className="block truncate text-xs font-bold text-muted">{venueName(notice.business_id)}</span>
+                      ) : null}
                       <strong className={notice.read_at ? 'text-muted' : 'text-ink'}>{notice.title}</strong>
                       <span className="mt-1 block text-sm leading-relaxed text-muted">{notice.body}</span>
                     </span>

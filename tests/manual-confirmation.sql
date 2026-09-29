@@ -128,6 +128,15 @@ begin
   assert public.confirmation_authorized(pay.id, 'pi_qa_other', 'cs_qa_single', 78800, 'czk', false) = 'release_intent', 'Second PaymentIntent not rejected';
   assert (pg_temp.booking(pay.id)).status = 'pending_merchant' and pg_temp.cap(single) = 0, 'Duplicate intent changed the request';
   assert exists (select 1 from public.notifications where booking_id = k.id and user_id = merchant and event = 'requested'), 'Merchant not asked';
+  -- The notice opens the venue it is about, even for someone who runs another venue too.
+  assert (select href from public.notifications where booking_id = k.id and user_id = merchant and event = 'requested')
+    = '/partner/rezervace?provozovna=' || venue.id, 'Merchant notice does not open its venue';
+  raised := null;
+  begin
+    insert into public.notifications (user_id, booking_id, business_id, event, title, body, href)
+    values (merchant, k.id, venue.id, 'confirmed', 'x', 'x', '/partner/rezervace?provozovna=' || venue.id || '&next=https://evil.example/');
+  exception when check_violation then raised := sqlerrm; end;
+  assert raised like '%notifications_href_check%', 'A venue link with more than the venue was stored';
   assert not exists (select 1 from public.notifications where booking_id = k.id and user_id = c[1]), 'Customer told before confirmation';
   perform pg_temp.act_as(merchant);
   assert (select reservation_code from public.merchant_bookings(venue.id) where id = k.id) is null, 'Pending code exposed to the merchant';
@@ -168,7 +177,7 @@ begin
   perform public.confirmation_payment_observed(pay.id, 'released', 'pi_qa_single', 0);
   assert (pg_temp.booking(pay.id)).status = 'confirmed' and pg_temp.cap(single) = 0, 'Duplicate or out-of-order news changed a confirmed booking';
   assert (select reservation_code from public.my_bookings() where id = k.id) like 'FLEK-%', 'Confirmed code hidden';
-  assert exists (select 1 from public.notifications where booking_id = k.id and user_id = c[1] and event = 'confirmed'), 'Customer not told';
+  assert exists (select 1 from public.notifications where booking_id = k.id and user_id = c[1] and event = 'confirmed' and href = '/rezervace'), 'Customer not told';
   assert (select count(*) from public.bookings where offer_id = single and status = 'confirmed') = 1, 'More than one booking';
 
   -- 7–9. Refusal releases the seat once and queues a release, never a refund.

@@ -202,7 +202,7 @@ Audit se díval na peníze, oddělení podniků a zákazníků, oprávnění, st
 - [ ] **M3 Úlohy potvrzování po 8 pokusech:** uvolnění blokace zkoušet dál s odstupem, `capturing` po začátku termínu ukončit. V kódu hotové (28. 9.): uvolnění se opakuje s odstupem až 1 h, stržení po začátku nebo po vyčerpání pokusů ukončí databáze a blokaci uvolní.
 - [ ] **M4 Stav účtu podniku** → bod „Stav účtu podniku bez otevření aplikace“ níže. Kód je hotový (28. 9.): druhý podpisový klíč `STRIPE_CONNECT_WEBHOOK_SECRET`, podnik dohledaný i podle ID účtu a `stripe-webhook-setup` hlásí Connect endpoint. Zbývá, aby Jakub endpoint založil (Část 1, Stripe).
 - [ ] **M5 Podmínky o hodnocení:** věta „Hodnocení podniků zatím nezveřejňujeme“ neplatí. Jakub rozhodl, že recenze zůstanou veřejné; nová verze 1.1 a bod pro právníka.
-- [ ] **M6 Dvě provozovny:** žádost nevybrané provozovny v aplikaci nezazvoní ani se neukáže a odkaz v upozornění provozovnu nenese.
+- [ ] **M6 Dvě provozovny:** žádost nevybrané provozovny v aplikaci nezazvoní ani se neukáže a odkaz v upozornění provozovnu nenese. V kódu hotové a lokálně ověřené (29. 9.): zvonění, obrazovka žádosti, lišta i zvonek berou žádosti a upozornění všech provozoven s jejich názvem a odkaz `?provozovna=` otevře správnou. Hlavička partnera se vejde i s přepínačem provozovny. Čeká na migraci `venue_links` v hostované databázi.
 - [ ] **L1** Kód nepotvrzené žádosti jde přečíst přímo z tabulky `bookings` (REST, realtime). Jakub rozhodl opravit sloupcovým oprávněním.
 - [ ] **L2** `stripe-refunds` spustí kdokoli (bez tajného klíče workeru); nic nepřidá, jen zbytečně volá Stripe.
 - [ ] **L3** Kvóta a omezení klíče Google Places před zapnutím hodnocení (Jakub v Google Cloud).

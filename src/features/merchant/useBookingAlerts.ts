@@ -8,6 +8,7 @@ import { supabase } from '../../lib/supabase';
 import { useSession } from '../auth/session';
 import { bookingAlerts } from './bookingAlertStore';
 import type { WaitingRequest } from './RequestRing';
+import { waitingFrom } from './waitingRequests';
 export type { BookingAlert } from './bookingAlertStore';
 
 export function useUnreadBookings(businessId?: string): number {
@@ -123,20 +124,7 @@ export function useBookingAlerts(businessId: string) {
   // What still waits for an answer right now; re-read every few seconds so a request that runs
   // out stops ringing on time even when nothing new arrives.
   const now = useServerNow(5_000);
-  const waiting: WaitingRequest[] = (poll.data ?? [])
-    .filter((row) => row.business_id === businessId && row.confirmation_version === 1 && row.status === 'pending_merchant'
-      && Boolean(row.authorized_at) && Date.parse(row.confirmation_expires_at ?? '') > Date.parse(now))
-    .map((row) => ({
-      id: row.id,
-      deadline: row.confirmation_expires_at ?? null,
-      authorizedAt: row.authorized_at ?? null,
-      service: row.service_name_snapshot,
-      startAt: row.start_at_snapshot,
-      endAt: row.end_at_snapshot,
-      customer: row.customer_label,
-      payoutCents: row.merchant_payout_cents,
-    }))
-    .sort((a, b) => Date.parse(a.deadline ?? '') - Date.parse(b.deadline ?? ''));
+  const waiting: WaitingRequest[] = waitingFrom(poll.data, businessId, now);
 
   // The page keeps its name; the count goes in front of it ("(2) Přehled — FLEK Partner").
   useEffect(() => {

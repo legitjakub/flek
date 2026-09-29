@@ -7,6 +7,8 @@ import { useSession } from '../auth/session';
 import { useMyBusinesses } from './useBusiness';
 import { PartnerLanding } from './PartnerLanding';
 import { useBookingAlerts, useUnreadBookings, type BookingAlert } from './useBookingAlerts';
+import { useOtherVenueRequests } from './useOtherVenueRequests';
+import { byDeadline } from './waitingRequests';
 import { RingBar, useRequestRing } from './RequestRing';
 import { IncomingRequest } from './IncomingRequest';
 import { RingSetup } from './RingSetup';
@@ -33,10 +35,24 @@ const NAV = [
  * throughout (the customer app tyká).
  */
 export function MerchantShell({ children }: { children: (business: Business) => ReactNode }) {
-  const { path } = useRouter();
+  const { path, search, navigate } = useRouter();
   const { userId, ready } = useSession();
   const businesses = useMyBusinesses();
   const [selectedId, setSelectedId] = useState(storedBusinessId);
+
+  // A notification about one venue opens that venue (`/partner/rezervace?provozovna=<id>`), then the URL is plain again.
+  const linked = search.get('provozovna');
+  useEffect(() => {
+    if (!linked || !businesses.data) return;
+    if (businesses.data.some((item) => item.id === linked)) {
+      rememberBusinessId(linked);
+      setSelectedId(linked);
+    }
+    const rest = new URLSearchParams(search);
+    rest.delete('provozovna');
+    navigate(rest.size ? `${path}?${rest}` : path, { replace: true, scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `search` is rebuilt on every navigation; `linked` is the part that matters
+  }, [linked, businesses.data, path, navigate]);
 
   if (ready && !userId) {
     return (
@@ -98,7 +114,14 @@ export function MerchantShell({ children }: { children: (business: Business) => 
       }}
       path={path}
     >
-      {business.status === 'approved' ? <ApprovedFrame key={`alerts:${userId}:${business.id}`} business={business} path={path} /> : null}
+      {business.status === 'approved' ? (
+        <ApprovedFrame
+          key={`alerts:${userId}:${business.id}`}
+          business={business}
+          others={all.filter((item) => item.status === 'approved' && item.id !== business.id)}
+          path={path}
+        />
+      ) : null}
       {/* On Přehled the setup guide already says the venue is being checked; the banner stays for the rest,
           and for a rejected or suspended venue everywhere, because it carries the reason. */}
       {business.status !== 'approved' && !(business.status === 'pending' && path === '/partner') ? <PendingNotice business={business} /> : null}
@@ -137,9 +160,12 @@ function PendingNotice({ business }: { business: Business }) {
   );
 }
 
-function ApprovedFrame({ business, path }: { business: Business; path: string }) {
+function ApprovedFrame({ business, others, path }: { business: Business; others: Business[]; path: string }) {
   const { alerts, unread, markRead, dismiss, waiting, statusOf } = useBookingAlerts(business.id);
-  const ring = useRequestRing(waiting);
+  // A person with more venues hears the others' requests too; the full screen names their venue.
+  const elsewhere = useOtherVenueRequests(others);
+  const everyWaiting = [...waiting, ...elsewhere.waiting].sort(byDeadline);
+  const ring = useRequestRing(everyWaiting);
   const [celebrate, setCelebrate] = useState(() => {
     try {
       return window.localStorage.getItem(PENDING_SEEN + business.id) === '1';
@@ -179,10 +205,15 @@ function ApprovedFrame({ business, path }: { business: Business; path: string })
           Provozovna has the same control in its own "Zvonění v aplikaci" section. */}
       {path === '/partner/provozovna' ? null : <RingSetup />}
       {/* A new request takes the whole screen until it is answered, runs out or is put off. */}
-      <IncomingRequest waiting={waiting} statusOf={statusOf} ring={ring} venue={business.display_name} />
+      <IncomingRequest
+        waiting={everyWaiting}
+        statusOf={(id) => statusOf(id) ?? elsewhere.statusOf(id)}
+        ring={ring}
+        venue={business.display_name}
+      />
       <div aria-live="polite" className="empty:hidden mb-4 flex flex-col gap-2">
         {/* A request put off with "Později" keeps ringing here, on every partner page, until it is answered, runs out or is muted. */}
-        <RingBar ring={ring} />
+        <RingBar ring={ring} venue={business.display_name} />
         {/* Přehled and Rezervace list the requests at the top themselves; a banner there would say it twice.
             A request that still rings is already announced by the ring bar above. */}
         {alerts.filter((alert) => alert.kind !== 'request' || (!REQUEST_PAGES.includes(path) && !ring.loud.some((request) => request.id === alert.id))).map((alert) => (
@@ -274,6 +305,22 @@ function MerchantFrame({
   const { navigate } = useRouter();
   const { userId } = useSession();
   const unread = useUnreadBookings(business?.id);
+  // A person who runs more venues switches between them here: in the header, or on a phone at the top of the page.
+  const venueSelect = (className: string) =>
+    business && businesses.length > 1 ? (
+      <select
+        aria-label="Provozovna"
+        value={business.id}
+        onChange={(event) => onSwitch?.(event.target.value)}
+        className={cx('min-h-11 min-w-0 truncate rounded-xl border border-line-strong bg-card px-3 text-sm font-bold text-ink', className)}
+      >
+        {businesses.map((item) => (
+          <option key={item.id} value={item.id}>
+            {item.display_name}
+          </option>
+        ))}
+      </select>
+    ) : null;
   const badge = (to: string) =>
     to === '/partner/rezervace' && unread > 0 ? (
       <span className="tnum ml-auto grid min-h-5 min-w-5 place-items-center rounded-full bg-brand px-1.5 text-xs font-extrabold text-brand-ink" aria-label={`${unread} nových`}>
@@ -286,20 +333,9 @@ function MerchantFrame({
       <header className="sticky top-0 z-20 border-b border-line bg-card">
         <div className="mx-auto flex min-h-18 max-w-[1440px] items-center justify-between gap-3 px-4 lg:px-8">
           <Link to="/partner" aria-label="FLEK Partner" className="inline-flex min-h-11 items-center"><Wordmark suffix="Partner" /></Link>
-          <div className="flex min-w-0 items-center gap-2 sm:gap-6">
-            {business && businesses.length > 1 ? (
-              <select
-                aria-label="Provozovna"
-                value={business.id}
-                onChange={(event) => onSwitch?.(event.target.value)}
-                className="min-h-11 max-w-[12rem] truncate rounded-xl border border-line-strong bg-card px-3 text-sm font-bold text-ink"
-              >
-                {businesses.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.display_name}
-                  </option>
-                ))}
-              </select>
+          <div className="flex min-w-0 items-center gap-2 lg:gap-6">
+            {businesses.length > 1 ? (
+              venueSelect(cx('max-w-[12rem] xl:max-w-[18rem]', nav ? 'hidden sm:block' : undefined))
             ) : business ? (
               <span className="hidden max-w-sm truncate text-sm font-bold text-muted sm:inline">{business.display_name}</span>
             ) : null}
@@ -311,11 +347,12 @@ function MerchantFrame({
                 target="_blank"
                 rel="noreferrer"
                 title="Zobrazit jako zákazník"
-                className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 text-sm font-bold sm:min-w-0"
+                className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 text-sm font-bold lg:min-w-0"
               >
                 <Eye size={17} aria-hidden="true" />
-                <span className="hidden sm:inline">Zobrazit jako zákazník</span>
-                <span className="sr-only sm:hidden">Zobrazit jako zákazník</span>
+                {/* Below the desktop width the two links are icons, so a venue's name or switcher still fits. */}
+                <span className="hidden lg:inline">Zobrazit jako zákazník</span>
+                <span className="sr-only lg:hidden">Zobrazit jako zákazník</span>
               </a>
             ) : null}
             {/* On a phone with the console's own menu these two sit in "Další": four bare icons in
@@ -324,14 +361,14 @@ function MerchantFrame({
               to="/"
               aria-label="Přejít do zákaznické části"
               title="Přejít do zákaznické části"
-              className={`${nav ? 'hidden sm:inline-flex' : 'inline-flex'} min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 text-sm font-bold sm:min-w-0`}
+              className={`${nav ? 'hidden sm:inline-flex' : 'inline-flex'} min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 text-sm font-bold lg:min-w-0`}
             >
-              <span className="hidden sm:inline">Zákaznická část</span>
+              <span className="hidden lg:inline">Zákaznická část</span>
               <ArrowUpRight size={17} aria-hidden="true" />
             </Link>
             {userId ? (
               <>
-                <NotificationBell businessId={business?.id} />
+                <NotificationBell businessId={business?.id} venues={businesses} />
                 <span className={nav ? 'hidden sm:contents' : 'contents'}>
                   <SignOutButton compact />
                 </span>
@@ -342,7 +379,10 @@ function MerchantFrame({
       </header>
       <div className={`mx-auto max-w-[1440px] ${nav ? 'lg:grid lg:grid-cols-[224px_minmax(0,1fr)]' : ''}`}>
         {nav ? <aside className="hidden min-h-[calc(100dvh-73px)] border-r border-line bg-card px-4 py-6 lg:block"><nav aria-label="Partner" className="sticky top-24"><ul className="flex flex-col gap-2">{NAV.map(({ to, label, icon: Icon }) => <li key={to}><Link to={to} aria-current={path === to ? 'page' : undefined} className={`flex min-h-12 items-center gap-3 rounded-xl px-4 text-sm font-bold ${path === to ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-surface hover:text-ink'}`}><Icon size={20} aria-hidden="true" />{label}{badge(to)}</Link></li>)}</ul><button type="button" onClick={openPartnerHelp} className="mt-6 flex min-h-12 w-full items-center gap-3 rounded-xl border-t border-line px-4 pt-4 text-sm font-bold text-muted hover:text-ink"><HelpCircle size={20} aria-hidden="true" />Jak FLEK funguje</button></nav></aside> : null}
-        <main id="partner-obsah" className="min-w-0 px-4 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6 lg:p-8">{children}</main>
+        <main id="partner-obsah" className="min-w-0 px-4 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6 lg:p-8">
+          {nav ? venueSelect('mb-4 w-full sm:hidden') : null}
+          {children}
+        </main>
       </div>
       {nav ? (
         <nav aria-label="Partner" className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card pb-[env(safe-area-inset-bottom)] lg:hidden">

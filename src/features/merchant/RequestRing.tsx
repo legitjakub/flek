@@ -35,6 +35,9 @@ export type WaitingRequest = {
   endAt: string;
   customer: string;
   payoutCents: number;
+  /** Set for a request of another of the person's venues than the one open on screen. */
+  venue?: string;
+  businessId?: string;
 };
 
 /**
@@ -104,9 +107,11 @@ function waitingLabel(count: number) {
  * The strip at the top of every partner page while a request put off with "Později" still rings,
  * or cannot. "Zobrazit" brings it back to the full screen (IncomingRequest).
  */
-export function RingBar({ ring }: { ring: ReturnType<typeof useRequestRing> }) {
+export function RingBar({ ring, venue }: { ring: ReturnType<typeof useRequestRing>; venue?: string }) {
   const [blocked, setBlocked] = useState(false);
   if (!ring.loud.length) return null;
+  // When a request of another venue rings too, the bar says which venues are asking.
+  const venues = ring.loud.some((request) => request.venue) ? [...new Set(ring.loud.map((request) => request.venue ?? venue))] : [];
   const action = 'inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl bg-card px-3 text-sm font-bold text-ink hover:bg-surface';
   return (
     <div role={ring.ready ? 'status' : 'alert'} className="on-dark flex flex-wrap items-center gap-3 rounded-2xl bg-brand px-4 py-3 text-brand-ink shadow-lift">
@@ -117,6 +122,7 @@ export function RingBar({ ring }: { ring: ReturnType<typeof useRequestRing> }) {
       />
       <div className="min-w-[13rem] flex-1">
         <p className="text-base leading-snug font-extrabold">{waitingLabel(ring.loud.length)}</p>
+        {venues.length ? <p className="text-sm font-bold text-brand-ink/90">{venues.join(' · ')}</p> : null}
         <Countdown deadlines={ring.loud.map((request) => request.deadline)} />
         {!ring.ready ? (
           <p className="text-sm text-brand-ink/85">

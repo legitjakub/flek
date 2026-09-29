@@ -43,6 +43,16 @@ describe('service worker push', () => {
     expect(shown.options.requireInteraction).toBeUndefined();
   });
 
+  it('opens the venue a request belongs to, for a person who runs more than one', async () => {
+    const venue = '0b9d8f7e-1c2a-4b3c-8d4e-5f6a7b8c9d0e';
+    const shown = await push({ url: `/partner/rezervace?provozovna=${venue}`, id: 'n5', kind: 'request' });
+    expect(shown.options.data).toEqual({ url: `/partner/rezervace?provozovna=${venue}&notifications=1` });
+    expect(shown.options.requireInteraction).toBe(true);
+    // Anything else after the question mark is not FLEK's own address.
+    const forged = await push({ url: `/partner/rezervace?provozovna=${venue}&next=https://evil.example/`, id: 'n6' });
+    expect(forged.options.data).toEqual({ url: '/rezervace?notifications=1' });
+  });
+
   it('opens only FLEK\'s own addresses and carries no booking details', async () => {
     const shown = await push({ url: 'https://evil.example/', id: 'n4', kind: 'request' });
     expect(shown.options.data).toEqual({ url: '/rezervace?notifications=1' });

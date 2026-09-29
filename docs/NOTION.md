@@ -233,6 +233,7 @@ Podrobný rozpis (co musí udělat člověk, co zvládne AI agent, postup spušt
 4. Dostane upozornění na novou rezervaci a storno (v aplikaci vždy, e-mail a oznámení na telefon jsou zapnuté samy a dají se změnit v Provozovně). Oznámení chodí jen na zařízení, kde podnik jednou klepnutím povolí zvonění a oznámení (karta „Zapněte zvonění na tomto zařízení“); o vlastním potvrzení nebo odmítnutí zprávu nedostane. U pultu načte QR kód zákazníka (nebo kód opíše) a aplikace hned řekne, jestli rezervace na dnes platí; případně označí „Nedorazil“.
    - Potvrzování (od 15. 9.): nová žádost převezme celou obrazovku (od 25. 9.) s odpočtem („Potvrďte do 04:18“), kartou rezervace a tlačítky Potvrdit rezervaci / Nemohu přijmout, a aplikace zvoní (jako tablet rozvozové služby), dokud žádost nepotvrdí, neodmítne, nevyprší nebo ji neztlumí. „Později“ ji schová do lišty nahoře; na Přehledu a v Rezervacích zůstává i jako karta; oznámení na telefonu u žádosti zůstane na obrazovce do klepnutí. Po ověření WhatsAppu v Provozovně (jedno klepnutí, číslo provozovny je předvyplněné) přijde žádost i tam a jde vyřídit tlačítkem ve zprávě; přijdou tam i zrušení a vypršení.
 5. Vidí metriky: rezervace, výplaty a naplněnost.
+6. Kdo spravuje víc provozoven, přepíná je v hlavičce (na telefonu nahoře na stránce). Žádosti všech jeho provozoven zvoní a ukážou se s názvem provozovny, ať je otevřená kterákoli, a upozornění otevře tu, které se týká (od 29. 9., zatím na větvi).
 
 ### Admin (`/admin`)
 
@@ -359,6 +360,7 @@ Podrobnosti: `README.md`, `docs/PROJECT_STATUS.md`, `LIMITATIONS.md`, `VERIFICAT
 
 | Datum | Změna |
 | --- | --- |
+| 29. 9. 2026 | Kdo spravuje dvě provozovny, uslyší žádost i té, kterou zrovna nemá otevřenou: zazvoní, ukáže se přes celou obrazovku s názvem provozovny a jde rovnou potvrdit. Zvonek ukazuje upozornění všech provozoven a klepnutí otevře tu správnou. Hlavička partnerské části se s přepínačem provozovny vejde i na telefon. Čeká na nasazení migrace. |
 | 28. 9. 2026 | Webhook Stripe umí přijímat i události připojených účtů podniků (druhý podpisový klíč), takže se stav účtu podniku po založení Connect endpointu změní sám. `stripe-webhook-setup` hlásí, jestli endpoint a klíč existují. |
 | 28. 9. 2026 | Potvrzování rezervací je spolehlivější. Přijatá rezervace už nepropadne jen proto, že si úlohu převzal jiný běh workeru. Nezaplacená žádost nevisí v „Uvolňujeme blokaci“. Uvolnění blokace se zkouší dál i po výpadku Stripe. Stržení, které nestihlo začátek termínu, se ukončí a místo se vrátí. Čeká na nasazení migrace a funkce. |
 | 28. 9. 2026 | Administrace má novou záložku „Platby k řešení“ s počtem v navigaci. Ukazuje vratky, které Stripe zamítl nebo neprovedl, platby bez rezervace, neuvolněné blokace, nedokončené stržení a selhané události ze Stripe, u každé s odkazem do Stripe. O každém novém problému přijde adminům e-mail. Čeká na nasazení migrace. |

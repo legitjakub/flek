@@ -526,6 +526,27 @@ Lokální Docker integrační sada, fyzický iPhone/Safari, skutečná kamera, n
 - 27. 9. ve 12:15 (Praha; ranní kontrola naplánovaná na 26. 9. se v relaci nezpracovala kvůli restartu kontejneru, proto dodatečně; `dry_run`, HTTP 200): **všech pět šablon je APPROVED** (`flek_booking_request`, `flek_business_confirmed`, `flek_business_cancelled`, `flek_customer_confirmed`, `flek_customer_cancelled`), žádná zamítnutá. Účet dál BLOCKED se stejnými kódy 141006 (platební metoda, blokuje zprávy, které začíná firma, tedy i šablony), 141010 (ověření firmy, `pending_submission`) a 131000 (profil firmy bez právního názvu, země a webu); `account_review_status` APPROVED. Číslo je dál testovací +1 555 156 7838, webhook míří na `…/functions/v1/whatsapp-webhook`, odběr aplikace FLEK aktivní (vedle ní dál aplikace Mety „WA DevX Webhook Events 1P App“), všech 11 klíčů `WHATSAPP_*` v secrets. `whatsapp_enabled` zůstává `false`. Další kontrola 28. 9. ráno.
 - 28. 9. v 9:40 (Praha; ranní kontrola, `dry_run`, HTTP 200): **beze změny.** Všech pět šablon APPROVED, účet i číslo dál BLOCKED se stejnými kódy 131000 (profil firmy), 141006 (platební metoda) a 141010 (ověření firmy), webhook dál na `…/functions/v1/whatsapp-webhook`. `whatsapp_enabled` zůstává `false`. Další kontrola 29. 9. ráno.
 
+## Dvě provozovny (audit M6) — 29. 9. 2026
+
+- Lokální Supabase s migrací `20260928232000_venue_links.sql`; hostovaná DB čeká na schválení MCP.
+- `tests/manual-confirmation.sql` PASS s novými kontrolami:
+  - upozornění podniku na žádost má odkaz `/partner/rezervace?provozovna=<id provozovny>`, zákazníkovo `/rezervace`;
+  - odkaz s čímkoli navíc (`&next=https://evil.example/`) databáze odmítne (`notifications_href_check`).
+- Regrese nad lokální databází: `merchant-push`, `whatsapp-notifications`, `legal`, `payment-issues`, `confirmation-worker`, `tenant-isolation`, `watches` a `stripe-refunds` PASS. `merchant-push` napoprvé spadl na `TOO_MANY_ACTIVE`, protože moje lokální fixtura scénáře J nechala zákazníkovi `demo-5` dvě aktivní žádosti. Po jejich ukončení prošel.
+- Build a **270/270 unit testů (34 souborů)** PASS. Nový `tests/venueRequests.test.ts` (přidaný do `npm run test:unit`) pokrývá:
+  - čekající žádosti jedné provozovny (jen `pending_merchant` s autorizací a v čase, nejnaléhavější první);
+  - název provozovny jen u jiné než otevřené a pořadí žádostí přes provozovny;
+  - odkaz upozornění, včetně starších bez provozovny.
+- `tests/serviceWorker.test.ts`: oznámení otevře odkaz s provozovnou a podvržený odkaz ne.
+- Vitest proti lokální Supabase **315/315**. Napoprvé 20 integračních testů spadlo, protože jsem pro průchod scénáře J lokálně zapnul `manual_confirmation_enabled`. Po vrácení na `false` prošlo vše.
+- **Scénář J v Chromiu** (lokální Vite a Supabase, relace vložená do `localStorage`). Účet `qa-local-dual@flek.test` je členem Studia Dobrá hodina (A, otevřené) a Masážního ateliéru Klidno (B). Skutečná žádost na B vznikla přes `start_payment` a `confirmation_authorized`. Na **320, 375, 390, 1024 a 1280 px**:
+  - žádost B převezme obrazovku s názvem B, zatímco otevřená zůstává A;
+  - „Později“ ji přesune do lišty zvonění, která B jmenuje;
+  - zvonek má upozornění s názvem B a odkazem `?provozovna=B`; klepnutí otevře Rezervace B, adresa je zase bez parametru a volba provozovny se zapamatuje;
+  - vodorovné přetečení 0, dotykové plochy ≥ 44 px, axe 0 porušení, v konzoli bez chyb.
+- Potvrzení žádosti B z obrazovky při otevřené A: rezervace přešla do `capturing` s úlohou stržení, výsledek „Rezervace je potvrzená“, otevřená zůstala A.
+- **Hlavička partnera** před opravou se dvěma provozovnami přetékala o 135/80/65/246 px (320/375/390/640) a s jednou provozovnou o 54 px na 640. Po opravě je přetečení 0 na 320, 375, 390, 640, 700, 768, 1024 a 1280 px.
+
 ## Connect webhook (audit M4) — 28. 9. 2026
 
 - `stripe-webhook` spuštěný lokálně v Deno 2.5.6 proti lokální Supabase, s testovacími klíči jen pro tento běh. Tři události podepsané podle schématu Stripe (HMAC SHA-256 přes `t.payload`):

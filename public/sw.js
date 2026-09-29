@@ -27,8 +27,11 @@ self.addEventListener('fetch', () => {});
 
 // Only addresses FLEK itself produces are ever opened: a push payload is data, not a URL to trust.
 const WATCH_URL = /^\/(nabidka\/[0-9a-f-]{36}|mapa\?hlidac=[0-9a-f-]{36})$/;
+// A venue's notice names its venue, so a person who runs two opens the right one.
+const VENUE_URL = /^\/partner\/rezervace\?provozovna=[0-9a-f-]{36}$/;
 function target(url) {
   if (url === '/partner/rezervace' || url === '/partner/rezervace?notifications=1') return '/partner/rezervace?notifications=1';
+  if (typeof url === 'string' && VENUE_URL.test(url)) return `${url}&notifications=1`;
   if (typeof url === 'string' && WATCH_URL.test(url)) return url;
   return '/rezervace?notifications=1';
 }

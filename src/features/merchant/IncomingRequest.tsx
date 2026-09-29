@@ -224,7 +224,7 @@ export function IncomingRequest({
               <p className="min-w-0 truncate text-sm font-extrabold text-brand-ink">
                 <span className="short:hidden">FLEK Partner</span>
                 {/* A short screen has no line to spare for the venue in the hero, so it moves up here. */}
-                <span className="hidden short:inline">{venue}</span>
+                <span className="hidden short:inline">{shown.venue ?? venue}</span>
               </p>
             )}
             <div className="flex shrink-0 items-center gap-2">
@@ -256,7 +256,7 @@ export function IncomingRequest({
               <OutcomeHero outcome={outcome} heading={heading} />
             ) : (
               <>
-                <p className="takeover-rise max-w-full truncate text-sm font-bold text-brand-ink/85 short:hidden">{venue}</p>
+                <p className="takeover-rise max-w-full truncate text-sm font-bold text-brand-ink/85 short:hidden">{shown.venue ?? venue}</p>
                 <Beacon share={timeShare(shown, now)} urgent={urgent} pulsing={pulsing && !overdue} />
                 <div className="flex min-w-0 flex-col items-center short:items-start">
                   <h1
