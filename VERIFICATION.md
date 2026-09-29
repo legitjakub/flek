@@ -527,6 +527,20 @@ Lokální Docker integrační sada, fyzický iPhone/Safari, skutečná kamera, n
 - 28. 9. v 9:40 (Praha; ranní kontrola, `dry_run`, HTTP 200): **beze změny.** Všech pět šablon APPROVED, účet i číslo dál BLOCKED se stejnými kódy 131000 (profil firmy), 141006 (platební metoda) a 141010 (ověření firmy), webhook dál na `…/functions/v1/whatsapp-webhook`. `whatsapp_enabled` zůstává `false`. Další kontrola 29. 9. ráno.
 - 29. 9. v 9:43 (Praha; ranní kontrola se po restartu kontejneru spustila dodatečně, `dry_run`, HTTP 200): **beze změny.** Všech pět šablon APPROVED, účet i číslo dál BLOCKED (131000, 141006, 141010), ověření firmy `pending_submission`; číslo CONNECTED, LIVE, TIER_250; webhook i `callback_url` míří na `…/functions/v1/whatsapp-webhook`, odběr aktivní. `whatsapp_enabled` zůstává `false`. Další kontrola 30. 9. ráno.
 
+## Obchodní podmínky 1.1: hodnocení (audit M5) — 29. 9. 2026
+
+- Znění oddílu 3 porovnané s kódem:
+  - `submit_booking_review`: jen vlastní rezervace ve stavu `completed`, 1–5 hvězd, text do 800 znaků, text přes moderaci;
+  - `business_reviews`: všechna hodnocení schváleného podniku bez jména, se službou a datem návštěvy, text jen schválený;
+  - `FlekReviews.tsx`: průměr od 3 hodnocení, na stránce podniku 8 nejnovějších;
+  - `MyBookingsPage.tsx`: „Upravit hodnocení“;
+  - `delete_my_account`: smaže hvězdy i text.
+- `tests/legal.test.ts` 20/20: verze 1.1 z `documents.ts` existuje v migracích a text je bez značek. `tests/legal.sql` PASS nad lokální DB s migrací `20260929090000_customer_terms_reviews.sql` (1.1 bez účinnosti, souhlas dál ve verzi v účinnosti).
+- `/podminky` v Chromiu s dočasně doplněným IČO a účinností jen v lokální DB (po kontrole vráceno) na 375, 390 a 1280 px:
+  - tři nové body s tučným „Hodnocení na FLEKu“ a „Verze 1.1“;
+  - stará věta „zatím nezveřejňujeme“ ani značky markdownu na stránce nejsou;
+  - přetečení 0, axe 0, konzole bez chyb.
+
 ## Dvě provozovny (audit M6) — 29. 9. 2026
 
 - Lokální Supabase s migrací `20260928232000_venue_links.sql`; hostovaná DB čeká na schválení MCP.

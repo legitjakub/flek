@@ -29,7 +29,9 @@ FLEK je online tržiště. Podniky (kadeřnictví a holičství, masáže, kosme
 - **Běžná cena** je cena, za kterou podnik službu běžně nabízí. Uvádí ji podnik a sleva se počítá z ní. Podnik nám potvrzuje, že je skutečná.
 - **Řazení.** Při řazení „Doporučené“ rozhoduje vzdálenost od tebe (45 %), jak brzy termín začíná (35 %) a výše slevy (20 %). Jiné řazení si můžeš zvolit: podle vzdálenosti, slevy, ceny nebo začátku. Lepší umístění si nikdo nekupuje. Když v okolí nic není, hledání se samo rozšíří až na 25 km a na celý týden a řekneme ti to.
 - Fotky se štítkem „ilustrační foto“ nepocházejí z provozovny.
-- Hodnocení podniků zatím nezveřejňujeme. Až je budeme ukazovat, budou jen od zákazníků s dokončenou rezervací.
+- **Hodnocení na FLEKu** může přidat jen zákazník, který u podniku dokončil rezervaci přes FLEK, a to ze svého účtu a jednou za každou návštěvu: 1 až 5 hvězd a nepovinný text. Ukazujeme ho bez jména, s názvem služby a datem návštěvy.
+- Do počtu a průměru hodnocení počítáme všechna, kladná i záporná. Průměr ukazujeme od 3 hodnocení, na stránce podniku nejnovější recenze. Hvězdy se zobrazí hned, text až po kontrole; nezákonný, explicitní nebo jinak závadný text nezveřejníme.
+- Za hodnocení nic nenabízíme a podnik ho nemůže změnit ani smazat. Své hodnocení můžeš upravit v Rezervacích a se smazáním účtu zmizí.
 
 ## 4. Rezervace a vznik smlouvy
 
